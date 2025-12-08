@@ -1,102 +1,88 @@
-import Image, { type ImageProps } from "next/image";
-import { Button } from "@repo/ui/button";
-import styles from "./page.module.css";
+'use client';
 
-type Props = Omit<ImageProps, "src"> & {
-  srcLight: string;
-  srcDark: string;
-};
+import React from 'react';
+import Link from 'next/link';
+import { ArrowRight, Clock, CheckCircle2, TrendingUp } from 'lucide-react';
+import StatusBadge from '@/components/StatusBadge';
+import { RequestStatus } from '@/lib/types';
+import { useAppContext } from '@/lib/providers/AppProvider';
 
-const ThemeImage = (props: Props) => {
-  const { srcLight, srcDark, ...rest } = props;
+const StatCard: React.FC<{ label: string; value: number; icon: any; color: string }> = ({ label, value, icon: Icon, color }) => (
+  <div className="bg-surface p-6 rounded-2xl border border-surface-highlight shadow-xl flex items-center justify-between hover:border-primary-500/30 transition-all duration-300">
+    <div>
+      <p className="text-slate-400 text-sm font-medium mb-1">{label}</p>
+      <h3 className="text-3xl font-bold text-slate-100">{value}</h3>
+    </div>
+    <div className={`w-12 h-12 rounded-xl flex items-center justify-center ${color}`}>
+      <Icon className="w-6 h-6 text-white" />
+    </div>
+  </div>
+);
+
+export default function Dashboard() {
+  const { requests } = useAppContext();
+
+  const activeCount = requests.filter(r => [RequestStatus.SEARCHING, RequestStatus.CALLING, RequestStatus.ANALYZING].includes(r.status)).length;
+  const completedCount = requests.filter(r => r.status === RequestStatus.COMPLETED).length;
+  const totalCount = requests.length;
 
   return (
-    <>
-      <Image {...rest} src={srcLight} className="imgLight" />
-      <Image {...rest} src={srcDark} className="imgDark" />
-    </>
-  );
-};
+    <div className="space-y-8">
+      <div>
+        <h1 className="text-3xl font-bold text-slate-100">Welcome back</h1>
+        <p className="text-slate-400 mt-2">Here&apos;s what your AI concierge is working on.</p>
+      </div>
 
-export default function Home() {
-  return (
-    <div className={styles.page}>
-      <main className={styles.main}>
-        <ThemeImage
-          className={styles.logo}
-          srcLight="turborepo-dark.svg"
-          srcDark="turborepo-light.svg"
-          alt="Turborepo logo"
-          width={180}
-          height={38}
-          priority
-        />
-        <ol>
-          <li>
-            Get started by editing <code>apps/web/app/page.tsx</code>
-          </li>
-          <li>Save and see your changes instantly.</li>
-        </ol>
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <StatCard label="Active Requests" value={activeCount} icon={TrendingUp} color="bg-blue-500" />
+        <StatCard label="Completed Tasks" value={completedCount} icon={CheckCircle2} color="bg-emerald-500" />
+        <StatCard label="Total History" value={totalCount} icon={Clock} color="bg-purple-500" />
+      </div>
 
-        <div className={styles.ctas}>
-          <a
-            className={styles.primary}
-            href="https://vercel.com/new/clone?demo-description=Learn+to+implement+a+monorepo+with+a+two+Next.js+sites+that+has+installed+three+local+packages.&demo-image=%2F%2Fimages.ctfassets.net%2Fe5382hct74si%2F4K8ZISWAzJ8X1504ca0zmC%2F0b21a1c6246add355e55816278ef54bc%2FBasic.png&demo-title=Monorepo+with+Turborepo&demo-url=https%3A%2F%2Fexamples-basic-web.vercel.sh%2F&from=templates&project-name=Monorepo+with+Turborepo&repository-name=monorepo-turborepo&repository-url=https%3A%2F%2Fgithub.com%2Fvercel%2Fturborepo%2Ftree%2Fmain%2Fexamples%2Fbasic&root-directory=apps%2Fdocs&skippable-integrations=1&teamSlug=vercel&utm_source=create-turbo"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className={styles.logo}
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={20}
-              height={20}
-            />
-            Deploy now
-          </a>
-          <a
-            href="https://turborepo.com/docs?utm_source"
-            target="_blank"
-            rel="noopener noreferrer"
-            className={styles.secondary}
-          >
-            Read our docs
-          </a>
+      <div className="bg-surface rounded-2xl border border-surface-highlight shadow-xl overflow-hidden">
+        <div className="p-6 border-b border-surface-highlight flex items-center justify-between">
+          <h2 className="text-lg font-bold text-slate-100">Recent Activity</h2>
+          <Link href="/history" className="text-primary-400 text-sm font-medium hover:text-primary-300 flex items-center gap-1">
+            View All <ArrowRight className="w-4 h-4" />
+          </Link>
         </div>
-        <Button appName="web" className={styles.secondary}>
-          Open alert
-        </Button>
-      </main>
-      <footer className={styles.footer}>
-        <a
-          href="https://vercel.com/templates?search=turborepo&utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/window.svg"
-            alt="Window icon"
-            width={16}
-            height={16}
-          />
-          Examples
-        </a>
-        <a
-          href="https://turborepo.com?utm_source=create-turbo"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/globe.svg"
-            alt="Globe icon"
-            width={16}
-            height={16}
-          />
-          Go to turborepo.com →
-        </a>
-      </footer>
+
+        {requests.length === 0 ? (
+          <div className="p-12 text-center text-slate-400">
+            <div className="mx-auto w-16 h-16 bg-surface-highlight rounded-full flex items-center justify-center mb-4">
+              <Clock className="w-8 h-8 opacity-50" />
+            </div>
+            <p>No requests yet. Start by creating a new task!</p>
+            <Link href="/new" className="inline-block mt-4 px-6 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-500 transition-colors shadow-lg shadow-primary-500/20">
+              New Request
+            </Link>
+          </div>
+        ) : (
+          <div className="divide-y divide-surface-highlight">
+            {requests.slice(0, 5).map((req) => (
+              <Link key={req.id} href={`/request/${req.id}`} className="block p-4 hover:bg-surface-hover transition-colors">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-start gap-4">
+                    <div className="w-10 h-10 rounded-full bg-surface-highlight flex items-center justify-center text-primary-300 font-bold shrink-0 border border-surface-highlight">
+                      {req.title.substring(0, 2).toUpperCase()}
+                    </div>
+                    <div>
+                      <h3 className="font-semibold text-slate-100">{req.title}</h3>
+                      <p className="text-slate-500 text-sm line-clamp-1">{req.description}</p>
+                      <div className="mt-1 flex items-center gap-2 text-xs text-slate-400">
+                        <span>{new Date(req.createdAt).toLocaleDateString()}</span>
+                        <span>•</span>
+                        <span>{req.location || "Direct Task"}</span>
+                      </div>
+                    </div>
+                  </div>
+                  <StatusBadge status={req.status} />
+                </div>
+              </Link>
+            ))}
+          </div>
+        )}
+      </div>
     </div>
   );
 }

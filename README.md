@@ -1,135 +1,146 @@
-# Turborepo starter
+# AI Concierge
 
-This Turborepo starter is maintained by the Turborepo core team.
+An AI-powered receptionist and secretary designed to help you research local service providers and book appointments effortlessly.
 
-## Using this example
+## About
 
-Run the following command:
+The AI Concierge acts as your personal assistant for managing real-world tasks. Simply submit a request like:
 
-```sh
-npx create-turbo@latest
+> "I have a leaking toilet that I need fixed ASAP. I'm in Greenville SC, and I want a reputable licensed local plumber with at least 4.7 rating and can arrive in the next 2 days."
+
+The application will:
+1.  **Search** for qualified service providers in your area.
+2.  **Call** providers one-by-one to verify rates, availability, and criteria.
+3.  **Schedule** the appointment once a suitable provider is found.
+4.  **Notify** you via text/email when the task is complete.
+
+It also maintains a history of requests, detailed logs of AI analysis and interactions, and supports direct tasks where you provide specific contact info for the AI to call.
+
+## Tech Stack
+
+This project is a monorepo managed by **Turborepo**.
+
+*   **Frontend**: Next.js (`apps/web`)
+*   **Backend**: Fastify (`apps/api`)
+*   **Database**: Supabase
+*   **AI Integration**: Google Gemini (inferred from `apps/web` dependencies)
+*   **Styling**: Tailwind CSS
+*   **Package Manager**: pnpm
+
+## Getting Started
+
+### Prerequisites
+
+*   Node.js (>=18)
+*   pnpm
+
+### Installation
+
+Install dependencies from the root directory:
+
+```bash
+pnpm install
 ```
 
-## What's inside?
+### Environment Variables
 
-This Turborepo includes the following packages/apps:
+Ensure you have the necessary environment variables set up. Check `apps/api/.env.example` and `apps/web/.env.local.example` for required configurations (e.g., Supabase credentials, AI API keys).
 
-### Apps and Packages
+### Database Setup
 
-- `docs`: a [Next.js](https://nextjs.org/) app
-- `web`: another [Next.js](https://nextjs.org/) app
-- `@repo/ui`: a stub React component library shared by both `web` and `docs` applications
-- `@repo/eslint-config`: `eslint` configurations (includes `eslint-config-next` and `eslint-config-prettier`)
-- `@repo/typescript-config`: `tsconfig.json`s used throughout the monorepo
+Run the Supabase migrations to create the required tables:
 
-Each package/app is 100% [TypeScript](https://www.typescriptlang.org/).
+#### Option A: Supabase CLI (Recommended)
 
-### Utilities
+```bash
+# Install Supabase CLI globally
+npm install -g supabase
 
-This Turborepo has some additional tools already setup for you:
+# Login to Supabase (opens browser for authentication)
+supabase login
 
-- [TypeScript](https://www.typescriptlang.org/) for static type checking
-- [ESLint](https://eslint.org/) for code linting
-- [Prettier](https://prettier.io) for code formatting
+# Verify you're logged in and see your projects
+supabase projects list
 
-### Build
+# Link to your project (from project root)
+# Replace YOUR_PROJECT_REF with your project reference ID from the list above
+supabase link --project-ref YOUR_PROJECT_REF
 
-To build all apps and packages, run the following command:
-
-```
-cd my-turborepo
-
-# With [global `turbo`](https://turborepo.com/docs/getting-started/installation#global-installation) installed (recommended)
-turbo build
-
-# Without [global `turbo`](https://turborepo.com/docs/getting-started/installation#global-installation), use your package manager
-npx turbo build
-yarn dlx turbo build
-pnpm exec turbo build
+# Push migrations to remote database
+supabase db push
 ```
 
-You can build a specific package by using a [filter](https://turborepo.com/docs/crafting-your-repository/running-tasks#using-filters):
+> **Note:** You must run `supabase login` before `supabase link`. The project ref can be found in your Supabase dashboard URL or by running `supabase projects list`.
 
-```
-# With [global `turbo`](https://turborepo.com/docs/getting-started/installation#global-installation) installed (recommended)
-turbo build --filter=docs
+#### Option B: Manual SQL Execution
 
-# Without [global `turbo`](https://turborepo.com/docs/getting-started/installation#global-installation), use your package manager
-npx turbo build --filter=docs
-yarn exec turbo build --filter=docs
-pnpm exec turbo build --filter=docs
-```
+1. Go to your [Supabase SQL Editor](https://supabase.com/dashboard/project/_/sql/new)
+2. Copy the contents of `supabase/migrations/20250101000000_initial_schema.sql`
+3. Click **Run**
 
-### Develop
+### Creating New Migrations
 
-To develop all apps and packages, run the following command:
+```bash
+# Create a new migration file
+supabase migration new add_new_feature
 
-```
-cd my-turborepo
-
-# With [global `turbo`](https://turborepo.com/docs/getting-started/installation#global-installation) installed (recommended)
-turbo dev
-
-# Without [global `turbo`](https://turborepo.com/docs/getting-started/installation#global-installation), use your package manager
-npx turbo dev
-yarn exec turbo dev
-pnpm exec turbo dev
+# This creates: supabase/migrations/YYYYMMDDHHMMSS_add_new_feature.sql
+# Edit the file with your SQL, then push:
+supabase db push
 ```
 
-You can develop a specific package by using a [filter](https://turborepo.com/docs/crafting-your-repository/running-tasks#using-filters):
+### Useful Supabase CLI Commands
 
-```
-# With [global `turbo`](https://turborepo.com/docs/getting-started/installation#global-installation) installed (recommended)
-turbo dev --filter=web
+```bash
+# View migration status
+supabase migration list
 
-# Without [global `turbo`](https://turborepo.com/docs/getting-started/installation#global-installation), use your package manager
-npx turbo dev --filter=web
-yarn exec turbo dev --filter=web
-pnpm exec turbo dev --filter=web
-```
+# Generate TypeScript types from your schema
+supabase gen types typescript --linked > packages/types/database.ts
 
-### Remote Caching
+# Pull remote schema changes (if made via dashboard)
+supabase db pull
 
-> [!TIP]
-> Vercel Remote Cache is free for all plans. Get started today at [vercel.com](https://vercel.com/signup?/signup?utm_source=remote-cache-sdk&utm_campaign=free_remote_cache).
+# Diff local vs remote schema
+supabase db diff
 
-Turborepo can use a technique known as [Remote Caching](https://turborepo.com/docs/core-concepts/remote-caching) to share cache artifacts across machines, enabling you to share build caches with your team and CI/CD pipelines.
-
-By default, Turborepo will cache locally. To enable Remote Caching you will need an account with Vercel. If you don't have an account you can [create one](https://vercel.com/signup?utm_source=turborepo-examples), then enter the following commands:
-
-```
-cd my-turborepo
-
-# With [global `turbo`](https://turborepo.com/docs/getting-started/installation#global-installation) installed (recommended)
-turbo login
-
-# Without [global `turbo`](https://turborepo.com/docs/getting-started/installation#global-installation), use your package manager
-npx turbo login
-yarn exec turbo login
-pnpm exec turbo login
+# Reset database and re-apply all migrations
+supabase db reset --linked
 ```
 
-This will authenticate the Turborepo CLI with your [Vercel account](https://vercel.com/docs/concepts/personal-accounts/overview).
+## Running the Project
 
-Next, you can link your Turborepo to your Remote Cache by running the following command from the root of your Turborepo:
+You can run the entire stack (Frontend + Backend) simultaneously from the root directory:
 
-```
-# With [global `turbo`](https://turborepo.com/docs/getting-started/installation#global-installation) installed (recommended)
-turbo link
-
-# Without [global `turbo`](https://turborepo.com/docs/getting-started/installation#global-installation), use your package manager
-npx turbo link
-yarn exec turbo link
-pnpm exec turbo link
+```bash
+pnpm dev
 ```
 
-## Useful Links
+This command executes `turbo run dev`, which starts:
+*   **Web App**: [http://localhost:3000](http://localhost:3000)
+*   **API**: [http://localhost:8000](http://localhost:8000)
 
-Learn more about the power of Turborepo:
+### Running Individual Apps
 
-- [Tasks](https://turborepo.com/docs/crafting-your-repository/running-tasks)
-- [Caching](https://turborepo.com/docs/crafting-your-repository/caching)
-- [Remote Caching](https://turborepo.com/docs/core-concepts/remote-caching)
-- [Filtering](https://turborepo.com/docs/crafting-your-repository/running-tasks#using-filters)
-- [Configuration Options](https://turborepo.com/docs/reference/configuration)
-- [CLI Usage](https://turborepo.com/docs/reference/command-line-reference)
+To run specific parts of the application:
+
+**Frontend (Web):**
+```bash
+pnpm --filter web dev
+# or
+cd apps/web && pnpm dev
+```
+
+**Backend (API):**
+```bash
+pnpm --filter api dev
+# or
+cd apps/api && pnpm dev
+```
+
+## Build
+
+To build all applications:
+
+```bash
+pnpm build

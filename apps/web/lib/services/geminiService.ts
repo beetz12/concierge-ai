@@ -1,0 +1,125 @@
+import { Provider, InteractionLog } from '../types';
+
+// API base URL - uses Next.js rewrite to proxy to backend
+const API_BASE = '/api/v1/gemini';
+
+/**
+ * Generic API request handler with error handling
+ */
+const apiRequest = async <T>(endpoint: string, body: Record<string, unknown>): Promise<T> => {
+  const response = await fetch(`${API_BASE}${endpoint}`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(body),
+  });
+
+  if (!response.ok) {
+    const error = await response.json().catch(() => ({ message: 'Request failed' }));
+    throw new Error(error.message || `API error: ${response.status}`);
+  }
+
+  return response.json();
+};
+
+/**
+ * Step 1: Search for providers using Google Maps Grounding
+ * Now calls backend API instead of Gemini directly
+ */
+export const searchProviders = async (
+  query: string,
+  location: string
+): Promise<{ providers: Provider[]; logs: InteractionLog }> => {
+  try {
+    const result = await apiRequest<{ providers: Provider[]; logs: InteractionLog }>(
+      '/search-providers',
+      { query, location }
+    );
+    return result;
+  } catch (error: any) {
+    return {
+      providers: [],
+      logs: {
+        timestamp: new Date().toISOString(),
+        stepName: 'Market Research',
+        detail: `Failed to find providers: ${error.message}`,
+        status: 'error',
+      },
+    };
+  }
+};
+
+/**
+ * Step 2: Simulate a phone call to a provider
+ * Now calls backend API instead of Gemini directly
+ */
+export const simulateCall = async (
+  providerName: string,
+  userCriteria: string,
+  isDirect: boolean
+): Promise<InteractionLog> => {
+  try {
+    const result = await apiRequest<InteractionLog>('/simulate-call', {
+      providerName,
+      userCriteria,
+      isDirect,
+    });
+    return result;
+  } catch (error: any) {
+    return {
+      timestamp: new Date().toISOString(),
+      stepName: `Calling ${providerName}`,
+      detail: 'Call failed to connect or dropped.',
+      status: 'error',
+    };
+  }
+};
+
+/**
+ * Step 3: Analyze all results and pick a winner
+ * Now calls backend API instead of Gemini directly
+ */
+export const selectBestProvider = async (
+  requestTitle: string,
+  interactions: InteractionLog[],
+  providers: Provider[]
+): Promise<{ selectedId: string | null; reasoning: string }> => {
+  try {
+    const result = await apiRequest<{ selectedId: string | null; reasoning: string }>(
+      '/select-best-provider',
+      {
+        requestTitle,
+        interactions,
+        providers,
+      }
+    );
+    return result;
+  } catch (error: any) {
+    return { selectedId: null, reasoning: 'AI Analysis failed.' };
+  }
+};
+
+/**
+ * Step 4: Schedule appointment (Simulated)
+ * Now calls backend API instead of Gemini directly
+ */
+export const scheduleAppointment = async (
+  providerName: string,
+  details: string
+): Promise<InteractionLog> => {
+  try {
+    const result = await apiRequest<InteractionLog>('/schedule-appointment', {
+      providerName,
+      details,
+    });
+    return result;
+  } catch (error: any) {
+    return {
+      timestamp: new Date().toISOString(),
+      stepName: 'Booking Appointment',
+      detail: `Failed to schedule appointment: ${error.message}`,
+      status: 'error',
+    };
+  }
+};

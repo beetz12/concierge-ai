@@ -1,0 +1,5 @@
+#!/bin/bash
+ports="${@:-3001 8002}"
+for port in $ports; do
+  kill -9 $(lsof -ti:$port) 2>/dev/null
+done
