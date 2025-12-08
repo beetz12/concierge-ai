@@ -2,6 +2,11 @@
 
 An AI-powered receptionist and secretary designed to help you research local service providers and book appointments effortlessly.
 
+## Live Deployment
+
+- **Production Web App**: [https://concierge-ai-web.vercel.app/](https://concierge-ai-web.vercel.app/)
+- **Production API**: [https://api-production-8fe4.up.railway.app](https://api-production-8fe4.up.railway.app)
+
 ## About
 
 The AI Concierge acts as your personal assistant for managing real-world tasks. Simply submit a request like:

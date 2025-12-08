@@ -70,7 +70,11 @@ export default async function geminiRoutes(fastify: FastifyInstance) {
   fastify.post('/search-providers', async (request, reply) => {
     try {
       const body = searchProvidersSchema.parse(request.body);
-      const result = await searchProviders(body.query, body.location, body.coordinates);
+      const result = await searchProviders(
+        body.query,
+        body.location,
+        body.coordinates as { latitude: number; longitude: number } | undefined
+      );
       return result;
     } catch (error: any) {
       if (error instanceof z.ZodError) {
