@@ -32,6 +32,11 @@ dist
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
+pnpm-debug.log*
+
+# Supabase
+supabase/tmp
+supabase/.branches
 
 # Misc
 .DS_Store

@@ -149,3 +149,116 @@ To build all applications:
 
 ```bash
 pnpm build
+```
+
+## Contributing
+
+We welcome contributions from all team members! Follow these steps to contribute code via pull requests.
+
+### Step 1: Sync Your Local Main Branch
+
+Before creating a new feature branch, make sure your local `main` branch is up to date:
+
+```bash
+git checkout main
+git pull origin main
+```
+
+### Step 2: Create a Feature Branch
+
+Create a new branch for your feature or fix. Use a descriptive name that reflects what you're working on:
+
+```bash
+git checkout -b feature/your-feature-name
+```
+
+**Branch naming conventions:**
+- `feature/` - for new features (e.g., `feature/add-user-auth`)
+- `fix/` - for bug fixes (e.g., `fix/login-button-error`)
+- `docs/` - for documentation updates (e.g., `docs/update-readme`)
+- `refactor/` - for code refactoring (e.g., `refactor/cleanup-api-routes`)
+
+### Step 3: Make Your Changes
+
+Make your code changes, then stage and commit them with a clear, descriptive message:
+
+```bash
+# Stage all changes
+git add .
+
+# Commit with a descriptive message
+git commit -m "feat: add user authentication flow"
+```
+
+**Commit message tips:**
+- Keep the first line under 50 characters
+- Use present tense ("add feature" not "added feature")
+- Be specific about what changed
+
+### Step 4: Push Your Branch to GitHub
+
+Push your feature branch to the remote repository:
+
+```bash
+git push origin feature/your-feature-name
+```
+
+If this is your first push for this branch, Git will provide a link to create a pull request.
+
+### Step 5: Create a Pull Request
+
+1. Go to the repository on GitHub: [https://github.com/beetz12/concierge-ai](https://github.com/beetz12/concierge-ai)
+2. You'll see a banner prompting you to **"Compare & pull request"** – click it
+3. Or navigate to the **Pull requests** tab and click **"New pull request"**
+4. Select your feature branch to merge into `main`
+5. Fill out the PR template:
+   - **Title**: Brief description of your changes
+   - **Description**: Explain what you changed and why
+   - **Link any related issues** if applicable
+6. Click **"Create pull request"**
+
+### Step 6: Address Review Feedback
+
+After creating your PR:
+- Team members will review your code
+- Make any requested changes by committing to the same branch
+- Push your updates – the PR will automatically update
+
+```bash
+# After making requested changes
+git add .
+git commit -m "fix: address review feedback"
+git push origin feature/your-feature-name
+```
+
+### Step 7: Merge and Clean Up
+
+Once your PR is approved and merged:
+
+```bash
+# Switch back to main and pull the latest changes
+git checkout main
+git pull origin main
+
+# Delete your local feature branch (optional but recommended)
+git branch -d feature/your-feature-name
+```
+
+### Quick Reference Commands
+
+| Action | Command |
+|--------|---------|
+| Check current branch | `git branch` |
+| See all branches | `git branch -a` |
+| Switch to a branch | `git checkout branch-name` |
+| Check status | `git status` |
+| View commit history | `git log --oneline` |
+| Discard local changes | `git checkout -- filename` |
+| Stash changes temporarily | `git stash` |
+| Apply stashed changes | `git stash pop` |
+
+### Need Help?
+
+- Run `git status` to see what's happening in your repo
+- Run `git log --oneline -5` to see recent commits
+- Ask a team member if you're stuck!
