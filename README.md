@@ -262,3 +262,28 @@ git branch -d feature/your-feature-name
 - Run `git status` to see what's happening in your repo
 - Run `git log --oneline -5` to see recent commits
 - Ask a team member if you're stuck!
+
+## Troubleshooting
+
+### `ERR_PNPM_WORKSPACE_PKG_NOT_FOUND` when running `pnpm install`
+
+If you see an error like:
+```
+ERR_PNPM_WORKSPACE_PKG_NOT_FOUND In apps/api: "@repo/types@workspace:*" is in the dependencies but no package named "@repo/types" is present in the workspace
+```
+
+This means your local repository is missing workspace packages. Fix it by pulling the latest changes:
+
+```bash
+git checkout main
+git pull origin main
+pnpm install
+```
+
+If the issue persists, verify that the `packages/` directory contains all required packages:
+- `packages/types/`
+- `packages/ui/`
+- `packages/eslint-config/`
+- `packages/typescript-config/`
+
+If any are missing, re-clone the repository or contact a team member.
