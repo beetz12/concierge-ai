@@ -111,8 +111,13 @@ Your demo is naturally compelling: "Watch AI call plumbers and book an appointme
 │  │ \- Summarize ratings, reviews, licensing                ││
 
 │  │ \- Filter by user criteria (4.7+ rating, 2-day ETA)     ││
+│  │ - Web search for plumbers in Greenville, SC            ││
 
-│  │ \- AI Agent makes decision: Top 3 candidates            ││
+│  │ - Summarize ratings, reviews, licensing                ││
+
+│  │ - Filter by user criteria (4.7+ rating, 2-day ETA)     ││
+
+│  │ - AI Agent makes decision: Top 3 candidates            ││
 
 │  └─────────────────────────────────────────────────────────┘│
 
@@ -120,11 +125,13 @@ Your demo is naturally compelling: "Watch AI call plumbers and book an appointme
 
 │  │ AI Agent Task 2: Contact & Negotiate                   ││
 
-│  │ \- Call/SMS plumbers sequentially                        ││
+│  │ - Trigger VAPI.ai Voice Call                           ││
 
-│  │ \- Extract: rates, availability, credentials            ││
+│  │ - VAPI connects using Gemini 2.0 Flash                ││
 
-│  │ \- AI Agent decides: "Plumber A meets all criteria"      ││
+│  │ - Real-time conversation extracts rates/availability   ││
+
+│  │ - VAPI Webhook -> Analysis Agent decision             ││
 
 │  └─────────────────────────────────────────────────────────┘│
 
@@ -260,71 +267,55 @@ tasks:
 
       analysis: "{{ tasks.research\_agent.outputs.reasoning }}"
 
-**Phase 2: Contact Agent (Autonomous Phone/SMS Interactions)**
+**Phase 2: Contact Agent (VAPI.ai Integration)**
 
-id: contact\_providers
+id: contact_providers
 
-namespace: ai\_concierge
+namespace: ai_concierge
 
 tasks:
 
-  \- id: contact\_agent
+  \- id: trigger_vapi_call
 
-    type: io.kestra.plugin.aiagent.AIAgent
+    type: io.kestra.plugin.core.http.Request
 
-    prompt: |
+    uri: https://api.vapi.ai/call/phone
 
-      You are an AI assistant calling service providers on behalf of a customer.
+    method: POST
 
-      
+    headers: 
 
-      Provider to contact: \[PROVIDER\_NAME\]
+      Authorization: "Bearer {{ secret('VAPI_API_KEY') }}"
 
-      Phone: \[PHONE\_NUMBER\]
+    contentType: application/json
 
-      Service needed: \[SERVICE\_REQUEST\]
+    body: 
 
-      
+      phoneNumberId: "{{ secret('VAPI_PHONE_NUMBER_ID') }}"
 
-      During the call, you need to:
+      customer:
 
-      1\. Introduce yourself professionally
+        number: "{{ inputs.provider_number }}"
 
-      2\. Ask about availability in the next \[DAYS\] days
+        name: "{{ inputs.provider_name }}"
 
-      3\. Request a quote for the service
+      assistantId: "assistant-id-configured-with-gemini"
 
-      4\. Verify they are licensed and insured
+      assistantOverrides:
 
-      5\. Ask about their guarantee/warranty
+        variableValues:
 
-      6\. Confirm their latest customer review feedback
+          service_needed: "{{ inputs.service_needed }}"
 
-      
-
-      Record all responses and at the end, decide if this provider meets the criteria.
-
-      
-
-    tools:
-
-      \- name: call\_provider
-
-        description: Make phone call to provider
-
-      \- name: send\_sms
-
-        description: Send SMS if phone call fails
-
-      \- name: access\_web
-
-        description: Verify business license online
-
-        
-
-    memory: true
+          days_needed: "{{ inputs.days_needed }}"
 
     
+
+  \- id: wait_for_result
+
+    type: io.kestra.plugin.core.flow.Pause
+
+    duration: PT5M # Wait for webhook callback with transcript
 
   \- id: evaluate\_fit
 

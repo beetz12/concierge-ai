@@ -177,16 +177,21 @@ supabase/
 
 | Task | Priority | Time | Status | Details |
 |------|----------|------|--------|---------|
+| Task | Priority | Time | Status | Details |
+|------|----------|------|--------|---------|
 | Kestra Docker setup | P0 | 2 hrs | TODO | `docker-compose.yml` with Kestra |
 | Research Agent flow | P0 | 3 hrs | TODO | YAML workflow for provider search |
-| Contact Agent flow | P0 | 3 hrs | TODO | Loop through providers, simulate calls |
-| Analysis Agent | P0 | 2 hrs | TODO | Summarize + select best provider |
-| Booking Agent | P1 | 2 hrs | TODO | Schedule appointment workflow |
+| VAPI.ai Setup | P0 | 1 hr | TODO | Account setup, buy phone number, API keys |
+| VAPI Assistant Config | P0 | 2 hrs | TODO | Configure System Prompt, Voice, and Gemini integration |
+| Contact Agent (VAPI Trigger) | P0 | 2 hrs | TODO | Kestra API call -> VAPI to initiate calls |
+| VAPI Webhook Handler | P0 | 2 hrs | TODO | `POST /api/webhooks/vapi` to capture transcripts |
+| Analysis Agent | P0 | 2 hrs | TODO | Summarize VAPI transcripts + select best provider |
+| Booking Agent | P1 | 2 hrs | TODO | Second VAPI call to schedule appointment |
 | API trigger endpoint | P0 | 2 hrs | TODO | `POST /api/v1/workflows/trigger` |
 | Webhook callbacks | P1 | 2 hrs | TODO | Kestra → API status updates |
 | Decision summary UI | P1 | 2 hrs | TODO | Show AI reasoning to user |
 
-**Deliverable**: Server-side orchestration with AI agents making decisions
+**Deliverable**: Server-side orchestration with VAPI.ai handling real voice calls interacting with Gemini.
 
 #### Kestra Architecture
 
