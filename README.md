@@ -6,6 +6,16 @@ An AI-powered receptionist and secretary designed to help you research local ser
 
 - **Production Web App**: [https://concierge-ai-web.vercel.app/](https://concierge-ai-web.vercel.app/)
 - **Production API**: [https://api-production-8fe4.up.railway.app](https://api-production-8fe4.up.railway.app)
+- **API Documentation**: [https://api-production-8fe4.up.railway.app/docs](https://api-production-8fe4.up.railway.app/docs)
+
+## API Documentation
+
+Interactive API documentation is available via Swagger UI:
+
+- **Production**: [https://api-production-8fe4.up.railway.app/docs](https://api-production-8fe4.up.railway.app/docs)
+- **Local Development**: [http://localhost:8000/docs](http://localhost:8000/docs)
+
+The documentation includes all available endpoints with request/response schemas, allowing you to test API calls directly from the browser.
 
 ## About
 
