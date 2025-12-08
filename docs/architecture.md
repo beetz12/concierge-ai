@@ -22,6 +22,11 @@ graph TD
         Docker[Docker Compose]
     end
 
+    subgraph VoiceAI [Voice Services]
+        VAPI[VAPI.ai Platform]
+        PSTN[Telephony Network]
+    end
+
     subgraph AI [AI Services]
         Gemini[Gemini Flash 2.0]
         Maps[Google Maps API]
@@ -35,9 +40,13 @@ graph TD
     API -->|Trigger| Kestra
     
     Kestra -->|Webhook| API
-    Kestra -->|Generate| Gemini
+    Kestra -->|Trigger Call| VAPI
     Kestra -->|Search| Maps
     
+    VAPI -->|Call| PSTN
+    VAPI <-->|Stream Audio| Gemini
+    VAPI -->|Webhook Logs| API
+
     Workers -->|Execute| Kestra
     Docker -.->|Hosts| Kestra
 ```
@@ -51,9 +60,9 @@ flowchart LR
     
     subgraph Agents
         Research["Research Agent<br/>(Google Maps)"]
-        Contact["Contact Agent<br/>(Gemini Audio)"]
+        Contact["Contact Agent<br/>(VAPI.ai + Gemini)"]
         Analysis["Analysis Agent<br/>(Evaluation)"]
-        Booking["Booking Agent<br/>(Scheduling)"]
+        Booking["Booking Agent<br/>(VAPI.ai Scheduling)"]
     end
     
     Research -->|List of Providers| Contact
@@ -62,7 +71,8 @@ flowchart LR
     Booking -->|Confirmation| End([Notify User])
     
     Research -.->|Queries| GoogleMaps[Google Maps]
-    Contact -.->|Audio Calls| Gemini[Gemini Realtime]
+    Contact -.->|Phone Calls| VAPI[VAPI.ai]
+    VAPI -.->|Voice Stream| Gemini[Gemini Realtime]
 ```
 
 ## 3. Data Flow & Real-Time Updates
