@@ -10,13 +10,13 @@ graph TD
         Mobile[Mobile View]
     end
 
-    subgraph Cloud [Cloud Infrastructure (Vercel/Supabase)]
-        API[Fastify API (Vercel)]
+    subgraph Cloud ["Cloud Infrastructure (Vercel/Supabase)"]
+        API[Fastify API - Vercel]
         DB[(Supabase DB)]
         Realtime[Supabase Realtime]
     end
 
-    subgraph Orchestration [Workflow Engine (Docker)]
+    subgraph Orchestration ["Workflow Engine (Docker)"]
         Kestra[Kestra Server]
         Workers[Kestra Workers]
         Docker[Docker Compose]
@@ -50,10 +50,10 @@ flowchart LR
     Start([User Request]) --> Research
     
     subgraph Agents
-        Research[Research Agent\n(Google Maps)]
-        Contact[Contact Agent\n(Gemini Audio)]
-        Analysis[Analysis Agent\n(Evaluation)]
-        Booking[Booking Agent\n(Scheudling)]
+        Research["Research Agent<br/>(Google Maps)"]
+        Contact["Contact Agent<br/>(Gemini Audio)"]
+        Analysis["Analysis Agent<br/>(Evaluation)"]
+        Booking["Booking Agent<br/>(Scheduling)"]
     end
     
     Research -->|List of Providers| Contact
