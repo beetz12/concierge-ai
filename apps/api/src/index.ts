@@ -7,6 +7,7 @@ import swaggerUi from '@fastify/swagger-ui';
 import supabasePlugin from './plugins/supabase.js';
 import userRoutes from './routes/users.js';
 import geminiRoutes from './routes/gemini.js';
+import workflowRoutes from './routes/workflows.js';
 
 const server = Fastify({
   logger: {
@@ -119,6 +120,9 @@ await server.register(userRoutes, { prefix: '/api/v1/users' });
 
 // Register Gemini AI routes
 await server.register(geminiRoutes, { prefix: '/api/v1/gemini' });
+
+// Register Workflow routes
+await server.register(workflowRoutes, { prefix: '/api/v1/workflows' });
 
 // Start server
 const start = async () => {

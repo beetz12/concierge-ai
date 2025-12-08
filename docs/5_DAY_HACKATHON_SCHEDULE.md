@@ -23,6 +23,30 @@
 
 **Day 1 Deliverable:** Local Kestra running, Live Vercel URL, VAPI number calls and speaks (even if logic is dummy).
 
+### ✅ Status: COMPLETE
+- Kestra running on port 8082.
+- Research Agent Flow created (`gemini-2.0-flash-exp`).
+- Contact Agent Flow created (VAPI + Node.js script).
+- Booking Agent Flow created (GCal + Node.js script).
+- Trigger API (`POST /api/v1/workflows/trigger`) registered.
+
+### 🧪 How to Test Existing Changes
+1.  **Start Kestra:** `docker compose up -d` (Ensure port 8082 is open).
+2.  **Trigger Research Agent:**
+    ```bash
+    curl -X POST http://localhost:8082/api/v1/executions/ai_concierge/research_providers \
+      -H "Content-Type: multipart/form-data" \
+      -F "service=plumber" \
+      -F "location=Greenville, SC"
+    ```
+3.  **Trigger Contact Agent (Requires Env Vars):**
+    ```bash
+    # Ensure VAPI_API_KEY is in Kestra Secrets or env
+    curl -X POST http://localhost:8082/api/v1/executions/ai_concierge/contact_providers \
+      -H "Content-Type: multipart/form-data" \
+      -F "provider_phone=+15550000000"
+    ```
+
 ---
 
 ## 📅 Day 2: The "Voice" & "Hands" (Core Mechanics)
@@ -40,6 +64,10 @@
 | **J2 (Infra)** | **P1** | **Interaction Logging** | Update API to save `interaction_logs` from VAPI webhooks. |
 
 **Day 2 Deliverable:** Kestra can trigger a call. VAPI transcript saved to DB. Calendar event created via script.
+
+### 🔄 Status: IN PROGRESS
+- **Creating Scripts:** `call-provider.js` and `create-event.js` are WRITTEN.
+- **Pending:** VAPI Phone Number purchase (User Action) & Google Service Account (User Action). 
 
 ---
 
