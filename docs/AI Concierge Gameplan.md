@@ -275,47 +275,65 @@ namespace: ai_concierge
 
 tasks:
 
-  \- id: trigger_vapi_call
+**Phase 2: Contact Agent (VAPI.ai + Kestra Script)**
 
-    type: io.kestra.plugin.core.http.Request
+id: contact_providers
 
-    uri: https://api.vapi.ai/call/phone
+namespace: ai_concierge
 
-    method: POST
+tasks:
 
-    headers: 
+  \- id: call_providers
 
-      Authorization: "Bearer {{ secret('VAPI_API_KEY') }}"
+    type: io.kestra.plugin.core.flow.ForEach
 
-    contentType: application/json
+    items: "{{ outputs.research_providers.json.candidates }}"
 
-    body: 
+    tasks:
 
-      phoneNumberId: "{{ secret('VAPI_PHONE_NUMBER_ID') }}"
+      \- id: vapi_call
 
-      customer:
+        type: io.kestra.plugin.scripts.shell.Scripts
 
-        number: "{{ inputs.provider_number }}"
+        containerImage: node:20-alpine
 
-        name: "{{ inputs.provider_name }}"
+        commands:
 
-      assistantId: "assistant-id-configured-with-gemini"
+          \- npm install vapi @google/generative-ai
 
-      assistantOverrides:
+          \- node /kestra/call-provider.js "{{ item.phone }}" "{{ inputs.service }}"
 
-        variableValues:
+        env:
 
-          service_needed: "{{ inputs.service_needed }}"
+          VAPI_API_KEY: "{{ secret('VAPI_API_KEY') }}"
 
-          days_needed: "{{ inputs.days_needed }}"
+          GEMINI_API_KEY: "{{ secret('GEMINI_API_KEY') }}"
 
-    
+  
 
-  \- id: wait_for_result
+  \- id: analyze_calls
 
-    type: io.kestra.plugin.core.flow.Pause
+    type: io.kestra.plugin.aiagent.AIAgent
 
-    duration: PT5M # Wait for webhook callback with transcript
+    config:
+
+      provider: gemini-2.0-flash-exp
+
+    inputs:
+
+      callResults: "{{ outputs.call_providers.value }}"
+
+    prompt: |
+
+      Analyze these provider call results and pick the BEST one:
+
+      {{ inputs.callResults | toJson }}
+
+      Consider: price, availability, professionalism.
+
+      Output JSON: {selected: index, reason: "..."}
+
+
 
   \- id: evaluate\_fit
 

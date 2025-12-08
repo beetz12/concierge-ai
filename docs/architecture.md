@@ -60,7 +60,7 @@ flowchart LR
     
     subgraph Agents
         Research["Research Agent<br/>(Google Maps)"]
-        Contact["Contact Agent<br/>(VAPI.ai + Gemini)"]
+        Contact["Contact Agent<br/>(VAPI.ai + Kestra Script)"]
         Analysis["Analysis Agent<br/>(Evaluation)"]
         Booking["Booking Agent<br/>(VAPI.ai Scheduling)"]
     end

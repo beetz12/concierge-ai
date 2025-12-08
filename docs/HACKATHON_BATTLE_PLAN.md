@@ -183,7 +183,7 @@ supabase/
 | Research Agent flow | P0 | 3 hrs | TODO | YAML workflow for provider search |
 | VAPI.ai Setup | P0 | 1 hr | TODO | Account setup, buy phone number, API keys |
 | VAPI Assistant Config | P0 | 2 hrs | TODO | Configure System Prompt, Voice, and Gemini integration |
-| Contact Agent (VAPI Trigger) | P0 | 2 hrs | TODO | Kestra API call -> VAPI to initiate calls |
+| Contact Agent (VAPI Trigger) | P0 | 2 hrs | TODO | Kestra Shell Script -> `call-provider.js` to initiate calls |
 | VAPI Webhook Handler | P0 | 2 hrs | TODO | `POST /api/webhooks/vapi` to capture transcripts |
 | Analysis Agent | P0 | 2 hrs | TODO | Summarize VAPI transcripts + select best provider |
 | Booking Agent | P1 | 2 hrs | TODO | Second VAPI call to schedule appointment |
