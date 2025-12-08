@@ -123,7 +123,7 @@ export default function AboutPage() {
                             Explore the code, verify the agents, and witness the next evolution of AI.
                         </p>
                         <a
-                            href="https://github.com/dave-shapiro/concierge-ai"
+                            href="https://github.com/beetz12/concierge-ai"
                             target="_blank"
                             rel="noopener noreferrer"
                             className="inline-flex items-center gap-2 bg-primary-600 hover:bg-primary-500 text-white px-8 py-4 rounded-xl font-semibold transition-all shadow-[0_0_20px_-5px_rgba(45,212,191,0.3)] hover:shadow-[0_0_30px_-5px_rgba(45,212,191,0.5)]"

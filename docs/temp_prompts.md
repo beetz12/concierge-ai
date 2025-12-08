@@ -1,3 +1,9 @@
+We are competing in a hackathon and we are building @docs/about.md. Pleaes analyze our current @"docs/AI Concierge Gameplan.md" and our current
+  code state and @docs/hackathon.md and present a comprehensive high level plan for us to achieve our goal and win the hackathon. please Use your
+  specialized multi-agent team to analyze these in parallel and once all agents are done, present a unified comprehensive plan with 90% confidence
+  that contains all of the tasks that need to be done organized by major categories such as frontend, backend, sponsor APIs, and sorted by
+  difficulty level and wait for further instructions. Keep in mind that the hackathon team has 4 members with 1 senior full dev with 17+ years of
+  experience and 3 junior devs with 1 year of experience in the MERN stack. I'll tip you $200 if you exceed my expectations.
 
 I just built @about.md but the UI doesn't look very good. The white background in the content makes it look pretty plain. Please first research and identify the best unique palettes and fonts for our specific app to make the UI more visually appealing that we will apply it to our entire app. Also make sure that it is responsive.
 

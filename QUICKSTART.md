@@ -28,15 +28,24 @@ supabase start
 
 ### 3. Configure Environment Variables
 
-Copy to `/apps/web/.env.local`:
+**Backend** (`/apps/api/.env`):
 ```bash
-# Copy from .env.local.example
-NEXT_PUBLIC_GEMINI_API_KEY=your_gemini_api_key_here
+# Supabase (get from dashboard)
+SUPABASE_URL=https://your-project.supabase.co
+SUPABASE_SERVICE_ROLE_KEY=your_service_role_key_here
 
-# Add your Supabase credentials
+# Gemini API (backend only - never expose to frontend)
+GEMINI_API_KEY=your_gemini_api_key_here
+```
+
+**Frontend** (`/apps/web/.env.local`):
+```bash
+# Supabase (public keys only)
 NEXT_PUBLIC_SUPABASE_URL=https://your-project.supabase.co
 NEXT_PUBLIC_SUPABASE_ANON_KEY=your_anon_key_here
 ```
+
+> **Note:** The Gemini API key should ONLY be in the backend `.env` file. The frontend calls the backend API which handles all Gemini interactions securely.
 
 ### 4. Run Database Migration
 
