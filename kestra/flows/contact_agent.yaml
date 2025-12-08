@@ -1,0 +1,28 @@
+id: contact_providers
+namespace: ai_concierge
+
+inputs:
+  - id: provider_name
+    type: STRING
+  - id: provider_phone
+    type: STRING
+  - id: service_needed
+    type: STRING
+    defaults: "plumbing"
+
+tasks:
+  - id: call_provider_script
+    type: io.kestra.plugin.scripts.shell.Scripts
+    containerImage: node:20-alpine
+    commands:
+      - npm install @vapi-ai/server-sdk @google/generative-ai
+      - node /kestra/call-provider.js "{{ inputs.provider_phone }}" "{{ inputs.service_needed }}"
+    env:
+      VAPI_API_KEY: "{{ secret('VAPI_API_KEY') }}"
+      VAPI_PHONE_NUMBER_ID: "{{ secret('VAPI_PHONE_NUMBER_ID') }}"
+      GEMINI_API_KEY: "{{ secret('GEMINI_API_KEY') }}"
+
+outputs:
+  - id: call_result
+    type: JSON
+    value: "{{ outputs.call_provider_script.stdOutLine }}"
