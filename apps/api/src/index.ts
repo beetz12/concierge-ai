@@ -19,8 +19,14 @@ const server = Fastify({
 });
 
 // Register plugins
+// CORS_ORIGIN supports multiple origins as comma-separated values
+// Example: CORS_ORIGIN="http://localhost:3000,https://app.example.com,https://staging.example.com"
+const corsOrigins = process.env.CORS_ORIGIN
+  ? process.env.CORS_ORIGIN.split(',').map(origin => origin.trim())
+  : ['http://localhost:3000'];
+
 await server.register(cors, {
-  origin: process.env.CORS_ORIGIN || 'http://localhost:3000',
+  origin: corsOrigins.length === 1 ? corsOrigins[0] : corsOrigins,
 });
 await server.register(helmet);
 

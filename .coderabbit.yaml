@@ -1,0 +1,276 @@
+# yaml-language-server: $schema=https://coderabbit.ai/integrations/schema.v2.json
+# AI Concierge - CodeRabbit Configuration
+# Turborepo monorepo: Next.js 16 + Fastify 5 + Supabase
+
+language: "en-US"
+tone_instructions: "Be thorough but concise. Focus on correctness, security, and maintainability. Ask clarifying questions rather than making assumptions."
+
+early_access: false
+
+reviews:
+  profile: "chill"  # Less verbose, focused feedback
+  high_level_summary: true
+  collapse_walkthrough: true
+  poem: false
+  review_status: true
+  sequence_diagrams: true
+
+  # Exclude generated files, build artifacts, and lock files
+  path_filters:
+    # Include source code
+    - "apps/**/*.{ts,tsx,js,jsx}"
+    - "packages/**/*.{ts,tsx,js,jsx}"
+    - "supabase/**/*.sql"
+    - "**/*.md"
+    - "**/*.json"
+    - "**/*.yaml"
+    - "**/*.yml"
+
+    # Exclude build artifacts and caches
+    - "!**/node_modules/**"
+    - "!**/dist/**"
+    - "!**/build/**"
+    - "!**/.next/**"
+    - "!**/.turbo/**"
+    - "!**/coverage/**"
+    - "!**/*.tsbuildinfo"
+
+    # Exclude lock files
+    - "!pnpm-lock.yaml"
+    - "!package-lock.json"
+    - "!yarn.lock"
+
+    # Exclude generated types (auto-generated from Supabase)
+    - "!apps/web/lib/types/database.ts"
+    - "!packages/types/database.ts"
+
+    # Exclude test data and fixtures
+    - "!**/testdata/**"
+    - "!**/fixtures/**"
+
+  # Framework-specific review instructions
+  path_instructions:
+    # === Monorepo Configuration ===
+    - path: "**/package.json"
+      instructions: |
+        Turborepo + pnpm workspace package.json.
+        - Verify internal packages use "workspace:*" protocol
+        - Check for duplicate dependencies that should be hoisted to root
+        - Ensure scripts follow monorepo conventions (turbo run)
+
+    - path: "turbo.json"
+      instructions: |
+        Turborepo pipeline configuration.
+        - Verify task dependencies are correctly defined (^build for dependencies)
+        - Check cache outputs include all build artifacts
+        - Ensure persistent tasks (dev) have cache: false
+
+    # === Next.js Frontend (apps/web) ===
+    - path: "apps/web/app/**/*.{ts,tsx}"
+      instructions: |
+        Next.js 16 App Router with React 19.
+        - Default to Server Components; only use "use client" when necessary
+        - Verify proper async/await in Server Components
+        - Check for proper error.tsx and loading.tsx boundaries
+        - Ensure no direct backend calls - use API routes or Server Actions
+        - Verify metadata exports for SEO
+
+    - path: "apps/web/lib/services/**/*.ts"
+      instructions: |
+        Frontend API service layer.
+        - Verify calls go through /api rewrite, not directly to backend
+        - Check for proper error handling and type safety
+        - Ensure response types match backend contracts
+
+    - path: "apps/web/lib/providers/**/*.tsx"
+      instructions: |
+        React Context providers (must be Client Components).
+        - Verify "use client" directive is present at top
+        - Check for proper memoization to prevent unnecessary re-renders
+        - Ensure localStorage/sessionStorage access is in useEffect
+
+    - path: "apps/web/lib/actions/**/*.ts"
+      instructions: |
+        Next.js Server Actions.
+        - Verify "use server" directive at top
+        - Check for proper input validation
+        - Ensure revalidatePath/revalidateTag for cache invalidation
+        - Verify proper error handling and return types
+
+    - path: "apps/web/lib/supabase/**/*.ts"
+      instructions: |
+        Supabase client integration.
+        - Server Actions should use createServerClient with cookies()
+        - Client components should use createBrowserClient
+        - Verify proper error handling on all database operations
+        - Check for proper RLS awareness (don't bypass security)
+
+    - path: "apps/web/components/**/*.tsx"
+      instructions: |
+        React components.
+        - Check for proper TypeScript props typing
+        - Verify accessibility (ARIA attributes, semantic HTML)
+        - Ensure proper use of Tailwind CSS classes
+
+    # === Fastify Backend (apps/api) ===
+    - path: "apps/api/src/routes/**/*.ts"
+      instructions: |
+        Fastify 5 route handlers.
+        - Verify all request bodies/params are validated with Zod schemas
+        - Check for proper HTTP status codes (201 for create, 204 for delete, etc.)
+        - Ensure CORS is properly configured for frontend origin
+        - Flag potential security issues (injection, XSS, etc.)
+        - Verify proper error responses with consistent format
+
+    - path: "apps/api/src/services/**/*.ts"
+      instructions: |
+        Backend business logic services.
+        - No HTTP-specific code (req/reply) should be here
+        - Verify proper error handling with typed errors
+        - Check async/await patterns and error propagation
+        - Ensure Gemini API calls have proper error handling and timeouts
+        - Verify sensitive data (API keys) comes from environment variables
+
+    - path: "apps/api/src/plugins/**/*.ts"
+      instructions: |
+        Fastify plugins.
+        - Verify proper plugin registration with fastify-plugin
+        - Check for proper typing with FastifyPluginAsync
+        - Ensure decorators are properly typed
+
+    # === Database (Supabase) ===
+    - path: "supabase/migrations/**/*.sql"
+      instructions: |
+        PostgreSQL migration files.
+        - Verify migrations are idempotent (IF NOT EXISTS, etc.)
+        - Check for proper indexes on foreign keys and WHERE clause columns
+        - Ensure Row Level Security (RLS) policies are defined for all tables
+        - Flag breaking schema changes that need coordination
+        - Verify updated_at triggers are created for relevant tables
+        - Check for proper CASCADE behavior on foreign keys
+
+    - path: "supabase/config.toml"
+      instructions: |
+        Supabase local development configuration.
+        - Verify settings match production expectations
+        - Check for any exposed secrets or debug settings
+
+    # === Shared Packages ===
+    - path: "packages/ui/**/*.tsx"
+      instructions: |
+        Shared UI component library.
+        - Components should be framework-agnostic where possible
+        - Verify proper TypeScript prop types and exports
+        - Check for proper forwardRef usage when needed
+        - Ensure components are properly exported from index.ts
+
+    - path: "packages/types/**/*.ts"
+      instructions: |
+        Shared TypeScript types.
+        - Verify all types are properly exported
+        - Check for circular dependencies
+        - Ensure types are well-documented with JSDoc
+
+    - path: "packages/eslint-config/**/*.{js,mjs}"
+      instructions: |
+        Shared ESLint configuration.
+        - Verify rules are appropriate for the target environment
+        - Check for conflicting rules
+        - Ensure extends/plugins are properly ordered
+
+    # === Configuration Files ===
+    - path: "**/*.env*"
+      instructions: |
+        Environment variable files.
+        - FLAG ANY COMMITTED SECRETS OR API KEYS (critical security issue)
+        - Verify all variables are documented
+        - Check that sensitive values use placeholders, not real values
+
+    - path: "**/tsconfig.json"
+      instructions: |
+        TypeScript configuration.
+        - Verify extends points to correct shared config
+        - Check path aliases are consistent
+        - Ensure strict mode settings match project standards
+
+    # === Documentation ===
+    - path: "**/*.md"
+      instructions: |
+        Markdown documentation.
+        - Check for spelling and grammar
+        - Verify code examples are accurate
+        - Ensure links are not broken
+        - Check heading hierarchy is logical
+
+  auto_review:
+    enabled: true
+    auto_incremental_review: true
+    drafts: false
+    base_branches:
+      - "main"
+    ignore_title_keywords:
+      - "WIP"
+      - "DO NOT MERGE"
+      - "draft"
+      - "[skip ci]"
+      - "[no review]"
+    ignore_usernames:
+      - "dependabot[bot]"
+      - "renovate[bot]"
+      - "github-actions[bot]"
+
+  # Tools configuration
+  tools:
+    eslint:
+      enabled: true
+    markdownlint:
+      enabled: true
+    gitleaks:
+      enabled: true  # Critical: prevent secret leaks
+    github-checks:
+      enabled: true
+      timeout_ms: 90000
+    shellcheck:
+      enabled: true
+    yamllint:
+      enabled: true
+    # Disable tools that may be noisy or redundant with existing CI
+    biome:
+      enabled: false  # Using ESLint instead
+    semgrep:
+      enabled: false  # Enable if you want deeper security scanning
+
+chat:
+  auto_reply: true
+
+knowledge_base:
+  opt_out: false
+  web_search: true
+  learnings:
+    scope: "auto"
+  issues:
+    scope: "auto"
+  pull_requests:
+    scope: "auto"
+
+code_generation:
+  docstrings:
+    language: "en-US"
+    path_instructions:
+      - path: "apps/web/**/*.{ts,tsx}"
+        instructions: |
+          Generate JSDoc with @param, @returns, @throws.
+          For React components, document props interface.
+          Note Server vs Client Component requirements.
+
+      - path: "apps/api/**/*.ts"
+        instructions: |
+          Generate JSDoc with @param, @returns, @throws.
+          Document error conditions and expected responses.
+          Include @example for complex functions.
+
+      - path: "packages/**/*.{ts,tsx}"
+        instructions: |
+          Comprehensive JSDoc for all exported members.
+          Include @example for public APIs.
+          Document breaking changes in @remarks.
