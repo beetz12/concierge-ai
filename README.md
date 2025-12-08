@@ -161,6 +161,34 @@ To build all applications:
 pnpm build
 ```
 
+## Kestra Workflow Setup (Local)
+
+To run the Kestra orchestration engine locally:
+
+### 1. Start Kestra & Postgres
+Run the following command from the root directory:
+
+```bash
+docker compose up -d
+```
+
+This starts:
+- **Kestra Server**: [http://localhost:8082](http://localhost:8082)
+- **Postgres Database**: `jdbc:postgresql://postgres:5432/kestra`
+
+### 2. Verify Installation
+Open [http://localhost:8082](http://localhost:8082) in your browser. You should see the Kestra UI.
+
+### 3. Trigger a Test Flow
+You can test the API integration by triggering the research agent:
+
+```bash
+curl -X POST http://localhost:8082/api/v1/executions/ai_concierge/research_providers \
+  -H "Content-Type: multipart/form-data" \
+  -F "service=plumber" \
+  -F "location=Greenville, SC"
+```
+
 ## Contributing
 
 We welcome contributions from all team members! Follow these steps to contribute code via pull requests.

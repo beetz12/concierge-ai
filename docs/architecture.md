@@ -1,6 +1,29 @@
 # Architecture Diagrams
 
-## 1. High-Level System Architecture (Target State)
+## 1. High-Level System Architecture
+
+### Current State (Day 1-2)
+The system is currently running locally with Kestra orchestration spinning up.
+
+```mermaid
+graph TD
+    subgraph Client
+        Browser[Next.js Client]
+    end
+
+    subgraph Backend
+        API[Fastify API - Local]
+        Kestra[Kestra (Docker:8082)]
+        DB[(Postgres/Supabase)]
+    end
+
+    Browser -->|HTTP| API
+    API -->|Trigger| Kestra
+    Kestra -->|Search| Gemini
+    Kestra -->|Call| VAPI[VAPI (Partially Wired)]
+```
+
+### Target State (End of Day 5) (Target State)
 This diagram illustrates the complete system architecture including the new Kestra orchestration and Cline automation components.
 
 ```mermaid
@@ -56,6 +79,15 @@ graph TD
 ```
 
 ## 2. Kestra Workflow Logic (The "Brain")
+
+### Current State
+Individual flows exist but are not yet chained.
+
+- `research_agent.yaml`: Functional (Gemini Search).
+- `contact_agent.yaml`: Functional (VAPI Script).
+- `booking_agent.yaml`: Functional (GCal Script).
+
+### Target State
 The core "Concierge" agentic workflow.
 
 ```mermaid

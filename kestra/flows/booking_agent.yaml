@@ -1,0 +1,23 @@
+id: book_appointment
+namespace: ai_concierge
+
+inputs:
+  - id: provider_name
+    type: STRING
+  - id: appointment_time
+    type: STRING # ISO format
+
+tasks:
+  - id: create_calendar_event
+    type: io.kestra.plugin.scripts.shell.Scripts
+    containerImage: node:20-alpine
+    commands:
+      - npm install googleapis
+      - node /kestra/create-event.js "{{ inputs.provider_name }}" "{{ inputs.appointment_time }}"
+    env:
+      GOOGLE_SERVICE_ACCOUNT: "{{ secret('GOOGLE_SERVICE_ACCOUNT') }}"
+
+outputs:
+  - id: booking_result
+    type: JSON
+    value: "{{ outputs.create_calendar_event.stdOutLine }}"
