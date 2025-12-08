@@ -201,17 +201,17 @@ tasks:
 
     prompt: |
 
+    prompt: |
+
       I need to find \[SERVICE\] providers in \[LOCATION\] that meet these criteria:
 
       \- Minimum rating: \[RATING\]
 
       \- Must be available within \[DAYS\] days
 
-      \- Licensed and insured
-
       
 
-      Use web search to find at least 5 candidates. For each, gather:
+      Use Google Search Grounding to find at least 5 candidates. For each, gather:
 
       1\. Company name and phone number
 
@@ -219,27 +219,15 @@ tasks:
 
       3\. Years in business
 
-      4\. Service area
-
-      5\. Estimated availability
-
       
 
-      Then, evaluate and rank the top 3 by your criteria. Explain your decision.
+      Then, evaluate and rank the top 3 by your criteria.
 
     
 
     tools:
 
-      \- name: web\_search
-
-        description: Search for providers online
-
-      \- name: retrieve\_data
-
-        description: Fetch business details from listings
-
-    memory: true  \# Enable persistent memory across agent steps
+      \- google_search_retrieval: {}
 
     
 
@@ -349,43 +337,29 @@ tasks:
 
       reasoning: "{{ tasks.contact\_agent.outputs.evaluation\_reasoning }}"
 
-**Phase 3: Booking Agent**
+**Phase 3: Booking Agent (Google Calendar Integration)**
 
-id: book\_appointment
+id: book_appointment
 
-namespace: ai\_concierge
+namespace: ai_concierge
 
 tasks:
 
-  \- id: booking\_agent
+  \- id: create_calendar_event
 
-    type: io.kestra.plugin.aiagent.AIAgent
+    type: io.kestra.plugin.scripts.shell.Scripts
 
-    prompt: |
+    containerImage: node:20-alpine
 
-      Call \[PROVIDER\_NAME\] and complete the following:
+    commands:
 
-      1\. Confirm appointment date/time: \[PROPOSED\_TIME\]
+      \- npm install googleapis
 
-      2\. Get confirmation number
+      \- node /kestra/create-event.js "{{ inputs.provider_name }}" "{{ inputs.appointment_time }}"
 
-      3\. Ask for any prep instructions
+    env:
 
-      4\. Get callback number to confirm appointment
-
-      5\. Confirm the final quoted price
-
-      
-
-      Extract and confirm all details.
-
-      
-
-    tools:
-
-      \- name: call\_provider
-
-      \- name: parse\_confirmation
+      GOOGLE_SERVICE_ACCOUNT: "{{ secret('GOOGLE_SERVICE_ACCOUNT') }}"
 
       
 
