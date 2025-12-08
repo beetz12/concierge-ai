@@ -67,7 +67,50 @@ export default async function geminiRoutes(fastify: FastifyInstance) {
    * POST /search-providers
    * Search for service providers using Google Maps grounding
    */
-  fastify.post('/search-providers', async (request, reply) => {
+  fastify.post('/search-providers', {
+    schema: {
+      description: 'Search for service providers using Google Maps grounding',
+      tags: ['gemini'],
+      body: {
+        type: 'object',
+        required: ['query', 'location'],
+        properties: {
+          query: { type: 'string', description: 'Search query for service type' },
+          location: { type: 'string', description: 'Location to search in' },
+          coordinates: {
+            type: 'object',
+            properties: {
+              latitude: { type: 'number' },
+              longitude: { type: 'number' },
+            },
+          },
+        },
+      },
+      response: {
+        200: {
+          type: 'object',
+          properties: {
+            providers: { type: 'array' },
+            rawResponse: { type: 'string' },
+          },
+        },
+        400: {
+          type: 'object',
+          properties: {
+            error: { type: 'string' },
+            details: { type: 'array' },
+          },
+        },
+        500: {
+          type: 'object',
+          properties: {
+            error: { type: 'string' },
+            message: { type: 'string' },
+          },
+        },
+      },
+    },
+  }, async (request, reply) => {
     try {
       const body = searchProvidersSchema.parse(request.body);
       const result = await searchProviders(
@@ -95,7 +138,44 @@ export default async function geminiRoutes(fastify: FastifyInstance) {
    * POST /simulate-call
    * Simulate a phone call to a provider
    */
-  fastify.post('/simulate-call', async (request, reply) => {
+  fastify.post('/simulate-call', {
+    schema: {
+      description: 'Simulate a phone call to a service provider',
+      tags: ['gemini'],
+      body: {
+        type: 'object',
+        required: ['providerName', 'userCriteria'],
+        properties: {
+          providerName: { type: 'string', description: 'Name of the provider to call' },
+          userCriteria: { type: 'string', description: 'User requirements and criteria' },
+          isDirect: { type: 'boolean', description: 'Whether this is a direct call task', default: false },
+        },
+      },
+      response: {
+        200: {
+          type: 'object',
+          properties: {
+            transcript: { type: 'array' },
+            outcome: { type: 'object' },
+          },
+        },
+        400: {
+          type: 'object',
+          properties: {
+            error: { type: 'string' },
+            details: { type: 'array' },
+          },
+        },
+        500: {
+          type: 'object',
+          properties: {
+            error: { type: 'string' },
+            message: { type: 'string' },
+          },
+        },
+      },
+    },
+  }, async (request, reply) => {
     try {
       const body = simulateCallSchema.parse(request.body);
       const result = await simulateCall(body.providerName, body.userCriteria, body.isDirect);
@@ -119,7 +199,71 @@ export default async function geminiRoutes(fastify: FastifyInstance) {
    * POST /select-best-provider
    * Analyze call results and select the best provider
    */
-  fastify.post('/select-best-provider', async (request, reply) => {
+  fastify.post('/select-best-provider', {
+    schema: {
+      description: 'Analyze call results and select the best provider using AI',
+      tags: ['gemini'],
+      body: {
+        type: 'object',
+        required: ['requestTitle', 'interactions', 'providers'],
+        properties: {
+          requestTitle: { type: 'string', description: 'Title of the service request' },
+          interactions: {
+            type: 'array',
+            description: 'Array of interaction logs from provider calls',
+            items: {
+              type: 'object',
+              properties: {
+                timestamp: { type: 'string' },
+                stepName: { type: 'string' },
+                detail: { type: 'string' },
+                transcript: { type: 'array' },
+                status: { type: 'string', enum: ['success', 'warning', 'error', 'info'] },
+              },
+            },
+          },
+          providers: {
+            type: 'array',
+            description: 'Array of providers to analyze',
+            items: {
+              type: 'object',
+              properties: {
+                id: { type: 'string' },
+                name: { type: 'string' },
+                phone: { type: 'string' },
+                rating: { type: 'number' },
+                address: { type: 'string' },
+                source: { type: 'string', enum: ['Google Maps', 'User Input'] },
+              },
+            },
+          },
+        },
+      },
+      response: {
+        200: {
+          type: 'object',
+          properties: {
+            selectedProvider: { type: 'object' },
+            reasoning: { type: 'string' },
+          },
+        },
+        400: {
+          type: 'object',
+          properties: {
+            error: { type: 'string' },
+            details: { type: 'array' },
+          },
+        },
+        500: {
+          type: 'object',
+          properties: {
+            error: { type: 'string' },
+            message: { type: 'string' },
+          },
+        },
+      },
+    },
+  }, async (request, reply) => {
     try {
       const body = selectBestProviderSchema.parse(request.body);
       const result = await selectBestProvider(
@@ -147,7 +291,44 @@ export default async function geminiRoutes(fastify: FastifyInstance) {
    * POST /schedule-appointment
    * Schedule an appointment with a provider (simulated)
    */
-  fastify.post('/schedule-appointment', async (request, reply) => {
+  fastify.post('/schedule-appointment', {
+    schema: {
+      description: 'Schedule an appointment with a selected provider (simulated)',
+      tags: ['gemini'],
+      body: {
+        type: 'object',
+        required: ['providerName', 'details'],
+        properties: {
+          providerName: { type: 'string', description: 'Name of the provider' },
+          details: { type: 'string', description: 'Appointment details and requirements' },
+        },
+      },
+      response: {
+        200: {
+          type: 'object',
+          properties: {
+            success: { type: 'boolean' },
+            appointment: { type: 'object' },
+            confirmationMessage: { type: 'string' },
+          },
+        },
+        400: {
+          type: 'object',
+          properties: {
+            error: { type: 'string' },
+            details: { type: 'array' },
+          },
+        },
+        500: {
+          type: 'object',
+          properties: {
+            error: { type: 'string' },
+            message: { type: 'string' },
+          },
+        },
+      },
+    },
+  }, async (request, reply) => {
     try {
       const body = scheduleAppointmentSchema.parse(request.body);
       const result = await scheduleAppointment(body.providerName, body.details);

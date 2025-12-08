@@ -2,6 +2,8 @@ import 'dotenv/config';
 import Fastify from 'fastify';
 import cors from '@fastify/cors';
 import helmet from '@fastify/helmet';
+import swagger from '@fastify/swagger';
+import swaggerUi from '@fastify/swagger-ui';
 import supabasePlugin from './plugins/supabase.js';
 import userRoutes from './routes/users.js';
 import geminiRoutes from './routes/gemini.js';
@@ -30,16 +32,76 @@ await server.register(cors, {
 });
 await server.register(helmet);
 
+// Register Swagger documentation
+await server.register(swagger, {
+  openapi: {
+    openapi: '3.0.0',
+    info: {
+      title: 'AI Concierge API',
+      description: 'API for AI-powered receptionist and appointment scheduling service',
+      version: '1.0.0',
+    },
+    servers: [
+      {
+        url: process.env.API_URL || 'http://localhost:8000',
+        description: process.env.NODE_ENV === 'production' ? 'Production server' : 'Development server',
+      },
+    ],
+    tags: [
+      { name: 'health', description: 'Health check endpoints' },
+      { name: 'users', description: 'User management endpoints' },
+      { name: 'gemini', description: 'AI-powered service provider operations' },
+    ],
+  },
+});
+
+await server.register(swaggerUi, {
+  routePrefix: '/docs',
+  uiConfig: {
+    docExpansion: 'list',
+    deepLinking: true,
+  },
+});
+
 // Register Supabase plugin
 await server.register(supabasePlugin);
 
 // Health check endpoint
-server.get('/health', async () => {
+server.get('/health', {
+  schema: {
+    description: 'Health check endpoint',
+    tags: ['health'],
+    response: {
+      200: {
+        type: 'object',
+        properties: {
+          status: { type: 'string' },
+          timestamp: { type: 'string' },
+        },
+      },
+    },
+  },
+}, async () => {
   return { status: 'ok', timestamp: new Date().toISOString() };
 });
 
 // API routes
-server.get('/api/v1', async () => {
+server.get('/api/v1', {
+  schema: {
+    description: 'API information and available endpoints',
+    tags: ['health'],
+    response: {
+      200: {
+        type: 'object',
+        properties: {
+          message: { type: 'string' },
+          version: { type: 'string' },
+          endpoints: { type: 'object' },
+        },
+      },
+    },
+  },
+}, async () => {
   return {
     message: 'AI Concierge API',
     version: '1.0.0',
@@ -47,6 +109,7 @@ server.get('/api/v1', async () => {
       health: '/health',
       users: '/api/v1/users',
       gemini: '/api/v1/gemini',
+      docs: '/docs',
     },
   };
 });
