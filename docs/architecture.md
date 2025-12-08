@@ -28,8 +28,11 @@ graph TD
     end
 
     subgraph AI [AI Services]
-        Gemini[Gemini Flash 2.0]
-        Maps[Google Maps API]
+        Gemini[Gemini Flash 2.5]
+    end
+    
+    subgraph External [External APIs]
+        GCal[Google Calendar API]
     end
 
     User((User)) --> Browser
@@ -41,7 +44,8 @@ graph TD
     
     Kestra -->|Webhook| API
     Kestra -->|Trigger Call| VAPI
-    Kestra -->|Search| Maps
+    Kestra -->|Generate/Search| Gemini
+    Kestra -->|Schedule Event| GCal
     
     VAPI -->|Call| PSTN
     VAPI <-->|Stream Audio| Gemini
@@ -59,10 +63,10 @@ flowchart LR
     Start([User Request]) --> Research
     
     subgraph Agents
-        Research["Research Agent<br/>(Google Maps)"]
+        Research["Research Agent<br/>(Gemini Search)"]
         Contact["Contact Agent<br/>(VAPI.ai + Kestra Script)"]
         Analysis["Analysis Agent<br/>(Evaluation)"]
-        Booking["Booking Agent<br/>(VAPI.ai Scheduling)"]
+        Booking["Booking Agent<br/>(Google Calendar API)"]
     end
     
     Research -->|List of Providers| Contact
@@ -70,9 +74,10 @@ flowchart LR
     Analysis -->|Best Option| Booking
     Booking -->|Confirmation| End([Notify User])
     
-    Research -.->|Queries| GoogleMaps[Google Maps]
+    Research -.->|Queries| Gemini[Gemini Grounding]
     Contact -.->|Phone Calls| VAPI[VAPI.ai]
-    VAPI -.->|Voice Stream| Gemini[Gemini Realtime]
+    VAPI -.->|Voice Stream| Gemini
+    Booking -.->|Create Event| GCal[Google Calendar]
 ```
 
 ## 3. Data Flow & Real-Time Updates
