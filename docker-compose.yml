@@ -5,6 +5,8 @@ services:
     image: kestra/kestra:v1.1.6
     container_name: kestra
     command: server standalone
+    depends_on:
+      - postgres
     ports:
       - "8082:8080"
     env_file:
@@ -45,6 +47,22 @@ services:
     networks:
       - kestra-net
     restart: always
+
+  postgres:
+    image: postgres:15-alpine
+    container_name: postgres
+    environment:
+      POSTGRES_DB: ${KESTRA_DB_NAME:-kestra}
+      POSTGRES_USER: ${KESTRA_DB_USER:-kestra}
+      POSTGRES_PASSWORD: ${KESTRA_DB_PASSWORD:-kestra}
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    networks:
+      - kestra-net
+    restart: always
+
+volumes:
+  postgres-data:
 
 networks:
   kestra-net:
