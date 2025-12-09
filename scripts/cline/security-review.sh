@@ -81,19 +81,30 @@ if ! command -v cline &> /dev/null; then
     fi
 fi
 
-# Get diff based on mode
+# Configuration for file filtering
+MAX_FILES="${CLINE_MAX_FILES:-10}"
+FILE_EXTENSIONS="ts|tsx|js|jsx"
+EXCLUDE_PATTERNS="node_modules|dist|\.next|build|\.test\.|\.spec\.|__tests__|__mocks__|\.d\.ts"
+
+# Get changed files based on mode
 case $MODE in
     --staged)
         echo -e "${BLUE}📋 Mode: Reviewing staged changes${NC}"
-        DIFF=$(git diff --cached)
+        CHANGED_FILES=$(git diff --cached --name-only --diff-filter=ACM | \
+            grep -E "\.($FILE_EXTENSIONS)$" | \
+            grep -v -E "$EXCLUDE_PATTERNS" || true)
         ;;
     --commit)
         echo -e "${BLUE}📋 Mode: Reviewing last commit${NC}"
-        DIFF=$(git show HEAD)
+        CHANGED_FILES=$(git show --name-only --pretty=format: HEAD | \
+            grep -E "\.($FILE_EXTENSIONS)$" | \
+            grep -v -E "$EXCLUDE_PATTERNS" || true)
         ;;
     --full)
         echo -e "${BLUE}📋 Mode: Full security audit${NC}"
-        DIFF=$(git diff HEAD~5...HEAD)
+        CHANGED_FILES=$(git diff --name-only HEAD~5...HEAD | \
+            grep -E "\.($FILE_EXTENSIONS)$" | \
+            grep -v -E "$EXCLUDE_PATTERNS" || true)
         ;;
     *)
         echo -e "${RED}Unknown mode: $MODE${NC}"
@@ -102,9 +113,48 @@ case $MODE in
         ;;
 esac
 
-# Check if there are changes to review
+# Check if there are relevant files to review
+if [ -z "$CHANGED_FILES" ]; then
+    echo -e "${GREEN}✅ No relevant code files to review${NC}"
+    echo -e "${BLUE}   (Only analyzing: .ts, .tsx, .js, .jsx files)${NC}"
+    exit 0
+fi
+
+# Count files and limit if necessary
+FILE_COUNT=$(echo "$CHANGED_FILES" | wc -l | tr -d ' ')
+echo -e "${BLUE}📁 Found $FILE_COUNT code file(s) to analyze${NC}"
+
+if [ "$FILE_COUNT" -gt "$MAX_FILES" ]; then
+    echo -e "${YELLOW}⚠️  Limiting to $MAX_FILES largest files (token optimization)${NC}"
+    # Sort by file size (largest first) and take top MAX_FILES
+    CHANGED_FILES=$(echo "$CHANGED_FILES" | \
+        xargs -I {} sh -c 'wc -l "{}" 2>/dev/null || echo "0 {}"' | \
+        sort -rn | head -"$MAX_FILES" | awk '{print $2}')
+    FILE_COUNT=$MAX_FILES
+fi
+
+# Show which files will be analyzed
+echo -e "${BLUE}   Files:${NC}"
+echo "$CHANGED_FILES" | while read -r file; do
+    echo -e "   ${CYAN}→ $file${NC}"
+done
+
+# Get diff for only the relevant files (with reduced context)
+case $MODE in
+    --staged)
+        DIFF=$(git diff --cached --unified=2 -- $CHANGED_FILES)
+        ;;
+    --commit)
+        DIFF=$(git show --unified=2 HEAD -- $CHANGED_FILES)
+        ;;
+    --full)
+        DIFF=$(git diff --unified=2 HEAD~5...HEAD -- $CHANGED_FILES)
+        ;;
+esac
+
+# Check if there's actual diff content
 if [ -z "$DIFF" ]; then
-    echo -e "${GREEN}✅ No changes to review${NC}"
+    echo -e "${GREEN}✅ No changes to review in selected files${NC}"
     exit 0
 fi
 
