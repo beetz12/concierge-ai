@@ -1,5 +1,5 @@
-import { FastifyPluginAsync } from 'fastify';
-import { z } from 'zod';
+import { FastifyPluginAsync } from "fastify";
+import { z } from "zod";
 
 /**
  * User Routes
@@ -15,7 +15,7 @@ import { z } from 'zod';
 
 // Validation schemas using Zod
 const CreateUserSchema = z.object({
-  email: z.string().email('Must be a valid email address'),
+  email: z.string().email("Must be a valid email address"),
   name: z.string().min(2).max(100).optional(),
 });
 
@@ -25,7 +25,7 @@ const UpdateUserSchema = z.object({
 });
 
 const UserIdSchema = z.object({
-  id: z.string().uuid('Must be a valid UUID'),
+  id: z.string().uuid("Must be a valid UUID"),
 });
 
 type CreateUserInput = z.infer<typeof CreateUserSchema>;
@@ -37,16 +37,16 @@ const userRoutes: FastifyPluginAsync = async (fastify) => {
    * Retrieve all users (with optional pagination)
    */
   fastify.get(
-    '/',
+    "/",
     {
       schema: {
-        description: 'Get all users',
-        tags: ['users'],
+        description: "Get all users",
+        tags: ["users"],
         querystring: {
-          type: 'object',
+          type: "object",
           properties: {
-            limit: { type: 'number', default: 10 },
-            offset: { type: 'number', default: 0 },
+            limit: { type: "number", default: 10 },
+            offset: { type: "number", default: 0 },
           },
         },
         // response schema removed for flexibility with error responses
@@ -60,16 +60,16 @@ const userRoutes: FastifyPluginAsync = async (fastify) => {
 
       try {
         const { data, error, count } = await request.supabase
-          .from('users')
-          .select('*', { count: 'exact' })
+          .from("users")
+          .select("*", { count: "exact" })
           .range(offset, offset + limit - 1)
-          .order('created_at', { ascending: false });
+          .order("created_at", { ascending: false });
 
         if (error) {
-          fastify.log.error({ error }, 'Error fetching users from Supabase');
+          fastify.log.error({ error }, "Error fetching users from Supabase");
           return reply.status(500).send({
             success: false,
-            error: 'Failed to fetch users',
+            error: "Failed to fetch users",
             message: error.message,
           });
         }
@@ -85,13 +85,13 @@ const userRoutes: FastifyPluginAsync = async (fastify) => {
           },
         });
       } catch (error) {
-        fastify.log.error({ error }, 'Unexpected error fetching users');
+        fastify.log.error({ error }, "Unexpected error fetching users");
         return reply.status(500).send({
           success: false,
-          error: 'Internal server error',
+          error: "Internal server error",
         });
       }
-    }
+    },
   );
 
   /**
@@ -99,17 +99,17 @@ const userRoutes: FastifyPluginAsync = async (fastify) => {
    * Retrieve a single user by ID
    */
   fastify.get(
-    '/:id',
+    "/:id",
     {
       schema: {
-        description: 'Get user by ID',
-        tags: ['users'],
+        description: "Get user by ID",
+        tags: ["users"],
         params: {
-          type: 'object',
+          type: "object",
           properties: {
-            id: { type: 'string' },
+            id: { type: "string" },
           },
-          required: ['id'],
+          required: ["id"],
         },
       },
     },
@@ -119,7 +119,7 @@ const userRoutes: FastifyPluginAsync = async (fastify) => {
       if (!params.success) {
         return reply.status(400).send({
           success: false,
-          error: 'Validation failed',
+          error: "Validation failed",
           details: params.error.flatten(),
         });
       }
@@ -128,23 +128,23 @@ const userRoutes: FastifyPluginAsync = async (fastify) => {
 
       try {
         const { data, error } = await request.supabase
-          .from('users')
-          .select('*')
-          .eq('id', id)
+          .from("users")
+          .select("*")
+          .eq("id", id)
           .single();
 
         if (error) {
-          if (error.code === 'PGRST116') {
+          if (error.code === "PGRST116") {
             return reply.status(404).send({
               success: false,
-              error: 'User not found',
+              error: "User not found",
             });
           }
 
-          fastify.log.error({ error }, 'Error fetching user from Supabase');
+          fastify.log.error({ error }, "Error fetching user from Supabase");
           return reply.status(500).send({
             success: false,
-            error: 'Failed to fetch user',
+            error: "Failed to fetch user",
             message: error.message,
           });
         }
@@ -154,13 +154,13 @@ const userRoutes: FastifyPluginAsync = async (fastify) => {
           data,
         });
       } catch (error) {
-        fastify.log.error({ error }, 'Unexpected error fetching user');
+        fastify.log.error({ error }, "Unexpected error fetching user");
         return reply.status(500).send({
           success: false,
-          error: 'Internal server error',
+          error: "Internal server error",
         });
       }
-    }
+    },
   );
 
   /**
@@ -168,17 +168,17 @@ const userRoutes: FastifyPluginAsync = async (fastify) => {
    * Create a new user
    */
   fastify.post(
-    '/',
+    "/",
     {
       schema: {
-        description: 'Create a new user',
-        tags: ['users'],
+        description: "Create a new user",
+        tags: ["users"],
         body: {
-          type: 'object',
-          required: ['email'],
+          type: "object",
+          required: ["email"],
           properties: {
-            email: { type: 'string', format: 'email' },
-            name: { type: 'string' },
+            email: { type: "string", format: "email" },
+            name: { type: "string" },
           },
         },
       },
@@ -189,7 +189,7 @@ const userRoutes: FastifyPluginAsync = async (fastify) => {
       if (!validation.success) {
         return reply.status(400).send({
           success: false,
-          error: 'Validation failed',
+          error: "Validation failed",
           details: validation.error.flatten(),
         });
       }
@@ -198,24 +198,24 @@ const userRoutes: FastifyPluginAsync = async (fastify) => {
 
       try {
         const { data, error } = await request.supabase
-          .from('users')
+          .from("users")
           .insert([userData as any])
           .select()
           .single();
 
         if (error) {
           // Handle duplicate email (unique constraint violation)
-          if (error.code === '23505') {
+          if (error.code === "23505") {
             return reply.status(409).send({
               success: false,
-              error: 'Email already exists',
+              error: "Email already exists",
             });
           }
 
-          fastify.log.error({ error }, 'Error creating user in Supabase');
+          fastify.log.error({ error }, "Error creating user in Supabase");
           return reply.status(500).send({
             success: false,
-            error: 'Failed to create user',
+            error: "Failed to create user",
             message: error.message,
           });
         }
@@ -225,13 +225,13 @@ const userRoutes: FastifyPluginAsync = async (fastify) => {
           data,
         });
       } catch (error) {
-        fastify.log.error({ error }, 'Unexpected error creating user');
+        fastify.log.error({ error }, "Unexpected error creating user");
         return reply.status(500).send({
           success: false,
-          error: 'Internal server error',
+          error: "Internal server error",
         });
       }
-    }
+    },
   );
 
   /**
@@ -239,23 +239,23 @@ const userRoutes: FastifyPluginAsync = async (fastify) => {
    * Update an existing user
    */
   fastify.patch(
-    '/:id',
+    "/:id",
     {
       schema: {
-        description: 'Update user',
-        tags: ['users'],
+        description: "Update user",
+        tags: ["users"],
         params: {
-          type: 'object',
+          type: "object",
           properties: {
-            id: { type: 'string' },
+            id: { type: "string" },
           },
-          required: ['id'],
+          required: ["id"],
         },
         body: {
-          type: 'object',
+          type: "object",
           properties: {
-            email: { type: 'string', format: 'email' },
-            name: { type: 'string' },
+            email: { type: "string", format: "email" },
+            name: { type: "string" },
           },
         },
       },
@@ -267,7 +267,7 @@ const userRoutes: FastifyPluginAsync = async (fastify) => {
       if (!paramsValidation.success) {
         return reply.status(400).send({
           success: false,
-          error: 'Invalid user ID',
+          error: "Invalid user ID",
           details: paramsValidation.error.flatten(),
         });
       }
@@ -275,7 +275,7 @@ const userRoutes: FastifyPluginAsync = async (fastify) => {
       if (!bodyValidation.success) {
         return reply.status(400).send({
           success: false,
-          error: 'Validation failed',
+          error: "Validation failed",
           details: bodyValidation.error.flatten(),
         });
       }
@@ -286,30 +286,33 @@ const userRoutes: FastifyPluginAsync = async (fastify) => {
       if (Object.keys(updateData).length === 0) {
         return reply.status(400).send({
           success: false,
-          error: 'No update data provided',
+          error: "No update data provided",
         });
       }
 
       try {
         const { data, error } = await request.supabase
-          .from('users')
-          .update({ ...updateData, updated_at: new Date().toISOString() } as any)
-          .eq('id', id)
+          .from("users")
+          .update({
+            ...updateData,
+            updated_at: new Date().toISOString(),
+          } as any)
+          .eq("id", id)
           .select()
           .single();
 
         if (error) {
-          if (error.code === 'PGRST116') {
+          if (error.code === "PGRST116") {
             return reply.status(404).send({
               success: false,
-              error: 'User not found',
+              error: "User not found",
             });
           }
 
-          fastify.log.error({ error }, 'Error updating user in Supabase');
+          fastify.log.error({ error }, "Error updating user in Supabase");
           return reply.status(500).send({
             success: false,
-            error: 'Failed to update user',
+            error: "Failed to update user",
             message: error.message,
           });
         }
@@ -319,13 +322,13 @@ const userRoutes: FastifyPluginAsync = async (fastify) => {
           data,
         });
       } catch (error) {
-        fastify.log.error({ error }, 'Unexpected error updating user');
+        fastify.log.error({ error }, "Unexpected error updating user");
         return reply.status(500).send({
           success: false,
-          error: 'Internal server error',
+          error: "Internal server error",
         });
       }
-    }
+    },
   );
 
   /**
@@ -333,17 +336,17 @@ const userRoutes: FastifyPluginAsync = async (fastify) => {
    * Delete a user
    */
   fastify.delete(
-    '/:id',
+    "/:id",
     {
       schema: {
-        description: 'Delete user',
-        tags: ['users'],
+        description: "Delete user",
+        tags: ["users"],
         params: {
-          type: 'object',
+          type: "object",
           properties: {
-            id: { type: 'string' },
+            id: { type: "string" },
           },
-          required: ['id'],
+          required: ["id"],
         },
       },
     },
@@ -353,7 +356,7 @@ const userRoutes: FastifyPluginAsync = async (fastify) => {
       if (!params.success) {
         return reply.status(400).send({
           success: false,
-          error: 'Invalid user ID',
+          error: "Invalid user ID",
           details: params.error.flatten(),
         });
       }
@@ -362,28 +365,28 @@ const userRoutes: FastifyPluginAsync = async (fastify) => {
 
       try {
         const { error } = await request.supabase
-          .from('users')
+          .from("users")
           .delete()
-          .eq('id', id);
+          .eq("id", id);
 
         if (error) {
-          fastify.log.error({ error }, 'Error deleting user from Supabase');
+          fastify.log.error({ error }, "Error deleting user from Supabase");
           return reply.status(500).send({
             success: false,
-            error: 'Failed to delete user',
+            error: "Failed to delete user",
             message: error.message,
           });
         }
 
         return reply.status(204).send();
       } catch (error) {
-        fastify.log.error({ error }, 'Unexpected error deleting user');
+        fastify.log.error({ error }, "Unexpected error deleting user");
         return reply.status(500).send({
           success: false,
-          error: 'Internal server error',
+          error: "Internal server error",
         });
       }
-    }
+    },
   );
 };
 

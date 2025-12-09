@@ -1,3 +1,6 @@
+
+Currently we're working on @about.md for @hackathon.md. Please help me wire up our existing 
+
 Okay, perfect! Now I want to test
   '/Users/dave/Work/concierge-ai/kestra/flows/contact_agent.yaml' and get
   it working. Please first make sure that
@@ -34,6 +37,14 @@ I just built @about.md but the UI doesn't look very good. The white background i
 Please analyze these issues  
 using your  multi-agent team with up to 3 agentsand come up with a unified plan with 90% confidence and wait for further instructions. My mortgage payment depends on this and If you get this right on the first try, I will tip you $200. ultrathink  
 
+# update architecture
+Ok perfect. Please update our @docs/architecture.md and all relevant
+  docs if needed to reflect this new architecture shift. please Use your
+  specialized multi-agent team to analyze in parallel with up to 3 agents
+  with 90% confidence and implement it. If you get this right on the first
+  try, I will tip you $200. ultrathink
+  
+  
 # agent work
 please Use your specialized multi-agent team to analyze these issues in parallel for the root causes with 90% confidence and once all agents are done, present a unified comprehensive plan to fix them. ultrathink
 

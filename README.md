@@ -24,6 +24,7 @@ The AI Concierge acts as your personal assistant for managing real-world tasks. 
 > "I have a leaking toilet that I need fixed ASAP. I'm in Greenville SC, and I want a reputable licensed local plumber with at least 4.7 rating and can arrive in the next 2 days."
 
 The application will:
+
 1.  **Search** for qualified service providers in your area.
 2.  **Call** providers one-by-one to verify rates, availability, and criteria.
 3.  **Schedule** the appointment once a suitable provider is found.
@@ -35,19 +36,79 @@ It also maintains a history of requests, detailed logs of AI analysis and intera
 
 This project is a monorepo managed by **Turborepo**.
 
-*   **Frontend**: Next.js (`apps/web`)
-*   **Backend**: Fastify (`apps/api`)
-*   **Database**: Supabase
-*   **AI Integration**: Google Gemini (inferred from `apps/web` dependencies)
-*   **Styling**: Tailwind CSS
-*   **Package Manager**: pnpm
+- **Frontend**: Next.js (`apps/web`)
+- **Backend**: Fastify (`apps/api`)
+- **Database**: Supabase
+- **AI Integration**: Google Gemini (inferred from `apps/web` dependencies)
+- **Voice AI**: VAPI.ai for automated provider calling
+- **Styling**: Tailwind CSS
+- **Package Manager**: pnpm
+
+## VAPI Voice AI Architecture
+
+The AI Concierge uses VAPI.ai to make automated phone calls to service providers. The system follows a **single source of truth** pattern:
+
+- **Configuration Source**: `apps/api/src/services/vapi/assistant-config.ts` defines all assistant behavior
+- **Kestra Integration**: Scripts import from compiled TypeScript (`apps/api/dist`) to avoid duplication
+- **Build Requirement**: Run `pnpm build` before using Kestra workflows
+
+Key capabilities:
+
+- Intelligent disqualification detection (politely exits unqualified providers)
+- Conditional callback scheduling (only if ALL criteria met)
+- Earliest availability tracking (specific date/time)
+- Single-person verification (ensures ONE technician has ALL requirements)
+
+For detailed architecture, see `docs/VAPI_FALLBACK_ARCHITECTURE.md`.
+
+### Live Call Configuration
+
+The `/new` page supports both simulated (Gemini-based) calls and real VAPI phone calls. Configure via environment variables in `apps/web/.env.local`:
+
+| Variable | Values | Description |
+|----------|--------|-------------|
+| `NEXT_PUBLIC_LIVE_CALL_ENABLED` | `true` / `false` | Enable real VAPI calls (`false` = simulated) |
+| `NEXT_PUBLIC_ADMIN_TEST_NUMBER` | E.164 phone (e.g., `+15551234567`) | Admin test mode override |
+
+#### Configuration Modes
+
+**Development (Default)** - Simulated calls via Gemini:
+```bash
+NEXT_PUBLIC_LIVE_CALL_ENABLED=false
+# NEXT_PUBLIC_ADMIN_TEST_NUMBER not set
+```
+
+**Testing Live Calls** - Real VAPI calls to YOUR phone (safe testing):
+```bash
+NEXT_PUBLIC_LIVE_CALL_ENABLED=true
+NEXT_PUBLIC_ADMIN_TEST_NUMBER=+15551234567  # Your test phone number
+```
+In this mode:
+- Only the **first provider** is called
+- Call goes to **your test number** (not the provider's real number)
+- Perfect for verifying VAPI integration works before going live
+
+**Production** - Real VAPI calls to actual providers:
+```bash
+NEXT_PUBLIC_LIVE_CALL_ENABLED=true
+# NEXT_PUBLIC_ADMIN_TEST_NUMBER not set or empty
+```
+
+#### Backend Configuration
+
+The backend also needs VAPI credentials in `apps/api/.env`:
+```bash
+VAPI_API_KEY=your_vapi_api_key
+VAPI_PHONE_NUMBER_ID=your_vapi_phone_number_id
+VAPI_WEBHOOK_URL=https://your-domain.com/api/v1/vapi/webhook  # For call results
+```
 
 ## Getting Started
 
 ### Prerequisites
 
-*   Node.js (>=18)
-*   pnpm
+- Node.js (>=18)
+- pnpm
 
 ### Installation
 
@@ -132,14 +193,16 @@ pnpm dev
 ```
 
 This command executes `turbo run dev`, which starts:
-*   **Web App**: [http://localhost:3000](http://localhost:3000)
-*   **API**: [http://localhost:8000](http://localhost:8000)
+
+- **Web App**: [http://localhost:3000](http://localhost:3000)
+- **API**: [http://localhost:8000](http://localhost:8000)
 
 ### Running Individual Apps
 
 To run specific parts of the application:
 
 **Frontend (Web):**
+
 ```bash
 pnpm --filter web dev
 # or
@@ -147,6 +210,7 @@ cd apps/web && pnpm dev
 ```
 
 **Backend (API):**
+
 ```bash
 pnpm --filter api dev
 # or
@@ -163,54 +227,100 @@ pnpm build
 
 ## Tools
 
-### CLINE CLI
+### Cline CLI Automation (Hackathon Submission)
 
-CLINE CLI is an AI-powered coding assistant that helps with code generation, refactoring, debugging, and project tasks directly from the command line or your IDE.
+> **AI Agents Assemble Hackathon** - Infinity Build Award ($5,000)
+>
+> This project demonstrates building capabilities **ON TOP of Cline CLI** that improve the software development experience.
 
-#### Installation
+We've built 5 automation tools using Cline CLI that integrate into the development workflow via git hooks and GitHub Actions:
 
-Install CLINE CLI globally using npm:
+#### Automation Tools
+
+| Tool                  | Purpose                            | Command                     |
+| --------------------- | ---------------------------------- | --------------------------- |
+| **Security Review**   | AI-powered vulnerability scanning  | `pnpm cline:security`       |
+| **Workflow Guardian** | Kestra YAML validation             | `pnpm cline:workflow`       |
+| **Code Review**       | Comprehensive code quality review  | `pnpm cline:review`         |
+| **Adapter Generator** | Auto-generate service integrations | `pnpm cline:adapter <Name>` |
+| **Test Generator**    | Auto-generate tests                | `pnpm cline:test`           |
+
+#### How It Works (Actual Cline CLI Usage)
+
+All tools use the actual Cline CLI with piped input and YOLO mode (`-y`):
 
 ```bash
+# Security review example
+git diff --cached | cline -y "
+You are a security expert for AI Concierge.
+Tech stack: Next.js 16, Fastify 5, Supabase, Gemini
+
+ANALYZE FOR: hardcoded secrets, SQL injection, XSS...
+OUTPUT: ✅ SECURITY_PASSED or ❌ SECURITY_FAILED
+"
+```
+
+#### Installation & Setup
+
+```bash
+# Install Cline CLI
 npm install -g @cline/cli
+
+# Setup Husky hooks (runs automatically on pnpm install)
+pnpm cline:setup
+
+# Test the security review
+pnpm cline:security
 ```
 
-**System Requirements:**
-- Node.js 18 or higher
-- npm or pnpm
+#### Git Hooks Integration
 
-#### Basic Usage
+The pre-commit hook automatically runs:
 
-**Starting CLINE:**
+1. **Security Review** - Blocks commit on critical issues
+2. **Workflow Guardian** - Validates Kestra YAML changes
+3. **Code Review** - Optional informational review
+
+**Bypass options:**
+
 ```bash
-# In your project directory
-cline
+CLINE_YOLO=true git commit -m "message"    # Skip all checks
+CLINE_ENABLED=false git commit -m "message" # Disable Cline
 ```
 
-**Common Commands:**
-- Ask CLINE to perform tasks naturally, e.g.:
-  - "Create a new API endpoint for user authentication"
-  - "Fix the TypeScript errors in the components directory"
-  - "Add tests for the gemini service"
-  - "Refactor the database queries to use transactions"
+#### GitHub Actions
 
-**Interactive Mode:**
-- CLINE will analyze your project structure and context
-- Provide clear instructions for what you want to accomplish
-- Review and approve CLINE's proposed changes before they're applied
-- CLINE can execute commands, read/write files, and navigate your codebase
+PRs automatically get:
 
-**Exiting CLINE:**
-- Type `exit` or press `Ctrl+C` to stop the CLI session
+- AI security review with PR comments
+- Workflow validation for Kestra changes
+- Code quality analysis
 
-#### Quick Tips
+See `.github/workflows/cline-security.yml` for configuration.
 
-- **Be specific**: The more context you provide, the better CLINE can assist
-- **Review changes**: Always review proposed changes before approving them
-- **Use for repetitive tasks**: CLINE excels at boilerplate generation and refactoring
-- **Iterative approach**: Start with small tasks and build up to larger features
+#### Documentation
 
-For more information, visit the [CLINE documentation](https://docs.cline.bot).
+- **Full documentation**: `scripts/cline/README.md`
+- **Implementation plan**: `docs/FEATURE_CLINE_CLI_INTEGRATION_PLAN.md`
+- **Hackathon info**: `docs/hackathon.md`
+
+---
+
+### Cline CLI (Interactive Mode)
+
+For interactive use, Cline CLI helps with code generation, refactoring, and debugging:
+
+```bash
+# Start interactive session
+cline
+
+# Common tasks:
+# - "Create a new API endpoint for user authentication"
+# - "Fix the TypeScript errors in the components directory"
+# - "Add tests for the gemini service"
+```
+
+For more information, visit the [Cline documentation](https://docs.cline.bot).
 
 ## Kestra Workflow Setup (Local)
 
@@ -252,6 +362,7 @@ docker compose up -d
 ```
 
 This starts:
+
 - **Kestra Server**: [http://localhost:8082](http://localhost:8082)
 - **Management API**: Port 8081 (internal)
 
@@ -294,7 +405,7 @@ The `docker-compose.yml` contains critical Kestra settings:
 ```yaml
 kestra:
   image: kestra/kestra:v1.1.6
-  command: server standalone          # Use 'standalone' for PostgreSQL, NOT 'server local'
+  command: server standalone # Use 'standalone' for PostgreSQL, NOT 'server local'
   environment:
     KESTRA_CONFIGURATION: |
       kestra:
@@ -317,36 +428,42 @@ kestra:
 ### Troubleshooting
 
 #### "relation 'settings' does not exist"
+
 **Cause**: Database migrations didn't run properly.
 **Fix**:
+
 1. Ensure `datasources.postgres` (not `datasources.default`) is configured
 2. Use `server standalone` command (not `server local`)
 3. Wipe schema and restart: `DROP SCHEMA kestra CASCADE; CREATE SCHEMA kestra;`
 
 #### 401 Unauthorized on API calls
+
 **Cause**: Basic auth credentials not set up or wrong format.
 **Fix**:
+
 1. Complete the setup wizard at http://localhost:8082/ui/setup
 2. Password must meet requirements: 8+ chars, 1 uppercase, 1 number
 3. Use the credentials you created during setup
 
 #### "Multiple possible bean candidates found: [DSLContext, DSLContext]"
+
 **Cause**: Using `server local` which creates both H2 and PostgreSQL connections.
 **Fix**: Change to `command: server standalone` in docker-compose.yml
 
 #### Flow task type errors
+
 **Cause**: Wrong plugin namespace for AI tasks.
 **Fix**: Use `io.kestra.plugin.ai.agent.AIAgent` (not `io.kestra.plugin.aiagent.AIAgent`)
 
 ### Lessons Learned
 
-| Issue | Wrong | Correct |
-|-------|-------|---------|
-| Datasource name | `datasources.default` | `datasources.postgres` |
-| Server command | `server local` | `server standalone` |
-| AIAgent task type | `io.kestra.plugin.aiagent.AIAgent` | `io.kestra.plugin.ai.agent.AIAgent` |
-| Password format | `admin` | `Admin123456` (8+ chars, 1 upper, 1 number) |
-| Flyway env vars | Manual configuration | Not needed (auto-handled) |
+| Issue             | Wrong                              | Correct                                     |
+| ----------------- | ---------------------------------- | ------------------------------------------- |
+| Datasource name   | `datasources.default`              | `datasources.postgres`                      |
+| Server command    | `server local`                     | `server standalone`                         |
+| AIAgent task type | `io.kestra.plugin.aiagent.AIAgent` | `io.kestra.plugin.ai.agent.AIAgent`         |
+| Password format   | `admin`                            | `Admin123456` (8+ chars, 1 upper, 1 number) |
+| Flyway env vars   | Manual configuration               | Not needed (auto-handled)                   |
 
 ## Contributing
 
@@ -370,6 +487,7 @@ git checkout -b feature/your-feature-name
 ```
 
 **Branch naming conventions:**
+
 - `feature/` - for new features (e.g., `feature/add-user-auth`)
 - `fix/` - for bug fixes (e.g., `fix/login-button-error`)
 - `docs/` - for documentation updates (e.g., `docs/update-readme`)
@@ -388,6 +506,7 @@ git commit -m "feat: add user authentication flow"
 ```
 
 **Commit message tips:**
+
 - Keep the first line under 50 characters
 - Use present tense ("add feature" not "added feature")
 - Be specific about what changed
@@ -417,6 +536,7 @@ If this is your first push for this branch, Git will provide a link to create a 
 ### Step 6: Address Review Feedback
 
 After creating your PR:
+
 - Team members will review your code
 - Make any requested changes by committing to the same branch
 - Push your updates – the PR will automatically update
@@ -443,16 +563,16 @@ git branch -d feature/your-feature-name
 
 ### Quick Reference Commands
 
-| Action | Command |
-|--------|---------|
-| Check current branch | `git branch` |
-| See all branches | `git branch -a` |
-| Switch to a branch | `git checkout branch-name` |
-| Check status | `git status` |
-| View commit history | `git log --oneline` |
-| Discard local changes | `git checkout -- filename` |
-| Stash changes temporarily | `git stash` |
-| Apply stashed changes | `git stash pop` |
+| Action                    | Command                    |
+| ------------------------- | -------------------------- |
+| Check current branch      | `git branch`               |
+| See all branches          | `git branch -a`            |
+| Switch to a branch        | `git checkout branch-name` |
+| Check status              | `git status`               |
+| View commit history       | `git log --oneline`        |
+| Discard local changes     | `git checkout -- filename` |
+| Stash changes temporarily | `git stash`                |
+| Apply stashed changes     | `git stash pop`            |
 
 ### Need Help?
 
@@ -465,6 +585,7 @@ git branch -d feature/your-feature-name
 ### `ERR_PNPM_WORKSPACE_PKG_NOT_FOUND` when running `pnpm install`
 
 If you see an error like:
+
 ```
 ERR_PNPM_WORKSPACE_PKG_NOT_FOUND In apps/api: "@repo/types@workspace:*" is in the dependencies but no package named "@repo/types" is present in the workspace
 ```
@@ -478,6 +599,7 @@ pnpm install
 ```
 
 If the issue persists, verify that the `packages/` directory contains all required packages:
+
 - `packages/types/`
 - `packages/ui/`
 - `packages/eslint-config/`
@@ -485,9 +607,8 @@ If the issue persists, verify that the `packages/` directory contains all requir
 
 If any are missing, re-clone the repository or contact a team member.
 
-
-
 ## Resources
+
 https://www.youtube.com/watch?v=uFXUniSm7HM - how to build your Own AI Code Review Bot with Cline CLI
 
 https://www.youtube.com/watch?v=hkAp42HBNXw - How to automate workflows with Kestra

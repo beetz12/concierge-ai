@@ -7,6 +7,7 @@
 **Confidence Level**: 90%
 
 ## Table of Contents
+
 1. [Executive Summary](#executive-summary)
 2. [Questions Answered](#questions-answered)
 3. [Issues Found](#issues-found)
@@ -30,10 +31,10 @@ This plan addresses three critical questions about VAPI integration for the AI C
 
 ### Question 1: How does VAPI return results after the call?
 
-| Method | Current Implementation | Recommended |
-|--------|----------------------|-------------|
-| **Polling** | Using (5s intervals) | OK for hackathon |
-| **Webhooks** | Not implemented | Production solution |
+| Method            | Current Implementation  | Recommended                  |
+| ----------------- | ----------------------- | ---------------------------- |
+| **Polling**       | Using (5s intervals)    | OK for hackathon             |
+| **Webhooks**      | Not implemented         | Production solution          |
 | **Output Format** | Basic (transcript only) | **Missing structured data!** |
 
 **Critical Discovery**: Current code is NOT capturing VAPI's structured analysis capability. VAPI can return:
@@ -64,6 +65,7 @@ This plan addresses three critical questions about VAPI integration for the AI C
 ### Question 2: Dynamic Prompt Generation Strategy
 
 **Recommended Architecture**:
+
 ```
 USER REQUEST → KESTRA WORKFLOW
                     ↓
@@ -75,6 +77,7 @@ USER REQUEST → KESTRA WORKFLOW
 ```
 
 The flow:
+
 1. Gemini generates custom VAPI system prompt based on user's specific request
 2. VAPI creates transient assistant with that prompt
 3. VAPI executes call with dynamic configuration
@@ -82,13 +85,13 @@ The flow:
 
 ### Question 3: Reusing simulate-call Prompt Quality
 
-| Element | simulate-call | VAPI Adaptation |
-|---------|---------------|-----------------|
-| Role clarity | "You are a simulator..." | "You are an AI Concierge calling..." |
-| User criteria injection | `${userCriteria}` | Same - dynamic injection |
-| Realistic outcomes | "sometimes booked, sometimes expensive" | Same expectation setting |
-| Professional tone | Yes | Yes |
-| Structured output | Returns JSON directly | Use VAPI's `analysisPlan` + function calling |
+| Element                 | simulate-call                           | VAPI Adaptation                              |
+| ----------------------- | --------------------------------------- | -------------------------------------------- |
+| Role clarity            | "You are a simulator..."                | "You are an AI Concierge calling..."         |
+| User criteria injection | `${userCriteria}`                       | Same - dynamic injection                     |
+| Realistic outcomes      | "sometimes booked, sometimes expensive" | Same expectation setting                     |
+| Professional tone       | Yes                                     | Yes                                          |
+| Structured output       | Returns JSON directly                   | Use VAPI's `analysisPlan` + function calling |
 
 **Key Difference**: simulate-call generates BOTH sides. VAPI only controls AI side.
 
@@ -134,35 +137,35 @@ VAPI_PHONE_NUMBER_ID=
 
 ### Phase 1: Fix Immediate Issues (15 mins)
 
-| # | Task | File | Difficulty |
-|---|------|------|------------|
-| 1.1 | Fix env var references (lowercase, no prefix) | `contact_agent.yaml` | Easy |
-| 1.2 | Add VAPI keys to .env.example | `apps/api/.env.example` | Easy |
-| 1.3 | Verify docker-compose.yml has VAPI env vars | `docker-compose.yml` | Easy |
+| #   | Task                                          | File                    | Difficulty |
+| --- | --------------------------------------------- | ----------------------- | ---------- |
+| 1.1 | Fix env var references (lowercase, no prefix) | `contact_agent.yaml`    | Easy       |
+| 1.2 | Add VAPI keys to .env.example                 | `apps/api/.env.example` | Easy       |
+| 1.3 | Verify docker-compose.yml has VAPI env vars   | `docker-compose.yml`    | Easy       |
 
 ### Phase 2: Add Structured Output (30 mins)
 
-| # | Task | File | Difficulty |
-|---|------|------|------------|
-| 2.1 | Add `analysisPlan` with structured schema | `call-provider.js` | Medium |
-| 2.2 | Update result parsing to use `analysis.structuredData` | `call-provider.js` | Medium |
-| 2.3 | Update Kestra output to capture structured data | `contact_agent.yaml` | Easy |
+| #   | Task                                                   | File                 | Difficulty |
+| --- | ------------------------------------------------------ | -------------------- | ---------- |
+| 2.1 | Add `analysisPlan` with structured schema              | `call-provider.js`   | Medium     |
+| 2.2 | Update result parsing to use `analysis.structuredData` | `call-provider.js`   | Medium     |
+| 2.3 | Update Kestra output to capture structured data        | `contact_agent.yaml` | Easy       |
 
 ### Phase 3: Dynamic Prompt Generation (1-2 hours)
 
-| # | Task | File | Difficulty |
-|---|------|------|------------|
-| 3.1 | Create prompt generator function in call-provider.js | `call-provider.js` | Medium |
-| 3.2 | Update contact_agent.yaml to pass user criteria | `contact_agent.yaml` | Medium |
-| 3.3 | Test dynamic prompt generation | Manual test | Medium |
+| #   | Task                                                 | File                 | Difficulty |
+| --- | ---------------------------------------------------- | -------------------- | ---------- |
+| 3.1 | Create prompt generator function in call-provider.js | `call-provider.js`   | Medium     |
+| 3.2 | Update contact_agent.yaml to pass user criteria      | `contact_agent.yaml` | Medium     |
+| 3.3 | Test dynamic prompt generation                       | Manual test          | Medium     |
 
 ### Phase 4: Integration Testing (30 mins)
 
-| # | Task | Details | Difficulty |
-|---|------|---------|------------|
-| 4.1 | Register updated flow in Kestra | curl command | Easy |
-| 4.2 | Test with provider phone number | Verify end-to-end | Medium |
-| 4.3 | Verify structured output parsing | Check JSON result | Easy |
+| #   | Task                             | Details           | Difficulty |
+| --- | -------------------------------- | ----------------- | ---------- |
+| 4.1 | Register updated flow in Kestra  | curl command      | Easy       |
+| 4.2 | Test with provider phone number  | Verify end-to-end | Medium     |
+| 4.3 | Verify structured output parsing | Check JSON result | Easy       |
 
 ---
 
@@ -242,12 +245,12 @@ VAPI_PHONE_NUMBER_ID=
 
 ## Risk Assessment
 
-| Risk | Likelihood | Impact | Mitigation |
-|------|------------|--------|------------|
-| VAPI phone not provisioned | Medium | High | Check VAPI dashboard first |
-| Real calls cost money | High | Low | Test sparingly |
-| Provider hangs up | Medium | Medium | Graceful fallback handling |
-| Structured data missing | Low | Medium | Fallback to transcript analysis |
+| Risk                       | Likelihood | Impact | Mitigation                      |
+| -------------------------- | ---------- | ------ | ------------------------------- |
+| VAPI phone not provisioned | Medium     | High   | Check VAPI dashboard first      |
+| Real calls cost money      | High       | Low    | Test sparingly                  |
+| Provider hangs up          | Medium     | Medium | Graceful fallback handling      |
+| Structured data missing    | Low        | Medium | Fallback to transcript analysis |
 
 ---
 
@@ -257,9 +260,11 @@ VAPI_PHONE_NUMBER_ID=
 **Review Status**: Approved
 **Implementation Status**: In Progress
 **Related Documents**:
+
 - `/docs/vapi.ai_strategy.md`
 - `/docs/architecture.md`
 - `/kestra/flows/research_agent.yaml`
 
 **Change Log**:
+
 - 2025-12-09 - Initial creation based on multi-agent analysis

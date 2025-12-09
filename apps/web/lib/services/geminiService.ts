@@ -1,22 +1,27 @@
-import { Provider, InteractionLog } from '../types';
+import { Provider, InteractionLog } from "../types";
 
 // API base URL - uses Next.js rewrite to proxy to backend
-const API_BASE = '/api/v1/gemini';
+const API_BASE = "/api/v1/gemini";
 
 /**
  * Generic API request handler with error handling
  */
-const apiRequest = async <T>(endpoint: string, body: Record<string, unknown>): Promise<T> => {
+const apiRequest = async <T>(
+  endpoint: string,
+  body: Record<string, unknown>,
+): Promise<T> => {
   const response = await fetch(`${API_BASE}${endpoint}`, {
-    method: 'POST',
+    method: "POST",
     headers: {
-      'Content-Type': 'application/json',
+      "Content-Type": "application/json",
     },
     body: JSON.stringify(body),
   });
 
   if (!response.ok) {
-    const error = await response.json().catch(() => ({ message: 'Request failed' }));
+    const error = await response
+      .json()
+      .catch(() => ({ message: "Request failed" }));
     throw new Error(error.message || `API error: ${response.status}`);
   }
 
@@ -29,22 +34,22 @@ const apiRequest = async <T>(endpoint: string, body: Record<string, unknown>): P
  */
 export const searchProviders = async (
   query: string,
-  location: string
+  location: string,
 ): Promise<{ providers: Provider[]; logs: InteractionLog }> => {
   try {
-    const result = await apiRequest<{ providers: Provider[]; logs: InteractionLog }>(
-      '/search-providers',
-      { query, location }
-    );
+    const result = await apiRequest<{
+      providers: Provider[];
+      logs: InteractionLog;
+    }>("/search-providers", { query, location });
     return result;
   } catch (error: any) {
     return {
       providers: [],
       logs: {
         timestamp: new Date().toISOString(),
-        stepName: 'Market Research',
+        stepName: "Market Research",
         detail: `Failed to find providers: ${error.message}`,
-        status: 'error',
+        status: "error",
       },
     };
   }
@@ -57,10 +62,10 @@ export const searchProviders = async (
 export const simulateCall = async (
   providerName: string,
   userCriteria: string,
-  isDirect: boolean
+  isDirect: boolean,
 ): Promise<InteractionLog> => {
   try {
-    const result = await apiRequest<InteractionLog>('/simulate-call', {
+    const result = await apiRequest<InteractionLog>("/simulate-call", {
       providerName,
       userCriteria,
       isDirect,
@@ -70,8 +75,8 @@ export const simulateCall = async (
     return {
       timestamp: new Date().toISOString(),
       stepName: `Calling ${providerName}`,
-      detail: 'Call failed to connect or dropped.',
-      status: 'error',
+      detail: "Call failed to connect or dropped.",
+      status: "error",
     };
   }
 };
@@ -83,20 +88,20 @@ export const simulateCall = async (
 export const selectBestProvider = async (
   requestTitle: string,
   interactions: InteractionLog[],
-  providers: Provider[]
+  providers: Provider[],
 ): Promise<{ selectedId: string | null; reasoning: string }> => {
   try {
-    const result = await apiRequest<{ selectedId: string | null; reasoning: string }>(
-      '/select-best-provider',
-      {
-        requestTitle,
-        interactions,
-        providers,
-      }
-    );
+    const result = await apiRequest<{
+      selectedId: string | null;
+      reasoning: string;
+    }>("/select-best-provider", {
+      requestTitle,
+      interactions,
+      providers,
+    });
     return result;
   } catch (error: any) {
-    return { selectedId: null, reasoning: 'AI Analysis failed.' };
+    return { selectedId: null, reasoning: "AI Analysis failed." };
   }
 };
 
@@ -106,10 +111,10 @@ export const selectBestProvider = async (
  */
 export const scheduleAppointment = async (
   providerName: string,
-  details: string
+  details: string,
 ): Promise<InteractionLog> => {
   try {
-    const result = await apiRequest<InteractionLog>('/schedule-appointment', {
+    const result = await apiRequest<InteractionLog>("/schedule-appointment", {
       providerName,
       details,
     });
@@ -117,9 +122,9 @@ export const scheduleAppointment = async (
   } catch (error: any) {
     return {
       timestamp: new Date().toISOString(),
-      stepName: 'Booking Appointment',
+      stepName: "Booking Appointment",
       detail: `Failed to schedule appointment: ${error.message}`,
-      status: 'error',
+      status: "error",
     };
   }
 };

@@ -1,20 +1,34 @@
-'use client';
+"use client";
 
-import React, { useEffect, useRef, useState } from 'react';
-import { useParams } from 'next/navigation';
-import Link from 'next/link';
-import { useAppContext } from '@/lib/providers/AppProvider';
-import StatusBadge from '@/components/StatusBadge';
-import { ArrowLeft, MapPin, User, CheckCircle, AlertTriangle, XCircle, Terminal, Loader2 } from 'lucide-react';
-import { InteractionLog, ServiceRequest, RequestStatus, RequestType } from '@/lib/types';
-import { createClient } from '@/lib/supabase/client';
+import React, { useEffect, useRef, useState } from "react";
+import { useParams } from "next/navigation";
+import Link from "next/link";
+import { useAppContext } from "@/lib/providers/AppProvider";
+import StatusBadge from "@/components/StatusBadge";
+import {
+  ArrowLeft,
+  MapPin,
+  User,
+  CheckCircle,
+  AlertTriangle,
+  XCircle,
+  Terminal,
+  Loader2,
+} from "lucide-react";
+import {
+  InteractionLog,
+  ServiceRequest,
+  RequestStatus,
+  RequestType,
+} from "@/lib/types";
+import { createClient } from "@/lib/supabase/client";
 
 const LogItem: React.FC<{ log: InteractionLog; index: number }> = ({ log }) => {
   const iconMap = {
     success: <CheckCircle className="w-5 h-5 text-emerald-400" />,
     warning: <AlertTriangle className="w-5 h-5 text-amber-400" />,
     error: <XCircle className="w-5 h-5 text-red-400" />,
-    info: <Terminal className="w-5 h-5 text-blue-400" />
+    info: <Terminal className="w-5 h-5 text-blue-400" />,
   };
 
   return (
@@ -37,14 +51,24 @@ const LogItem: React.FC<{ log: InteractionLog; index: number }> = ({ log }) => {
 
         {log.transcript && (
           <div className="bg-abyss/50 rounded-lg p-4 border border-surface-highlight space-y-3">
-            <p className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Transcript</p>
+            <p className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">
+              Transcript
+            </p>
             {log.transcript.map((line, idx) => (
-              <div key={idx} className={`flex gap-3 text-sm ${line.speaker === 'AI' ? 'justify-end' : 'justify-start'}`}>
-                <div className={`max-w-[80%] rounded-2xl px-4 py-2 ${line.speaker === 'AI'
-                    ? 'bg-primary-600/20 text-primary-200 border border-primary-500/20 rounded-tr-none'
-                    : 'bg-surface-highlight border border-surface-highlight text-slate-300 rounded-tl-none shadow-sm'
-                  }`}>
-                  <span className="block text-xs opacity-75 mb-1 font-bold">{line.speaker}</span>
+              <div
+                key={idx}
+                className={`flex gap-3 text-sm ${line.speaker === "AI" ? "justify-end" : "justify-start"}`}
+              >
+                <div
+                  className={`max-w-[80%] rounded-2xl px-4 py-2 ${
+                    line.speaker === "AI"
+                      ? "bg-primary-600/20 text-primary-200 border border-primary-500/20 rounded-tr-none"
+                      : "bg-surface-highlight border border-surface-highlight text-slate-300 rounded-tl-none shadow-sm"
+                  }`}
+                >
+                  <span className="block text-xs opacity-75 mb-1 font-bold">
+                    {line.speaker}
+                  </span>
                   {line.text}
                 </div>
               </div>
@@ -60,7 +84,7 @@ export default function RequestDetails() {
   const params = useParams();
   const id = params.id as string;
   const { requests, addRequest } = useAppContext();
-  const localRequest = requests.find(r => r.id === id);
+  const localRequest = requests.find((r) => r.id === id);
   const [dbRequest, setDbRequest] = useState<ServiceRequest | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -76,13 +100,13 @@ export default function RequestDetails() {
       const supabase = createClient();
 
       supabase
-        .from('service_requests')
-        .select('*')
-        .eq('id', id)
+        .from("service_requests")
+        .select("*")
+        .eq("id", id)
         .single()
         .then(({ data, error: fetchError }) => {
           if (fetchError) {
-            setError('Request not found');
+            setError("Request not found");
           } else if (data) {
             // Convert DB format to frontend format
             const converted: ServiceRequest = {
@@ -109,7 +133,7 @@ export default function RequestDetails() {
 
   useEffect(() => {
     // Auto scroll to bottom when new logs arrive
-    bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
+    bottomRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [request?.interactions.length]);
 
   if (loading) {
@@ -122,12 +146,19 @@ export default function RequestDetails() {
   }
 
   if (error || !request) {
-    return <div className="text-center p-10 text-slate-400">{error || 'Request not found'}</div>;
+    return (
+      <div className="text-center p-10 text-slate-400">
+        {error || "Request not found"}
+      </div>
+    );
   }
 
   return (
     <div className="max-w-4xl mx-auto pb-10">
-      <Link href="/" className="inline-flex items-center text-slate-500 hover:text-slate-300 mb-6 transition-colors">
+      <Link
+        href="/"
+        className="inline-flex items-center text-slate-500 hover:text-slate-300 mb-6 transition-colors"
+      >
         <ArrowLeft className="w-4 h-4 mr-2" /> Back to Dashboard
       </Link>
 
@@ -148,7 +179,8 @@ export default function RequestDetails() {
             </div>
           )}
           <div className="flex items-center gap-2 text-slate-400">
-            <span className="font-semibold text-slate-300">Criteria:</span> {request.criteria}
+            <span className="font-semibold text-slate-300">Criteria:</span>{" "}
+            {request.criteria}
           </div>
         </div>
 
@@ -158,10 +190,13 @@ export default function RequestDetails() {
               <CheckCircle className="w-5 h-5" />
             </div>
             <div>
-              <h3 className="font-bold text-primary-300">Provider Selected & Booked</h3>
+              <h3 className="font-bold text-primary-300">
+                Provider Selected & Booked
+              </h3>
               <p className="text-primary-400/80 text-sm mt-1">
                 {request.selectedProvider.name} has been secured.
-                {request.selectedProvider.address && ` Located at ${request.selectedProvider.address}.`}
+                {request.selectedProvider.address &&
+                  ` Located at ${request.selectedProvider.address}.`}
               </p>
             </div>
           </div>
@@ -171,10 +206,14 @@ export default function RequestDetails() {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         {/* Main Timeline */}
         <div className="lg:col-span-2">
-          <h3 className="text-lg font-bold text-slate-100 mb-4">Activity Log</h3>
+          <h3 className="text-lg font-bold text-slate-100 mb-4">
+            Activity Log
+          </h3>
           <div className="bg-abyss/30 p-6 rounded-2xl border border-surface-highlight min-h-[400px]">
             {request.interactions.length === 0 && (
-              <div className="text-center text-slate-500 py-10">Initializing AI Agent...</div>
+              <div className="text-center text-slate-500 py-10">
+                Initializing AI Agent...
+              </div>
             )}
             {request.interactions.map((log, i) => (
               <LogItem key={i} log={log} index={i} />
@@ -191,10 +230,15 @@ export default function RequestDetails() {
                 <User className="w-4 h-4 text-slate-400" /> Candidates
               </h3>
               <div className="space-y-3">
-                {request.providersFound.map(p => (
-                  <div key={p.id} className={`text-sm p-3 rounded-lg border ${request.selectedProvider?.id === p.id ? 'bg-primary-500/10 border-primary-500/30 ring-1 ring-primary-500/30' : 'bg-surface-highlight border-surface-highlight'}`}>
+                {request.providersFound.map((p) => (
+                  <div
+                    key={p.id}
+                    className={`text-sm p-3 rounded-lg border ${request.selectedProvider?.id === p.id ? "bg-primary-500/10 border-primary-500/30 ring-1 ring-primary-500/30" : "bg-surface-highlight border-surface-highlight"}`}
+                  >
                     <div className="font-medium text-slate-200">{p.name}</div>
-                    <div className="text-slate-500 text-xs mt-1">{p.rating} ★ • {p.source}</div>
+                    <div className="text-slate-500 text-xs mt-1">
+                      {p.rating} ★ • {p.source}
+                    </div>
                   </div>
                 ))}
               </div>
@@ -207,8 +251,12 @@ export default function RequestDetails() {
                 <User className="w-4 h-4 text-slate-400" /> Target Contact
               </h3>
               <div className="text-sm">
-                <p className="font-medium text-slate-300">{request.directContactInfo.name}</p>
-                <p className="text-slate-500">{request.directContactInfo.phone}</p>
+                <p className="font-medium text-slate-300">
+                  {request.directContactInfo.name}
+                </p>
+                <p className="text-slate-500">
+                  {request.directContactInfo.phone}
+                </p>
               </div>
             </div>
           )}

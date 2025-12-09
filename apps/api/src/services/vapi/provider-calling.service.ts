@@ -4,10 +4,10 @@
  * Automatically routes between Kestra and Direct VAPI based on availability
  */
 
-import { KestraClient } from './kestra.client.js';
-import { DirectVapiClient } from './direct-vapi.client.js';
-import { CallResultService } from './call-result.service.js';
-import type { CallRequest, CallResult } from './types.js';
+import { KestraClient } from "./kestra.client.js";
+import { DirectVapiClient } from "./direct-vapi.client.js";
+import { CallResultService } from "./call-result.service.js";
+import type { CallRequest, CallResult } from "./types.js";
 
 interface Logger {
   info: (obj: Record<string, unknown>, msg?: string) => void;
@@ -34,13 +34,16 @@ export class ProviderCallingService {
   async callProvider(request: CallRequest): Promise<CallResult> {
     const useKestra = await this.shouldUseKestra();
 
-    this.logger.info({
-      method: useKestra ? 'kestra' : 'direct_vapi',
-      provider: request.providerName,
-      phone: request.providerPhone,
-      service: request.serviceNeeded,
-      location: request.location
-    }, 'Initiating provider call');
+    this.logger.info(
+      {
+        method: useKestra ? "kestra" : "direct_vapi",
+        provider: request.providerName,
+        phone: request.providerPhone,
+        service: request.serviceNeeded,
+        location: request.location,
+      },
+      "Initiating provider call",
+    );
 
     let result: CallResult;
 
@@ -54,20 +57,26 @@ export class ProviderCallingService {
       // Save results to database
       await this.callResultService.saveCallResult(result, request);
 
-      this.logger.info({
-        callId: result.callId,
-        status: result.status,
-        method: result.callMethod,
-        duration: result.duration
-      }, 'Provider call completed');
+      this.logger.info(
+        {
+          callId: result.callId,
+          status: result.status,
+          method: result.callMethod,
+          duration: result.duration,
+        },
+        "Provider call completed",
+      );
 
       return result;
     } catch (error) {
-      this.logger.error({
-        error,
-        provider: request.providerName,
-        method: useKestra ? 'kestra' : 'direct_vapi'
-      }, 'Provider call failed');
+      this.logger.error(
+        {
+          error,
+          provider: request.providerName,
+          method: useKestra ? "kestra" : "direct_vapi",
+        },
+        "Provider call failed",
+      );
 
       throw error;
     }
@@ -78,10 +87,10 @@ export class ProviderCallingService {
    * Checks environment variable and performs health check if needed
    */
   private async shouldUseKestra(): Promise<boolean> {
-    const kestraEnabled = process.env.KESTRA_ENABLED === 'true';
+    const kestraEnabled = process.env.KESTRA_ENABLED === "true";
 
     if (!kestraEnabled) {
-      this.logger.info({}, 'Kestra disabled via env var, using direct VAPI');
+      this.logger.info({}, "Kestra disabled via env var, using direct VAPI");
       return false;
     }
 
@@ -89,11 +98,14 @@ export class ProviderCallingService {
     const isHealthy = await this.kestraClient.healthCheck();
 
     if (!isHealthy) {
-      this.logger.warn({}, 'Kestra health check failed, falling back to direct VAPI');
+      this.logger.warn(
+        {},
+        "Kestra health check failed, falling back to direct VAPI",
+      );
       return false;
     }
 
-    this.logger.debug({}, 'Kestra available, will use Kestra flow');
+    this.logger.debug({}, "Kestra available, will use Kestra flow");
     return true;
   }
 
@@ -102,9 +114,11 @@ export class ProviderCallingService {
    * Returns information about which method is active
    */
   async getSystemStatus(): Promise<SystemStatus> {
-    const kestraEnabled = process.env.KESTRA_ENABLED === 'true';
-    const kestraUrl = process.env.KESTRA_URL || 'not configured';
-    const vapiConfigured = !!(process.env.VAPI_API_KEY && process.env.VAPI_PHONE_NUMBER_ID);
+    const kestraEnabled = process.env.KESTRA_ENABLED === "true";
+    const kestraUrl = process.env.KESTRA_URL || "not configured";
+    const vapiConfigured = !!(
+      process.env.VAPI_API_KEY && process.env.VAPI_PHONE_NUMBER_ID
+    );
 
     let kestraHealthy = false;
     if (kestraEnabled) {
@@ -117,7 +131,7 @@ export class ProviderCallingService {
       kestraHealthy,
       vapiConfigured,
       fallbackAvailable: vapiConfigured,
-      activeMethod: kestraEnabled && kestraHealthy ? 'kestra' : 'direct_vapi'
+      activeMethod: kestraEnabled && kestraHealthy ? "kestra" : "direct_vapi",
     };
   }
 }
@@ -128,5 +142,5 @@ export interface SystemStatus {
   kestraHealthy: boolean;
   vapiConfigured: boolean;
   fallbackAvailable: boolean;
-  activeMethod: 'kestra' | 'direct_vapi';
+  activeMethod: "kestra" | "direct_vapi";
 }

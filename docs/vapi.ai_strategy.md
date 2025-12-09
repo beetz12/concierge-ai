@@ -14,17 +14,18 @@ id: concierge_workflow
 namespace: ai_concierge
 
 tasks:
-  - id: research_providers        # Task 1
-    type: io.kestra.plugin.aiagent.AIAgent  # AI summarizes web data
-  - id: call_candidates           # Task 2 (parallel)
+  - id: research_providers # Task 1
+    type: io.kestra.plugin.aiagent.AIAgent # AI summarizes web data
+  - id: call_candidates # Task 2 (parallel)
     type: io.kestra.plugin.core.flow.ForEach
-  - id: select_best               # Task 3
-    type: io.kestra.plugin.aiagent.AIAgent  # AI decides
-  - id: book_appointment          # Task 4
-    type: io.kestra.plugin.scripts.shell.Scripts  # Vapi.ai call
+  - id: select_best # Task 3
+    type: io.kestra.plugin.aiagent.AIAgent # AI decides
+  - id: book_appointment # Task 4
+    type: io.kestra.plugin.scripts.shell.Scripts # Vapi.ai call
 ```
 
 **Key Features for Your Project:**
+
 - **AI Agents** summarize data + make decisions (Wakanda prize)
 - **Parallel execution** (call multiple plumbers simultaneously)
 - **Webhooks** for real-time frontend updates
@@ -52,7 +53,7 @@ docker run -d \
 Your Vapi.ai + Gemini plan **works beautifully** with Kestra. Here's how they integrate:
 
 ```
-Frontend (Next.js) 
+Frontend (Next.js)
      ↓ POST /api/trigger-workflow
 Kestra Workflow
      ↓ Task 1: Research (AI Agent)
@@ -64,6 +65,7 @@ Kestra Workflow
 ## 🏗️ Complete Integration Example
 
 ### **1. Kestra Workflow (YAML)**
+
 ```yaml
 # kestra/flows/concierge-complete.yaml
 id: concierge_complete
@@ -85,7 +87,7 @@ tasks:
   - id: research_providers
     type: io.kestra.plugin.aiagent.AIAgent
     config:
-      provider: gemini-2.5-flash  # Your Gemini model
+      provider: gemini-2.5-flash # Your Gemini model
       maxIterations: 5
     prompt: |
       Find {{ inputs.service }} providers in {{ inputs.location }} with 
@@ -142,10 +144,11 @@ tasks:
 ```
 
 ### **2. Vapi.ai Node.js Script (called by Kestra)**
+
 ```javascript
 // kestra/call-provider.js
-const Vapi = require('vapi');
-const { GoogleGenerativeAI } = require('@google/generative-ai');
+const Vapi = require("vapi");
+const { GoogleGenerativeAI } = require("@google/generative-ai");
 
 const vapi = new Vapi(process.env.VAPI_API_KEY);
 const gemini = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
@@ -155,17 +158,17 @@ async function callProvider(phoneNumber, service) {
   const assistant = await vapi.assistants.create({
     name: `Concierge for ${service}`,
     voice: {
-      provider: 'playht',
-      voiceId: 'jennifer'
+      provider: "playht",
+      voiceId: "jennifer",
     },
     model: {
-      provider: 'gemini',
-      model: 'gemini-2.5-flash',
+      provider: "gemini",
+      model: "gemini-2.5-flash",
       apiKey: process.env.GEMINI_API_KEY,
       transcriber: {
-        provider: 'deepgram',
-        language: 'en'
-      }
+        provider: "deepgram",
+        language: "en",
+      },
     },
     systemPrompt: `
       You are calling a ${service} on behalf of a customer in Greenville, SC.
@@ -182,93 +185,97 @@ async function callProvider(phoneNumber, service) {
       Be professional, polite, and concise. End call with "Thank you, I'll confirm with customer."
       
       Output structured JSON response at end with: availability, price, licensed, notes.
-    `
+    `,
   });
 
   // Make outbound call
   const call = await vapi.calls.createServerCall({
     phoneNumber,
-    assistantId: assistant.id
+    assistantId: assistant.id,
   });
 
   // Wait for call to complete + get transcript
   const result = await waitForCallCompletion(call.id);
-  
-  console.log(JSON.stringify({
-    phone: phoneNumber,
-    transcript: result.transcript,
-    availability: result.availability,
-    price: result.price,
-    meetsCriteria: result.meetsCriteria
-  }));
+
+  console.log(
+    JSON.stringify({
+      phone: phoneNumber,
+      transcript: result.transcript,
+      availability: result.availability,
+      price: result.price,
+      meetsCriteria: result.meetsCriteria,
+    }),
+  );
 }
 
 callProvider(process.argv[2], process.argv[3]);
 ```
 
 ### **3. Next.js API Trigger (Your Frontend)**
+
 ```typescript
 // app/api/trigger-concierge/route.ts
-import { NextRequest } from 'next/server';
+import { NextRequest } from "next/server";
 
 export async function POST(request: NextRequest) {
   const body = await request.json();
-  
+
   // Trigger Kestra workflow
-  const response = await fetch('http://localhost:8081/api/v1/executions', {
-    method: 'POST',
+  const response = await fetch("http://localhost:8081/api/v1/executions", {
+    method: "POST",
     headers: {
-      'Authorization': `Bearer ${process.env.KESTRA_TOKEN}`,
-      'Content-Type': 'application/yaml'
+      Authorization: `Bearer ${process.env.KESTRA_TOKEN}`,
+      "Content-Type": "application/yaml",
     },
     body: yaml.dump({
-      namespace: 'ai_concierge',
-      flowId: 'concierge_complete',
+      namespace: "ai_concierge",
+      flowId: "concierge_complete",
       inputs: {
         service: body.service,
         location: body.location,
-        min_rating: body.min_rating
+        min_rating: body.min_rating,
       },
       trigger: {
         body: {
-          callback_url: `${process.env.NEXT_PUBLIC_URL}/api/kestra-webhook`
-        }
-      }
-    })
+          callback_url: `${process.env.NEXT_PUBLIC_URL}/api/kestra-webhook`,
+        },
+      },
+    }),
   });
 
   const execution = await response.json();
-  
+
   // Return to frontend immediately
-  return Response.json({ 
+  return Response.json({
     executionId: execution.uid,
-    status: 'started' 
+    status: "started",
   });
 }
 ```
 
 ### **4. Real-Time Updates (Socket.io)**
+
 ```typescript
 // Webhook endpoint receives Kestra updates
-app.post('/api/kestra-webhook', (req, res) => {
-  io.emit('kestra-update', {
+app.post("/api/kestra-webhook", (req, res) => {
+  io.emit("kestra-update", {
     executionId: req.body.executionId,
     status: req.body.status,
     progress: req.body.progress,
-    data: req.body.data  // Provider info, transcripts, etc.
+    data: req.body.data, // Provider info, transcripts, etc.
   });
-  res.status(200).send('OK');
+  res.status(200).send("OK");
 });
 ```
 
 ## 🎯 **Why This Architecture Wins**
 
-| Component | Tool | Why Perfect |
-|-----------|------|-------------|
-| **Orchestration** | Kestra | AI agents + parallel execution + history |
-| **Voice AI** | Vapi.ai + Gemini | Real-time conversation + transcription |
-| **Frontend Updates** | Socket.io | Live dashboard (research → calling → booked) |
-| **Provider Research** | Kestra AI Agent | Summarizes Yelp/Google (Wakanda prize) |
+| Component             | Tool             | Why Perfect                                  |
+| --------------------- | ---------------- | -------------------------------------------- |
+| **Orchestration**     | Kestra           | AI agents + parallel execution + history     |
+| **Voice AI**          | Vapi.ai + Gemini | Real-time conversation + transcription       |
+| **Frontend Updates**  | Socket.io        | Live dashboard (research → calling → booked) |
+| **Provider Research** | Kestra AI Agent  | Summarizes Yelp/Google (Wakanda prize)       |
 
 ## ⏱️ **Hackathon Timeline**
 

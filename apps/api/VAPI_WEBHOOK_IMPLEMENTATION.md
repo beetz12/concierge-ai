@@ -4,11 +4,30 @@
 
 This implementation provides a webhook endpoint for receiving VAPI call completion callbacks and a polling endpoint for Kestra scripts to retrieve results. Instead of Kestra scripts polling VAPI directly, they now poll this backend API which caches webhook results in memory.
 
+**Key Features:**
+
+- AI-powered disqualification detection during calls
+- Conditional closing scripts (qualified vs disqualified)
+- DRY architecture with single source of truth
+- New structured data fields for enhanced analysis
+- Fast in-memory cache with automatic cleanup
+
 ## Architecture
 
 ```
-VAPI Call → VAPI Webhook → Backend API → In-Memory Cache
-                                              ↓
+VAPI Call → AI Assistant (assistant-config.ts) → Call Execution
+                ↓
+         Disqualification Detection
+         Conditional Closing
+                ↓
+VAPI Webhook → Backend API → In-Memory Cache
+                                   ↓
+                      WebhookCacheService
+                      - disqualified: boolean
+                      - disqualification_reason: string
+                      - earliest_availability: string
+                      - criteria_details: object
+                                   ↓
 Kestra Script ← Poll Backend API ← Cache ← [30min TTL]
 ```
 
@@ -19,12 +38,14 @@ Kestra Script ← Poll Backend API ← Cache ← [30min TTL]
 In-memory cache for storing call results with automatic TTL and cleanup.
 
 **Features:**
+
 - 30-minute default TTL (configurable)
 - Automatic cleanup every 5 minutes
 - Thread-safe Map-based storage
 - Debug statistics endpoint
 
 **Methods:**
+
 - `set(callId, result, ttl?)` - Store a call result
 - `get(callId)` - Retrieve a call result
 - `has(callId)` - Check if result exists
@@ -33,7 +54,118 @@ In-memory cache for storing call results with automatic TTL and cleanup.
 - `clear()` - Clear all entries
 - `shutdown()` - Stop cleanup interval
 
-### 2. VAPI Webhook Routes (`/apps/api/src/routes/vapi-webhook.ts`)
+### 2. Assistant Configuration (`/apps/api/src/services/vapi/assistant-config.ts`)
+
+**Single Source of Truth** for VAPI assistant behavior.
+
+**Key Features:**
+
+- System prompt with disqualification detection logic
+- Structured question flow (availability, rates, criteria)
+- Conditional closing scripts based on qualification status
+- Analysis schema with new fields
+
+**Export:**
+
+```typescript
+export function createAssistantConfig(request: CallRequest): AssistantConfig;
+```
+
+**Used By:**
+
+- Kestra scripts (via compiled JavaScript)
+- Direct VAPI client
+- Provider calling service
+
+**Disqualification Logic:**
+
+```typescript
+// In system prompt:
+"Watch for responses that DISQUALIFY the provider:
+- They don't have anyone available
+- They can't meet a specific requirement
+- They don't do the type of work needed
+- Rate is significantly higher than reasonable
+
+If disqualified, politely wrap up:
+'Thank you so much for taking the time to chat. Unfortunately,
+this particular request might not be the best fit right now,
+but I really appreciate your help. Have a wonderful day!'
+Then immediately invoke endCall.
+
+DO NOT mention calling back to schedule if they are disqualified."
+```
+
+**Structured Data Schema:**
+
+```typescript
+{
+  availability: "available" | "unavailable" | "callback_requested" | "unclear",
+  earliest_availability: string,        // NEW: "Tomorrow at 2pm"
+  estimated_rate: string,
+  single_person_found: boolean,
+  technician_name?: string,
+  all_criteria_met: boolean,
+  criteria_details: Record<string, boolean>, // NEW: Per-criterion breakdown
+  disqualified: boolean,                // NEW: Disqualification flag
+  disqualification_reason?: string,     // NEW: Why disqualified
+  call_outcome: "positive" | "negative" | "neutral" | "no_answer" | "voicemail",
+  recommended: boolean,
+  notes?: string
+}
+```
+
+### 3. Types (`/apps/api/src/services/vapi/types.ts`)
+
+Shared TypeScript interfaces for type safety.
+
+**Key Types:**
+
+```typescript
+interface CallRequest {
+  providerName: string;
+  providerPhone: string;
+  serviceNeeded: string;
+  location: string;
+  urgency: string;
+  userCriteria: string;
+}
+
+interface CallResult {
+  status: "completed" | "failed" | "no_answer";
+  callId: string;
+  callMethod: "kestra" | "direct_vapi";
+  duration?: number;
+  endedReason?: string;
+  transcript?: string;
+  analysis?: {
+    summary: string;
+    structuredData: {
+      // Fields from assistant-config schema
+      earliest_availability: string;
+      disqualified: boolean;
+      disqualification_reason?: string;
+      criteria_details: Record<string, boolean>;
+      // ... other fields
+    };
+    successEvaluation?: string;
+  };
+  provider: {
+    name: string;
+    phone: string;
+    service: string;
+    location: string;
+  };
+  request: {
+    criteria: string;
+    urgency: string;
+  };
+  cost?: number;
+  error?: string;
+}
+```
+
+### 4. VAPI Webhook Routes (`/apps/api/src/routes/vapi-webhook.ts`)
 
 RESTful endpoints for webhook callbacks and result retrieval.
 
@@ -44,6 +176,7 @@ RESTful endpoints for webhook callbacks and result retrieval.
 **Purpose:** Receive webhook callbacks from VAPI when calls complete
 
 **Request Body:**
+
 ```json
 {
   "message": {
@@ -78,6 +211,7 @@ RESTful endpoints for webhook callbacks and result retrieval.
 ```
 
 **Response (Success):**
+
 ```json
 {
   "success": true,
@@ -87,6 +221,7 @@ RESTful endpoints for webhook callbacks and result retrieval.
 ```
 
 **Configuration in VAPI:**
+
 1. Go to VAPI dashboard → Webhooks
 2. Add webhook URL: `https://api-production-8fe4.up.railway.app/api/v1/vapi/webhook`
 3. Select events: `end-of-call-report`
@@ -97,11 +232,13 @@ RESTful endpoints for webhook callbacks and result retrieval.
 **Purpose:** Retrieve cached call result (used by Kestra scripts for polling)
 
 **Example Request:**
+
 ```bash
 curl https://api-production-8fe4.up.railway.app/api/v1/vapi/calls/call_abc123
 ```
 
-**Response (Success):**
+**Response (Success - Qualified Provider):**
+
 ```json
 {
   "success": true,
@@ -110,17 +247,27 @@ curl https://api-production-8fe4.up.railway.app/api/v1/vapi/calls/call_abc123
     "callId": "call_abc123",
     "callMethod": "direct_vapi",
     "duration": 5.5,
-    "endedReason": "customer-ended-call",
-    "transcript": "AI: Hello...\nCustomer: Hi...",
+    "endedReason": "assistant-ended-call",
+    "transcript": "AI: Hello...\nProvider: Hi...",
     "analysis": {
-      "summary": "Customer confirmed availability",
+      "summary": "Provider confirmed availability for tomorrow at 2pm",
       "structuredData": {
         "availability": "available",
+        "earliest_availability": "Tomorrow at 2pm",
         "estimated_rate": "$100/hour",
         "single_person_found": true,
+        "technician_name": "John",
         "all_criteria_met": true,
+        "criteria_details": {
+          "licensed": true,
+          "10_years_experience": true,
+          "emergency_services": true
+        },
+        "disqualified": false,
+        "disqualification_reason": null,
         "call_outcome": "positive",
-        "recommended": true
+        "recommended": true,
+        "notes": "Very professional, can start tomorrow afternoon"
       },
       "successEvaluation": "successful"
     },
@@ -131,7 +278,7 @@ curl https://api-production-8fe4.up.railway.app/api/v1/vapi/calls/call_abc123
       "location": "Greenville, SC"
     },
     "request": {
-      "criteria": "Need same-day service",
+      "criteria": "Need licensed plumber with 10+ years experience",
       "urgency": "immediate"
     },
     "cost": 0.45
@@ -139,7 +286,57 @@ curl https://api-production-8fe4.up.railway.app/api/v1/vapi/calls/call_abc123
 }
 ```
 
+**Response (Success - Disqualified Provider):**
+
+```json
+{
+  "success": true,
+  "data": {
+    "status": "completed",
+    "callId": "call_def456",
+    "callMethod": "direct_vapi",
+    "duration": 3.2,
+    "endedReason": "assistant-ended-call",
+    "transcript": "AI: Hello...\nProvider: We only have 5 years experience...",
+    "analysis": {
+      "summary": "Provider does not meet 10+ years experience requirement",
+      "structuredData": {
+        "availability": "available",
+        "earliest_availability": "Today at 3pm",
+        "estimated_rate": "$85/hour",
+        "single_person_found": true,
+        "technician_name": "Mike",
+        "all_criteria_met": false,
+        "criteria_details": {
+          "licensed": true,
+          "10_years_experience": false,
+          "emergency_services": true
+        },
+        "disqualified": true,
+        "disqualification_reason": "Cannot meet criterion: 10+ years experience (only has 5)",
+        "call_outcome": "negative",
+        "recommended": false,
+        "notes": "Polite exit - did not mention callback/scheduling"
+      },
+      "successEvaluation": "call_ended_appropriately"
+    },
+    "provider": {
+      "name": "Quick Fix Plumbing",
+      "phone": "+15559876543",
+      "service": "plumbing",
+      "location": "Greenville, SC"
+    },
+    "request": {
+      "criteria": "Need licensed plumber with 10+ years experience",
+      "urgency": "immediate"
+    },
+    "cost": 0.28
+  }
+}
+```
+
 **Response (Not Found):**
+
 ```json
 {
   "success": false,
@@ -153,6 +350,7 @@ curl https://api-production-8fe4.up.railway.app/api/v1/vapi/calls/call_abc123
 **Purpose:** Debug endpoint to view cache statistics
 
 **Response:**
+
 ```json
 {
   "success": true,
@@ -174,6 +372,7 @@ curl https://api-production-8fe4.up.railway.app/api/v1/vapi/calls/call_abc123
 **Purpose:** Manually remove a call result from cache
 
 **Response:**
+
 ```json
 {
   "success": true,
@@ -184,6 +383,7 @@ curl https://api-production-8fe4.up.railway.app/api/v1/vapi/calls/call_abc123
 ## Integration with Kestra Scripts
 
 ### Before (Direct VAPI Polling)
+
 ```javascript
 // scripts/call-provider.js
 const callId = await initiateVapiCall();
@@ -193,6 +393,7 @@ const result = await pollVapiForResult(callId);
 ```
 
 ### After (Backend Webhook Polling)
+
 ```javascript
 // scripts/call-provider.js
 const callId = await initiateVapiCall();
@@ -207,7 +408,7 @@ async function pollBackendForResult(callId) {
   for (let attempt = 0; attempt < maxAttempts; attempt++) {
     try {
       const response = await fetch(
-        `${BACKEND_URL}/api/v1/vapi/calls/${callId}`
+        `${BACKEND_URL}/api/v1/vapi/calls/${callId}`,
       );
 
       if (response.ok) {
@@ -217,18 +418,18 @@ async function pollBackendForResult(callId) {
 
       if (response.status === 404) {
         // Not ready yet, continue polling
-        await new Promise(resolve => setTimeout(resolve, pollInterval));
+        await new Promise((resolve) => setTimeout(resolve, pollInterval));
         continue;
       }
 
       throw new Error(`Unexpected status: ${response.status}`);
     } catch (error) {
       console.error(`Poll attempt ${attempt + 1} failed:`, error);
-      await new Promise(resolve => setTimeout(resolve, pollInterval));
+      await new Promise((resolve) => setTimeout(resolve, pollInterval));
     }
   }
 
-  throw new Error('Timeout: Call result not received within 5 minutes');
+  throw new Error("Timeout: Call result not received within 5 minutes");
 }
 ```
 
@@ -261,15 +462,18 @@ No new environment variables required. Uses existing Fastify configuration.
 ## Error Handling
 
 ### Webhook Validation Errors
+
 - Invalid payload structure → 400 with Zod error details
 - Missing required fields → 400 with specific error
 
 ### Processing Failures
+
 - Webhook always returns 200 to VAPI (prevents infinite retries)
 - Logs error but acknowledges receipt
 - Scripts will timeout naturally if webhook never arrives
 
 ### Cache Expiration
+
 - Results expire after 30 minutes
 - GET endpoint returns 404 for expired results
 - Automatic cleanup prevents memory leaks
@@ -279,6 +483,7 @@ No new environment variables required. Uses existing Fastify configuration.
 ### 1. Test Webhook Endpoint (Local Development)
 
 Use ngrok to expose local server:
+
 ```bash
 # Terminal 1: Start backend
 cd apps/api
@@ -289,6 +494,7 @@ ngrok http 8000
 ```
 
 Configure VAPI webhook to ngrok URL:
+
 ```
 https://abc123.ngrok.io/api/v1/vapi/webhook
 ```
@@ -296,6 +502,7 @@ https://abc123.ngrok.io/api/v1/vapi/webhook
 ### 2. Test with curl
 
 Simulate VAPI webhook:
+
 ```bash
 curl -X POST http://localhost:8000/api/v1/vapi/webhook \
   -H "Content-Type: application/json" \
@@ -319,6 +526,7 @@ curl -X POST http://localhost:8000/api/v1/vapi/webhook \
 ```
 
 Retrieve result:
+
 ```bash
 curl http://localhost:8000/api/v1/vapi/calls/test_call_123
 ```
@@ -351,6 +559,7 @@ Webhook URL: `https://api-production-8fe4.up.railway.app/api/v1/vapi/webhook`
 ### Scaling Considerations
 
 **Current Implementation (In-Memory Cache):**
+
 - ✅ Simple, no external dependencies
 - ✅ Fast, low latency
 - ❌ Lost on server restart
@@ -361,7 +570,7 @@ If scaling to multiple backend instances, replace `WebhookCacheService` with Red
 
 ```typescript
 // webhook-cache.service.ts with Redis
-import Redis from 'ioredis';
+import Redis from "ioredis";
 
 export class WebhookCacheService {
   private redis: Redis;
@@ -371,11 +580,7 @@ export class WebhookCacheService {
   }
 
   async set(callId: string, result: CallResult, ttl = 1800) {
-    await this.redis.setex(
-      `vapi:call:${callId}`,
-      ttl,
-      JSON.stringify(result)
-    );
+    await this.redis.setex(`vapi:call:${callId}`, ttl, JSON.stringify(result));
   }
 
   async get(callId: string): Promise<CallResult | null> {
@@ -442,6 +647,57 @@ All operations are logged with structured data:
 - Verify TTL is reasonable
 - Consider shorter TTL or Redis for persistence
 
+## DRY Architecture
+
+### Single Source of Truth
+
+All VAPI assistant behavior is defined once in `assistant-config.ts` and used everywhere:
+
+```
+┌────────────────────────────────────────┐
+│  assistant-config.ts (TypeScript)      │
+│  - System prompt                       │
+│  - Disqualification logic              │
+│  - Conditional closing scripts         │
+│  - Structured data schema              │
+│  - Analysis configuration              │
+└──────────────┬─────────────────────────┘
+               │
+               ├─ TypeScript compile ─→ dist/services/vapi/assistant-config.js
+               │
+               ├─→ Kestra Scripts
+               │   - call-provider.js (imports from dist/)
+               │   - call-provider-webhook.js
+               │
+               ├─→ Direct VAPI Client
+               │   - direct-vapi.client.ts
+               │
+               └─→ Provider Calling Service
+                   - provider-calling.service.ts
+```
+
+**Benefits:**
+
+1. **Consistency**: Same behavior across all call paths
+2. **Maintainability**: Update once, applies everywhere
+3. **Type Safety**: TypeScript ensures correct usage
+4. **Version Control**: Single place to track changes
+5. **Testing**: Test one configuration, validates all paths
+
+### Shared Types
+
+`types.ts` defines interfaces used across the system:
+
+```typescript
+// Request format (input)
+CallRequest → createAssistantConfig() → VAPI Assistant Config
+
+// Response format (output)
+VAPI Webhook → transformToCallResult() → CallResult
+```
+
+All components work with the same data structures, eliminating transformation errors.
+
 ## File Locations
 
 ```
@@ -449,21 +705,66 @@ apps/api/src/
 ├── routes/
 │   └── vapi-webhook.ts          # Webhook + polling endpoints
 ├── services/vapi/
+│   ├── assistant-config.ts      # SOURCE OF TRUTH
 │   ├── webhook-cache.service.ts # In-memory cache
-│   ├── types.ts                 # Shared types
+│   ├── types.ts                 # CallRequest, CallResult
+│   ├── direct-vapi.client.ts    # Direct VAPI API client
+│   ├── kestra.client.ts         # Kestra integration
+│   ├── provider-calling.service.ts # Main orchestrator
 │   └── index.ts                 # Exports
 └── index.ts                     # Route registration
+
+kestra/scripts/
+├── call-provider.js             # Imports from compiled TS
+└── call-provider-webhook.js     # Backend polling
 ```
+
+## Architectural Improvements Summary
+
+### 1. AI-Powered Disqualification
+
+- **Before**: All providers got callback script, manual filtering needed
+- **After**: AI detects disqualification during call, exits politely without callback mention
+- **Impact**: Saves time, sets proper expectations, cleaner transcripts
+
+### 2. Enhanced Structured Data
+
+- **New Fields**:
+  - `earliest_availability`: Specific date/time (not just "available")
+  - `disqualified`: Clear boolean flag
+  - `disqualification_reason`: Actionable explanation
+  - `criteria_details`: Per-criterion breakdown for debugging
+- **Impact**: Better analytics, easier filtering, clearer decision-making
+
+### 3. DRY Architecture
+
+- **Before**: Duplicate configs in Kestra JS and TypeScript
+- **After**: Single source in `assistant-config.ts`, compiled to JS, imported by Kestra
+- **Impact**: One place to maintain, no drift, type-safe changes
+
+### 4. In-Memory Cache
+
+- **Before**: Poll VAPI API 60+ times per call
+- **After**: Poll backend cache (< 10ms lookups)
+- **Impact**: Faster, cheaper, no rate limits, better monitoring
+
+### 5. Conditional Closing
+
+- **Before**: Same closing script for all providers
+- **After**: Different scripts based on qualification status
+- **Impact**: Professional communication, accurate expectations
 
 ## Next Steps
 
 1. ✅ Implement webhook endpoint
 2. ✅ Implement cache service
 3. ✅ Register routes in Fastify
-4. ⏳ Update Kestra script to poll backend
-5. ⏳ Configure VAPI webhook URL
-6. ⏳ Test end-to-end flow
-7. ⏳ Monitor in production
+4. ✅ Create assistant configuration (single source of truth)
+5. ✅ Define shared types
+6. ⏳ Update Kestra script to poll backend
+7. ⏳ Configure VAPI webhook URL
+8. ⏳ Test end-to-end flow
+9. ⏳ Monitor in production
 
 ## References
 

@@ -4,7 +4,7 @@
  * Used by Kestra scripts to poll for results instead of directly polling VAPI
  */
 
-import type { CallResult } from './types.js';
+import type { CallResult } from "./types.js";
 
 interface Logger {
   info: (obj: Record<string, unknown>, msg?: string) => void;
@@ -24,17 +24,26 @@ export class WebhookCacheService {
   private readonly DEFAULT_TTL_MS = 30 * 60 * 1000; // 30 minutes
   private cleanupInterval: NodeJS.Timeout;
 
-  constructor(private logger: Logger, ttlMs: number = 30 * 60 * 1000) {
+  constructor(
+    private logger: Logger,
+    ttlMs: number = 30 * 60 * 1000,
+  ) {
     this.DEFAULT_TTL_MS = ttlMs;
 
     // Run cleanup every 5 minutes to remove expired entries
-    this.cleanupInterval = setInterval(() => {
-      this.cleanup();
-    }, 5 * 60 * 1000);
+    this.cleanupInterval = setInterval(
+      () => {
+        this.cleanup();
+      },
+      5 * 60 * 1000,
+    );
 
-    this.logger.info({
-      ttl: this.DEFAULT_TTL_MS / 1000 / 60
-    }, 'WebhookCacheService initialized');
+    this.logger.info(
+      {
+        ttl: this.DEFAULT_TTL_MS / 1000 / 60,
+      },
+      "WebhookCacheService initialized",
+    );
   }
 
   /**
@@ -47,15 +56,18 @@ export class WebhookCacheService {
     this.cache.set(callId, {
       result,
       timestamp: now,
-      expiresAt
+      expiresAt,
     });
 
-    this.logger.debug({
-      callId,
-      expiresAt: new Date(expiresAt).toISOString(),
-      cacheSize: this.cache.size,
-      dataStatus: result.dataStatus
-    }, 'Call result cached');
+    this.logger.debug(
+      {
+        callId,
+        expiresAt: new Date(expiresAt).toISOString(),
+        cacheSize: this.cache.size,
+        dataStatus: result.dataStatus,
+      },
+      "Call result cached",
+    );
   }
 
   /**
@@ -63,20 +75,23 @@ export class WebhookCacheService {
    */
   updateFetchStatus(
     callId: string,
-    status: 'partial' | 'complete' | 'fetching' | 'fetch_failed',
-    error?: string
+    status: "partial" | "complete" | "fetching" | "fetch_failed",
+    error?: string,
   ): boolean {
     const cached = this.cache.get(callId);
     if (!cached) {
-      this.logger.warn({ callId }, 'Cannot update fetch status: call not found in cache');
+      this.logger.warn(
+        { callId },
+        "Cannot update fetch status: call not found in cache",
+      );
       return false;
     }
 
     cached.result.dataStatus = status;
-    if (status === 'fetching') {
+    if (status === "fetching") {
       cached.result.fetchAttempts = (cached.result.fetchAttempts || 0) + 1;
     }
-    if (status === 'complete') {
+    if (status === "complete") {
       cached.result.fetchedAt = new Date().toISOString();
     }
     if (error) {
@@ -85,11 +100,14 @@ export class WebhookCacheService {
 
     this.cache.set(callId, cached);
 
-    this.logger.debug({
-      callId,
-      dataStatus: status,
-      fetchAttempts: cached.result.fetchAttempts
-    }, 'Fetch status updated');
+    this.logger.debug(
+      {
+        callId,
+        dataStatus: status,
+        fetchAttempts: cached.result.fetchAttempts,
+      },
+      "Fetch status updated",
+    );
 
     return true;
   }
@@ -97,27 +115,39 @@ export class WebhookCacheService {
   /**
    * Merge enriched data from VAPI API into existing cache entry
    */
-  mergeEnrichedData(callId: string, enrichedData: Partial<CallResult>): boolean {
+  mergeEnrichedData(
+    callId: string,
+    enrichedData: Partial<CallResult>,
+  ): boolean {
     const cached = this.cache.get(callId);
     if (!cached) {
-      this.logger.warn({ callId }, 'Cannot merge data: call not found in cache');
+      this.logger.warn(
+        { callId },
+        "Cannot merge data: call not found in cache",
+      );
       return false;
     }
 
     // Merge transcript (prefer longer/more complete one)
-    if (enrichedData.transcript && enrichedData.transcript.length > cached.result.transcript.length) {
+    if (
+      enrichedData.transcript &&
+      enrichedData.transcript.length > cached.result.transcript.length
+    ) {
       cached.result.transcript = enrichedData.transcript;
     }
 
     // Merge analysis
     if (enrichedData.analysis) {
       cached.result.analysis = {
-        summary: enrichedData.analysis.summary || cached.result.analysis.summary,
+        summary:
+          enrichedData.analysis.summary || cached.result.analysis.summary,
         structuredData: {
           ...cached.result.analysis.structuredData,
-          ...enrichedData.analysis.structuredData
+          ...enrichedData.analysis.structuredData,
         },
-        successEvaluation: enrichedData.analysis.successEvaluation || cached.result.analysis.successEvaluation
+        successEvaluation:
+          enrichedData.analysis.successEvaluation ||
+          cached.result.analysis.successEvaluation,
       };
     }
 
@@ -127,17 +157,21 @@ export class WebhookCacheService {
     }
 
     // Update status fields
-    cached.result.dataStatus = 'complete';
+    cached.result.dataStatus = "complete";
     cached.result.fetchedAt = new Date().toISOString();
 
     this.cache.set(callId, cached);
 
-    this.logger.info({
-      callId,
-      transcriptLength: cached.result.transcript.length,
-      hasSummary: !!cached.result.analysis.summary,
-      hasStructuredData: Object.keys(cached.result.analysis.structuredData).length > 0
-    }, 'Enriched data merged into cache');
+    this.logger.info(
+      {
+        callId,
+        transcriptLength: cached.result.transcript.length,
+        hasSummary: !!cached.result.analysis.summary,
+        hasStructuredData:
+          Object.keys(cached.result.analysis.structuredData).length > 0,
+      },
+      "Enriched data merged into cache",
+    );
 
     return true;
   }
@@ -149,18 +183,18 @@ export class WebhookCacheService {
     const cached = this.cache.get(callId);
 
     if (!cached) {
-      this.logger.debug({ callId }, 'Call result not found in cache');
+      this.logger.debug({ callId }, "Call result not found in cache");
       return null;
     }
 
     // Check if expired
     if (Date.now() > cached.expiresAt) {
-      this.logger.debug({ callId }, 'Call result expired, removing from cache');
+      this.logger.debug({ callId }, "Call result expired, removing from cache");
       this.cache.delete(callId);
       return null;
     }
 
-    this.logger.debug({ callId }, 'Call result retrieved from cache');
+    this.logger.debug({ callId }, "Call result retrieved from cache");
     return cached.result;
   }
 
@@ -190,7 +224,7 @@ export class WebhookCacheService {
     const existed = this.cache.delete(callId);
 
     if (existed) {
-      this.logger.debug({ callId }, 'Call result removed from cache');
+      this.logger.debug({ callId }, "Call result removed from cache");
     }
 
     return existed;
@@ -210,15 +244,17 @@ export class WebhookCacheService {
     size: number;
     entries: Array<{ callId: string; timestamp: number; expiresAt: number }>;
   } {
-    const entries = Array.from(this.cache.entries()).map(([callId, cached]) => ({
-      callId,
-      timestamp: cached.timestamp,
-      expiresAt: cached.expiresAt
-    }));
+    const entries = Array.from(this.cache.entries()).map(
+      ([callId, cached]) => ({
+        callId,
+        timestamp: cached.timestamp,
+        expiresAt: cached.expiresAt,
+      }),
+    );
 
     return {
       size: this.cache.size,
-      entries
+      entries,
     };
   }
 
@@ -237,10 +273,13 @@ export class WebhookCacheService {
     }
 
     if (removed > 0) {
-      this.logger.info({
-        removed,
-        remainingSize: this.cache.size
-      }, 'Cache cleanup completed');
+      this.logger.info(
+        {
+          removed,
+          remainingSize: this.cache.size,
+        },
+        "Cache cleanup completed",
+      );
     }
   }
 
@@ -250,7 +289,7 @@ export class WebhookCacheService {
   clear(): void {
     const size = this.cache.size;
     this.cache.clear();
-    this.logger.info({ clearedEntries: size }, 'Cache cleared');
+    this.logger.info({ clearedEntries: size }, "Cache cleared");
   }
 
   /**
@@ -258,6 +297,6 @@ export class WebhookCacheService {
    */
   shutdown(): void {
     clearInterval(this.cleanupInterval);
-    this.logger.info({}, 'WebhookCacheService shutdown');
+    this.logger.info({}, "WebhookCacheService shutdown");
   }
 }

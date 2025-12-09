@@ -16,34 +16,34 @@ Successfully implemented the VAPI fallback system that automatically detects Kes
 
 ### Service Layer (`apps/api/src/services/vapi/`)
 
-| File | Purpose | Lines |
-|------|---------|-------|
-| `types.ts` | Shared type definitions | ~65 |
-| `assistant-config.ts` | VAPI assistant configuration (mirrors call-provider.js) | ~175 |
-| `direct-vapi.client.ts` | Direct VAPI SDK integration | ~245 |
-| `kestra.client.ts` | Kestra workflow client | ~145 |
-| `call-result.service.ts` | Database updates for call results | ~155 |
-| `provider-calling.service.ts` | Main orchestrator service | ~95 |
-| `index.ts` | Service exports | ~25 |
+| File                          | Purpose                                                 | Lines |
+| ----------------------------- | ------------------------------------------------------- | ----- |
+| `types.ts`                    | Shared type definitions                                 | ~65   |
+| `assistant-config.ts`         | VAPI assistant configuration (mirrors call-provider.js) | ~175  |
+| `direct-vapi.client.ts`       | Direct VAPI SDK integration                             | ~245  |
+| `kestra.client.ts`            | Kestra workflow client                                  | ~145  |
+| `call-result.service.ts`      | Database updates for call results                       | ~155  |
+| `provider-calling.service.ts` | Main orchestrator service                               | ~95   |
+| `index.ts`                    | Service exports                                         | ~25   |
 
 ### API Routes (`apps/api/src/routes/`)
 
-| File | Purpose |
-|------|---------|
+| File           | Purpose                    |
+| -------------- | -------------------------- |
 | `providers.ts` | Provider calling endpoints |
 
 ### Configuration
 
-| File | Changes |
-|------|---------|
+| File                    | Changes                              |
+| ----------------------- | ------------------------------------ |
 | `apps/api/.env.example` | Added Kestra configuration variables |
-| `apps/api/src/index.ts` | Registered provider routes |
+| `apps/api/src/index.ts` | Registered provider routes           |
 | `apps/api/package.json` | Added @vapi-ai/server-sdk dependency |
 
 ### Database
 
-| File | Purpose |
-|------|---------|
+| File                                                                | Purpose                                   |
+| ------------------------------------------------------------------- | ----------------------------------------- |
 | `supabase/migrations/20250108000000_add_provider_call_tracking.sql` | Call tracking columns for providers table |
 
 ---
@@ -55,6 +55,7 @@ Successfully implemented the VAPI fallback system that automatically detects Kes
 Initiate a phone call to a service provider.
 
 **Request Body:**
+
 ```json
 {
   "providerName": "ABC Plumbing",
@@ -69,6 +70,7 @@ Initiate a phone call to a service provider.
 ```
 
 **Response:**
+
 ```json
 {
   "success": true,
@@ -98,6 +100,7 @@ Initiate a phone call to a service provider.
 Check provider calling system status.
 
 **Response:**
+
 ```json
 {
   "kestraEnabled": false,
@@ -151,6 +154,7 @@ Request → ProviderCallingService
 ## Testing Results
 
 ### Build Status
+
 ```
 ✅ TypeScript compilation: PASSED
 ✅ Web build: PASSED
@@ -158,6 +162,7 @@ Request → ProviderCallingService
 ```
 
 ### Endpoint Tests
+
 ```bash
 # Status endpoint
 curl http://localhost:8000/api/v1/providers/call/status
@@ -169,6 +174,7 @@ curl http://localhost:8000/api/v1/providers/call/status
 ## Production Deployment
 
 ### Railway (No Kestra)
+
 ```bash
 KESTRA_ENABLED=false
 VAPI_API_KEY=your-prod-key
@@ -176,6 +182,7 @@ VAPI_PHONE_NUMBER_ID=your-prod-phone-id
 ```
 
 ### Local/Staging (With Kestra)
+
 ```bash
 KESTRA_ENABLED=true
 KESTRA_URL=http://localhost:8082
@@ -187,6 +194,7 @@ docker-compose up -d kestra
 ## Database Migration
 
 Run when deploying:
+
 ```bash
 # Apply migration
 supabase db push
@@ -196,6 +204,7 @@ psql -f supabase/migrations/20250108000000_add_provider_call_tracking.sql
 ```
 
 New columns added to `providers` table:
+
 - `call_status` - Current call state
 - `call_result` - Structured JSON analysis
 - `call_transcript` - Full conversation

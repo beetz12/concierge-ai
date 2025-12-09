@@ -3,12 +3,14 @@
 ## Endpoints
 
 ### Production
+
 ```
 POST https://api-production-8fe4.up.railway.app/api/v1/vapi/webhook
 GET  https://api-production-8fe4.up.railway.app/api/v1/vapi/calls/:callId
 ```
 
 ### Local Development
+
 ```
 POST http://localhost:8000/api/v1/vapi/webhook
 GET  http://localhost:8000/api/v1/vapi/calls/:callId
@@ -23,7 +25,7 @@ GET  http://localhost:8000/api/v1/vapi/calls/:callId
 ## Kestra Polling Code
 
 ```javascript
-const BACKEND_URL = 'https://api-production-8fe4.up.railway.app';
+const BACKEND_URL = "https://api-production-8fe4.up.railway.app";
 
 async function pollForResult(callId) {
   const maxAttempts = 60; // 5 minutes
@@ -31,7 +33,9 @@ async function pollForResult(callId) {
 
   for (let attempt = 0; attempt < maxAttempts; attempt++) {
     try {
-      const response = await fetch(`${BACKEND_URL}/api/v1/vapi/calls/${callId}`);
+      const response = await fetch(
+        `${BACKEND_URL}/api/v1/vapi/calls/${callId}`,
+      );
 
       if (response.ok) {
         const { data } = await response.json();
@@ -39,24 +43,25 @@ async function pollForResult(callId) {
       }
 
       if (response.status === 404) {
-        await new Promise(resolve => setTimeout(resolve, pollInterval));
+        await new Promise((resolve) => setTimeout(resolve, pollInterval));
         continue;
       }
 
       throw new Error(`Unexpected status: ${response.status}`);
     } catch (error) {
       console.error(`Poll attempt ${attempt + 1} failed:`, error);
-      await new Promise(resolve => setTimeout(resolve, pollInterval));
+      await new Promise((resolve) => setTimeout(resolve, pollInterval));
     }
   }
 
-  throw new Error('Timeout: No result after 5 minutes');
+  throw new Error("Timeout: No result after 5 minutes");
 }
 ```
 
 ## Testing Commands
 
 ### Send Test Webhook
+
 ```bash
 curl -X POST http://localhost:8000/api/v1/vapi/webhook \
   -H "Content-Type: application/json" \
@@ -75,16 +80,19 @@ curl -X POST http://localhost:8000/api/v1/vapi/webhook \
 ```
 
 ### Retrieve Result
+
 ```bash
 curl http://localhost:8000/api/v1/vapi/calls/test_123
 ```
 
 ### Check Cache
+
 ```bash
 curl http://localhost:8000/api/v1/vapi/cache/stats
 ```
 
 ### Delete Result
+
 ```bash
 curl -X DELETE http://localhost:8000/api/v1/vapi/calls/test_123
 ```
@@ -92,6 +100,7 @@ curl -X DELETE http://localhost:8000/api/v1/vapi/calls/test_123
 ## Response Formats
 
 ### Success (200)
+
 ```json
 {
   "success": true,
@@ -115,6 +124,7 @@ curl -X DELETE http://localhost:8000/api/v1/vapi/calls/test_123
 ```
 
 ### Not Found (404)
+
 ```json
 {
   "success": false,
@@ -125,11 +135,11 @@ curl -X DELETE http://localhost:8000/api/v1/vapi/calls/test_123
 
 ## Implementation Files
 
-| File | Purpose |
-|------|---------|
-| `apps/api/src/routes/vapi-webhook.ts` | Webhook routes |
-| `apps/api/src/services/vapi/webhook-cache.service.ts` | Cache service |
-| `apps/api/src/index.ts` | Route registration |
+| File                                                  | Purpose            |
+| ----------------------------------------------------- | ------------------ |
+| `apps/api/src/routes/vapi-webhook.ts`                 | Webhook routes     |
+| `apps/api/src/services/vapi/webhook-cache.service.ts` | Cache service      |
+| `apps/api/src/index.ts`                               | Route registration |
 
 ## Configuration
 
@@ -140,12 +150,12 @@ curl -X DELETE http://localhost:8000/api/v1/vapi/calls/test_123
 
 ## Troubleshooting
 
-| Issue | Solution |
-|-------|----------|
-| Webhook not received | Check VAPI dashboard webhook logs |
-| 404 on poll | Keep polling, call may be in progress |
-| Cache growing | Check cleanup interval, verify TTL |
-| TypeScript errors | Run `pnpm check-types` |
+| Issue                | Solution                              |
+| -------------------- | ------------------------------------- |
+| Webhook not received | Check VAPI dashboard webhook logs     |
+| 404 on poll          | Keep polling, call may be in progress |
+| Cache growing        | Check cleanup interval, verify TTL    |
+| TypeScript errors    | Run `pnpm check-types`                |
 
 ## Monitoring
 

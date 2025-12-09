@@ -4,9 +4,9 @@
  * Used as fallback when Kestra is unavailable (e.g., in Railway production)
  */
 
-import { VapiClient } from '@vapi-ai/server-sdk';
-import type { CallRequest, CallResult, StructuredCallData } from './types.js';
-import { createAssistantConfig } from './assistant-config.js';
+import { VapiClient } from "@vapi-ai/server-sdk";
+import type { CallRequest, CallResult, StructuredCallData } from "./types.js";
+import { createAssistantConfig } from "./assistant-config.js";
 
 interface Logger {
   info: (obj: Record<string, unknown>, msg?: string) => void;
@@ -45,10 +45,12 @@ export class DirectVapiClient {
 
   constructor(private logger: Logger) {
     const apiKey = process.env.VAPI_API_KEY;
-    this.phoneNumberId = process.env.VAPI_PHONE_NUMBER_ID || '';
+    this.phoneNumberId = process.env.VAPI_PHONE_NUMBER_ID || "";
 
     if (!apiKey || !this.phoneNumberId) {
-      throw new Error('VAPI_API_KEY and VAPI_PHONE_NUMBER_ID environment variables are required');
+      throw new Error(
+        "VAPI_API_KEY and VAPI_PHONE_NUMBER_ID environment variables are required",
+      );
     }
 
     this.client = new VapiClient({ token: apiKey });
@@ -61,11 +63,14 @@ export class DirectVapiClient {
   async initiateCall(request: CallRequest): Promise<CallResult> {
     const assistantConfig = createAssistantConfig(request);
 
-    this.logger.info({
-      provider: request.providerName,
-      phone: request.providerPhone,
-      service: request.serviceNeeded
-    }, 'Initiating direct VAPI call');
+    this.logger.info(
+      {
+        provider: request.providerName,
+        phone: request.providerPhone,
+        service: request.serviceNeeded,
+      },
+      "Initiating direct VAPI call",
+    );
 
     try {
       // Create the call using the SDK
@@ -74,29 +79,35 @@ export class DirectVapiClient {
         phoneNumberId: this.phoneNumberId,
         customer: {
           number: request.providerPhone,
-          name: request.providerName
+          name: request.providerName,
         },
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        assistant: assistantConfig as any
+        assistant: assistantConfig as any,
       });
 
       // Extract call data - handle both single call and batch responses
       const call = this.extractCallFromResponse(callResponse);
 
-      this.logger.info({
-        callId: call.id,
-        status: call.status
-      }, 'VAPI call created');
+      this.logger.info(
+        {
+          callId: call.id,
+          status: call.status,
+        },
+        "VAPI call created",
+      );
 
       // Poll for completion
       const completedCall = await this.pollCallCompletion(call.id);
 
       return this.formatCallResult(completedCall, request);
     } catch (error) {
-      this.logger.error({
-        error,
-        provider: request.providerName
-      }, 'Failed to initiate VAPI call');
+      this.logger.error(
+        {
+          error,
+          provider: request.providerName,
+        },
+        "Failed to initiate VAPI call",
+      );
 
       return this.createErrorResult(request, error);
     }
@@ -109,18 +120,18 @@ export class DirectVapiClient {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   private extractCallFromResponse(response: any): VapiCall {
     // If it's a direct call object
-    if (response && typeof response.id === 'string') {
+    if (response && typeof response.id === "string") {
       return response as VapiCall;
     }
     // If it's wrapped in a data property
-    if (response?.data && typeof response.data.id === 'string') {
+    if (response?.data && typeof response.data.id === "string") {
       return response.data as VapiCall;
     }
     // If it's an array (batch response)
     if (Array.isArray(response) && response.length > 0) {
       return response[0] as VapiCall;
     }
-    throw new Error('Unexpected response format from VAPI calls.create');
+    throw new Error("Unexpected response format from VAPI calls.create");
   }
 
   /**
@@ -128,7 +139,7 @@ export class DirectVapiClient {
    * Checks call status every 5 seconds for up to 5 minutes
    */
   private async pollCallCompletion(callId: string): Promise<VapiCall> {
-    const maxAttempts = 60;  // 5 minutes (60 * 5 seconds)
+    const maxAttempts = 60; // 5 minutes (60 * 5 seconds)
     let attempts = 0;
 
     while (attempts < maxAttempts) {
@@ -136,24 +147,29 @@ export class DirectVapiClient {
       const callResponse = await this.client.calls.get({ id: callId });
       const call = this.extractCallFromResponse(callResponse);
 
-      this.logger.debug({
-        callId,
-        status: call.status,
-        attempt: attempts + 1,
-        maxAttempts
-      }, 'Polling call status');
+      this.logger.debug(
+        {
+          callId,
+          status: call.status,
+          attempt: attempts + 1,
+          maxAttempts,
+        },
+        "Polling call status",
+      );
 
       // Check if call has ended (not in active states)
-      if (!['queued', 'ringing', 'in-progress'].includes(call.status)) {
+      if (!["queued", "ringing", "in-progress"].includes(call.status)) {
         return call;
       }
 
       // Wait 5 seconds before next poll
-      await new Promise(resolve => setTimeout(resolve, 5000));
+      await new Promise((resolve) => setTimeout(resolve, 5000));
       attempts++;
     }
 
-    throw new Error(`Call ${callId} timed out after ${maxAttempts * 5} seconds`);
+    throw new Error(
+      `Call ${callId} timed out after ${maxAttempts * 5} seconds`,
+    );
   }
 
   /**
@@ -161,47 +177,52 @@ export class DirectVapiClient {
    */
   private formatCallResult(call: VapiCall, request: CallRequest): CallResult {
     // Determine status based on call state and ended reason
-    let status: CallResult['status'] = 'completed';
+    let status: CallResult["status"] = "completed";
 
-    if (call.status !== 'ended') {
-      status = 'error';
-    } else if (call.endedReason?.includes('no-answer') || call.endedReason?.includes('no_answer')) {
-      status = 'no_answer';
-    } else if (call.endedReason?.includes('voicemail')) {
-      status = 'voicemail';
+    if (call.status !== "ended") {
+      status = "error";
+    } else if (
+      call.endedReason?.includes("no-answer") ||
+      call.endedReason?.includes("no_answer")
+    ) {
+      status = "no_answer";
+    } else if (call.endedReason?.includes("voicemail")) {
+      status = "voicemail";
     }
 
     // Extract transcript - could be in artifact or directly on call
-    const transcript = call.artifact?.transcript || '';
-    const transcriptStr = typeof transcript === 'string' ? transcript : JSON.stringify(transcript);
+    const transcript = call.artifact?.transcript || "";
+    const transcriptStr =
+      typeof transcript === "string" ? transcript : JSON.stringify(transcript);
 
     // Extract analysis data
     const analysis = call.analysis || {};
-    const structuredData = (analysis.structuredData || {}) as unknown as StructuredCallData;
+    const structuredData = (analysis.structuredData ||
+      {}) as unknown as StructuredCallData;
 
     return {
       status,
       callId: call.id,
-      callMethod: 'direct_vapi',
+      callMethod: "direct_vapi",
       duration: call.durationMinutes || 0,
-      endedReason: call.endedReason || 'unknown',
+      endedReason: call.endedReason || "unknown",
       transcript: transcriptStr,
       analysis: {
-        summary: analysis.summary || '',
+        summary: analysis.summary || "",
         structuredData,
-        successEvaluation: analysis.successEvaluation || ''
+        successEvaluation: analysis.successEvaluation || "",
       },
       provider: {
         name: request.providerName,
         phone: request.providerPhone,
         service: request.serviceNeeded,
-        location: request.location
+        location: request.location,
       },
       request: {
         criteria: request.userCriteria,
-        urgency: request.urgency
+        urgency: request.urgency,
       },
-      cost: call.costBreakdown?.total
+      cost: call.costBreakdown?.total,
     };
   }
 
@@ -210,35 +231,35 @@ export class DirectVapiClient {
    */
   private createErrorResult(request: CallRequest, error: unknown): CallResult {
     return {
-      status: 'error',
-      callId: '',
-      callMethod: 'direct_vapi',
+      status: "error",
+      callId: "",
+      callMethod: "direct_vapi",
       duration: 0,
-      endedReason: 'api_error',
-      transcript: '',
+      endedReason: "api_error",
+      transcript: "",
       analysis: {
-        summary: '',
+        summary: "",
         structuredData: {
-          availability: 'unclear',
-          estimated_rate: '',
+          availability: "unclear",
+          estimated_rate: "",
           single_person_found: false,
           all_criteria_met: false,
-          call_outcome: 'no_answer',
-          recommended: false
+          call_outcome: "no_answer",
+          recommended: false,
         },
-        successEvaluation: ''
+        successEvaluation: "",
       },
       provider: {
         name: request.providerName,
         phone: request.providerPhone,
         service: request.serviceNeeded,
-        location: request.location
+        location: request.location,
       },
       request: {
         criteria: request.userCriteria,
-        urgency: request.urgency
+        urgency: request.urgency,
       },
-      error: error instanceof Error ? error.message : 'Unknown error'
+      error: error instanceof Error ? error.message : "Unknown error",
     };
   }
 }
