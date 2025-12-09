@@ -1,12 +1,13 @@
 'use client';
 
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { useParams } from 'next/navigation';
 import Link from 'next/link';
 import { useAppContext } from '@/lib/providers/AppProvider';
 import StatusBadge from '@/components/StatusBadge';
-import { ArrowLeft, MapPin, User, CheckCircle, AlertTriangle, XCircle, Terminal } from 'lucide-react';
-import { InteractionLog } from '@/lib/types';
+import { ArrowLeft, MapPin, User, CheckCircle, AlertTriangle, XCircle, Terminal, Loader2 } from 'lucide-react';
+import { InteractionLog, ServiceRequest, RequestStatus, RequestType } from '@/lib/types';
+import { createClient } from '@/lib/supabase/client';
 
 const LogItem: React.FC<{ log: InteractionLog; index: number }> = ({ log }) => {
   const iconMap = {
@@ -58,16 +59,71 @@ const LogItem: React.FC<{ log: InteractionLog; index: number }> = ({ log }) => {
 export default function RequestDetails() {
   const params = useParams();
   const id = params.id as string;
-  const { requests } = useAppContext();
-  const request = requests.find(r => r.id === id);
+  const { requests, addRequest } = useAppContext();
+  const localRequest = requests.find(r => r.id === id);
+  const [dbRequest, setDbRequest] = useState<ServiceRequest | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
+
+  // Use local request if available (for real-time updates), otherwise use DB request
+  const request = localRequest || dbRequest;
+
+  // Fetch from database if not in localStorage
+  useEffect(() => {
+    if (!localRequest && !dbRequest && !loading) {
+      setLoading(true);
+      const supabase = createClient();
+
+      supabase
+        .from('service_requests')
+        .select('*')
+        .eq('id', id)
+        .single()
+        .then(({ data, error: fetchError }) => {
+          if (fetchError) {
+            setError('Request not found');
+          } else if (data) {
+            // Convert DB format to frontend format
+            const converted: ServiceRequest = {
+              id: data.id,
+              type: data.type as RequestType,
+              title: data.title,
+              description: data.description,
+              criteria: data.criteria,
+              location: data.location || undefined,
+              status: data.status as RequestStatus,
+              createdAt: data.created_at,
+              providersFound: [],
+              interactions: [],
+              finalOutcome: data.final_outcome || undefined,
+            };
+            setDbRequest(converted);
+            // Also add to context so it persists during this session
+            addRequest(converted);
+          }
+          setLoading(false);
+        });
+    }
+  }, [id, localRequest, dbRequest, loading, addRequest]);
 
   useEffect(() => {
     // Auto scroll to bottom when new logs arrive
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [request?.interactions.length]);
 
-  if (!request) return <div className="text-center p-10 text-slate-400">Request not found</div>;
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center p-10 text-slate-400">
+        <Loader2 className="w-6 h-6 animate-spin mr-2" />
+        Loading request...
+      </div>
+    );
+  }
+
+  if (error || !request) {
+    return <div className="text-center p-10 text-slate-400">{error || 'Request not found'}</div>;
+  }
 
   return (
     <div className="max-w-4xl mx-auto pb-10">

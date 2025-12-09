@@ -4,11 +4,12 @@ services:
   kestra:
     image: kestra/kestra:v1.1.6
     container_name: kestra
-    command: server local
+    command: server standalone
     ports:
       - "8082:8080"
     env_file:
-      - ./apps/web/.env.local # Load keys from local env file
+      - ./.env                  # Load KESTRA_DB_* and API keys
+      - ./apps/web/.env.local   # Load Supabase public keys
     pull_policy: always
     environment:
       KESTRA_CONFIGURATION: |
@@ -16,8 +17,9 @@ services:
           variables:
             env-vars-prefix: "APP_"
           server:
-
-
+            basic-auth:
+              username: admin@kestra.local
+              password: Admin123456
           repository:
             type: postgres
           queue:
@@ -27,16 +29,14 @@ services:
             local:
               base-path: /app/storage
         datasources:
-          default:
-            url: jdbc:postgresql://${KESTRA_DB_HOST}:${KESTRA_DB_PORT}/${KESTRA_DB_NAME}?options=-c%20search_path=kestra&stringtype=unspecified
+          postgres:
+            url: jdbc:postgresql://${KESTRA_DB_HOST}:${KESTRA_DB_PORT}/${KESTRA_DB_NAME}?currentSchema=kestra
             driverClassName: org.postgresql.Driver
             username: ${KESTRA_DB_USER}
             password: ${KESTRA_DB_PASSWORD}
       APP_GEMINI_API_KEY: ${GEMINI_API_KEY}
       APP_VAPI_API_KEY: ${VAPI_API_KEY}
       APP_VAPI_PHONE_NUMBER_ID: ${VAPI_PHONE_NUMBER_ID}
-      FLYWAY_DATASOURCES_DEFAULT_ENABLED: "true"
-      FLYWAY_DATASOURCES_DEFAULT_SCHEMAS: "kestra"
 
     volumes:
       - ./kestra/flows:/app/flows

@@ -6,6 +6,7 @@ import { useAppContext } from '@/lib/providers/AppProvider';
 import { RequestStatus, RequestType, ServiceRequest } from '@/lib/types';
 import { Search, MapPin, AlertCircle, Sparkles } from 'lucide-react';
 import { searchProviders, simulateCall, selectBestProvider, scheduleAppointment } from '@/lib/services/geminiService';
+import { createServiceRequest, updateServiceRequest } from '@/lib/actions/service-requests';
 
 export default function NewRequest() {
   const router = useRouter();
@@ -23,27 +24,52 @@ export default function NewRequest() {
     e.preventDefault();
     setIsSubmitting(true);
 
-    const newRequest: ServiceRequest = {
-      id: `req-${Date.now()}`,
-      type: RequestType.RESEARCH_AND_BOOK,
-      title: formData.title,
-      description: formData.description,
-      location: formData.location,
-      criteria: formData.criteria,
-      status: RequestStatus.SEARCHING,
-      createdAt: new Date().toISOString(),
-      providersFound: [],
-      interactions: [],
-    };
+    try {
+      // Create request in database first to get proper UUID
+      const dbRequest = await createServiceRequest({
+        type: 'RESEARCH_AND_BOOK',
+        title: formData.title,
+        description: formData.description,
+        location: formData.location,
+        criteria: formData.criteria,
+        status: 'SEARCHING',
+      });
 
-    addRequest(newRequest);
-    router.push(`/request/${newRequest.id}`);
+      const newRequest: ServiceRequest = {
+        id: dbRequest.id,
+        type: RequestType.RESEARCH_AND_BOOK,
+        title: formData.title,
+        description: formData.description,
+        location: formData.location,
+        criteria: formData.criteria,
+        status: RequestStatus.SEARCHING,
+        createdAt: dbRequest.created_at,
+        providersFound: [],
+        interactions: [],
+      };
 
-    // Start background process
-    runConciergeProcess(newRequest.id, formData);
+      addRequest(newRequest);
+      router.push(`/request/${newRequest.id}`);
+
+      // Start background process
+      runConciergeProcess(newRequest.id, formData);
+    } catch (error) {
+      console.error('Failed to create request:', error);
+      setIsSubmitting(false);
+    }
   };
 
   const runConciergeProcess = async (reqId: string, data: typeof formData) => {
+    // Helper to update both localStorage and database
+    const updateStatus = async (status: 'SEARCHING' | 'CALLING' | 'ANALYZING' | 'COMPLETED' | 'FAILED', extras?: Partial<ServiceRequest>) => {
+      updateRequest(reqId, { status: status as RequestStatus, ...extras });
+      try {
+        await updateServiceRequest(reqId, { status });
+      } catch (err) {
+        console.error('Failed to update DB status:', err);
+      }
+    };
+
     try {
       // 1. Search
       const searchResult = await searchProviders(data.title, data.location);
@@ -53,12 +79,13 @@ export default function NewRequest() {
       });
 
       if (searchResult.providers.length === 0) {
-        updateRequest(reqId, { status: RequestStatus.FAILED });
+        await updateStatus('FAILED', { finalOutcome: 'No providers found in your area.' });
+        await updateServiceRequest(reqId, { final_outcome: 'No providers found in your area.' });
         return;
       }
 
       // 2. Call Loop
-      updateRequest(reqId, { status: RequestStatus.CALLING });
+      await updateStatus('CALLING');
       const callLogs = [];
 
       for (const provider of searchResult.providers) {
@@ -71,7 +98,7 @@ export default function NewRequest() {
       }
 
       // 3. Analyze
-      updateRequest(reqId, { status: RequestStatus.ANALYZING });
+      await updateStatus('ANALYZING');
       const analysis = await selectBestProvider(data.title, callLogs, searchResult.providers);
 
       const finalLogs = [...callLogs, {
@@ -89,22 +116,30 @@ export default function NewRequest() {
         if (provider) {
           updateRequest(reqId, { selectedProvider: provider });
           const bookingLog = await scheduleAppointment(provider.name, data.description);
+          const outcome = `Booked with ${provider.name}. ${analysis.reasoning}`;
           updateRequest(reqId, {
             status: RequestStatus.COMPLETED,
             interactions: [searchResult.logs, ...finalLogs, bookingLog],
-            finalOutcome: `Booked with ${provider.name}. ${analysis.reasoning}`
+            finalOutcome: outcome
           });
+          // Update DB with final status and outcome
+          await updateServiceRequest(reqId, { status: 'COMPLETED', final_outcome: outcome });
         }
       } else {
-        updateRequest(reqId, {
-          status: RequestStatus.FAILED,
-          finalOutcome: "Could not find a suitable provider matching all criteria."
-        });
+        const outcome = "Could not find a suitable provider matching all criteria.";
+        await updateStatus('FAILED', { finalOutcome: outcome });
+        await updateServiceRequest(reqId, { final_outcome: outcome });
       }
 
     } catch (e) {
       console.error(e);
-      updateRequest(reqId, { status: RequestStatus.FAILED });
+      const outcome = e instanceof Error ? e.message : 'An unexpected error occurred';
+      updateRequest(reqId, { status: RequestStatus.FAILED, finalOutcome: outcome });
+      try {
+        await updateServiceRequest(reqId, { status: 'FAILED', final_outcome: outcome });
+      } catch (dbErr) {
+        console.error('Failed to update DB on error:', dbErr);
+      }
     }
   };
 
