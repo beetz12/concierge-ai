@@ -32,7 +32,7 @@ async function main() {
         },
         model: {
             provider: "google",
-            model: "gemini-2.0-flash-exp", // The exact model name VAPI expects might vary, checking docs fallback
+            model: "gemini-2.5-flash", // The exact model name VAPI expects might vary, checking docs fallback
             messages: [
                 {
                     role: "system",

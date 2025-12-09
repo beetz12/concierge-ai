@@ -19,7 +19,7 @@ tasks:
   - id: research_metrics
     type: io.kestra.plugin.aiagent.AIAgent
     config:
-      provider: gemini-2.0-flash-exp
+      provider: gemini-2.5-flash
     prompt: |
       I need to find {{ inputs.service }} providers in {{ inputs.location }} that meet these criteria:
       - Minimum rating: {{ inputs.min_rating }}
@@ -42,7 +42,7 @@ tasks:
     tools:
       - google_search_retrieval: {}
     env:
-      GEMINI_API_KEY: "{{ secret('GEMINI_API_KEY') }}"
+      GEMINI_API_KEY: "{{ envs.APP_GEMINI_API_KEY }}"
 
 outputs:
   - id: json

@@ -161,6 +161,57 @@ To build all applications:
 pnpm build
 ```
 
+## Tools
+
+### CLINE CLI
+
+CLINE CLI is an AI-powered coding assistant that helps with code generation, refactoring, debugging, and project tasks directly from the command line or your IDE.
+
+#### Installation
+
+Install CLINE CLI globally using npm:
+
+```bash
+npm install -g @cline/cli
+```
+
+**System Requirements:**
+- Node.js 18 or higher
+- npm or pnpm
+
+#### Basic Usage
+
+**Starting CLINE:**
+```bash
+# In your project directory
+cline
+```
+
+**Common Commands:**
+- Ask CLINE to perform tasks naturally, e.g.:
+  - "Create a new API endpoint for user authentication"
+  - "Fix the TypeScript errors in the components directory"
+  - "Add tests for the gemini service"
+  - "Refactor the database queries to use transactions"
+
+**Interactive Mode:**
+- CLINE will analyze your project structure and context
+- Provide clear instructions for what you want to accomplish
+- Review and approve CLINE's proposed changes before they're applied
+- CLINE can execute commands, read/write files, and navigate your codebase
+
+**Exiting CLINE:**
+- Type `exit` or press `Ctrl+C` to stop the CLI session
+
+#### Quick Tips
+
+- **Be specific**: The more context you provide, the better CLINE can assist
+- **Review changes**: Always review proposed changes before approving them
+- **Use for repetitive tasks**: CLINE excels at boilerplate generation and refactoring
+- **Iterative approach**: Start with small tasks and build up to larger features
+
+For more information, visit the [CLINE documentation](https://docs.cline.bot).
+
 ## Kestra Workflow Setup (Local)
 
 To run the Kestra orchestration engine locally:
@@ -325,3 +376,10 @@ If the issue persists, verify that the `packages/` directory contains all requir
 - `packages/typescript-config/`
 
 If any are missing, re-clone the repository or contact a team member.
+
+
+
+## Resources
+https://www.youtube.com/watch?v=uFXUniSm7HM - how to build your Own AI Code Review Bot with Cline CLI
+
+https://www.youtube.com/watch?v=hkAp42HBNXw - How to automate workflows with Kestra
