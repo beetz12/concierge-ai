@@ -23,6 +23,28 @@ PROJECT_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
 MODE="${1:---staged}"
 CLINE_TIMEOUT="${CLINE_TIMEOUT:-120}"
 
+# Spinner function for progress indication
+SPINNER_PID=""
+start_spinner() {
+    local msg="${1:-Processing}"
+    local spin='⠋⠙⠹⠸⠼⠴⠦⠧⠇⠏'
+    local i=0
+    while true; do
+        printf "\r${BLUE}%s %s${NC} " "${spin:i++%${#spin}:1}" "$msg"
+        sleep 0.1
+    done &
+    SPINNER_PID=$!
+}
+
+stop_spinner() {
+    if [ -n "$SPINNER_PID" ]; then
+        kill "$SPINNER_PID" 2>/dev/null
+        wait "$SPINNER_PID" 2>/dev/null
+        SPINNER_PID=""
+        printf "\r\033[K"  # Clear the spinner line
+    fi
+}
+
 cd "$PROJECT_ROOT"
 
 echo -e "${CYAN}╔════════════════════════════════════════════════════════════╗${NC}"
@@ -91,12 +113,15 @@ echo ""
 
 # Create temporary file for results
 RESULTS_FILE=$(mktemp)
-trap "rm -f $RESULTS_FILE" EXIT
+trap "stop_spinner; rm -f $RESULTS_FILE" EXIT
 
 # ══════════════════════════════════════════════════════════════════════════════
 # ACTUAL CLINE CLI USAGE - This is the key for the hackathon prize!
 # Using piped input with -y (YOLO mode) for non-interactive execution
 # ══════════════════════════════════════════════════════════════════════════════
+
+# Start spinner for progress indication
+start_spinner "Analyzing code for security issues (timeout: ${CLINE_TIMEOUT}s)..."
 
 echo "$DIFF" | timeout "$CLINE_TIMEOUT" cline -y "
 You are a senior security engineer reviewing code for the AI Concierge project.
@@ -165,6 +190,9 @@ If critical issues found, output at the end: ❌ SECURITY_CHECK_FAILED
 " > "$RESULTS_FILE" 2>&1
 
 CLINE_EXIT=$?
+
+# Stop spinner
+stop_spinner
 
 # Display results
 echo -e "${CYAN}═══════════════════════════════════════════════════════════════${NC}"
