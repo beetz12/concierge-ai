@@ -150,22 +150,8 @@ For unusual requirements, frame naturally: "My client specifically mentioned..."
     // First message
     firstMessage: `Hi there! This is the AI Concierge calling on behalf of a client in ${request.location} who needs ${request.serviceNeeded} help. Do you have just a quick moment?`,
 
-    // Enable endCall function
+    // Enable endCall function (VAPI handles tool registration automatically)
     endCallFunctionEnabled: true,
-
-    // Add endCall tool explicitly
-    tools: [
-      {
-        type: "endCall" as const,
-        async: false,
-        messages: [
-          {
-            type: "request-start" as const,
-            content: "Thank you for your time. Have a great day!",
-          },
-        ],
-      },
-    ],
 
     // Analysis configuration
     analysisPlan: {

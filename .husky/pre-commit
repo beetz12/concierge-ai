@@ -1,6 +1,3 @@
-#!/usr/bin/env sh
-. "$(dirname -- "$0")/_/husky.sh"
-
 # ══════════════════════════════════════════════════════════════════════════════
 # Cline CLI Pre-Commit Hook
 # AI-Powered Code Review and Security Scanning

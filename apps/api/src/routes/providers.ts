@@ -22,8 +22,8 @@ const callProviderSchema = z.object({
     "within_2_days",
     "flexible",
   ]),
-  serviceRequestId: z.string().uuid().optional(),
-  providerId: z.string().uuid().optional(),
+  serviceRequestId: z.string().optional(), // Accepts any string ID (UUID or task-xxx format)
+  providerId: z.string().optional(), // Accepts any string ID
 });
 
 export default async function providerRoutes(fastify: FastifyInstance) {
@@ -87,13 +87,11 @@ export default async function providerRoutes(fastify: FastifyInstance) {
             },
             serviceRequestId: {
               type: "string",
-              format: "uuid",
-              description: "Optional: Link to service_requests table",
+              description: "Optional: Link to service_requests table (UUID or task-xxx format)",
             },
             providerId: {
               type: "string",
-              format: "uuid",
-              description: "Optional: Link to providers table",
+              description: "Optional: Link to providers table (UUID or any string ID)",
             },
           },
         },
