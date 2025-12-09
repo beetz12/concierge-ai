@@ -13,7 +13,7 @@
 | Owner | Priority | Task | Technical Details |
 | :--- | :--- | :--- | :--- |
 | **S1 (Arch)** | **P0** | **Kestra Docker Setup** | Create `docker-compose.yml` with Kestra & Postgres. Ensure it runs locally. |
-| **S1 (Arch)** | **P0** | **Kestra <> Gemini** | Create "Research Agent" Flow in Kestra using `gemini-2.0-flash-exp` for Search Grounding. |
+| **S1 (Arch)** | **P0** | **Kestra <> Gemini** | Create "Research Agent" Flow in Kestra using `gemini-2.5-flash` for Search Grounding. |
 | **S2 (Backend)** | **P0** | **VAPI.ai Config** | Buy Phone #, Get API Keys. Create Assistant with `gemini-2.5-flash` system prompt. |
 | **S2 (Backend)** | **P0** | **API Connectors** | Create `POST /api/webhooks/vapi` to log calls to console (proof of life). |
 | **J1 (Frontend)** | **P0** | **UI Scaffolding** | Add "Loading" states (skeletons) and "Error" toasts (React Hot Toast). |

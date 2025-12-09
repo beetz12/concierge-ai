@@ -91,7 +91,15 @@ export default async function geminiRoutes(fastify: FastifyInstance) {
           type: 'object',
           properties: {
             providers: { type: 'array' },
-            rawResponse: { type: 'string' },
+            logs: {
+              type: 'object',
+              properties: {
+                timestamp: { type: 'string' },
+                stepName: { type: 'string' },
+                detail: { type: 'string' },
+                status: { type: 'string' },
+              },
+            },
           },
         },
         400: {
@@ -155,8 +163,11 @@ export default async function geminiRoutes(fastify: FastifyInstance) {
         200: {
           type: 'object',
           properties: {
+            timestamp: { type: 'string' },
+            stepName: { type: 'string' },
+            detail: { type: 'string' },
             transcript: { type: 'array' },
-            outcome: { type: 'object' },
+            status: { type: 'string' },
           },
         },
         400: {
@@ -243,7 +254,7 @@ export default async function geminiRoutes(fastify: FastifyInstance) {
         200: {
           type: 'object',
           properties: {
-            selectedProvider: { type: 'object' },
+            selectedId: { type: 'string', nullable: true },
             reasoning: { type: 'string' },
           },
         },
@@ -307,9 +318,10 @@ export default async function geminiRoutes(fastify: FastifyInstance) {
         200: {
           type: 'object',
           properties: {
-            success: { type: 'boolean' },
-            appointment: { type: 'object' },
-            confirmationMessage: { type: 'string' },
+            timestamp: { type: 'string' },
+            stepName: { type: 'string' },
+            detail: { type: 'string' },
+            status: { type: 'string' },
           },
         },
         400: {
