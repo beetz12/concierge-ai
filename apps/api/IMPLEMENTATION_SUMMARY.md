@@ -7,18 +7,21 @@ A complete Supabase integration for the Fastify backend with the following compo
 ### 1. Core Files Created
 
 #### `/src/lib/supabase.ts`
+
 - Supabase admin client factory with singleton pattern
 - Uses SERVICE_ROLE_KEY for backend operations (bypasses RLS)
 - Type-safe database schema definitions
 - Lazy initialization with environment variable validation
 
 #### `/src/plugins/supabase.ts`
+
 - Fastify plugin for dependency injection
 - Decorates both `fastify.supabase` (instance) and `request.supabase` (request)
 - Connection validation on startup
 - Proper error handling and logging
 
 #### `/src/routes/users.ts`
+
 - Complete CRUD API for users resource
 - Demonstrates all Supabase operations:
   - GET /api/v1/users - List with pagination
@@ -31,6 +34,7 @@ A complete Supabase integration for the Fastify backend with the following compo
 - Fastify schema documentation
 
 #### `/src/index.ts` (Updated)
+
 - Registered Supabase plugin
 - Registered user routes with `/api/v1/users` prefix
 - Added endpoint discovery to API root
@@ -38,7 +42,9 @@ A complete Supabase integration for the Fastify backend with the following compo
 ### 2. Configuration Files
 
 #### `.env.example`
+
 Environment variables template with:
+
 - SUPABASE_URL
 - SUPABASE_SERVICE_ROLE_KEY
 - Security warnings about service role key
@@ -46,7 +52,9 @@ Environment variables template with:
 ### 3. Database Migration
 
 #### `/migrations/001_create_users_table.sql`
+
 Complete SQL migration including:
+
 - Users table with UUID primary key
 - Email uniqueness constraint
 - Timestamp fields with auto-update trigger
@@ -57,7 +65,9 @@ Complete SQL migration including:
 ### 4. Documentation
 
 #### `README.md`
+
 Quick start guide covering:
+
 - Setup instructions
 - API endpoints with curl examples
 - Project structure
@@ -65,7 +75,9 @@ Quick start guide covering:
 - Environment variables reference
 
 #### `SUPABASE_SETUP.md`
+
 Comprehensive guide covering:
+
 - Detailed setup instructions
 - Architecture explanation
 - Type definitions and code generation
@@ -77,6 +89,7 @@ Comprehensive guide covering:
 ### 5. Utility Scripts
 
 #### `/scripts/generate-types.sh`
+
 Bash script to generate TypeScript types from Supabase schema using Supabase CLI
 
 ## Dependencies Installed
@@ -91,23 +104,27 @@ Bash script to generate TypeScript types from Supabase schema using Supabase CLI
 ## Key Features
 
 ### Type Safety
+
 - TypeScript interfaces for database schema
 - Request/response type checking
 - Zod validation for runtime safety
 
 ### Error Handling
+
 - Specific error codes mapped to HTTP statuses
 - PGRST116 → 404 (Not Found)
 - 23505 → 409 (Conflict/Duplicate)
 - Structured error responses
 
 ### Security
+
 - Service role key kept in environment variables
 - Input validation on all endpoints
 - UUID validation for IDs
 - Email format validation
 
 ### Developer Experience
+
 - Request decorator for easy access: `request.supabase`
 - Comprehensive logging with Pino
 - Hot reload with tsx watch
@@ -117,17 +134,18 @@ Bash script to generate TypeScript types from Supabase schema using Supabase CLI
 
 All endpoints follow REST conventions:
 
-| Method | Path | Description | Status Codes |
-|--------|------|-------------|--------------|
-| GET | /api/v1/users | List users (paginated) | 200, 500 |
-| GET | /api/v1/users/:id | Get user by ID | 200, 404, 500 |
-| POST | /api/v1/users | Create new user | 201, 400, 409, 500 |
-| PATCH | /api/v1/users/:id | Update user | 200, 400, 404, 500 |
-| DELETE | /api/v1/users/:id | Delete user | 204, 500 |
+| Method | Path              | Description            | Status Codes       |
+| ------ | ----------------- | ---------------------- | ------------------ |
+| GET    | /api/v1/users     | List users (paginated) | 200, 500           |
+| GET    | /api/v1/users/:id | Get user by ID         | 200, 404, 500      |
+| POST   | /api/v1/users     | Create new user        | 201, 400, 409, 500 |
+| PATCH  | /api/v1/users/:id | Update user            | 200, 400, 404, 500 |
+| DELETE | /api/v1/users/:id | Delete user            | 204, 500           |
 
 ## Request/Response Examples
 
 ### Create User
+
 ```bash
 curl -X POST http://localhost:8000/api/v1/users \
   -H "Content-Type: application/json" \
@@ -138,6 +156,7 @@ curl -X POST http://localhost:8000/api/v1/users \
 ```
 
 Response (201):
+
 ```json
 {
   "success": true,
@@ -152,11 +171,13 @@ Response (201):
 ```
 
 ### Get Users with Pagination
+
 ```bash
 curl "http://localhost:8000/api/v1/users?limit=5&offset=10"
 ```
 
 Response (200):
+
 ```json
 {
   "success": true,
@@ -171,6 +192,7 @@ Response (200):
 ```
 
 ### Error Response
+
 ```json
 {
   "success": false,
@@ -181,11 +203,13 @@ Response (200):
 ## Setup Steps for New Developers
 
 1. **Install dependencies:**
+
    ```bash
    pnpm install
    ```
 
 2. **Configure environment:**
+
    ```bash
    cp .env.example .env
    # Edit .env with your Supabase credentials
@@ -197,6 +221,7 @@ Response (200):
    - Execute
 
 4. **Start development server:**
+
    ```bash
    pnpm dev
    ```
@@ -209,12 +234,15 @@ Response (200):
 ## Testing the Implementation
 
 ### Verify Plugin Loading
+
 Check server logs on startup for:
+
 ```
 ✓ Supabase plugin initialized successfully
 ```
 
 ### Test CRUD Operations
+
 ```bash
 # Create a user
 curl -X POST http://localhost:8000/api/v1/users \
@@ -239,17 +267,21 @@ curl -X DELETE http://localhost:8000/api/v1/users/{uuid}
 ## Code Quality
 
 ### TypeScript Compilation
+
 ```bash
 pnpm check-types
 ```
+
 Status: ✓ Passing (no errors)
 
 ### Linting
+
 ```bash
 pnpm lint
 ```
 
 ### Build
+
 ```bash
 pnpm build
 ```
@@ -257,24 +289,28 @@ pnpm build
 ## Architecture Decisions
 
 ### Why Service Role Key?
+
 - Backend-only operations don't need user context
 - Bypassing RLS simplifies server logic
 - Authorization implemented in route handlers
 - Suitable for admin/internal operations
 
 ### Why Fastify Plugin Pattern?
+
 - Proper dependency injection
 - Clean separation of concerns
 - Reusable across route modules
 - Lifecycle management (startup/shutdown)
 
 ### Why Zod for Validation?
+
 - Runtime type safety
 - Clear error messages
 - Composable schemas
 - TypeScript integration
 
 ### Why Singleton Pattern for Client?
+
 - Single connection pool
 - Better resource management
 - Faster subsequent requests
@@ -315,17 +351,20 @@ pnpm build
 ## Maintenance Notes
 
 ### Updating Supabase Schema
+
 1. Make changes in Supabase dashboard
 2. Update type definitions in `src/lib/supabase.ts`
 3. Or regenerate: `./scripts/generate-types.sh`
 
 ### Adding New Endpoints
+
 1. Create route file in `src/routes/`
 2. Use users.ts as template
 3. Register in `src/index.ts`
 4. Update README with new endpoints
 
 ### Environment Variables
+
 - Never commit `.env` file
 - Update `.env.example` when adding new vars
 - Document in README
@@ -333,17 +372,20 @@ pnpm build
 ## Troubleshooting
 
 ### Plugin Won't Initialize
+
 - Check `SUPABASE_URL` format
 - Verify `SUPABASE_SERVICE_ROLE_KEY` is correct
 - Check Supabase project isn't paused
 - Review server logs for details
 
 ### Type Errors
+
 - Run `pnpm check-types`
 - Ensure Database types match schema
 - Check for missing imports
 
 ### 404 on Routes
+
 - Verify route registration in index.ts
 - Check route prefix matches
 - Review server logs for loaded routes

@@ -5,7 +5,8 @@ import Sidebar from "@/components/Sidebar";
 
 export const metadata: Metadata = {
   title: "ConciergeAI - Your AI Receptionist",
-  description: "AI-powered assistant that researches local service providers and books appointments on your behalf",
+  description:
+    "AI-powered assistant that researches local service providers and books appointments on your behalf",
 };
 
 export default function RootLayout({
@@ -17,9 +18,7 @@ export default function RootLayout({
     <html lang="en">
       <body>
         <AppProvider>
-          <Sidebar>
-            {children}
-          </Sidebar>
+          <Sidebar>{children}</Sidebar>
         </AppProvider>
       </body>
     </html>

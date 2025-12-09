@@ -9,6 +9,7 @@
 ---
 
 ## Table of Contents
+
 1. [Executive Summary](#executive-summary)
 2. [Current Architecture](#current-architecture)
 3. [Target Architecture](#target-architecture)
@@ -24,6 +25,7 @@
 ## Executive Summary
 
 Create a Research Agent fallback system that:
+
 1. Routes between Kestra's `research_providers` flow and direct Gemini API calls based on `KESTRA_ENABLED`
 2. Updates the `/new` page to use a unified workflow endpoint
 3. Provides automatic fallback when Kestra is unavailable (production/Railway)
@@ -47,6 +49,7 @@ Frontend /new page
 ```
 
 **Problems:**
+
 - No Kestra integration for research phase
 - No automatic fallback when Kestra unavailable
 - Hardcoded to use Gemini simulation only
@@ -96,27 +99,28 @@ Frontend /new page
 
 Create new service files in `apps/api/src/services/research/`:
 
-| File | Purpose | Lines (Est.) |
-|------|---------|--------------|
-| `types.ts` | Type definitions (ResearchRequest, ResearchResult) | ~50 |
-| `kestra-research.client.ts` | Trigger Kestra `research_providers` flow | ~120 |
-| `direct-research.client.ts` | Direct Gemini API with Google Maps grounding | ~150 |
-| `research.service.ts` | Main orchestrator (routes Kestra/Direct) | ~100 |
-| `index.ts` | Service exports | ~20 |
+| File                        | Purpose                                            | Lines (Est.) |
+| --------------------------- | -------------------------------------------------- | ------------ |
+| `types.ts`                  | Type definitions (ResearchRequest, ResearchResult) | ~50          |
+| `kestra-research.client.ts` | Trigger Kestra `research_providers` flow           | ~120         |
+| `direct-research.client.ts` | Direct Gemini API with Google Maps grounding       | ~150         |
+| `research.service.ts`       | Main orchestrator (routes Kestra/Direct)           | ~100         |
+| `index.ts`                  | Service exports                                    | ~20          |
 
 ### Phase 2: Unified Workflow Endpoint
 
 Create new route `apps/api/src/routes/workflows.ts`:
 
-| Endpoint | Method | Purpose |
-|----------|--------|---------|
-| `/api/v1/workflows/research` | POST | Search providers (Kestra or Direct Gemini) |
-| `/api/v1/workflows/concierge` | POST | Full workflow (Research → Call → Analyze → Book) |
-| `/api/v1/workflows/status` | GET | Check system status |
+| Endpoint                      | Method | Purpose                                          |
+| ----------------------------- | ------ | ------------------------------------------------ |
+| `/api/v1/workflows/research`  | POST   | Search providers (Kestra or Direct Gemini)       |
+| `/api/v1/workflows/concierge` | POST   | Full workflow (Research → Call → Analyze → Book) |
+| `/api/v1/workflows/status`    | GET    | Check system status                              |
 
 ### Phase 3: Frontend Integration
 
 Update `/apps/web/app/new/page.tsx`:
+
 - Replace `runConciergeProcess()` with call to new workflow endpoint
 - Add service client `apps/web/lib/services/workflowService.ts`
 
@@ -128,18 +132,18 @@ Add environment variables to `.env.example`
 
 ## File Creation Summary
 
-| # | File Path | Action | Purpose |
-|---|-----------|--------|---------|
-| 1 | `apps/api/src/services/research/types.ts` | CREATE | Type definitions |
-| 2 | `apps/api/src/services/research/kestra-research.client.ts` | CREATE | Kestra flow client |
-| 3 | `apps/api/src/services/research/direct-research.client.ts` | CREATE | Direct Gemini client |
-| 4 | `apps/api/src/services/research/research.service.ts` | CREATE | Main orchestrator |
-| 5 | `apps/api/src/services/research/index.ts` | CREATE | Exports |
-| 6 | `apps/api/src/routes/workflows.ts` | CREATE | New API routes |
-| 7 | `apps/api/src/index.ts` | MODIFY | Register workflow routes |
-| 8 | `apps/web/app/new/page.tsx` | MODIFY | Use new workflow endpoint |
-| 9 | `apps/web/lib/services/workflowService.ts` | CREATE | Frontend API client |
-| 10 | `apps/api/.env.example` | MODIFY | Add new env vars |
+| #   | File Path                                                  | Action | Purpose                   |
+| --- | ---------------------------------------------------------- | ------ | ------------------------- |
+| 1   | `apps/api/src/services/research/types.ts`                  | CREATE | Type definitions          |
+| 2   | `apps/api/src/services/research/kestra-research.client.ts` | CREATE | Kestra flow client        |
+| 3   | `apps/api/src/services/research/direct-research.client.ts` | CREATE | Direct Gemini client      |
+| 4   | `apps/api/src/services/research/research.service.ts`       | CREATE | Main orchestrator         |
+| 5   | `apps/api/src/services/research/index.ts`                  | CREATE | Exports                   |
+| 6   | `apps/api/src/routes/workflows.ts`                         | CREATE | New API routes            |
+| 7   | `apps/api/src/index.ts`                                    | MODIFY | Register workflow routes  |
+| 8   | `apps/web/app/new/page.tsx`                                | MODIFY | Use new workflow endpoint |
+| 9   | `apps/web/lib/services/workflowService.ts`                 | CREATE | Frontend API client       |
+| 10  | `apps/api/.env.example`                                    | MODIFY | Add new env vars          |
 
 ---
 
@@ -214,16 +218,16 @@ Response: {
 // apps/api/src/services/research/types.ts
 
 export interface ResearchRequest {
-  service: string;           // "plumber", "electrician"
-  location: string;          // "Greenville, SC"
-  daysNeeded?: number;       // urgency window (default: 2)
-  minRating?: number;        // minimum rating (default: 4.5)
+  service: string; // "plumber", "electrician"
+  location: string; // "Greenville, SC"
+  daysNeeded?: number; // urgency window (default: 2)
+  minRating?: number; // minimum rating (default: 4.5)
   serviceRequestId?: string; // for DB linking
 }
 
 export interface ResearchResult {
-  status: 'success' | 'error';
-  method: 'kestra' | 'direct_gemini';
+  status: "success" | "error";
+  method: "kestra" | "direct_gemini";
   providers: Provider[];
   reasoning?: string;
   error?: string;
@@ -236,7 +240,7 @@ export interface Provider {
   rating?: number;
   address?: string;
   reason?: string;
-  source?: 'kestra' | 'gemini_maps' | 'user_input';
+  source?: "kestra" | "gemini_maps" | "user_input";
 }
 
 export interface ConciergeRequest {
@@ -244,16 +248,22 @@ export interface ConciergeRequest {
   description: string;
   location: string;
   criteria: string;
-  urgency?: 'immediate' | 'within_24_hours' | 'within_2_days' | 'flexible';
+  urgency?: "immediate" | "within_24_hours" | "within_2_days" | "flexible";
   useRealCalls?: boolean;
   serviceRequestId?: string;
 }
 
 export interface ConciergeResult {
   requestId: string;
-  status: 'searching' | 'calling' | 'analyzing' | 'booking' | 'completed' | 'failed';
-  researchMethod: 'kestra' | 'direct_gemini';
-  callMethod?: 'kestra' | 'direct_vapi' | 'simulated';
+  status:
+    | "searching"
+    | "calling"
+    | "analyzing"
+    | "booking"
+    | "completed"
+    | "failed";
+  researchMethod: "kestra" | "direct_gemini";
+  callMethod?: "kestra" | "direct_vapi" | "simulated";
   providers: Provider[];
   callResults?: CallResult[];
   selectedProvider?: Provider;
@@ -271,8 +281,8 @@ export interface SystemStatus {
   kestraHealthy: boolean;
   geminiConfigured: boolean;
   vapiConfigured: boolean;
-  activeResearchMethod: 'kestra' | 'direct_gemini';
-  activeCallMethod: 'kestra' | 'direct_vapi';
+  activeResearchMethod: "kestra" | "direct_gemini";
+  activeCallMethod: "kestra" | "direct_vapi";
 }
 ```
 
@@ -315,11 +325,13 @@ export interface SystemStatus {
 ## Testing Strategy
 
 ### Unit Tests
+
 - Mock Kestra and Gemini clients
 - Test routing logic based on KESTRA_ENABLED
 - Test health check fallback behavior
 
 ### Integration Tests
+
 ```bash
 # Test research endpoint
 curl -X POST http://localhost:8000/api/v1/workflows/research \
@@ -331,6 +343,7 @@ curl http://localhost:8000/api/v1/workflows/status
 ```
 
 ### E2E Test
+
 - Full /new page submission → result flow
 - Verify database persistence
 - Test both Kestra and fallback paths
@@ -339,12 +352,12 @@ curl http://localhost:8000/api/v1/workflows/status
 
 ## Risk Mitigation
 
-| Risk | Mitigation |
-|------|------------|
-| Kestra flow output format differs from direct Gemini | Normalize both outputs to common `ResearchResult` type |
-| Phone numbers not extracted by Google Maps | Use Google Search Grounding in direct client for phone data |
-| Frontend breaking changes | Keep existing endpoints, add new `/workflows/*` routes |
-| Database schema changes | Reuse existing providers table with call tracking columns |
+| Risk                                                 | Mitigation                                                  |
+| ---------------------------------------------------- | ----------------------------------------------------------- |
+| Kestra flow output format differs from direct Gemini | Normalize both outputs to common `ResearchResult` type      |
+| Phone numbers not extracted by Google Maps           | Use Google Search Grounding in direct client for phone data |
+| Frontend breaking changes                            | Keep existing endpoints, add new `/workflows/*` routes      |
+| Database schema changes                              | Reuse existing providers table with call tracking columns   |
 
 ---
 
@@ -376,9 +389,11 @@ USE_REAL_VAPI_CALLS=false               # Toggle real vs simulated calls
 **Review Status**: Approved
 **Implementation Status**: Not Started
 **Related Documents**:
+
 - `/features/FEATURE_VAPI_FALLBACK_PLAN.md`
 - `/features/FEATURE_VAPI_FALLBACK_COMPLETION.md`
 - `/docs/architecture.md`
 
 **Change Log**:
+
 - 2025-12-08 - Initial creation

@@ -6,7 +6,7 @@ This workshop, led by Tony from Cline, focuses on using the Cline CLI (Command L
 The core practical example demonstrates building a "Code Review Bot" that automatically analyzes git commits for security, performance, and style issues using a simple shell script and Cline's "YOLO mode" (autonomous mode).
 
 1. Best Way to Use Cline CLI
-The video highlights specific workflows for using Cline effectively in a hackathon or production setting:
+   The video highlights specific workflows for using Cline effectively in a hackathon or production setting:
 
 Installation:
 
@@ -31,7 +31,7 @@ Plan vs. Act Modes:
 Cline first enters Plan Mode to architect a solution/review, then switches to Act Mode to execute it. This distinction helps in ensuring the "bot" understands the context before generating code [29:07].
 
 2. How to Create Useful Tools (The Code Review Bot Example)
-The workshop walks through creating a specific tool (review_commit.sh) to demonstrate the process. Here is the blueprint for creating similar tools:
+   The workshop walks through creating a specific tool (review_commit.sh) to demonstrate the process. Here is the blueprint for creating similar tools:
 
 Step 1: Create the Logic Script [21:35]
 
@@ -54,7 +54,7 @@ Pre-Commit Hook: The speaker demonstrates adding this script to a git pre-commit
 GitHub PR Reviewer: They also show a script (github_review.sh) designed to run on Pull Requests, which can be integrated into GitHub Actions [43:40].
 
 3. Hackathon Ideas & Challenge Concepts
-Tony explicitly listed several project ideas that would be good for the "AI Agents Assemble" hackathon [54:21]:
+   Tony explicitly listed several project ideas that would be good for the "AI Agents Assemble" hackathon [54:21]:
 
 Intelligent Notification Bots:
 
@@ -77,7 +77,7 @@ Feedback Loops:
 Implement a system where the AI not only reviews code but alerts the user in real-time with actionable fixes.
 
 4. Advice for the Hackathon
-"Prompt like an Engineer": Don't use vague product manager language. Be technical and precise with your constraints (e.g., "Check for SQL injection vulnerabilities in this specific function") [50:55].
+   "Prompt like an Engineer": Don't use vague product manager language. Be technical and precise with your constraints (e.g., "Check for SQL injection vulnerabilities in this specific function") [50:55].
 
 Small Diffs: AI (like humans) struggles with massive context. Keep the data you feed Cline small (e.g., single commits rather than entire repos) for better accuracy [50:23].
 

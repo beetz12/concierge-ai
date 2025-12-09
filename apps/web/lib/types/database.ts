@@ -18,14 +18,14 @@ export type Json =
   | Json[];
 
 export type RequestStatus =
-  | 'PENDING'
-  | 'SEARCHING'
-  | 'CALLING'
-  | 'ANALYZING'
-  | 'COMPLETED'
-  | 'FAILED';
+  | "PENDING"
+  | "SEARCHING"
+  | "CALLING"
+  | "ANALYZING"
+  | "COMPLETED"
+  | "FAILED";
 
-export type RequestType = 'RESEARCH_AND_BOOK' | 'DIRECT_TASK';
+export type RequestType = "RESEARCH_AND_BOOK" | "DIRECT_TASK";
 
 export interface Database {
   public: {
@@ -78,19 +78,19 @@ export interface Database {
         };
         Relationships: [
           {
-            foreignKeyName: 'service_requests_selected_provider_id_fkey';
-            columns: ['selected_provider_id'];
+            foreignKeyName: "service_requests_selected_provider_id_fkey";
+            columns: ["selected_provider_id"];
             isOneToOne: false;
-            referencedRelation: 'providers';
-            referencedColumns: ['id'];
+            referencedRelation: "providers";
+            referencedColumns: ["id"];
           },
           {
-            foreignKeyName: 'service_requests_user_id_fkey';
-            columns: ['user_id'];
+            foreignKeyName: "service_requests_user_id_fkey";
+            columns: ["user_id"];
             isOneToOne: false;
-            referencedRelation: 'users';
-            referencedColumns: ['id'];
-          }
+            referencedRelation: "users";
+            referencedColumns: ["id"];
+          },
         ];
       };
       providers: {
@@ -101,7 +101,7 @@ export interface Database {
           phone: string | null;
           rating: number | null;
           address: string | null;
-          source: 'Google Maps' | 'User Input' | null;
+          source: "Google Maps" | "User Input" | null;
           created_at: string;
         };
         Insert: {
@@ -111,7 +111,7 @@ export interface Database {
           phone?: string | null;
           rating?: number | null;
           address?: string | null;
-          source?: 'Google Maps' | 'User Input' | null;
+          source?: "Google Maps" | "User Input" | null;
           created_at?: string;
         };
         Update: {
@@ -121,17 +121,17 @@ export interface Database {
           phone?: string | null;
           rating?: number | null;
           address?: string | null;
-          source?: 'Google Maps' | 'User Input' | null;
+          source?: "Google Maps" | "User Input" | null;
           created_at?: string;
         };
         Relationships: [
           {
-            foreignKeyName: 'providers_request_id_fkey';
-            columns: ['request_id'];
+            foreignKeyName: "providers_request_id_fkey";
+            columns: ["request_id"];
             isOneToOne: false;
-            referencedRelation: 'service_requests';
-            referencedColumns: ['id'];
-          }
+            referencedRelation: "service_requests";
+            referencedColumns: ["id"];
+          },
         ];
       };
       interaction_logs: {
@@ -142,7 +142,7 @@ export interface Database {
           step_name: string;
           detail: string;
           transcript: Json | null;
-          status: 'success' | 'warning' | 'error' | 'info';
+          status: "success" | "warning" | "error" | "info";
           created_at: string;
         };
         Insert: {
@@ -152,7 +152,7 @@ export interface Database {
           step_name: string;
           detail: string;
           transcript?: Json | null;
-          status: 'success' | 'warning' | 'error' | 'info';
+          status: "success" | "warning" | "error" | "info";
           created_at?: string;
         };
         Update: {
@@ -162,17 +162,17 @@ export interface Database {
           step_name?: string;
           detail?: string;
           transcript?: Json | null;
-          status?: 'success' | 'warning' | 'error' | 'info';
+          status?: "success" | "warning" | "error" | "info";
           created_at?: string;
         };
         Relationships: [
           {
-            foreignKeyName: 'interaction_logs_request_id_fkey';
-            columns: ['request_id'];
+            foreignKeyName: "interaction_logs_request_id_fkey";
+            columns: ["request_id"];
             isOneToOne: false;
-            referencedRelation: 'service_requests';
-            referencedColumns: ['id'];
-          }
+            referencedRelation: "service_requests";
+            referencedColumns: ["id"];
+          },
         ];
       };
       users: {
@@ -206,8 +206,8 @@ export interface Database {
     Enums: {
       request_status: RequestStatus;
       request_type: RequestType;
-      provider_source: 'Google Maps' | 'User Input';
-      log_status: 'success' | 'warning' | 'error' | 'info';
+      provider_source: "Google Maps" | "User Input";
+      log_status: "success" | "warning" | "error" | "info";
     };
     CompositeTypes: {
       [_ in never]: never;
@@ -216,7 +216,7 @@ export interface Database {
 }
 
 // Type helpers for easier use throughout the application
-export type Tables<T extends keyof Database['public']['Tables']> =
-  Database['public']['Tables'][T]['Row'];
-export type Enums<T extends keyof Database['public']['Enums']> =
-  Database['public']['Enums'][T];
+export type Tables<T extends keyof Database["public"]["Tables"]> =
+  Database["public"]["Tables"][T]["Row"];
+export type Enums<T extends keyof Database["public"]["Enums"]> =
+  Database["public"]["Enums"][T];

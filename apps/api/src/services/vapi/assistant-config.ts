@@ -4,14 +4,14 @@
  * Ensures identical behavior between Kestra and Direct VAPI paths
  */
 
-import type { CallRequest } from './types.js';
+import type { CallRequest } from "./types.js";
 
 /**
  * Creates VAPI assistant configuration for provider calls
  * This configuration is used for both Kestra and Direct VAPI paths
  */
 export function createAssistantConfig(request: CallRequest) {
-  const urgencyText = request.urgency.replace(/_/g, ' ');
+  const urgencyText = request.urgency.replace(/_/g, " ");
 
   const systemPrompt = `You are a warm, friendly AI Concierge making a real phone call to ${request.providerName}.
 You are calling on behalf of a client in ${request.location} who needs ${request.serviceNeeded} services.
@@ -30,6 +30,7 @@ QUESTIONS TO ASK (ONLY THESE - DO NOT INVENT OTHERS)
 ═══════════════════════════════════════════════════════════════════
 Standard questions:
 1. Availability: "Are you available ${urgencyText}?"
+   - If YES: "Great! What's your soonest availability? When could you come out?"
 2. Rates: "What would your rate be for this type of work?"
 
 Client-specific requirements (ask about each ONE AT A TIME):
@@ -42,6 +43,21 @@ When asking about these requirements, ALWAYS refer to THE SAME PERSON:
 
 DO NOT ask questions that are not in the criteria above.
 DO NOT ask about licensing/certification unless it's in the criteria.
+
+═══════════════════════════════════════════════════════════════════
+DISQUALIFICATION DETECTION
+═══════════════════════════════════════════════════════════════════
+As you gather information, watch for responses that DISQUALIFY the provider:
+- They say they don't have anyone available
+- They say they can't meet a specific requirement
+- They explicitly state they don't do the type of work needed
+- They say their rate is significantly higher than reasonable
+
+If disqualified, politely wrap up:
+"Thank you so much for taking the time to chat. Unfortunately, it sounds like this particular request might not be the best fit right now, but I really appreciate your help. Have a wonderful day!"
+Then immediately invoke endCall.
+
+DO NOT mention calling back to schedule if they are disqualified.
 
 ═══════════════════════════════════════════════════════════════════
 SPEECH RULES
@@ -60,7 +76,8 @@ CONVERSATION FLOW
 
 2. AVAILABILITY: "My client needs help ${urgencyText}. Are you available?"
    - If NO: Thank them warmly and END THE CALL
-   - If YES: Continue
+   - If YES: "Great! What's your soonest availability? When could you come out?"
+   - Get their specific earliest date/time (e.g., "Tomorrow at 2pm", "Friday morning")
 
 3. RATES: "What would your typical rate be?"
 
@@ -69,8 +86,17 @@ CONVERSATION FLOW
    - Use phrases like: "And this person - are they also..."
    - Acknowledge each answer warmly before the next question
 
-5. CLOSING: "Thank you so much for your time! I'll share this with my client."
-   Then immediately END THE CALL using your endCall function.
+5. CLOSING & CALLBACK:
+   IF provider meets ALL criteria:
+   Say: "Perfect, thank you so much for all that information! Once I confirm with my client, if they decide to proceed, I'll call you back to schedule. Does that sound good?"
+   - Wait for their response (usually "yes", "sounds good", etc.)
+   - Acknowledge: "Great, have a wonderful day!"
+   - Then IMMEDIATELY invoke endCall
+
+   IF provider is disqualified:
+   Use the polite exit script (no mention of scheduling):
+   "Thank you so much for taking the time to chat. Unfortunately, it sounds like this particular request might not be the best fit right now, but I really appreciate your help. Have a wonderful day!"
+   - Then IMMEDIATELY invoke endCall
 
 ═══════════════════════════════════════════════════════════════════
 ENDING THE CALL
@@ -98,9 +124,9 @@ For unusual requirements, frame naturally: "My client specifically mentioned..."
     // ElevenLabs voice (Rachel - handles punctuation correctly, no "dot" issue)
     voice: {
       provider: "11labs" as const,
-      voiceId: "21m00Tcm4TlvDq8ikWAM",  // Rachel - warm, professional
+      voiceId: "21m00Tcm4TlvDq8ikWAM", // Rachel - warm, professional
       stability: 0.5,
-      similarityBoost: 0.75
+      similarityBoost: 0.75,
     },
 
     // Model configuration
@@ -110,15 +136,15 @@ For unusual requirements, frame naturally: "My client specifically mentioned..."
       messages: [
         {
           role: "system" as const,
-          content: systemPrompt
-        }
-      ]
+          content: systemPrompt,
+        },
+      ],
     },
 
     // Transcription
     transcriber: {
       provider: "deepgram" as const,
-      language: "en"
+      language: "en",
     },
 
     // First message
@@ -135,10 +161,10 @@ For unusual requirements, frame naturally: "My client specifically mentioned..."
         messages: [
           {
             type: "request-start" as const,
-            content: "Thank you for your time. Have a great day!"
-          }
-        ]
-      }
+            content: "Thank you for your time. Have a great day!",
+          },
+        ],
+      },
     ],
 
     // Analysis configuration
@@ -148,9 +174,10 @@ For unusual requirements, frame naturally: "My client specifically mentioned..."
         messages: [
           {
             role: "system" as const,
-            content: "Summarize: Was ONE person found with ALL required qualities? What are their rates and availability?"
-          }
-        ]
+            content:
+              "Summarize: Was ONE person found with ALL required qualities? What are their rates? What is their soonest/earliest availability (specific date/time)? Does the provider meet all client requirements?",
+          },
+        ],
       },
 
       structuredDataPlan: {
@@ -160,39 +187,72 @@ For unusual requirements, frame naturally: "My client specifically mentioned..."
           properties: {
             availability: {
               type: "string",
-              enum: ["available", "unavailable", "callback_requested", "unclear"]
+              enum: [
+                "available",
+                "unavailable",
+                "callback_requested",
+                "unclear",
+              ],
+            },
+            earliest_availability: {
+              type: "string",
+              description:
+                "Specific date/time when provider can come out (e.g., 'Tomorrow at 2pm', 'Friday morning', 'Next Monday')",
             },
             estimated_rate: {
-              type: "string"
+              type: "string",
             },
             single_person_found: {
               type: "boolean",
-              description: "Did we find ONE person with ALL required qualities?"
+              description:
+                "Did we find ONE person with ALL required qualities?",
             },
             technician_name: {
               type: "string",
-              description: "Name of the specific technician discussed (if given)"
+              description:
+                "Name of the specific technician discussed (if given)",
             },
             all_criteria_met: {
               type: "boolean",
-              description: "Does the SAME person meet ALL client requirements?"
+              description: "Does the SAME person meet ALL client requirements?",
             },
             criteria_details: {
               type: "object",
-              description: "Details about each criterion for the SAME person"
+              description: "Details about each criterion for the SAME person",
+            },
+            disqualified: {
+              type: "boolean",
+              description:
+                "Was the provider disqualified due to not meeting requirements?",
+            },
+            disqualification_reason: {
+              type: "string",
+              description:
+                "Reason the provider was disqualified (if applicable)",
             },
             call_outcome: {
               type: "string",
-              enum: ["positive", "negative", "neutral", "no_answer", "voicemail"]
+              enum: [
+                "positive",
+                "negative",
+                "neutral",
+                "no_answer",
+                "voicemail",
+              ],
             },
             recommended: {
-              type: "boolean"
+              type: "boolean",
             },
             notes: {
-              type: "string"
-            }
+              type: "string",
+            },
           },
-          required: ["availability", "single_person_found", "all_criteria_met", "call_outcome"]
+          required: [
+            "availability",
+            "single_person_found",
+            "all_criteria_met",
+            "call_outcome",
+          ],
         },
         messages: [
           {
@@ -200,9 +260,11 @@ For unusual requirements, frame naturally: "My client specifically mentioned..."
             content: `Analyze this call. The client needed ONE SINGLE PERSON with ALL these qualities:
 ${request.userCriteria}
 
-Key question: Did we find ONE person who has ALL requirements? Not different people for different requirements.`
-          }
-        ]
+Key questions:
+1. Did we find ONE person who has ALL requirements? Not different people for different requirements.
+2. Was the provider disqualified during the call? If so, what was the reason?`,
+          },
+        ],
       },
 
       successEvaluationPlan: {
@@ -212,15 +274,16 @@ Key question: Did we find ONE person who has ALL requirements? Not different peo
           {
             role: "system" as const,
             content: `Evaluate:
-1. Did we confirm availability?
+1. Did we confirm availability AND get specific soonest availability (date/time)?
 2. Did we get rates?
 3. Did we ask ONLY about the explicit criteria (not invented questions)?
 4. Did we track ONE person for ALL requirements (not different people)?
-5. Did we properly end the call (not wait for them to hang up)?`
-          }
-        ]
-      }
-    }
+5. Did we deliver the callback closing script ("I'll call you back to schedule")?
+6. Did we properly end the call (not wait for them to hang up)?`,
+          },
+        ],
+      },
+    },
   };
 }
 

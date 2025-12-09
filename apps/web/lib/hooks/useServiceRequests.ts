@@ -1,12 +1,12 @@
-'use client';
+"use client";
 
-import { useEffect, useState } from 'react';
-import { createClient } from '../supabase/client';
-import type { Tables } from '../types/database';
+import { useEffect, useState } from "react";
+import { createClient } from "../supabase/client";
+import type { Tables } from "../types/database";
 
-export type ServiceRequestWithRelations = Tables<'service_requests'> & {
-  providers?: Tables<'providers'>[];
-  interaction_logs?: Tables<'interaction_logs'>[];
+export type ServiceRequestWithRelations = Tables<"service_requests"> & {
+  providers?: Tables<"providers">[];
+  interaction_logs?: Tables<"interaction_logs">[];
 };
 
 /**
@@ -26,16 +26,18 @@ export function useServiceRequests(userId?: string) {
     const fetchRequests = async () => {
       try {
         let query = supabase
-          .from('service_requests')
-          .select(`
+          .from("service_requests")
+          .select(
+            `
             *,
             providers (*),
             interaction_logs (*)
-          `)
-          .order('created_at', { ascending: false });
+          `,
+          )
+          .order("created_at", { ascending: false });
 
         if (userId) {
-          query = query.eq('user_id', userId);
+          query = query.eq("user_id", userId);
         }
 
         const { data, error: fetchError } = await query;
@@ -43,11 +45,21 @@ export function useServiceRequests(userId?: string) {
         if (fetchError) throw fetchError;
 
         // Transform the data to ensure arrays for relations
-        const transformedData: ServiceRequestWithRelations[] = (data || []).map((item) => ({
-          ...item,
-          providers: Array.isArray(item.providers) ? item.providers : item.providers ? [item.providers] : [],
-          interaction_logs: Array.isArray(item.interaction_logs) ? item.interaction_logs : item.interaction_logs ? [item.interaction_logs] : [],
-        }));
+        const transformedData: ServiceRequestWithRelations[] = (data || []).map(
+          (item) => ({
+            ...item,
+            providers: Array.isArray(item.providers)
+              ? item.providers
+              : item.providers
+                ? [item.providers]
+                : [],
+            interaction_logs: Array.isArray(item.interaction_logs)
+              ? item.interaction_logs
+              : item.interaction_logs
+                ? [item.interaction_logs]
+                : [],
+          }),
+        );
         setRequests(transformedData);
       } catch (err) {
         setError(err as Error);
@@ -60,29 +72,32 @@ export function useServiceRequests(userId?: string) {
 
     // Subscribe to real-time changes
     const channel = supabase
-      .channel('service_requests_changes')
+      .channel("service_requests_changes")
       .on(
-        'postgres_changes',
+        "postgres_changes",
         {
-          event: '*',
-          schema: 'public',
-          table: 'service_requests',
+          event: "*",
+          schema: "public",
+          table: "service_requests",
         },
         (payload) => {
-          if (payload.eventType === 'INSERT') {
-            setRequests((prev) => [payload.new as ServiceRequestWithRelations, ...prev]);
-          } else if (payload.eventType === 'UPDATE') {
+          if (payload.eventType === "INSERT") {
+            setRequests((prev) => [
+              payload.new as ServiceRequestWithRelations,
+              ...prev,
+            ]);
+          } else if (payload.eventType === "UPDATE") {
             setRequests((prev) =>
               prev.map((req) =>
-                req.id === payload.new.id
-                  ? { ...req, ...payload.new }
-                  : req
-              )
+                req.id === payload.new.id ? { ...req, ...payload.new } : req,
+              ),
             );
-          } else if (payload.eventType === 'DELETE') {
-            setRequests((prev) => prev.filter((req) => req.id !== payload.old.id));
+          } else if (payload.eventType === "DELETE") {
+            setRequests((prev) =>
+              prev.filter((req) => req.id !== payload.old.id),
+            );
           }
-        }
+        },
       )
       .subscribe();
 

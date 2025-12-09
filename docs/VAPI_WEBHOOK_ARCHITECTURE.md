@@ -46,7 +46,14 @@ PROBLEMS:
 
 ---
 
-## New Architecture (Webhook + Database - EFFICIENT)
+## New Architecture (Webhook + Cache - EFFICIENT)
+
+**Current Implementation: In-Memory Cache**
+
+- Fast, low-latency lookups (< 10ms)
+- 30-minute TTL with automatic cleanup
+- No external dependencies
+- Future: Redis for multi-instance scaling
 
 ```
 ┌──────────────────────────────────────────────────────────────────────────────┐
@@ -105,22 +112,23 @@ STEP 1: Kestra initiates call
               │ API Server              │
               │ (Fastify)               │
               │                         │
-              │ 1. Verify signature     │
+              │ 1. Verify signature*    │
               │ 2. Validate payload     │
-              │ 3. Store in database    │
+              │ 3. Store in cache       │
               └───────────┬─────────────┘
                           │
                           ▼
                  ┌──────────────────────────────────┐
-                 │ Supabase Database                │
+                 │ In-Memory Cache                  │
+                 │ (WebhookCacheService)            │
                  │                                  │
-                 │ vapi_call_results                │
+                 │ Map<callId, CallResult>          │
                  │ ┌──────────────────────────────┐ │
                  │ │ call_id: abc123              │ │
-                 │ │ status: ended                │ │
+                 │ │ status: completed            │ │
                  │ │ transcript: {...}            │ │
                  │ │ analysis: {...}              │ │
-                 │ │ created_at: 2025-01-08...    │ │
+                 │ │ TTL: 30 minutes              │ │
                  │ └──────────────────────────────┘ │
                  └──────────────┬───────────────────┘
                                 │
@@ -129,26 +137,117 @@ STEP 1: Kestra initiates call
 ┌─────────────────────────────────────────────────────────────────┐
 │ STEP 3: Kestra retrieves result                                │
 │                                                                 │
-│  Lightweight database poll:                                    │
+│  Lightweight cache poll:                                       │
 │  GET /api/v1/vapi/calls/{call_id}                              │
 │                                                                 │
 │  ┌────────────────────────────────────┐                        │
-│  │ SELECT * FROM vapi_call_results    │                        │
-│  │ WHERE call_id = 'abc123'           │                        │
-│  │ AND status = 'ended'               │                        │
+│  │ webhookCache.get(call_id)          │                        │
+│  │ → Returns CallResult if cached     │                        │
+│  │ → Returns 404 if not ready         │                        │
 │  └────────────────────────────────────┘                        │
 │                                                                 │
 │  Returns immediately if available ✓                            │
-│  Or polls every 5 seconds (cheap local DB query)               │
+│  Or polls every 5 seconds (fast in-memory lookup)              │
 └─────────────────────────────────────────────────────────────────┘
+
+* Signature verification: Future enhancement (currently optional)
 
 BENEFITS:
 ✅ Zero calls to VAPI API after initial call creation
 ✅ Real-time results via webhook (no delay)
 ✅ No timeout issues
-✅ Database stores complete audit trail
-✅ Kestra polling is fast (local DB, not external API)
+✅ In-memory cache is extremely fast (< 10ms lookups)
+✅ Kestra polling is lightweight (no external API or DB)
+✅ 30-minute TTL with automatic cleanup
+✅ AI-powered disqualification detection during calls
+✅ Conditional closing scripts based on qualification status
 ```
+
+---
+
+## Call Flow with Disqualification Logic
+
+The VAPI assistant actively detects disqualification during calls and adjusts its behavior accordingly:
+
+```mermaid
+flowchart TD
+    A[Call Starts] --> B[Greet Provider]
+    B --> C[Ask Availability]
+    C -->|Not Available| D[Polite Exit - Disqualified]
+    C -->|Available| E[Get Earliest Availability]
+    E --> F[Ask About Rates]
+    F --> G[Ask Criteria One by One]
+    G -->|Criterion Not Met| D
+    G -->|All Criteria Met| H[Callback Closing Script]
+    H --> I[End Call]
+    D --> J[End Call - No Callback Mention]
+
+    style D fill:#ffcccc
+    style H fill:#ccffcc
+    style J fill:#ffcccc
+```
+
+### Disqualification Detection
+
+During the call, the assistant watches for responses that disqualify the provider:
+
+- Provider says they don't have anyone available
+- Provider can't meet a specific requirement
+- Provider explicitly states they don't do the type of work needed
+- Rate is significantly higher than reasonable
+
+### Conditional Closing Logic
+
+The assistant uses different closing scripts based on qualification status:
+
+**If ALL criteria met (qualified):**
+
+```
+"Perfect, thank you so much for all that information! Once I confirm with
+my client, if they decide to proceed, I'll call you back to schedule.
+Does that sound good?"
+```
+
+**If disqualified:**
+
+```
+"Thank you so much for taking the time to chat. Unfortunately, it sounds
+like this particular request might not be the best fit right now, but I
+really appreciate your help. Have a wonderful day!"
+```
+
+Note: The disqualified script intentionally avoids mentioning scheduling or callbacks.
+
+### Structured Data Schema
+
+The analysis includes disqualification tracking and earliest availability:
+
+```json
+{
+  "availability": "available" | "unavailable" | "callback_requested" | "unclear",
+  "earliest_availability": "Tomorrow at 2pm",
+  "estimated_rate": "$85/hour",
+  "single_person_found": true,
+  "technician_name": "John",
+  "all_criteria_met": false,
+  "criteria_details": {
+    "licensed": true,
+    "years_experience": false
+  },
+  "disqualified": true,
+  "disqualification_reason": "Cannot meet criterion: 10+ years experience",
+  "call_outcome": "negative",
+  "recommended": false,
+  "notes": "Provider only has 5 years experience"
+}
+```
+
+Key fields:
+
+- **earliest_availability**: Specific date/time when provider can come (e.g., "Tomorrow at 2pm", "Friday morning")
+- **disqualified**: Boolean flag indicating if provider cannot meet requirements
+- **disqualification_reason**: Explanation of why provider was disqualified
+- **criteria_details**: Breakdown of which specific criteria were met or not met
 
 ---
 
@@ -312,35 +411,55 @@ concierge-ai/
 │   │   │   │   ├── gemini.ts ─────────────► Existing (reference)
 │   │   │   │   ├── users.ts ──────────────► Existing (reference)
 │   │   │   │   ├── workflows.ts ──────────► Existing (reference)
-│   │   │   │   └── vapi.ts ───────────────► NEW: Webhook endpoints
+│   │   │   │   ├── vapi.ts ───────────────► Database operations (future)
+│   │   │   │   └── vapi-webhook.ts ───────► ACTIVE: Webhook endpoints & cache
 │   │   │   ├── services/
 │   │   │   │   ├── gemini.ts ─────────────► Existing (reference)
-│   │   │   │   └── vapi.ts ───────────────► NEW: Database operations
+│   │   │   │   └── vapi/
+│   │   │   │       ├── types.ts ──────────► Shared types (CallRequest, CallResult)
+│   │   │   │       ├── assistant-config.ts ► SOURCE OF TRUTH for VAPI config
+│   │   │   │       ├── webhook-cache.service.ts ► In-memory cache (30min TTL)
+│   │   │   │       ├── direct-vapi.client.ts ► Direct VAPI client
+│   │   │   │       ├── kestra.client.ts ──► Kestra integration
+│   │   │   │       ├── provider-calling.service.ts ► Main orchestrator
+│   │   │   │       └── index.ts ──────────► Service exports
 │   │   │   ├── lib/
 │   │   │   │   ├── supabase.ts ───────────► Existing (reference)
-│   │   │   │   └── vapi-signature.ts ─────► NEW: Webhook security
+│   │   │   │   └── vapi-signature.ts ─────► Webhook security (future)
 │   │   │   └── plugins/
 │   │   │       └── supabase.ts ───────────► Existing (reference)
-│   │   └── .env ──────────────────────────► Add VAPI_WEBHOOK_SECRET
+│   │   └── .env ──────────────────────────► VAPI_API_KEY, VAPI_PHONE_NUMBER_ID
 │   │
 │   └── web/ (unchanged)
 │
 ├── supabase/
 │   └── migrations/
 │       ├── 20250101000000_initial_schema.sql ──► Existing
-│       └── 20250108000000_add_vapi_call_results.sql ──► NEW
+│       └── 20250108000000_add_vapi_call_results.sql ──► Future: DB storage
 │
 ├── kestra/
 │   ├── flows/
-│   │   └── contact_agent.yaml ────────────► UPDATE: Add DB polling
+│   │   └── contact_agent.yaml ────────────► UPDATE: Poll backend API
 │   └── scripts/
-│       └── call-provider.js ──────────────► UPDATE: Return immediately
+│       ├── call-provider.js ──────────────► DRY: Imports from compiled TS
+│       └── call-provider-webhook.js ──────► DRY: Backend polling logic
 │
 └── docs/
-    ├── VAPI_WEBHOOK_DESIGN.md ────────────► Complete design (this doc)
+    ├── VAPI_WEBHOOK_DESIGN.md ────────────► Complete design document
     ├── VAPI_WEBHOOK_SUMMARY.md ───────────► Executive summary
-    └── VAPI_WEBHOOK_ARCHITECTURE.md ──────► Architecture diagrams
+    └── VAPI_WEBHOOK_ARCHITECTURE.md ──────► Architecture diagrams (this file)
 ```
+
+### DRY Principle Implementation
+
+The VAPI assistant configuration follows the DRY (Don't Repeat Yourself) principle:
+
+- **Single Source of Truth**: `apps/api/src/services/vapi/assistant-config.ts` is the authoritative configuration
+- **Shared Types**: `apps/api/src/services/vapi/types.ts` defines `CallRequest` and `CallResult` interfaces
+- **Kestra Integration**: Kestra scripts import from the compiled TypeScript configuration
+- **No Duplication**: Both Direct VAPI and Kestra paths use the same `createAssistantConfig()` function
+- **Version Control**: Changes to call behavior only need to be made in one place
+- **Consistent Structured Data**: All paths return the same `CallResult` format with disqualification fields
 
 ---
 
@@ -383,9 +502,13 @@ concierge-ai/
                "summary": "Joe's Plumbing is available...",
                "structuredData": {
                  "availability": "available",
+                 "earliest_availability": "Tomorrow at 2pm",
                  "estimated_rate": "$85/hour",
                  "single_person_found": true,
-                 "all_criteria_met": true
+                 "all_criteria_met": true,
+                 "disqualified": false,
+                 "call_outcome": "positive",
+                 "recommended": true
                }
              }
            }
@@ -429,7 +552,14 @@ concierge-ai/
            "analysis_summary": "...",
            "analysis_structured_data": {
              "availability": "available",
-             "estimated_rate": "$85/hour"
+             "earliest_availability": "Tomorrow at 2pm",
+             "estimated_rate": "$85/hour",
+             "single_person_found": true,
+             "all_criteria_met": true,
+             "disqualified": false,
+             "disqualification_reason": null,
+             "call_outcome": "positive",
+             "recommended": true
            }
          }
        }
@@ -490,6 +620,7 @@ concierge-ai/
 ## Performance Comparison
 
 ### Current (Polling)
+
 ```
 Call duration: 2 minutes
 Polling interval: 5 seconds
@@ -502,6 +633,7 @@ Resources: High (24 HTTP requests, script running for 2+ min)
 ```
 
 ### New (Webhook)
+
 ```
 Call duration: 2 minutes
 Webhook delivery: ~1 second after call ends

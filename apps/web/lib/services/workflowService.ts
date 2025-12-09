@@ -23,8 +23,8 @@ export interface Provider {
 }
 
 export interface ResearchResult {
-  status: 'success' | 'error';
-  method: 'kestra' | 'direct_gemini';
+  status: "success" | "error";
+  method: "kestra" | "direct_gemini";
   providers: Provider[];
   reasoning?: string;
   error?: string;
@@ -35,18 +35,20 @@ export interface WorkflowStatus {
   kestraUrl: string | null;
   kestraHealthy: boolean;
   geminiConfigured: boolean;
-  activeResearchMethod: 'kestra' | 'direct_gemini';
+  activeResearchMethod: "kestra" | "direct_gemini";
 }
 
 /**
  * Search for providers using the workflow API
  * Automatically uses Kestra or direct Gemini based on availability
  */
-export async function searchProviders(request: ResearchRequest): Promise<ResearchResult> {
-  const response = await fetch('/api/v1/workflows/research', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(request)
+export async function searchProviders(
+  request: ResearchRequest,
+): Promise<ResearchResult> {
+  const response = await fetch("/api/v1/workflows/research", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(request),
   });
 
   if (!response.ok) {
@@ -61,7 +63,7 @@ export async function searchProviders(request: ResearchRequest): Promise<Researc
  * Get workflow system status
  */
 export async function getWorkflowStatus(): Promise<WorkflowStatus> {
-  const response = await fetch('/api/v1/workflows/status');
+  const response = await fetch("/api/v1/workflows/status");
   if (!response.ok) {
     throw new Error(`Status check failed: ${response.statusText}`);
   }

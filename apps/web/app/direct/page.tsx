@@ -1,20 +1,42 @@
-'use client';
+"use client";
 
-import React, { useState } from 'react';
-import { useRouter } from 'next/navigation';
-import { useAppContext } from '@/lib/providers/AppProvider';
-import { RequestStatus, RequestType, ServiceRequest } from '@/lib/types';
-import { Phone, User, MessageSquare, PhoneCall } from 'lucide-react';
-import { simulateCall, scheduleAppointment } from '@/lib/services/geminiService';
+import React, { useState } from "react";
+import { useRouter } from "next/navigation";
+import { useAppContext } from "@/lib/providers/AppProvider";
+import {
+  InteractionLog,
+  RequestStatus,
+  RequestType,
+  ServiceRequest,
+} from "@/lib/types";
+import { Phone, User, MessageSquare, PhoneCall } from "lucide-react";
+import {
+  simulateCall,
+  scheduleAppointment,
+} from "@/lib/services/geminiService";
+import {
+  callProviderLive,
+  callResponseToInteractionLog,
+  normalizePhoneNumber,
+  isValidE164Phone,
+} from "@/lib/services/providerCallingService";
+
+// Environment toggle for live VAPI calls vs simulated calls
+const LIVE_CALL_ENABLED =
+  process.env.NEXT_PUBLIC_LIVE_CALL_ENABLED === "true";
+
+// Admin test mode: when set, only call this test number instead of actual phone
+const ADMIN_TEST_NUMBER = process.env.NEXT_PUBLIC_ADMIN_TEST_NUMBER;
+const isAdminTestMode = !!ADMIN_TEST_NUMBER;
 
 export default function DirectTask() {
   const router = useRouter();
   const { addRequest, updateRequest } = useAppContext();
 
   const [formData, setFormData] = useState({
-    name: '',
-    phone: '',
-    task: ''
+    name: "",
+    phone: "",
+    task: "",
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -32,7 +54,7 @@ export default function DirectTask() {
       createdAt: new Date().toISOString(),
       providersFound: [],
       interactions: [],
-      directContactInfo: { name: formData.name, phone: formData.phone }
+      directContactInfo: { name: formData.name, phone: formData.phone },
     };
 
     addRequest(newRequest);
@@ -40,14 +62,66 @@ export default function DirectTask() {
 
     // Run Direct Process
     try {
-      const log = await simulateCall(formData.name, formData.task, true);
+      let log: InteractionLog;
 
-      if (log.status === 'success') {
+      if (LIVE_CALL_ENABLED) {
+        // Real VAPI calls - requires valid phone number
+        // In admin test mode, override with the test number
+        const phoneToCall = isAdminTestMode
+          ? normalizePhoneNumber(ADMIN_TEST_NUMBER!)
+          : normalizePhoneNumber(formData.phone);
+
+        if (!isValidE164Phone(phoneToCall)) {
+          console.warn(
+            `[Direct] Invalid phone number: ${isAdminTestMode ? ADMIN_TEST_NUMBER : formData.phone} -> ${phoneToCall}`,
+          );
+          log = {
+            timestamp: new Date().toISOString(),
+            stepName: `Calling ${formData.name}`,
+            detail: `Invalid phone number format: ${formData.phone}`,
+            status: "error" as const,
+          };
+        } else {
+          const testModeLabel = isAdminTestMode ? " (TEST MODE)" : "";
+          console.log(
+            `[Direct] Calling ${formData.name} at ${phoneToCall} via VAPI...${testModeLabel}`,
+          );
+
+          // Make real VAPI call
+          const response = await callProviderLive({
+            providerName: formData.name,
+            providerPhone: phoneToCall,
+            serviceNeeded: "Direct Task",
+            userCriteria: formData.task,
+            location: "User Direct Request",
+            urgency: "immediate",
+            serviceRequestId: newRequest.id,
+          });
+
+          // Convert response to InteractionLog format
+          log = callResponseToInteractionLog(formData.name, response);
+
+          console.log(
+            `[Direct] Call to ${formData.name} completed: ${log.status}`,
+          );
+        }
+      } else {
+        // Simulated calls via Gemini (existing behavior)
+        log = await simulateCall(formData.name, formData.task, true);
+      }
+
+      if (log.status === "success") {
         let finalLogs = [log];
         let outcome = "Call completed successfully.";
 
-        if (formData.task.toLowerCase().includes('schedule') || formData.task.toLowerCase().includes('appointment')) {
-          const booking = await scheduleAppointment(formData.name, formData.task);
+        if (
+          formData.task.toLowerCase().includes("schedule") ||
+          formData.task.toLowerCase().includes("appointment")
+        ) {
+          const booking = await scheduleAppointment(
+            formData.name,
+            formData.task,
+          );
           finalLogs.push(booking);
           outcome = "Appointment scheduled.";
         }
@@ -55,16 +129,15 @@ export default function DirectTask() {
         updateRequest(newRequest.id, {
           status: RequestStatus.COMPLETED,
           interactions: finalLogs,
-          finalOutcome: outcome
+          finalOutcome: outcome,
         });
       } else {
         updateRequest(newRequest.id, {
           status: RequestStatus.FAILED,
           interactions: [log],
-          finalOutcome: "Call did not result in a positive outcome."
+          finalOutcome: "Call did not result in a positive outcome.",
         });
       }
-
     } catch (e) {
       updateRequest(newRequest.id, { status: RequestStatus.FAILED });
     }
@@ -82,7 +155,10 @@ export default function DirectTask() {
         </p>
       </div>
 
-      <form onSubmit={handleSubmit} className="bg-surface p-8 rounded-2xl border border-surface-highlight shadow-xl space-y-6">
+      <form
+        onSubmit={handleSubmit}
+        className="bg-surface p-8 rounded-2xl border border-surface-highlight shadow-xl space-y-6"
+      >
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div>
             <label className="block text-sm font-semibold text-slate-300 mb-2">
@@ -96,7 +172,9 @@ export default function DirectTask() {
                 placeholder="e.g. Dr. Smith"
                 className="w-full pl-10 pr-4 py-3 rounded-xl border border-surface-highlight focus:border-primary-500 focus:ring-2 focus:ring-primary-500/20 outline-none transition-all bg-abyss text-slate-100 placeholder-slate-600"
                 value={formData.name}
-                onChange={e => setFormData({ ...formData, name: e.target.value })}
+                onChange={(e) =>
+                  setFormData({ ...formData, name: e.target.value })
+                }
               />
             </div>
           </div>
@@ -113,7 +191,9 @@ export default function DirectTask() {
                 placeholder="(555) 123-4567"
                 className="w-full pl-10 pr-4 py-3 rounded-xl border border-surface-highlight focus:border-primary-500 focus:ring-2 focus:ring-primary-500/20 outline-none transition-all bg-abyss text-slate-100 placeholder-slate-600"
                 value={formData.phone}
-                onChange={e => setFormData({ ...formData, phone: e.target.value })}
+                onChange={(e) =>
+                  setFormData({ ...formData, phone: e.target.value })
+                }
               />
             </div>
           </div>
@@ -131,7 +211,9 @@ export default function DirectTask() {
               placeholder="e.g. Call to reschedule my appointment to next Tuesday afternoon."
               className="w-full pl-10 pr-4 py-3 rounded-xl border border-surface-highlight focus:border-primary-500 focus:ring-2 focus:ring-primary-500/20 outline-none transition-all resize-none bg-abyss text-slate-100 placeholder-slate-600"
               value={formData.task}
-              onChange={e => setFormData({ ...formData, task: e.target.value })}
+              onChange={(e) =>
+                setFormData({ ...formData, task: e.target.value })
+              }
             />
           </div>
         </div>
@@ -141,7 +223,7 @@ export default function DirectTask() {
           disabled={isSubmitting}
           className="w-full py-4 bg-primary-600 hover:bg-primary-500 text-white font-bold rounded-xl shadow-lg shadow-primary-500/20 transition-all transform active:scale-95 disabled:opacity-50 flex items-center justify-center gap-2"
         >
-          {isSubmitting ? 'Initiating Call...' : 'Execute Task'}
+          {isSubmitting ? "Initiating Call..." : "Execute Task"}
         </button>
       </form>
     </div>

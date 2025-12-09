@@ -14,6 +14,18 @@ inputs:
   - id: min_rating
     type: FLOAT
     defaults: 4.5
+  - id: max_distance
+    type: FLOAT
+    defaults: 25.0
+  - id: latitude
+    type: FLOAT
+    defaults: 34.8526
+  - id: longitude
+    type: FLOAT
+    defaults: -82.394
+  - id: require_phone
+    type: BOOLEAN
+    defaults: true
 
 tasks:
   - id: research_metrics
@@ -23,26 +35,85 @@ tasks:
       apiKey: "{{ envs.gemini_api_key }}"
       modelName: gemini-2.5-flash
     prompt: |
-      I need to find {{ inputs.service }} providers in {{ inputs.location }} that meet these criteria:
+      I need to find {{ inputs.service }} providers in {{ inputs.location }} (lat: {{ inputs.latitude }}, lng: {{ inputs.longitude }}) that meet these criteria:
       - Minimum rating: {{ inputs.min_rating }}
+      - Maximum distance: {{ inputs.max_distance }} miles
+      - Must have a phone number (REQUIRED)
       - Must appear to be available or have 24/7 service (urgent need within {{ inputs.days_needed }} days)
 
-      Use Google Search Grounding to find at least 5 candidates. For each, gather:
-      1. Company name
-      2. Phone number (CRITICAL)
-      3. Current ratings and review count
-      4. Years in business or "Founded" date if available
+      Use Google Search Grounding to find at least 15 candidates. For each provider, you MUST gather ALL of these fields:
+      1. Company name (REQUIRED)
+      2. Phone number (REQUIRED - SKIP any provider without a phone number)
+      3. Full address with city, state, zip (REQUIRED)
+      4. Rating (REQUIRED - numeric value)
+      5. Review count (REQUIRED - total number of reviews)
+      6. Hours of operation (if available, e.g. "Mon-Fri 8am-6pm, Sat 9am-2pm")
 
-      Then, evaluate the list and return the TOP 3 candidates that are most likely to answer the phone and do a good job.
+      IMPORTANT INSTRUCTIONS:
+      - SKIP any provider that doesn't have a phone number
+      - Include hours of operation if available from the search results
+      - Return AT LEAST 15 candidates (more is better for filtering)
+      - Each provider must have: name, phone, address, rating, reviewCount
 
       Output strictly a JSON object with a 'candidates' key containing an array of objects:
       {
         "candidates": [
-          { "name": "Name", "phone": "Phone", "rating": 4.8, "reason": "Why selected" }
+          {
+            "name": "Company Name",
+            "phone": "(864) 555-1234",
+            "address": "123 Main St, Greenville, SC 29601",
+            "rating": 4.8,
+            "reviewCount": 156,
+            "hours": "Mon-Fri 8am-6pm, Sat 9am-2pm"
+          }
         ]
+      }
+
+  - id: filter_and_rank
+    type: io.kestra.plugin.ai.agent.AIAgent
+    provider:
+      type: io.kestra.plugin.ai.provider.GoogleGemini
+      apiKey: "{{ envs.gemini_api_key }}"
+      modelName: gemini-2.5-flash
+    prompt: |
+      I have a list of {{ inputs.service }} candidates from the research phase. Now I need to filter and rank them.
+
+      Raw candidates data:
+      {{ outputs.research_metrics.textOutput }}
+
+      Filtering criteria:
+      - Minimum rating: {{ inputs.min_rating }}
+      - Require phone: {{ inputs.require_phone }}
+
+      Ranking criteria (in order of importance):
+      1. Rating (higher is better)
+      2. Review count (more reviews = more reliable)
+      3. Availability indication
+
+      Please:
+      1. Parse the candidates from the research phase
+      2. Filter out any that don't meet the criteria
+      3. Rank the remaining providers by rating (highest first), then by review count
+      4. Return the TOP 10 providers
+
+      Output strictly a JSON object with this structure:
+      {
+        "providers": [
+          {
+            "name": "Company Name",
+            "phone": "(864) 555-1234",
+            "address": "123 Main St, Greenville, SC 29601",
+            "rating": 4.8,
+            "reviewCount": 156,
+            "hours": "Mon-Fri 8am-6pm, Sat 9am-2pm",
+            "reason": "Top rated with excellent reviews and high availability"
+          }
+        ],
+        "totalFound": 15,
+        "filteredCount": 10
       }
 
 outputs:
   - id: json
     type: STRING
-    value: "{{ outputs.research_metrics.textOutput }}"
+    value: "{{ outputs.filter_and_rank.textOutput }}"

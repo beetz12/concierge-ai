@@ -1,0 +1,174 @@
+name: Cline Deploy Pipeline
+
+on:
+  push:
+    branches:
+      - main
+
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  deployments: write
+
+jobs:
+  pre-deploy-checks:
+    name: Pre-Deploy Checks
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'pnpm'
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v3
+        with:
+          version: 9.0.0
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Type check
+        run: pnpm check-types
+
+      - name: Lint
+        run: pnpm lint
+
+      - name: Build
+        run: pnpm build
+
+      - name: Install Cline CLI
+        run: npm install -g @cline/cli
+        env:
+          CLINE_API_KEY: ${{ secrets.CLINE_API_KEY }}
+
+      - name: Security scan
+        run: ./scripts/cline/security-scan.sh --quick
+        env:
+          CLINE_API_KEY: ${{ secrets.CLINE_API_KEY }}
+          CLINE_ENABLED: true
+
+  deploy-web:
+    name: Deploy Web (Vercel)
+    runs-on: ubuntu-latest
+    needs: pre-deploy-checks
+    environment:
+      name: production-web
+      url: ${{ steps.deploy.outputs.url }}
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Deploy to Vercel
+        id: deploy
+        uses: amondnet/vercel-action@v25
+        with:
+          vercel-token: ${{ secrets.VERCEL_TOKEN }}
+          vercel-org-id: ${{ secrets.VERCEL_ORG_ID }}
+          vercel-project-id: ${{ secrets.VERCEL_PROJECT_ID }}
+          vercel-args: '--prod'
+          working-directory: ./apps/web
+
+      - name: Post deployment URL
+        run: |
+          echo "🚀 Web deployed to: ${{ steps.deploy.outputs.url }}"
+
+  deploy-api:
+    name: Deploy API (Railway)
+    runs-on: ubuntu-latest
+    needs: pre-deploy-checks
+    environment:
+      name: production-api
+      url: ${{ secrets.RAILWAY_API_URL }}
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Install Railway CLI
+        run: npm install -g @railway/cli
+
+      - name: Deploy to Railway
+        run: |
+          cd apps/api
+          railway up --service api
+        env:
+          RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
+
+      - name: Post deployment status
+        run: |
+          echo "🚀 API deployed to Railway"
+
+  post-deploy-validation:
+    name: Post-Deploy Validation
+    runs-on: ubuntu-latest
+    needs: [deploy-web, deploy-api]
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Health check - Web
+        run: |
+          curl -f ${{ secrets.VERCEL_PRODUCTION_URL }}/api/health || exit 1
+
+      - name: Health check - API
+        run: |
+          curl -f ${{ secrets.RAILWAY_API_URL }}/health || exit 1
+
+      - name: Install Cline CLI
+        run: npm install -g @cline/cli
+        env:
+          CLINE_API_KEY: ${{ secrets.CLINE_API_KEY }}
+
+      - name: Post-deploy smoke tests
+        run: |
+          # Basic API tests
+          curl -f ${{ secrets.RAILWAY_API_URL }}/api/v1/health
+
+          # Check critical endpoints
+          curl -f ${{ secrets.RAILWAY_API_URL }}/api/v1/gemini/health
+
+      - name: Notify deployment success
+        if: success()
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const { owner, repo } = context.repo;
+            const sha = context.sha;
+
+            await github.rest.repos.createCommitStatus({
+              owner,
+              repo,
+              sha,
+              state: 'success',
+              description: 'Deployment successful',
+              context: 'deployment/production'
+            });
+
+      - name: Notify deployment failure
+        if: failure()
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const { owner, repo } = context.repo;
+            const sha = context.sha;
+
+            await github.rest.repos.createCommitStatus({
+              owner,
+              repo,
+              sha,
+              state: 'failure',
+              description: 'Deployment failed',
+              context: 'deployment/production'
+            });

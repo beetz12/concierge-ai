@@ -4,6 +4,32 @@
 
 This guide shows how to update the `call-provider.js` script to poll the backend API instead of polling VAPI directly.
 
+## IMPORTANT: DRY Architecture Update
+
+As of the latest version, the `call-provider.js` script now imports the assistant configuration from the compiled TypeScript source to maintain DRY principles:
+
+**Single Source of Truth**: `apps/api/src/services/vapi/assistant-config.ts`
+
+- Contains the canonical VAPI assistant configuration
+- Defines prompts, conversation flow, analysis schema
+- Used by both Kestra scripts and direct API calls
+
+**Build Requirement**: Before running Kestra scripts:
+
+```bash
+pnpm build
+# or
+pnpm --filter api build
+```
+
+The script imports from: `apps/api/dist/services/vapi/assistant-config.js`
+
+This ensures:
+
+- No configuration duplication
+- Consistent behavior across all execution paths
+- Single place to update prompts and logic
+
 ## Changes Required
 
 ### Before: Polling VAPI Directly
@@ -17,9 +43,9 @@ async function pollForCallCompletion(callId, maxAttempts = 60) {
     try {
       const call = await vapi.calls.get(callId);
 
-      if (call.status === 'ended') {
+      if (call.status === "ended") {
         return {
-          status: 'completed',
+          status: "completed",
           callId: call.id,
           duration: calculateDuration(call.startedAt, call.endedAt),
           transcript: call.transcript,
@@ -27,15 +53,17 @@ async function pollForCallCompletion(callId, maxAttempts = 60) {
         };
       }
 
-      console.log(`Call ${callId} still in progress (attempt ${attempt + 1})...`);
-      await new Promise(resolve => setTimeout(resolve, pollInterval));
+      console.log(
+        `Call ${callId} still in progress (attempt ${attempt + 1})...`,
+      );
+      await new Promise((resolve) => setTimeout(resolve, pollInterval));
     } catch (error) {
       console.error(`Poll attempt ${attempt + 1} failed:`, error);
-      await new Promise(resolve => setTimeout(resolve, pollInterval));
+      await new Promise((resolve) => setTimeout(resolve, pollInterval));
     }
   }
 
-  throw new Error('Timeout: Call did not complete within expected time');
+  throw new Error("Timeout: Call did not complete within expected time");
 }
 ```
 
@@ -45,7 +73,8 @@ async function pollForCallCompletion(callId, maxAttempts = 60) {
 // NEW: Poll backend API for webhook results
 async function pollForCallCompletion(callId, maxAttempts = 60) {
   const pollInterval = 5000; // 5 seconds
-  const backendUrl = process.env.BACKEND_URL || 'https://api-production-8fe4.up.railway.app';
+  const backendUrl =
+    process.env.BACKEND_URL || "https://api-production-8fe4.up.railway.app";
 
   for (let attempt = 0; attempt < maxAttempts; attempt++) {
     try {
@@ -63,28 +92,60 @@ async function pollForCallCompletion(callId, maxAttempts = 60) {
 
       // 404: Result not ready yet, continue polling
       if (response.status === 404) {
-        console.log(`Call ${callId} result not ready yet (attempt ${attempt + 1})...`);
-        await new Promise(resolve => setTimeout(resolve, pollInterval));
+        console.log(
+          `Call ${callId} result not ready yet (attempt ${attempt + 1})...`,
+        );
+        await new Promise((resolve) => setTimeout(resolve, pollInterval));
         continue;
       }
 
       // Other errors: Log and retry
       console.error(`Unexpected response status ${response.status}`);
-      await new Promise(resolve => setTimeout(resolve, pollInterval));
+      await new Promise((resolve) => setTimeout(resolve, pollInterval));
     } catch (error) {
       console.error(`Poll attempt ${attempt + 1} failed:`, error.message);
-      await new Promise(resolve => setTimeout(resolve, pollInterval));
+      await new Promise((resolve) => setTimeout(resolve, pollInterval));
     }
   }
 
   // Timeout: Call result never received
-  throw new Error(`Timeout: Call result for ${callId} not received within ${maxAttempts * pollInterval / 1000} seconds`);
+  throw new Error(
+    `Timeout: Call result for ${callId} not received within ${(maxAttempts * pollInterval) / 1000} seconds`,
+  );
 }
 ```
 
-## Complete Updated Script
+## Current Architecture
 
-Here's the full updated `call-provider.js`:
+The current `call-provider.js` script uses the shared configuration approach:
+
+```javascript
+// Import shared configuration from compiled TypeScript
+const configModule = await import(
+  "../../apps/api/dist/services/vapi/assistant-config.js"
+);
+const createAssistantConfig = configModule.createAssistantConfig;
+
+// Use the shared configuration
+const assistantConfig = createAssistantConfig({
+  phoneNumber: PHONE_NUMBER,
+  serviceNeeded: SERVICE_TYPE,
+  userCriteria: USER_CRITERIA,
+  location: LOCATION,
+  providerName: PROVIDER_NAME,
+  urgency: URGENCY,
+});
+```
+
+This approach ensures:
+
+- VAPI assistant config defined in ONE place only
+- Kestra scripts and API use identical configuration
+- Updates to prompts/logic happen in one file
+
+## Complete Updated Script (Legacy Reference)
+
+Here's the full updated `call-provider.js` (NOTE: The actual script now uses the shared config import above):
 
 ```javascript
 /**
@@ -92,12 +153,13 @@ Here's the full updated `call-provider.js`:
  * Updated to poll backend webhook API instead of VAPI directly
  */
 
-const Vapi = require('@vapi-ai/server-sdk').default;
+const Vapi = require("@vapi-ai/server-sdk").default;
 
 // Environment variables from Kestra
 const VAPI_API_KEY = process.env.VAPI_API_KEY;
 const VAPI_PHONE_NUMBER_ID = process.env.VAPI_PHONE_NUMBER_ID;
-const BACKEND_URL = process.env.BACKEND_URL || 'https://api-production-8fe4.up.railway.app';
+const BACKEND_URL =
+  process.env.BACKEND_URL || "https://api-production-8fe4.up.railway.app";
 
 // Task inputs from Kestra flow
 const providerName = process.env.PROVIDER_NAME;
@@ -105,15 +167,15 @@ const providerPhone = process.env.PROVIDER_PHONE;
 const serviceNeeded = process.env.SERVICE_NEEDED;
 const userCriteria = process.env.USER_CRITERIA;
 const location = process.env.LOCATION;
-const urgency = process.env.URGENCY || 'flexible';
+const urgency = process.env.URGENCY || "flexible";
 
 // Validate inputs
 if (!VAPI_API_KEY || !VAPI_PHONE_NUMBER_ID) {
-  throw new Error('Missing VAPI credentials');
+  throw new Error("Missing VAPI credentials");
 }
 
 if (!providerName || !providerPhone || !serviceNeeded) {
-  throw new Error('Missing required provider information');
+  throw new Error("Missing required provider information");
 }
 
 // Initialize VAPI client
@@ -124,39 +186,43 @@ const vapi = new Vapi(VAPI_API_KEY);
  */
 async function main() {
   try {
-    console.log('=== Starting Provider Call ===');
+    console.log("=== Starting Provider Call ===");
     console.log(`Provider: ${providerName}`);
     console.log(`Phone: ${providerPhone}`);
     console.log(`Service: ${serviceNeeded}`);
     console.log(`Location: ${location}`);
     console.log(`Urgency: ${urgency}`);
-    console.log('');
+    console.log("");
 
     // Step 1: Initiate the call via VAPI
     const call = await initiateCall();
     console.log(`Call initiated: ${call.id}`);
-    console.log('');
+    console.log("");
 
     // Step 2: Poll backend API for webhook result (instead of VAPI)
-    console.log('Polling backend API for call completion...');
+    console.log("Polling backend API for call completion...");
     const result = await pollBackendForResult(call.id);
-    console.log('');
+    console.log("");
 
     // Step 3: Output results for Kestra
-    console.log('=== Call Completed ===');
+    console.log("=== Call Completed ===");
     console.log(JSON.stringify(result, null, 2));
 
     // Write outputs for Kestra to capture
     process.stdout.write(`::set-output name=callId::${result.callId}\n`);
     process.stdout.write(`::set-output name=status::${result.status}\n`);
     process.stdout.write(`::set-output name=duration::${result.duration}\n`);
-    process.stdout.write(`::set-output name=transcript::${result.transcript}\n`);
-    process.stdout.write(`::set-output name=analysis::${JSON.stringify(result.analysis)}\n`);
+    process.stdout.write(
+      `::set-output name=transcript::${result.transcript}\n`,
+    );
+    process.stdout.write(
+      `::set-output name=analysis::${JSON.stringify(result.analysis)}\n`,
+    );
     process.stdout.write(`::set-output name=cost::${result.cost}\n`);
 
     process.exit(0);
   } catch (error) {
-    console.error('Error executing call:', error);
+    console.error("Error executing call:", error);
     process.exit(1);
   }
 }
@@ -168,13 +234,13 @@ async function initiateCall() {
   const assistantConfig = {
     name: `${serviceNeeded} Provider Call`,
     model: {
-      provider: 'openai',
-      model: 'gpt-4',
-      temperature: 0.7
+      provider: "openai",
+      model: "gpt-4",
+      temperature: 0.7,
     },
     voice: {
-      provider: 'playht',
-      voiceId: 'jennifer'
+      provider: "playht",
+      voiceId: "jennifer",
     },
     firstMessage: `Hello, I'm calling on behalf of a customer looking for ${serviceNeeded} services in ${location}. Do you have availability?`,
     recordingEnabled: true,
@@ -186,16 +252,16 @@ async function initiateCall() {
       serviceNeeded,
       userCriteria,
       location,
-      urgency
-    }
+      urgency,
+    },
   };
 
   const call = await vapi.calls.create({
     phoneNumberId: VAPI_PHONE_NUMBER_ID,
     customer: {
-      number: providerPhone
+      number: providerPhone,
     },
-    assistant: assistantConfig
+    assistant: assistantConfig,
   });
 
   return call;
@@ -211,14 +277,18 @@ async function pollBackendForResult(callId) {
 
   for (let attempt = 0; attempt < maxAttempts; attempt++) {
     try {
-      const response = await fetch(`${BACKEND_URL}/api/v1/vapi/calls/${callId}`);
+      const response = await fetch(
+        `${BACKEND_URL}/api/v1/vapi/calls/${callId}`,
+      );
 
       // Success: Webhook result available
       if (response.ok) {
         const { success, data } = await response.json();
 
         if (success && data) {
-          console.log(`✓ Call result received from backend (attempt ${attempt + 1})`);
+          console.log(
+            `✓ Call result received from backend (attempt ${attempt + 1})`,
+          );
           return data;
         }
       }
@@ -227,20 +297,24 @@ async function pollBackendForResult(callId) {
       if (response.status === 404) {
         const timeElapsed = (attempt * pollInterval) / 1000;
         console.log(`  Waiting for webhook... (${timeElapsed}s elapsed)`);
-        await new Promise(resolve => setTimeout(resolve, pollInterval));
+        await new Promise((resolve) => setTimeout(resolve, pollInterval));
         continue;
       }
 
       // Other errors
-      console.error(`  Unexpected status ${response.status} (attempt ${attempt + 1})`);
-      await new Promise(resolve => setTimeout(resolve, pollInterval));
+      console.error(
+        `  Unexpected status ${response.status} (attempt ${attempt + 1})`,
+      );
+      await new Promise((resolve) => setTimeout(resolve, pollInterval));
     } catch (error) {
       console.error(`  Poll failed (attempt ${attempt + 1}):`, error.message);
-      await new Promise(resolve => setTimeout(resolve, pollInterval));
+      await new Promise((resolve) => setTimeout(resolve, pollInterval));
     }
   }
 
-  throw new Error(`Timeout: Call result for ${callId} not received after ${maxAttempts * pollInterval / 1000} seconds`);
+  throw new Error(
+    `Timeout: Call result for ${callId} not received after ${(maxAttempts * pollInterval) / 1000} seconds`,
+  );
 }
 
 // Run main
@@ -250,16 +324,20 @@ main();
 ## Key Changes Summary
 
 1. **Added Backend URL:**
+
    ```javascript
-   const BACKEND_URL = process.env.BACKEND_URL || 'https://api-production-8fe4.up.railway.app';
+   const BACKEND_URL =
+     process.env.BACKEND_URL || "https://api-production-8fe4.up.railway.app";
    ```
 
 2. **Updated serverUrl in Assistant Config:**
+
    ```javascript
    serverUrl: `${BACKEND_URL}/api/v1/vapi/webhook`,
    ```
 
 3. **Replaced VAPI Polling with Backend Polling:**
+
    ```javascript
    // OLD: const result = await pollVapiForResult(call.id);
    // NEW:
@@ -315,19 +393,23 @@ tasks:
 ## Benefits of Migration
 
 ### ✅ Improved Reliability
+
 - Backend cache persists results even if polling script restarts
 - No direct dependency on VAPI API availability during polling
 
 ### ✅ Better Performance
+
 - Single webhook callback vs. continuous polling
 - Reduced API calls to VAPI (lower rate limit concerns)
 
 ### ✅ Enhanced Monitoring
+
 - Centralized logging in backend
 - Cache statistics for debugging
 - Webhook delivery tracking
 
 ### ✅ Cost Optimization
+
 - Fewer VAPI API calls (webhooks are free)
 - Reduced script execution time
 
@@ -351,16 +433,19 @@ Check these after deployment:
 ## Common Issues
 
 ### Webhook Not Received
+
 - **Check:** VAPI webhook URL configured correctly
 - **Check:** Backend logs for incoming webhooks
 - **Solution:** Verify URL and test with curl
 
 ### 404 Timeout
+
 - **Cause:** Call failed before webhook sent
 - **Check:** VAPI call logs
 - **Solution:** Increase timeout or check call configuration
 
 ### Wrong Data Format
+
 - **Check:** Backend transformation logic in `transformVapiWebhookToCallResult()`
 - **Solution:** Update transformation if VAPI schema changes
 

@@ -7,24 +7,27 @@
 ## 1. How does VAPI return results after a call?
 
 ### Current Implementation (Polling)
+
 ✅ **Your current approach is functional but suboptimal.**
 
 ```javascript
 // Current: Poll every 5 seconds
-while (['queued', 'ringing', 'in-progress'].includes(status)) {
-    await sleep(5000);
-    const call = await vapi.calls.get(callId);
-    // Extract: transcript, summary, analysis, cost, duration
+while (["queued", "ringing", "in-progress"].includes(status)) {
+  await sleep(5000);
+  const call = await vapi.calls.get(callId);
+  // Extract: transcript, summary, analysis, cost, duration
 }
 ```
 
 **Issues:**
+
 - Wastes API calls (repeated requests)
 - Higher latency (up to 5 second delay)
 - Not scalable for multiple concurrent calls
 - Risk of rate limiting
 
 ### Recommended Approach (Webhooks)
+
 ⭐ **Production-ready: Use webhooks for instant results**
 
 ```javascript
@@ -40,12 +43,14 @@ app.post('/webhooks/vapi/end-of-call', (req) => {
 ```
 
 **Benefits:**
+
 - Zero latency (instant push notification)
 - No wasted API calls
 - Scales to thousands of concurrent calls
 - Event-driven architecture
 
 ### Recommendation
+
 - **Hackathon/Demo:** Keep polling (simpler, works in Kestra scripts)
 - **Production:** Migrate to webhooks (configure in VAPI dashboard)
 
@@ -57,41 +62,41 @@ app.post('/webhooks/vapi/end-of-call', (req) => {
 
 ```typescript
 interface VapiCallResult {
-    // Identity
-    id: string;
-    status: 'ended' | 'in-progress' | 'queued' | 'ringing';
-    endedReason: string; // 'assistant-ended-call', 'voicemail', etc.
+  // Identity
+  id: string;
+  status: "ended" | "in-progress" | "queued" | "ringing";
+  endedReason: string; // 'assistant-ended-call', 'voicemail', etc.
 
-    // Content (Raw)
-    artifact?: {
-        transcript: string;              // ⭐ Full conversation text
-        performanceMetrics?: {
-            turnLatencies: number[];
-            interruptionCount: number;
-            averageLatency: number;
-        };
+  // Content (Raw)
+  artifact?: {
+    transcript: string; // ⭐ Full conversation text
+    performanceMetrics?: {
+      turnLatencies: number[];
+      interruptionCount: number;
+      averageLatency: number;
     };
+  };
 
-    // Content (Analyzed) - REQUIRES analysisPlan configuration
-    analysis?: {
-        summary: string;                 // ⭐ 2-3 sentence overview
-        structuredData: any;             // ⭐⭐⭐ YOUR EXTRACTED DATA
-        successEvaluation: string;       // ⭐ 'Pass' or 'Fail'
-    };
+  // Content (Analyzed) - REQUIRES analysisPlan configuration
+  analysis?: {
+    summary: string; // ⭐ 2-3 sentence overview
+    structuredData: any; // ⭐⭐⭐ YOUR EXTRACTED DATA
+    successEvaluation: string; // ⭐ 'Pass' or 'Fail'
+  };
 
-    // Metadata
-    durationMinutes: number;             // e.g., 2.5
-    costBreakdown: {
-        total: number;                   // e.g., 0.15 (USD)
-        transport: number;
-        stt: number;
-        llm: number;
-        tts: number;
-        vapi: number;
-    };
+  // Metadata
+  durationMinutes: number; // e.g., 2.5
+  costBreakdown: {
+    total: number; // e.g., 0.15 (USD)
+    transport: number;
+    stt: number;
+    llm: number;
+    tts: number;
+    vapi: number;
+  };
 
-    // Full conversation history
-    messages: Array<UserMessage | BotMessage | SystemMessage>;
+  // Full conversation history
+  messages: Array<UserMessage | BotMessage | SystemMessage>;
 }
 ```
 
@@ -99,38 +104,38 @@ interface VapiCallResult {
 
 ```json
 {
-    "id": "call_abc123",
-    "status": "ended",
-    "endedReason": "assistant-ended-call",
+  "id": "call_abc123",
+  "status": "ended",
+  "endedReason": "assistant-ended-call",
 
-    "artifact": {
-        "transcript": "AI: Hello, this is an AI assistant calling on behalf of a homeowner looking for a plumber in Greenville. Are you available within the next 2 days?\n\nProvider: Yes, I can do tomorrow afternoon.\n\nAI: Great! What is your estimated rate for a standard plumbing job?\n\nProvider: I charge $95 per hour.\n\nAI: Perfect. Are you licensed and insured?\n\nProvider: Yes, fully licensed and insured.\n\nAI: Excellent, thank you for the information. Have a great day!\n\nProvider: You too, bye."
+  "artifact": {
+    "transcript": "AI: Hello, this is an AI assistant calling on behalf of a homeowner looking for a plumber in Greenville. Are you available within the next 2 days?\n\nProvider: Yes, I can do tomorrow afternoon.\n\nAI: Great! What is your estimated rate for a standard plumbing job?\n\nProvider: I charge $95 per hour.\n\nAI: Perfect. Are you licensed and insured?\n\nProvider: Yes, fully licensed and insured.\n\nAI: Excellent, thank you for the information. Have a great day!\n\nProvider: You too, bye."
+  },
+
+  "analysis": {
+    "summary": "Provider confirmed availability within 2 days (tomorrow afternoon), rates at $95/hour, and verified they are licensed and insured. Call completed successfully.",
+
+    "structuredData": {
+      "availability": "available",
+      "estimated_rate": "$95/hour",
+      "licensed_and_insured": "yes",
+      "notes": "Available tomorrow afternoon, specializes in residential plumbing",
+      "call_outcome": "completed",
+      "provider_seemed_professional": true
     },
 
-    "analysis": {
-        "summary": "Provider confirmed availability within 2 days (tomorrow afternoon), rates at $95/hour, and verified they are licensed and insured. Call completed successfully.",
+    "successEvaluation": "Pass"
+  },
 
-        "structuredData": {
-            "availability": "available",
-            "estimated_rate": "$95/hour",
-            "licensed_and_insured": "yes",
-            "notes": "Available tomorrow afternoon, specializes in residential plumbing",
-            "call_outcome": "completed",
-            "provider_seemed_professional": true
-        },
-
-        "successEvaluation": "Pass"
-    },
-
-    "durationMinutes": 2.5,
-    "costBreakdown": {
-        "transport": 0.05,
-        "stt": 0.02,
-        "llm": 0.04,
-        "tts": 0.03,
-        "vapi": 0.01,
-        "total": 0.15
-    }
+  "durationMinutes": 2.5,
+  "costBreakdown": {
+    "transport": 0.05,
+    "stt": 0.02,
+    "llm": 0.04,
+    "tts": 0.03,
+    "vapi": 0.01,
+    "total": 0.15
+  }
 }
 ```
 
@@ -145,54 +150,55 @@ interface VapiCallResult {
 ```javascript
 // ADD THIS to your assistant configuration
 const assistantConfig = {
-    name: "Concierge Agent - Plumbing",
-    voice: { provider: "playht", voiceId: "jennifer" },
-    model: {
-        provider: "google",
-        model: "gemini-2.5-flash",
-        messages: [{ role: "system", content: "..." }]
-    },
-    endCallFunctionEnabled: true,
+  name: "Concierge Agent - Plumbing",
+  voice: { provider: "playht", voiceId: "jennifer" },
+  model: {
+    provider: "google",
+    model: "gemini-2.5-flash",
+    messages: [{ role: "system", content: "..." }],
+  },
+  endCallFunctionEnabled: true,
 
-    // ⭐⭐⭐ ADD THIS FOR STRUCTURED OUTPUT ⭐⭐⭐
-    analysisPlan: {
-        // Summary (2-3 sentences)
-        summaryPrompt: "Summarize key points: availability, pricing, licensing",
+  // ⭐⭐⭐ ADD THIS FOR STRUCTURED OUTPUT ⭐⭐⭐
+  analysisPlan: {
+    // Summary (2-3 sentences)
+    summaryPrompt: "Summarize key points: availability, pricing, licensing",
 
-        // Extraction instructions
-        structuredDataPrompt: "Extract: availability (available/unavailable/unclear), estimated_rate (e.g. '$95/hour' or 'not provided'), licensed_and_insured (yes/no/unclear), notes, call_outcome",
+    // Extraction instructions
+    structuredDataPrompt:
+      "Extract: availability (available/unavailable/unclear), estimated_rate (e.g. '$95/hour' or 'not provided'), licensed_and_insured (yes/no/unclear), notes, call_outcome",
 
-        // Define schema (JSON Schema format)
-        structuredDataSchema: {
-            type: "object",
-            properties: {
-                availability: {
-                    type: "string",
-                    enum: ["available", "unavailable", "unclear"]
-                },
-                estimated_rate: {
-                    type: "string",
-                    description: "Rate mentioned or 'not provided'"
-                },
-                licensed_and_insured: {
-                    type: "string",
-                    enum: ["yes", "no", "unclear"]
-                },
-                notes: {
-                    type: "string"
-                },
-                call_outcome: {
-                    type: "string",
-                    enum: ["completed", "voicemail", "no_answer", "refused", "other"]
-                }
-            },
-            required: ["availability", "licensed_and_insured", "call_outcome"]
+    // Define schema (JSON Schema format)
+    structuredDataSchema: {
+      type: "object",
+      properties: {
+        availability: {
+          type: "string",
+          enum: ["available", "unavailable", "unclear"],
         },
+        estimated_rate: {
+          type: "string",
+          description: "Rate mentioned or 'not provided'",
+        },
+        licensed_and_insured: {
+          type: "string",
+          enum: ["yes", "no", "unclear"],
+        },
+        notes: {
+          type: "string",
+        },
+        call_outcome: {
+          type: "string",
+          enum: ["completed", "voicemail", "no_answer", "refused", "other"],
+        },
+      },
+      required: ["availability", "licensed_and_insured", "call_outcome"],
+    },
 
-        // Success criteria
-        successEvaluationPrompt: "Pass if we got answers to at least 2/3 questions",
-        successEvaluationRubric: "PassFail"
-    }
+    // Success criteria
+    successEvaluationPrompt: "Pass if we got answers to at least 2/3 questions",
+    successEvaluationRubric: "PassFail",
+  },
 };
 ```
 
@@ -202,11 +208,11 @@ With this configuration, `call.analysis.structuredData` will contain:
 
 ```json
 {
-    "availability": "available",
-    "estimated_rate": "$95/hour",
-    "licensed_and_insured": "yes",
-    "notes": "Available tomorrow afternoon",
-    "call_outcome": "completed"
+  "availability": "available",
+  "estimated_rate": "$95/hour",
+  "licensed_and_insured": "yes",
+  "notes": "Available tomorrow afternoon",
+  "call_outcome": "completed"
 }
 ```
 
@@ -226,10 +232,10 @@ const call = await vapi.calls.get(callId);
 
 // Extract conclusions from validated structured data
 const conclusions = {
-    isAvailable: call.analysis?.structuredData?.availability === 'available',
-    rate: call.analysis?.structuredData?.estimated_rate,
-    isLicensed: call.analysis?.structuredData?.licensed_and_insured === 'yes',
-    wasSuccessful: call.analysis?.successEvaluation === 'Pass',
+  isAvailable: call.analysis?.structuredData?.availability === "available",
+  rate: call.analysis?.structuredData?.estimated_rate,
+  isLicensed: call.analysis?.structuredData?.licensed_and_insured === "yes",
+  wasSuccessful: call.analysis?.successEvaluation === "Pass",
 };
 
 // Example:
@@ -242,6 +248,7 @@ const conclusions = {
 ```
 
 **Advantages:**
+
 - Schema-validated (type safety)
 - Consistent format across all calls
 - No parsing errors
@@ -256,6 +263,7 @@ const transcript = call.artifact?.transcript;
 ```
 
 **Why structured data is better:**
+
 - No need for additional LLM calls
 - Guaranteed format
 - Lower cost
@@ -273,23 +281,23 @@ const transcript = call.artifact?.transcript;
 
 ```typescript
 // apps/api/src/routes/vapi-webhooks.ts
-app.post('/webhooks/vapi/end-of-call', async (req, res) => {
-    const { type, call } = req.body;
+app.post("/webhooks/vapi/end-of-call", async (req, res) => {
+  const { type, call } = req.body;
 
-    if (type === 'end-of-call-report') {
-        // Extract results immediately
-        const result = {
-            callId: call.id,
-            structuredData: call.analysis?.structuredData,
-            transcript: call.artifact?.transcript,
-            cost: call.costBreakdown?.total,
-        };
+  if (type === "end-of-call-report") {
+    // Extract results immediately
+    const result = {
+      callId: call.id,
+      structuredData: call.analysis?.structuredData,
+      transcript: call.artifact?.transcript,
+      cost: call.costBreakdown?.total,
+    };
 
-        // Process (save to database, trigger next workflow, etc.)
-        await processCallResult(result);
-    }
+    // Process (save to database, trigger next workflow, etc.)
+    await processCallResult(result);
+  }
 
-    res.status(200).json({ received: true });
+  res.status(200).json({ received: true });
 });
 ```
 
@@ -335,11 +343,13 @@ return {
 ## Key Takeaways
 
 ### ✅ What Works Now
+
 1. **Polling approach is functional** - Your current implementation works
 2. **Call object has all data** - transcript, cost, duration available
 3. **Can access results** - via `vapi.calls.get(callId)`
 
 ### ⚠️ What's Missing
+
 1. **No structured data extraction** - Current implementation doesn't configure `analysisPlan`
 2. **Manual parsing needed** - Without structured output, you'd need to parse transcript
 3. **Inefficient polling** - Wastes API calls and has higher latency
@@ -347,6 +357,7 @@ return {
 ### ⭐ Recommended Improvements
 
 #### Immediate (For Hackathon)
+
 ```diff
 const assistantConfig = {
     // ... existing config ...
@@ -359,11 +370,13 @@ const assistantConfig = {
 ```
 
 Then extract:
+
 ```javascript
 const data = call.analysis.structuredData; // Validated JSON
 ```
 
 #### Post-Hackathon (Production)
+
 1. Set up webhook endpoint in Fastify API
 2. Configure VAPI webhook in dashboard
 3. Remove polling, use event-driven architecture
@@ -374,16 +387,19 @@ const data = call.analysis.structuredData; // Validated JSON
 ## Implementation Timeline
 
 ### Phase 1: Immediate (1 hour)
+
 - ✅ Add `analysisPlan` to assistant config
 - ✅ Update polling to extract `structuredData`
 - ✅ Test with real call
 
 ### Phase 2: Short-term (1 day)
+
 - 🔄 Create webhook endpoint in API
 - 🔄 Configure VAPI webhooks
 - 🔄 Test webhook flow
 
 ### Phase 3: Production (1 week)
+
 - 📋 Add webhook signature verification
 - 📋 Implement retry logic
 - 📋 Add monitoring/alerting
@@ -431,13 +447,13 @@ const data = call.analysis.structuredData; // Validated JSON
 
 ## Questions Answered ✅
 
-| Question | Answer | Status |
-|----------|--------|--------|
-| How does VAPI return results? | Polling (current) or Webhooks (recommended) | ✅ Answered |
-| What is the exact output format? | Call object with transcript, analysis, structuredData | ✅ Documented |
-| Can we get structured JSON output? | YES - via analysisPlan configuration | ✅ Solved |
-| How to get AI conclusions? | Use call.analysis.structuredData | ✅ Implemented |
-| Can we use webhooks instead? | YES - end-of-call-report webhook available | ✅ Documented |
+| Question                           | Answer                                                | Status         |
+| ---------------------------------- | ----------------------------------------------------- | -------------- |
+| How does VAPI return results?      | Polling (current) or Webhooks (recommended)           | ✅ Answered    |
+| What is the exact output format?   | Call object with transcript, analysis, structuredData | ✅ Documented  |
+| Can we get structured JSON output? | YES - via analysisPlan configuration                  | ✅ Solved      |
+| How to get AI conclusions?         | Use call.analysis.structuredData                      | ✅ Implemented |
+| Can we use webhooks instead?       | YES - end-of-call-report webhook available            | ✅ Documented  |
 
 ---
 

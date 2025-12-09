@@ -15,16 +15,16 @@ export interface RequestRequirements {
   rating?: number;
   priceRange?: { min: number; max: number };
   availability?: string;
-  urgency?: 'low' | 'medium' | 'high' | 'urgent';
+  urgency?: "low" | "medium" | "high" | "urgent";
 }
 
 export type RequestStatus =
-  | 'pending'
-  | 'researching'
-  | 'calling'
-  | 'completed'
-  | 'failed'
-  | 'cancelled';
+  | "pending"
+  | "researching"
+  | "calling"
+  | "completed"
+  | "failed"
+  | "cancelled";
 
 // Request Step Types
 export interface RequestStep {
@@ -40,17 +40,13 @@ export interface RequestStep {
 }
 
 export type StepType =
-  | 'research'
-  | 'call'
-  | 'analysis'
-  | 'scheduling'
-  | 'notification';
+  | "research"
+  | "call"
+  | "analysis"
+  | "scheduling"
+  | "notification";
 
-export type StepStatus =
-  | 'pending'
-  | 'in_progress'
-  | 'completed'
-  | 'failed';
+export type StepStatus = "pending" | "in_progress" | "completed" | "failed";
 
 // Agent Task Types
 export interface AgentTask {
@@ -66,16 +62,12 @@ export interface AgentTask {
 }
 
 export type TaskType =
-  | 'search_providers'
-  | 'call_provider'
-  | 'analyze_results'
-  | 'schedule_appointment';
+  | "search_providers"
+  | "call_provider"
+  | "analyze_results"
+  | "schedule_appointment";
 
-export type TaskStatus =
-  | 'queued'
-  | 'running'
-  | 'completed'
-  | 'failed';
+export type TaskStatus = "queued" | "running" | "completed" | "failed";
 
 // Service Provider Types
 export interface ServiceProvider {
@@ -107,11 +99,11 @@ export interface Call {
 }
 
 export type CallStatus =
-  | 'scheduled'
-  | 'in_progress'
-  | 'completed'
-  | 'failed'
-  | 'no_answer';
+  | "scheduled"
+  | "in_progress"
+  | "completed"
+  | "failed"
+  | "no_answer";
 
 export interface CallOutcome {
   success: boolean;
@@ -134,11 +126,11 @@ export interface Notification {
 }
 
 export type NotificationType =
-  | 'task_completed'
-  | 'request_updated'
-  | 'appointment_scheduled'
-  | 'call_completed'
-  | 'error';
+  | "task_completed"
+  | "request_updated"
+  | "appointment_scheduled"
+  | "call_completed"
+  | "error";
 
 // API Response Types
 export interface ApiResponse<T> {

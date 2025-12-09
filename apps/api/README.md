@@ -7,6 +7,7 @@ Node.js Fastify backend with Supabase integration.
 ### 1. Install Dependencies
 
 From the project root:
+
 ```bash
 pnpm install
 ```
@@ -19,6 +20,7 @@ cp .env.example .env
 ```
 
 Edit `.env` and add your Supabase credentials:
+
 ```env
 SUPABASE_URL=https://your-project-ref.supabase.co
 SUPABASE_SERVICE_ROLE_KEY=your-service-role-key
@@ -65,6 +67,7 @@ The API will be available at `http://localhost:8000`
 ## API Endpoints
 
 ### Health Check
+
 ```bash
 curl http://localhost:8000/health
 ```
@@ -72,16 +75,19 @@ curl http://localhost:8000/health
 ### Users API
 
 **Get all users:**
+
 ```bash
 curl http://localhost:8000/api/v1/users
 ```
 
 **Get user by ID:**
+
 ```bash
 curl http://localhost:8000/api/v1/users/{uuid}
 ```
 
 **Create user:**
+
 ```bash
 curl -X POST http://localhost:8000/api/v1/users \
   -H "Content-Type: application/json" \
@@ -89,6 +95,7 @@ curl -X POST http://localhost:8000/api/v1/users \
 ```
 
 **Update user:**
+
 ```bash
 curl -X PATCH http://localhost:8000/api/v1/users/{uuid} \
   -H "Content-Type: application/json" \
@@ -96,6 +103,7 @@ curl -X PATCH http://localhost:8000/api/v1/users/{uuid} \
 ```
 
 **Delete user:**
+
 ```bash
 curl -X DELETE http://localhost:8000/api/v1/users/{uuid}
 ```
@@ -131,6 +139,7 @@ apps/api/
 ### Creating New Migrations
 
 Using Supabase CLI (recommended):
+
 ```bash
 # Create a new migration file
 supabase migration new add_appointments_table
@@ -141,6 +150,7 @@ supabase db push
 ```
 
 ### Migration File Naming Convention
+
 ```
 supabase/migrations/
 ├── 20250101000000_initial_schema.sql
@@ -151,6 +161,7 @@ supabase/migrations/
 Format: `YYYYMMDDHHMMSS_description.sql`
 
 ### Useful Commands
+
 ```bash
 # View migration status
 supabase migration list
@@ -168,21 +179,25 @@ supabase db diff
 ## Development
 
 ### Type Checking
+
 ```bash
 pnpm check-types
 ```
 
 ### Linting
+
 ```bash
 pnpm lint
 ```
 
 ### Build
+
 ```bash
 pnpm build
 ```
 
 ### Production
+
 ```bash
 pnpm start
 ```
@@ -195,13 +210,13 @@ pnpm start
 
 ## Environment Variables
 
-| Variable | Description | Required |
-|----------|-------------|----------|
-| `PORT` | Server port | No (default: 8000) |
-| `NODE_ENV` | Environment | No (default: development) |
-| `CORS_ORIGIN` | Allowed CORS origin | No (default: http://localhost:3000) |
-| `SUPABASE_URL` | Supabase project URL | Yes |
-| `SUPABASE_SERVICE_ROLE_KEY` | Supabase service role key | Yes |
+| Variable                    | Description               | Required                            |
+| --------------------------- | ------------------------- | ----------------------------------- |
+| `PORT`                      | Server port               | No (default: 8000)                  |
+| `NODE_ENV`                  | Environment               | No (default: development)           |
+| `CORS_ORIGIN`               | Allowed CORS origin       | No (default: http://localhost:3000) |
+| `SUPABASE_URL`              | Supabase project URL      | Yes                                 |
+| `SUPABASE_SERVICE_ROLE_KEY` | Supabase service role key | Yes                                 |
 
 ## Security
 
@@ -222,6 +237,7 @@ pnpm start
 ## Support
 
 For issues and questions:
+
 - Check [SUPABASE_SETUP.md](./SUPABASE_SETUP.md) for detailed setup instructions
 - Review [Fastify documentation](https://fastify.dev/)
 - Consult [Supabase documentation](https://supabase.com/docs)

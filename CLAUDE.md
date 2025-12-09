@@ -53,6 +53,7 @@ packages/
 Frontend → Next.js rewrites `/api/*` → Backend (localhost:8000)
 
 Key endpoints:
+
 - `POST /api/v1/gemini/search-providers` - Google Maps grounded search
 - `POST /api/v1/gemini/simulate-call` - AI phone call simulation
 - `POST /api/v1/gemini/select-best-provider` - AI analysis
@@ -72,17 +73,18 @@ Schema: `supabase/migrations/20250101000000_initial_schema.sql`
 
 ### Key Files
 
-| Path | Purpose |
-|------|---------|
+| Path                                     | Purpose                               |
+| ---------------------------------------- | ------------------------------------- |
 | `apps/web/lib/services/geminiService.ts` | Frontend API client for AI operations |
-| `apps/api/src/services/gemini.ts` | Backend Gemini AI integration |
-| `apps/api/src/routes/gemini.ts` | API endpoints with Zod validation |
-| `apps/web/lib/providers/AppProvider.tsx` | Global state management |
-| `apps/web/lib/supabase/server.ts` | Server-side Supabase client |
+| `apps/api/src/services/gemini.ts`        | Backend Gemini AI integration         |
+| `apps/api/src/routes/gemini.ts`          | API endpoints with Zod validation     |
+| `apps/web/lib/providers/AppProvider.tsx` | Global state management               |
+| `apps/web/lib/supabase/server.ts`        | Server-side Supabase client           |
 
 ## Environment Variables
 
 **Backend (`apps/api/.env`):**
+
 ```
 PORT=8000
 CORS_ORIGIN=http://localhost:3000
@@ -92,6 +94,7 @@ GEMINI_API_KEY=...
 ```
 
 **Frontend (`apps/web/.env.local`):**
+
 ```
 NEXT_PUBLIC_SUPABASE_URL=...
 NEXT_PUBLIC_SUPABASE_ANON_KEY=...
@@ -105,3 +108,34 @@ Note: Gemini API key is backend-only (not exposed to client).
 - **Backend**: Fastify 5, Google GenAI SDK, Zod validation
 - **Database**: Supabase (PostgreSQL with RLS, real-time)
 - **AI**: Google Gemini 2.5 Flash with Google Maps grounding
+- **Voice AI**: VAPI.ai for automated provider calling
+
+## VAPI Assistant Configuration
+
+The VAPI calling system uses a single source of truth pattern to maintain DRY principles:
+
+**Source of Truth**: `apps/api/src/services/vapi/assistant-config.ts`
+
+- Contains the canonical assistant configuration
+- Defines conversation flow, prompts, and analysis schema
+- Used by both direct VAPI API calls and Kestra orchestration
+
+**Kestra Scripts**: `kestra/scripts/call-provider.js`
+
+- Imports configuration from compiled TypeScript: `apps/api/dist/services/vapi/assistant-config.js`
+- No configuration duplication
+- Ensures identical behavior across all execution paths
+
+**Build Requirement**: Run `pnpm build` before using Kestra scripts
+
+- The Kestra scripts require the TypeScript to be compiled
+- Build compiles `apps/api/src` to `apps/api/dist`
+- Without build, the script will fail with import error
+
+**Key Features**:
+
+- **Disqualification Detection**: Politely exits calls when provider cannot meet requirements
+- **Conditional Closing**: Uses callback script ("I'll call you back to schedule") only if ALL criteria met
+- **Earliest Availability**: Captures specific date/time when provider can start work
+- **Structured Data**: Returns typed results including `disqualified`, `disqualification_reason`, `earliest_availability`
+- **Single Person Tracking**: Ensures all requirements met by ONE person, not different technicians

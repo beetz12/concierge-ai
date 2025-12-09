@@ -13,6 +13,7 @@ This directory contains the Supabase client configuration for the Concierge AI a
 1. Create a Supabase project at [supabase.com](https://supabase.com)
 
 2. Copy `.env.local.example` to `.env.local` and add your Supabase credentials:
+
    ```bash
    NEXT_PUBLIC_SUPABASE_URL=your_project_url
    NEXT_PUBLIC_SUPABASE_ANON_KEY=your_anon_key
@@ -25,22 +26,22 @@ This directory contains the Supabase client configuration for the Concierge AI a
 ### Client Components
 
 ```tsx
-'use client';
+"use client";
 
-import { useEffect, useState } from 'react';
-import { createClient } from '@/lib/supabase/client';
-import type { Tables } from '@/lib/types/database';
+import { useEffect, useState } from "react";
+import { createClient } from "@/lib/supabase/client";
+import type { Tables } from "@/lib/types/database";
 
 export function RequestsList() {
-  const [requests, setRequests] = useState<Tables<'service_requests'>[]>([]);
+  const [requests, setRequests] = useState<Tables<"service_requests">[]>([]);
   const supabase = createClient();
 
   useEffect(() => {
     const fetchRequests = async () => {
       const { data, error } = await supabase
-        .from('service_requests')
-        .select('*')
-        .order('created_at', { ascending: false });
+        .from("service_requests")
+        .select("*")
+        .order("created_at", { ascending: false });
 
       if (data) setRequests(data);
     };
@@ -50,7 +51,7 @@ export function RequestsList() {
 
   return (
     <div>
-      {requests.map(request => (
+      {requests.map((request) => (
         <div key={request.id}>{request.title}</div>
       ))}
     </div>
@@ -61,20 +62,20 @@ export function RequestsList() {
 ### Server Components
 
 ```tsx
-import { createClient } from '@/lib/supabase/server';
-import type { Tables } from '@/lib/types/database';
+import { createClient } from "@/lib/supabase/server";
+import type { Tables } from "@/lib/types/database";
 
 export async function RequestsPage() {
   const supabase = await createClient();
 
   const { data: requests } = await supabase
-    .from('service_requests')
-    .select('*')
-    .order('created_at', { ascending: false });
+    .from("service_requests")
+    .select("*")
+    .order("created_at", { ascending: false });
 
   return (
     <div>
-      {requests?.map(request => (
+      {requests?.map((request) => (
         <div key={request.id}>{request.title}</div>
       ))}
     </div>
@@ -85,29 +86,29 @@ export async function RequestsPage() {
 ### Server Actions
 
 ```tsx
-'use server';
+"use server";
 
-import { createClient } from '@/lib/supabase/server';
-import { revalidatePath } from 'next/cache';
+import { createClient } from "@/lib/supabase/server";
+import { revalidatePath } from "next/cache";
 
 export async function createRequest(formData: FormData) {
   const supabase = await createClient();
 
   const { data, error } = await supabase
-    .from('service_requests')
+    .from("service_requests")
     .insert({
-      title: formData.get('title') as string,
-      description: formData.get('description') as string,
-      criteria: formData.get('criteria') as string,
-      type: 'RESEARCH_AND_BOOK',
-      status: 'PENDING',
+      title: formData.get("title") as string,
+      description: formData.get("description") as string,
+      criteria: formData.get("criteria") as string,
+      type: "RESEARCH_AND_BOOK",
+      status: "PENDING",
     })
     .select()
     .single();
 
   if (error) throw error;
 
-  revalidatePath('/requests');
+  revalidatePath("/requests");
   return data;
 }
 ```
@@ -115,27 +116,27 @@ export async function createRequest(formData: FormData) {
 ### Real-time Subscriptions
 
 ```tsx
-'use client';
+"use client";
 
-import { useEffect } from 'react';
-import { createClient } from '@/lib/supabase/client';
+import { useEffect } from "react";
+import { createClient } from "@/lib/supabase/client";
 
 export function RealtimeRequests() {
   const supabase = createClient();
 
   useEffect(() => {
     const channel = supabase
-      .channel('service_requests_changes')
+      .channel("service_requests_changes")
       .on(
-        'postgres_changes',
+        "postgres_changes",
         {
-          event: '*',
-          schema: 'public',
-          table: 'service_requests',
+          event: "*",
+          schema: "public",
+          table: "service_requests",
         },
         (payload) => {
-          console.log('Change received!', payload);
-        }
+          console.log("Change received!", payload);
+        },
       )
       .subscribe();
 
@@ -163,7 +164,7 @@ npx supabase gen types typescript --project-id YOUR_PROJECT_ID > lib/types/datab
 If you want to protect routes or refresh user sessions automatically, create a `middleware.ts` file in the app root:
 
 ```tsx
-import { updateSession } from '@/lib/supabase/middleware';
+import { updateSession } from "@/lib/supabase/middleware";
 
 export async function middleware(request: NextRequest) {
   return await updateSession(request);
@@ -171,7 +172,7 @@ export async function middleware(request: NextRequest) {
 
 export const config = {
   matcher: [
-    '/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)',
+    "/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)",
   ],
 };
 ```
@@ -181,9 +182,9 @@ export const config = {
 Supabase provides built-in authentication. Here's a simple example:
 
 ```tsx
-'use client';
+"use client";
 
-import { createClient } from '@/lib/supabase/client';
+import { createClient } from "@/lib/supabase/client";
 
 export function AuthForm() {
   const supabase = createClient();

@@ -10,11 +10,13 @@
 For our current MVP/hackathon implementation, **Kestra adds unnecessary overhead**:
 
 ### With Kestra
+
 ```
 Frontend → API → Kestra → VAPI/Gemini → API → Database
 ```
 
 ### With Direct Calls (Current)
+
 ```
 Frontend → API → VAPI/Gemini → Database
 ```
@@ -30,9 +32,11 @@ Kestra shines in complex, long-running workflows with business logic.
 ### Example: "Smart Concierge" with Real-World Complexity
 
 **User Request:**
+
 > "Find me a plumber for a leaking pipe. I need someone licensed, insured, available this week, under $150/hour. If no one meets all criteria, I'll accept 3 out of 4. Don't call anyone before 9am or after 6pm. If I don't respond to confirm within 2 hours, auto-book the best option."
 
 **Workflow Steps:**
+
 ```
 1. Research providers (Gemini)
 2. Filter by business hours (wait if outside 9am-6pm)
@@ -56,6 +60,7 @@ Kestra shines in complex, long-running workflows with business logic.
 ## Why Direct API Calls Struggle with Complex Workflows
 
 ### 1. State Management Nightmare
+
 ```typescript
 // Where do you store "we're waiting for user response"?
 // What if the server restarts during the 2-hour wait?
@@ -63,12 +68,13 @@ Kestra shines in complex, long-running workflows with business logic.
 ```
 
 ### 2. Retry Logic Explosion
+
 ```typescript
 // This gets ugly fast:
 async function callWithRetry(provider, attempt = 1) {
   try {
     const result = await vapiCall(provider);
-    if (result.status === 'no_answer' && attempt < 3) {
+    if (result.status === "no_answer" && attempt < 3) {
       await sleep(30 * 60 * 1000); // 30 min - blocks a worker!
       return callWithRetry(provider, attempt + 1);
     }
@@ -80,6 +86,7 @@ async function callWithRetry(provider, attempt = 1) {
 ```
 
 ### 3. Business Hours Logic
+
 ```typescript
 // Scattered throughout your codebase:
 if (isOutsideBusinessHours()) {
@@ -89,6 +96,7 @@ if (isOutsideBusinessHours()) {
 ```
 
 ### 4. Human-in-the-Loop
+
 ```typescript
 // How do you "pause" an API call for 2 hours?
 // You can't. You need:
@@ -125,7 +133,7 @@ tasks:
   - id: wait_for_business_hours
     type: io.kestra.plugin.core.flow.WaitFor
     condition: "{{ now().hour >= 9 and now().hour < 18 }}"
-    interval: PT15M  # Check every 15 minutes
+    interval: PT15M # Check every 15 minutes
 
   # Step 3-4: Parallel calls with individual retry
   - id: call_providers
@@ -135,7 +143,7 @@ tasks:
       - id: call_single_provider
         type: io.kestra.plugin.core.flow.Retry
         maxAttempts: 3
-        delay: PT30M  # 30 minute delay between retries
+        delay: PT30M # 30 minute delay between retries
         tasks:
           - id: vapi_call
             type: io.kestra.plugin.scripts.node.Script
@@ -154,7 +162,7 @@ tasks:
   # Step 7: PAUSE and wait for user (the magic!)
   - id: wait_for_user_decision
     type: io.kestra.plugin.core.flow.Pause
-    timeout: PT2H  # 2 hour timeout
+    timeout: PT2H # 2 hour timeout
     onTimeout:
       - id: auto_book_best
         type: io.kestra.plugin.core.flow.Subflow
@@ -190,22 +198,23 @@ tasks:
 
 ## Key Advantages Comparison
 
-| Challenge | Direct Code | Kestra |
-|-----------|-------------|--------|
-| **Wait 30 min between retries** | Blocks a worker or needs cron | `delay: PT30M` (built-in) |
-| **Pause for 2 hours** | Impossible without DB + webhooks | `type: Pause, timeout: PT2H` |
-| **Business hours only** | Custom logic everywhere | `WaitFor` with condition |
-| **Parallel calls** | `Promise.all` + error handling | `EachParallel` with auto-aggregation |
-| **Server restart mid-workflow** | Lost state, manual recovery | Auto-resume from last step |
-| **Schedule future task** | Separate cron system | `schedule.at` inline |
-| **Audit trail** | Build your own logging | Automatic execution history |
-| **Modify workflow** | Redeploy code | Edit YAML, instant update |
+| Challenge                       | Direct Code                      | Kestra                               |
+| ------------------------------- | -------------------------------- | ------------------------------------ |
+| **Wait 30 min between retries** | Blocks a worker or needs cron    | `delay: PT30M` (built-in)            |
+| **Pause for 2 hours**           | Impossible without DB + webhooks | `type: Pause, timeout: PT2H`         |
+| **Business hours only**         | Custom logic everywhere          | `WaitFor` with condition             |
+| **Parallel calls**              | `Promise.all` + error handling   | `EachParallel` with auto-aggregation |
+| **Server restart mid-workflow** | Lost state, manual recovery      | Auto-resume from last step           |
+| **Schedule future task**        | Separate cron system             | `schedule.at` inline                 |
+| **Audit trail**                 | Build your own logging           | Automatic execution history          |
+| **Modify workflow**             | Redeploy code                    | Edit YAML, instant update            |
 
 ---
 
 ## Architecture Comparison
 
 ### Without Kestra (Current Simple Architecture)
+
 ```
 ┌─────────────┐     ┌─────────────┐     ┌─────────────┐
 │   Cron Job  │     │  Database   │     │  API Server │
@@ -220,6 +229,7 @@ tasks:
 ```
 
 ### With Kestra (Complex Workflow Architecture)
+
 ```
 ┌─────────────────────────────────────────────────────┐
 │                   Kestra Dashboard                   │
@@ -237,37 +247,41 @@ tasks:
 
 ## Decision Matrix
 
-| Scenario | Recommendation |
-|----------|----------------|
-| Simple request → response flows | Direct API calls |
-| Everything completes in seconds/minutes | Direct API calls |
-| No human approval steps | Direct API calls |
-| MVP/hackathon timeline | Direct API calls |
-| Workflows span hours or days | **Kestra** |
-| Human-in-the-loop decisions | **Kestra** |
-| Complex retry/backoff logic | **Kestra** |
-| Multiple parallel paths with aggregation | **Kestra** |
-| Scheduled future actions (reminders, follow-ups) | **Kestra** |
-| Audit/compliance requirements | **Kestra** |
-| Non-developers need to modify workflows | **Kestra** |
+| Scenario                                         | Recommendation   |
+| ------------------------------------------------ | ---------------- |
+| Simple request → response flows                  | Direct API calls |
+| Everything completes in seconds/minutes          | Direct API calls |
+| No human approval steps                          | Direct API calls |
+| MVP/hackathon timeline                           | Direct API calls |
+| Workflows span hours or days                     | **Kestra**       |
+| Human-in-the-loop decisions                      | **Kestra**       |
+| Complex retry/backoff logic                      | **Kestra**       |
+| Multiple parallel paths with aggregation         | **Kestra**       |
+| Scheduled future actions (reminders, follow-ups) | **Kestra**       |
+| Audit/compliance requirements                    | **Kestra**       |
+| Non-developers need to modify workflows          | **Kestra**       |
 
 ---
 
 ## Our Current Implementation
 
 We've implemented a **fallback system** that:
+
 - Uses Kestra when available (local/staging with Docker)
 - Falls back to direct API calls when Kestra is unavailable (production/Railway)
 
 This gives us the best of both worlds:
+
 - Simple deployment for MVP (no Kestra dependency)
 - Option to use Kestra for complex workflows in the future
 
 ### Fallback Services
+
 - `ProviderCallingService` → Routes between Kestra and Direct VAPI
 - `ResearchService` → Routes between Kestra and Direct Gemini
 
 ### Environment Control
+
 ```bash
 KESTRA_ENABLED=false  # Production (Railway) - uses direct calls
 KESTRA_ENABLED=true   # Local/Staging - uses Kestra if healthy
@@ -278,6 +292,7 @@ KESTRA_ENABLED=true   # Local/Staging - uses Kestra if healthy
 ## Future Considerations
 
 When the product grows to need:
+
 - Multiple workflow variations (residential vs commercial)
 - Complex retry/fallback logic
 - Human approval steps
