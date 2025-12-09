@@ -4,6 +4,7 @@ services:
   kestra:
     image: kestra/kestra:v1.1.6
     container_name: kestra
+    user: "root"
     command: server standalone
     ports:
       - "8082:8080"
@@ -28,6 +29,14 @@ services:
             type: local
             local:
               base-path: /app/storage
+          tasks:
+            tmp-dir:
+              path: /tmp/kestra-wd/tmp
+          plugins:
+            configurations:
+              - type: io.kestra.plugin.scripts.runner.docker.Docker
+                values:
+                  volume-enabled: true
         datasources:
           postgres:
             url: jdbc:postgresql://${KESTRA_DB_HOST}:${KESTRA_DB_PORT}/${KESTRA_DB_NAME}?currentSchema=kestra
@@ -37,11 +46,13 @@ services:
       APP_GEMINI_API_KEY: ${GEMINI_API_KEY}
       APP_VAPI_API_KEY: ${VAPI_API_KEY}
       APP_VAPI_PHONE_NUMBER_ID: ${VAPI_PHONE_NUMBER_ID}
+      APP_VAPI_WEBHOOK_URL: ${VAPI_WEBHOOK_URL}
 
     volumes:
       - ./kestra/flows:/app/flows
       - ./kestra/scripts:/kestra
       - /var/run/docker.sock:/var/run/docker.sock
+      - /tmp/kestra-wd:/tmp/kestra-wd:rw
     networks:
       - kestra-net
     restart: always

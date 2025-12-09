@@ -255,15 +255,41 @@ tasks:
 
       analysis: "{{ tasks.research\_agent.outputs.reasoning }}"
 
-**Phase 2: Contact Agent (VAPI.ai Integration)**
+**Phase 2: Contact Agent (VAPI.ai Integration with Fallback)**
 
-id: contact_providers
+The Contact Agent now supports **two execution paths**:
 
-namespace: ai_concierge
+1. **Kestra Path** (Local/Staging): Triggers Kestra flow `contact_providers`
+2. **Direct VAPI Path** (Production/Railway): Uses `@vapi-ai/server-sdk` directly
 
-tasks:
+### Architecture: ProviderCallingService
 
-**Phase 2: Contact Agent (VAPI.ai + Kestra Script)**
+```
+┌─────────────────────────────────────────────────────────────┐
+│                  ProviderCallingService                      │
+│  ┌─────────────────────────────────────────────────────────┐│
+│  │ 1. Check KESTRA_ENABLED environment variable            ││
+│  │ 2. If true → Health check Kestra                        ││
+│  │ 3. Route to KestraClient OR DirectVapiClient            ││
+│  └─────────────────────────────────────────────────────────┘│
+└──────────────────────┬──────────────────────────────────────┘
+                       │
+        ┌──────────────┼──────────────┐
+        │                             │
+    ┌───▼──────────┐          ┌──────▼──────────┐
+    │KestraClient  │          │DirectVapiClient │
+    │(Kestra Flow) │          │(VAPI SDK)       │
+    └──────────────┘          └─────────────────┘
+```
+
+### API Endpoints
+
+| Endpoint | Method | Description |
+|----------|--------|-------------|
+| `POST /api/v1/providers/call` | POST | Initiate call (auto-routes to Kestra or VAPI) |
+| `GET /api/v1/providers/call/status` | GET | Check system status and active method |
+
+### Kestra Flow (when KESTRA_ENABLED=true)
 
 id: contact_providers
 
@@ -297,7 +323,7 @@ tasks:
 
           GEMINI_API_KEY: "{{ secret('GEMINI_API_KEY') }}"
 
-  
+
 
   \- id: analyze_calls
 
@@ -998,12 +1024,31 @@ app/
 
 **Deployment Checklist:**
 
-- [ ] Live frontend on `yourdomain.vercel.app`  
-- [ ] API routes working and callable  
-- [ ] Environment variables configured  
-- [ ] Database connected (Supabase)  
-- [ ] Demo video shows live app in action  
+- [ ] Live frontend on `yourdomain.vercel.app`
+- [ ] API routes working and callable
+- [ ] Environment variables configured
+- [ ] Database connected (Supabase)
+- [ ] Demo video shows live app in action
 - [ ] README includes deployment instructions
+
+### Production Deployment (Railway - No Kestra)
+
+The VAPI fallback system enables production deployment on Railway without Kestra:
+
+```bash
+# Railway Environment Variables
+KESTRA_ENABLED=false
+VAPI_API_KEY=your-prod-key
+VAPI_PHONE_NUMBER_ID=your-prod-phone-id
+SUPABASE_URL=your-supabase-url
+SUPABASE_SERVICE_ROLE_KEY=your-service-key
+```
+
+**Key Benefits:**
+- No Docker/Kestra infrastructure required in production
+- Direct VAPI SDK calls with identical assistant configuration
+- Same structured call analysis and database updates
+- Automatic fallback when Kestra is unavailable
 
 ---
 

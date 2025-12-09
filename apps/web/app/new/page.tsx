@@ -5,7 +5,8 @@ import { useRouter } from 'next/navigation';
 import { useAppContext } from '@/lib/providers/AppProvider';
 import { RequestStatus, RequestType, ServiceRequest } from '@/lib/types';
 import { Search, MapPin, AlertCircle, Sparkles } from 'lucide-react';
-import { searchProviders, simulateCall, selectBestProvider, scheduleAppointment } from '@/lib/services/geminiService';
+import { simulateCall, selectBestProvider, scheduleAppointment } from '@/lib/services/geminiService';
+import { searchProviders as searchProvidersWorkflow } from '@/lib/services/workflowService';
 import { createServiceRequest, updateServiceRequest } from '@/lib/actions/service-requests';
 
 export default function NewRequest() {
@@ -71,14 +72,36 @@ export default function NewRequest() {
     };
 
     try {
-      // 1. Search
-      const searchResult = await searchProviders(data.title, data.location);
-      updateRequest(reqId, {
-        providersFound: searchResult.providers,
-        interactions: [searchResult.logs]
+      // 1. Search using Workflow API (with Kestra/Direct Gemini fallback)
+      const workflowResult = await searchProvidersWorkflow({
+        service: data.title,
+        location: data.location,
+        serviceRequestId: reqId
       });
 
-      if (searchResult.providers.length === 0) {
+      // Map workflow result to match existing format
+      const providers = workflowResult.providers.map((p) => ({
+        id: p.id,
+        name: p.name,
+        phone: p.phone,
+        rating: p.rating,
+        address: p.address,
+        reason: p.reason || ''
+      }));
+
+      const searchLog = {
+        timestamp: new Date().toISOString(),
+        stepName: 'Market Research',
+        detail: `Found ${providers.length} providers using ${workflowResult.method === 'kestra' ? 'Kestra workflow' : 'Direct Gemini'}. ${workflowResult.reasoning || ''}`,
+        status: workflowResult.status === 'success' ? 'success' : 'error'
+      } as any;
+
+      updateRequest(reqId, {
+        providersFound: providers,
+        interactions: [searchLog]
+      });
+
+      if (providers.length === 0) {
         await updateStatus('FAILED', { finalOutcome: 'No providers found in your area.' });
         await updateServiceRequest(reqId, { final_outcome: 'No providers found in your area.' });
         return;
@@ -88,18 +111,18 @@ export default function NewRequest() {
       await updateStatus('CALLING');
       const callLogs = [];
 
-      for (const provider of searchResult.providers) {
+      for (const provider of providers) {
         const log = await simulateCall(provider.name, `${data.description}. Criteria: ${data.criteria}`, false);
         callLogs.push(log);
         updateRequest(reqId, {
-          interactions: [searchResult.logs, ...callLogs]
+          interactions: [searchLog, ...callLogs]
         });
         await new Promise(r => setTimeout(r, 1000));
       }
 
       // 3. Analyze
       await updateStatus('ANALYZING');
-      const analysis = await selectBestProvider(data.title, callLogs, searchResult.providers);
+      const analysis = await selectBestProvider(data.title, callLogs, providers);
 
       const finalLogs = [...callLogs, {
         timestamp: new Date().toISOString(),
@@ -108,18 +131,18 @@ export default function NewRequest() {
         status: analysis.selectedId ? 'success' : 'warning'
       } as any];
 
-      updateRequest(reqId, { interactions: [searchResult.logs, ...finalLogs] });
+      updateRequest(reqId, { interactions: [searchLog, ...finalLogs] });
 
       if (analysis.selectedId) {
         // 4. Schedule
-        const provider = searchResult.providers.find(p => p.id === analysis.selectedId);
+        const provider = providers.find(p => p.id === analysis.selectedId);
         if (provider) {
           updateRequest(reqId, { selectedProvider: provider });
           const bookingLog = await scheduleAppointment(provider.name, data.description);
           const outcome = `Booked with ${provider.name}. ${analysis.reasoning}`;
           updateRequest(reqId, {
             status: RequestStatus.COMPLETED,
-            interactions: [searchResult.logs, ...finalLogs, bookingLog],
+            interactions: [searchLog, ...finalLogs, bookingLog],
             finalOutcome: outcome
           });
           // Update DB with final status and outcome

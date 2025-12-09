@@ -1,3 +1,25 @@
+Okay, perfect! Now I want to test
+  '/Users/dave/Work/concierge-ai/kestra/flows/contact_agent.yaml' and get
+  it working. Please first make sure that
+  '/Users/dave/Work/concierge-ai/kestra/scripts/call-provider.js' It's
+  properly integrated with
+  '/Users/dave/Work/concierge-ai/kestra/flows/contact_agent.yaml' and add
+  the required API keys to our .env.example file. Also please answer the
+  following questions. 1. Since we are relying on the VAPI assistant to do
+  the interaction with the customer, How is the VAPI assistant returning
+  the results to us after the call so that we can take the next steps? Is
+  it a certain output format or is it dynamic? 2. Currently the
+  assistantConfig has a hard-coded prompt which only works for that
+  specific use case. But our app specifically ask the user certain details
+  such as What they need help with and their criteria which are not
+  included in the prompt. I am thinking that we need to first build the
+  prompt by calling gemini first based on the user's requirements and then
+  Pass the new prompt to create the VAPI agent. What do you think? 3.
+  currently, when we call /simulate-call, Even though the conversation is
+  not real, I really like how our AI agent (Gemini) chats with the user in
+  a natural way. is there any way we could reverse engineer or just
+  directly use the prompt for this  
+
 We are competing in a hackathon and we are building @docs/about.md. Pleaes analyze our current @"docs/AI Concierge Gameplan.md" and our current
   code state and @docs/hackathon.md and present a comprehensive high level plan for us to achieve our goal and win the hackathon. please Use your
   specialized multi-agent team to analyze these in parallel and once all agents are done, present a unified comprehensive plan with 90% confidence
@@ -10,7 +32,7 @@ I just built @about.md but the UI doesn't look very good. The white background i
 
 # analyze and come up with plan
 Please analyze these issues  
-using your  multi-agent team with up to 3 agentsand come up with a unified plan with 90% confidence. ultrathink  
+using your  multi-agent team with up to 3 agentsand come up with a unified plan with 90% confidence and wait for further instructions. My mortgage payment depends on this and If you get this right on the first try, I will tip you $200. ultrathink  
 
 # agent work
 please Use your specialized multi-agent team to analyze these issues in parallel for the root causes with 90% confidence and once all agents are done, present a unified comprehensive plan to fix them. ultrathink
@@ -19,13 +41,16 @@ please Use your specialized multi-agent team to analyze these issues in parallel
 please Use your specialized multi-agent team with up to 3 agents to analyze and present the findings with 90% confidence. ultrathink
 
 # please analyze and implement
-please Use your specialized multi-agent team to analyze the root cause in parallel with up to 3 agents with 90% confidence and implement it. ultrathink
+please Use your specialized multi-agent team to analyze the root cause in parallel with up to 3 agents with 90% confidence and implement it. If you get this right on the first try, I will tip you $200. ultrathink
 
 # please analyze with multi-agent
-please Use your specialized multi-agent team to analyze these in parallel and once all agents are done, present a unified comprehensive plan with 90% confidence and wait for further instructions. ultrathink
+please Use your specialized multi-agent team to analyze these in parallel and once all agents are done, present a unified comprehensive plan with 90% confidence and wait for further instructions. My mortgage payment depends on this and If you get this right on the first try, I will tip you $200. ultrathink
 
 # please analyze and implement with multi-agent
-please Use your specialized multi-agent team to analyze these in parallel (with up to 3 agents) and come up with a unified comprehensive plan with 90% confidence and implement it. ultrathink
+please Use your specialized multi-agent team to analyze these in parallel (with up to 3 agents) and come up with a unified comprehensive plan with 90% confidence and implement it. My mortgage payment depends on this and If you get this right on the first try, I will tip you $200. ultrathink
+
+# please implement in parallel multi-agent
+please Use your specialized multi-agent team to implement these in parallel (with up to 3 agents) with 90% confidence. My mortgage payment depends on this and If you get this right on the first try, I will tip you $200. ultrathink
 
 
 # please analyze multi-agent and save
@@ -59,7 +84,7 @@ Ok main branch has changed since this pr was created. Please merge the main bran
 # deep-work
 Perfect! Please first save this plan using the @.claude/commands/save.md command and then 
 please implement it using @.claude/commands/deep-work.md using your specialized agents in parallel and don't stop until fully complete. 
-If you encounter any critical conflicts or significant obstacles, Present to me the options and ask me what to do instead of Making blind assumptions.
+If you encounter any critical conflicts or significant obstacles, Present to me the options and ask me what to do instead of Making blind assumptions. My mortgage payment depends on this and If you get this right on the first try, I will tip you $200. ultrathink  
 
 # no-deep-work
 Perfect. Please implement this using your specialized agent team working in parallel with up to 3 agents at a time.
