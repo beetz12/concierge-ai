@@ -214,10 +214,38 @@ For more information, visit the [CLINE documentation](https://docs.cline.bot).
 
 ## Kestra Workflow Setup (Local)
 
-To run the Kestra orchestration engine locally:
+Kestra is used to orchestrate the AI research agent workflows. This section covers local setup with PostgreSQL.
 
-### 1. Start Kestra & Postgres
-Run the following command from the root directory:
+### Prerequisites
+
+- Docker and Docker Compose installed
+- PostgreSQL running locally on port 5432 (or use the project's Supabase instance)
+
+### 1. Configure Environment Variables
+
+Ensure your root `.env` file has the Kestra database configuration:
+
+```bash
+# Kestra Database Configuration
+KESTRA_DB_HOST=host.docker.internal   # Use 'localhost' if not using Docker
+KESTRA_DB_PORT=5432
+KESTRA_DB_USER=postgres
+KESTRA_DB_PASSWORD=postgres
+KESTRA_DB_NAME=postgres
+
+# API Keys (used by Kestra flows)
+GEMINI_API_KEY=your_gemini_api_key
+```
+
+### 2. Create the Kestra Schema
+
+Before starting Kestra, create the dedicated schema in PostgreSQL:
+
+```bash
+PGPASSWORD=postgres psql -h localhost -p 5432 -U postgres -d postgres -c "CREATE SCHEMA IF NOT EXISTS kestra;"
+```
+
+### 3. Start Kestra
 
 ```bash
 docker compose up -d
@@ -225,20 +253,100 @@ docker compose up -d
 
 This starts:
 - **Kestra Server**: [http://localhost:8082](http://localhost:8082)
-- **Postgres Database**: `jdbc:postgresql://postgres:5432/kestra`
+- **Management API**: Port 8081 (internal)
 
-### 2. Verify Installation
-Open [http://localhost:8082](http://localhost:8082) in your browser. You should see the Kestra UI.
+### 4. Initial Setup (First Time Only)
 
-### 3. Trigger a Test Flow
-You can test the API integration by triggering the research agent:
+On first launch, Kestra requires account creation:
+
+1. Open [http://localhost:8082](http://localhost:8082) in your browser
+2. Complete the setup wizard:
+   - **Email**: `admin@kestra.local` (or your preferred email)
+   - **Password**: Must be 8+ characters with 1 uppercase and 1 number (e.g., `Admin123456`)
+3. Click through the configuration validation
+4. Login with your new credentials
+
+### 5. Register Flows
+
+Flows are stored in `kestra/flows/`. Register them via API:
 
 ```bash
-curl -X POST http://localhost:8082/api/v1/executions/ai_concierge/research_providers \
+# Register the research_providers flow
+curl -u "admin@kestra.local:Admin123456" -X POST "http://localhost:8082/api/v1/flows" \
+  -H "Content-Type: application/x-yaml" \
+  --data-binary @kestra/flows/research_agent.yaml
+```
+
+### 6. Trigger a Test Flow
+
+```bash
+curl -u "admin@kestra.local:Admin123456" -X POST \
+  "http://localhost:8082/api/v1/executions/ai_concierge/research_providers" \
   -H "Content-Type: multipart/form-data" \
   -F "service=plumber" \
   -F "location=Greenville, SC"
 ```
+
+### Kestra Configuration Reference
+
+The `docker-compose.yml` contains critical Kestra settings:
+
+```yaml
+kestra:
+  image: kestra/kestra:v1.1.6
+  command: server standalone          # Use 'standalone' for PostgreSQL, NOT 'server local'
+  environment:
+    KESTRA_CONFIGURATION: |
+      kestra:
+        server:
+          basic-auth:
+            username: admin@kestra.local
+            password: Admin123456     # 8+ chars, 1 upper, 1 number required
+        repository:
+          type: postgres
+        queue:
+          type: postgres
+      datasources:
+        postgres:                     # MUST be 'postgres', not 'default'
+          url: jdbc:postgresql://${KESTRA_DB_HOST}:${KESTRA_DB_PORT}/${KESTRA_DB_NAME}?currentSchema=kestra
+          driverClassName: org.postgresql.Driver
+          username: ${KESTRA_DB_USER}
+          password: ${KESTRA_DB_PASSWORD}
+```
+
+### Troubleshooting
+
+#### "relation 'settings' does not exist"
+**Cause**: Database migrations didn't run properly.
+**Fix**:
+1. Ensure `datasources.postgres` (not `datasources.default`) is configured
+2. Use `server standalone` command (not `server local`)
+3. Wipe schema and restart: `DROP SCHEMA kestra CASCADE; CREATE SCHEMA kestra;`
+
+#### 401 Unauthorized on API calls
+**Cause**: Basic auth credentials not set up or wrong format.
+**Fix**:
+1. Complete the setup wizard at http://localhost:8082/ui/setup
+2. Password must meet requirements: 8+ chars, 1 uppercase, 1 number
+3. Use the credentials you created during setup
+
+#### "Multiple possible bean candidates found: [DSLContext, DSLContext]"
+**Cause**: Using `server local` which creates both H2 and PostgreSQL connections.
+**Fix**: Change to `command: server standalone` in docker-compose.yml
+
+#### Flow task type errors
+**Cause**: Wrong plugin namespace for AI tasks.
+**Fix**: Use `io.kestra.plugin.ai.agent.AIAgent` (not `io.kestra.plugin.aiagent.AIAgent`)
+
+### Lessons Learned
+
+| Issue | Wrong | Correct |
+|-------|-------|---------|
+| Datasource name | `datasources.default` | `datasources.postgres` |
+| Server command | `server local` | `server standalone` |
+| AIAgent task type | `io.kestra.plugin.aiagent.AIAgent` | `io.kestra.plugin.ai.agent.AIAgent` |
+| Password format | `admin` | `Admin123456` (8+ chars, 1 upper, 1 number) |
+| Flyway env vars | Manual configuration | Not needed (auto-handled) |
 
 ## Contributing
 
