@@ -18,6 +18,7 @@
     "@google/genai": "^1.30.0",
     "@repo/types": "workspace:*",
     "@supabase/supabase-js": "^2.86.2",
+    "@vapi-ai/server-sdk": "^0.11.0",
     "axios": "^1.13.2",
     "dotenv": "^17.2.3",
     "fastify": "^5.2.1",

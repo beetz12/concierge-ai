@@ -41,6 +41,9 @@ importers:
       '@supabase/supabase-js':
         specifier: ^2.86.2
         version: 2.86.2
+      '@vapi-ai/server-sdk':
+        specifier: ^0.11.0
+        version: 0.11.0
       axios:
         specifier: ^1.13.2
         version: 1.13.2
@@ -929,6 +932,10 @@ packages:
   '@typescript-eslint/visitor-keys@8.47.0':
     resolution: {integrity: sha512-SIV3/6eftCy1bNzCQoPmbWsRLujS8t5iDIZ4spZOBHqrM+yfX2ogg8Tt3PDTAVKw3sSCiUgg30uOAvK2r9zGjQ==}
     engines: {node: ^18.18.0 || ^20.9.0 || >=21.1.0}
+
+  '@vapi-ai/server-sdk@0.11.0':
+    resolution: {integrity: sha512-anfCbCY3k3vh5RKX8noN4p2QOK3k1ezRT31nHReVCjr3oMlex+Bjk4G9Ze4ZrezKrP8KssbuITuB7OeZ0egIQQ==}
+    engines: {node: '>=18.0.0'}
 
   abstract-logging@2.0.1:
     resolution: {integrity: sha512-2BjRTZxTPvheOvGbBslFSYOUkr+SjPtOnrLP33f+VIWLzezQpZcqVg7ja3L4dBXmzzgwT+a029jRx5PCi3JuiA==}
@@ -3157,6 +3164,8 @@ snapshots:
     dependencies:
       '@typescript-eslint/types': 8.47.0
       eslint-visitor-keys: 4.2.1
+
+  '@vapi-ai/server-sdk@0.11.0': {}
 
   abstract-logging@2.0.1: {}
 

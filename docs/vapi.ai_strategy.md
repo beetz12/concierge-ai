@@ -85,7 +85,7 @@ tasks:
   - id: research_providers
     type: io.kestra.plugin.aiagent.AIAgent
     config:
-      provider: gemini-2.0-flash-exp  # Your Gemini model
+      provider: gemini-2.5-flash  # Your Gemini model
       maxIterations: 5
     prompt: |
       Find {{ inputs.service }} providers in {{ inputs.location }} with 
@@ -113,7 +113,7 @@ tasks:
   - id: analyze_calls
     type: io.kestra.plugin.aiagent.AIAgent
     config:
-      provider: gemini-2.0-flash-exp
+      provider: gemini-2.5-flash
     inputs:
       callResults: "{{ outputs.call_providers.value }}"
     prompt: |
@@ -160,7 +160,7 @@ async function callProvider(phoneNumber, service) {
     },
     model: {
       provider: 'gemini',
-      model: 'gemini-2.0-flash-exp',
+      model: 'gemini-2.5-flash',
       apiKey: process.env.GEMINI_API_KEY,
       transcriber: {
         provider: 'deepgram',

@@ -2,8 +2,8 @@
 
 ## 1. High-Level System Architecture
 
-### Current State (Day 1-2)
-The system is currently running locally with Kestra orchestration spinning up.
+### Current State (Day 3+)
+The system now features a **VAPI Fallback Architecture** that automatically detects Kestra availability and routes phone calls appropriately. This enables production deployment on Railway (without Kestra) using direct VAPI API calls.
 
 ```mermaid
 graph TD
@@ -12,15 +12,48 @@ graph TD
     end
 
     subgraph Backend
-        API[Fastify API - Local]
-        Kestra[Kestra (Docker:8082)]
+        API[Fastify API]
+        PCS[ProviderCallingService]
+        KC[KestraClient]
+        DVC[DirectVapiClient]
+        CRS[CallResultService]
         DB[(Postgres/Supabase)]
     end
 
+    subgraph Orchestration
+        Kestra[Kestra - Docker:8082]
+    end
+
+    subgraph VoiceAI
+        VAPI[VAPI.ai Platform]
+    end
+
     Browser -->|HTTP| API
-    API -->|Trigger| Kestra
-    Kestra -->|Search| Gemini
-    Kestra -->|Call| VAPI[VAPI (Partially Wired)]
+    API -->|Route| PCS
+    PCS -->|Check KESTRA_ENABLED| KC
+    PCS -->|Fallback| DVC
+    KC -->|Trigger Flow| Kestra
+    DVC -->|Direct API| VAPI
+    Kestra -->|Execute Script| VAPI
+    PCS -->|Update DB| CRS
+    CRS -->|Write| DB
+```
+
+### VAPI Fallback Decision Flow
+```mermaid
+flowchart TD
+    Request[Call Request] --> Check{KESTRA_ENABLED?}
+    Check -->|true| Health{Kestra Healthy?}
+    Check -->|false| Direct[DirectVapiClient]
+    Health -->|yes| Kestra[KestraClient]
+    Health -->|no| Direct
+    Kestra -->|Workflow| KFlow[Kestra Flow Execution]
+    Direct -->|SDK| VSDK[VAPI SDK Call]
+    KFlow --> Poll1[Poll Execution Status]
+    VSDK --> Poll2[Poll Call Status]
+    Poll1 --> Result[CallResult]
+    Poll2 --> Result
+    Result --> DB[Update Database]
 ```
 
 ### Target State (End of Day 5) (Target State)
@@ -78,14 +111,66 @@ graph TD
     Docker -.->|Hosts| Kestra
 ```
 
-## 2. Kestra Workflow Logic (The "Brain")
+## 2. Provider Calling Service Architecture
+
+### Service Layer (`apps/api/src/services/vapi/`)
+
+| File | Purpose |
+|------|---------|
+| `types.ts` | Shared type definitions (CallRequest, CallResult, StructuredCallData) |
+| `assistant-config.ts` | VAPI assistant configuration (mirrors Kestra's call-provider.js) |
+| `direct-vapi.client.ts` | Direct VAPI SDK integration with polling |
+| `kestra.client.ts` | Kestra workflow trigger and status polling |
+| `call-result.service.ts` | Database updates for providers and interaction_logs |
+| `provider-calling.service.ts` | Main orchestrator (routes between Kestra/DirectVAPI) |
+| `index.ts` | Service exports |
+
+### API Endpoints
+
+| Endpoint | Method | Purpose |
+|----------|--------|---------|
+| `/api/v1/providers/call` | POST | Initiate phone call to provider |
+| `/api/v1/providers/call/status` | GET | Check system status (active method, health) |
+
+### Environment Configuration
+
+```bash
+# Kestra Configuration
+KESTRA_ENABLED=false              # Set true for local/staging with Kestra
+KESTRA_URL=http://localhost:8082
+KESTRA_NAMESPACE=ai_concierge
+KESTRA_HEALTH_CHECK_TIMEOUT=3000
+
+# VAPI Configuration
+VAPI_API_KEY=your-key
+VAPI_PHONE_NUMBER_ID=your-phone-id
+```
+
+---
+
+## 3. Kestra Workflow Logic (The "Brain")
 
 ### Current State
-Individual flows exist but are not yet chained.
+Individual flows exist and are now callable via fallback services when Kestra is unavailable.
 
-- `research_agent.yaml`: Functional (Gemini Search).
-- `contact_agent.yaml`: Functional (VAPI Script).
+- `research_agent.yaml`: Functional (Gemini Search) - **Now with Direct Gemini fallback via ResearchService**.
+- `contact_agent.yaml`: Functional (VAPI Script) - **Now with Direct VAPI fallback via ProviderCallingService**.
 - `booking_agent.yaml`: Functional (GCal Script).
+
+### Research Agent Fallback Flow
+```mermaid
+flowchart TD
+    Request[Research Request] --> Check{KESTRA_ENABLED?}
+    Check -->|true| Health{Kestra Healthy?}
+    Check -->|false| Direct[DirectResearchClient]
+    Health -->|yes| Kestra[KestraResearchClient]
+    Health -->|no| Direct
+    Kestra -->|Flow| KFlow[research_providers Flow]
+    Direct -->|API| Gemini[Gemini + Maps Grounding]
+    KFlow --> Result[ResearchResult]
+    Gemini --> Result
+    Result --> Providers[Provider List]
+```
 
 ### Target State
 The core "Concierge" agentic workflow.
@@ -182,13 +267,13 @@ erDiagram
     REQUESTS ||--|{ INTERACTION_LOGS : has
     REQUESTS ||--o{ PROVIDERS : considers
     REQUESTS ||--|| APP_STATE : tracks
-    
+
     USERS {
         uuid id PK
         string email
         string created_at
     }
-    
+
     REQUESTS {
         uuid id PK
         uuid user_id FK
@@ -197,7 +282,7 @@ erDiagram
         json criteria
         timestamp created_at
     }
-    
+
     PROVIDERS {
         uuid id PK
         uuid request_id FK
@@ -205,8 +290,17 @@ erDiagram
         string phone
         float rating
         string address
+        string call_status
+        jsonb call_result
+        text call_transcript
+        text call_summary
+        decimal call_duration_minutes
+        decimal call_cost
+        text call_method
+        text call_id
+        timestamp called_at
     }
-    
+
     INTERACTION_LOGS {
         uuid id PK
         uuid request_id FK
@@ -216,4 +310,73 @@ erDiagram
         string sentiment
         timestamp timestamp
     }
+```
+
+### Call Tracking Columns (providers table)
+
+| Column | Type | Description |
+|--------|------|-------------|
+| `call_status` | TEXT | Current call state (queued, ringing, in-progress, ended, error) |
+| `call_result` | JSONB | Structured analysis (availability, rate, criteria_met, etc.) |
+| `call_transcript` | TEXT | Full conversation transcript |
+| `call_summary` | TEXT | AI-generated summary |
+| `call_duration_minutes` | DECIMAL | Call length |
+| `call_cost` | DECIMAL | VAPI cost |
+| `call_method` | TEXT | 'kestra' or 'direct_vapi' |
+| `call_id` | TEXT | VAPI call ID for reference |
+| `called_at` | TIMESTAMPTZ | When call was initiated |
+
+---
+
+## 6. Production Deployment Architecture
+
+### Railway (Production - No Kestra)
+```mermaid
+graph LR
+    subgraph Railway
+        API[Fastify API]
+        DVC[DirectVapiClient]
+    end
+
+    subgraph External
+        VAPI[VAPI.ai]
+        Supabase[(Supabase)]
+    end
+
+    API --> DVC
+    DVC -->|SDK| VAPI
+    API -->|Read/Write| Supabase
+```
+
+**Configuration:**
+```bash
+KESTRA_ENABLED=false
+VAPI_API_KEY=your-prod-key
+VAPI_PHONE_NUMBER_ID=your-prod-phone-id
+```
+
+### Local/Staging (With Kestra)
+```mermaid
+graph LR
+    subgraph Docker
+        API[Fastify API]
+        Kestra[Kestra:8082]
+        KC[KestraClient]
+    end
+
+    subgraph External
+        VAPI[VAPI.ai]
+        Supabase[(Supabase)]
+    end
+
+    API --> KC
+    KC --> Kestra
+    Kestra -->|Script| VAPI
+    API -->|Read/Write| Supabase
+```
+
+**Configuration:**
+```bash
+KESTRA_ENABLED=true
+KESTRA_URL=http://localhost:8082
 ```

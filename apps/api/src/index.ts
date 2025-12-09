@@ -8,6 +8,8 @@ import supabasePlugin from './plugins/supabase.js';
 import userRoutes from './routes/users.js';
 import geminiRoutes from './routes/gemini.js';
 import workflowRoutes from './routes/workflows.js';
+import providerRoutes from './routes/providers.js';
+import vapiWebhookRoutes from './routes/vapi-webhook.js';
 
 const server = Fastify({
   logger: {
@@ -52,6 +54,9 @@ await server.register(swagger, {
       { name: 'health', description: 'Health check endpoints' },
       { name: 'users', description: 'User management endpoints' },
       { name: 'gemini', description: 'AI-powered service provider operations' },
+      { name: 'workflows', description: 'Unified workflow orchestration with Kestra/Gemini fallback' },
+      { name: 'providers', description: 'Provider calling operations (VAPI)' },
+      { name: 'vapi', description: 'VAPI webhook callbacks and call result retrieval' },
     ],
   },
 });
@@ -110,6 +115,9 @@ server.get('/api/v1', {
       health: '/health',
       users: '/api/v1/users',
       gemini: '/api/v1/gemini',
+      workflows: '/api/v1/workflows',
+      providers: '/api/v1/providers',
+      vapi: '/api/v1/vapi',
       docs: '/docs',
     },
   };
@@ -123,6 +131,12 @@ await server.register(geminiRoutes, { prefix: '/api/v1/gemini' });
 
 // Register Workflow routes
 await server.register(workflowRoutes, { prefix: '/api/v1/workflows' });
+
+// Register Provider routes (VAPI calling)
+await server.register(providerRoutes, { prefix: '/api/v1/providers' });
+
+// Register VAPI Webhook routes
+await server.register(vapiWebhookRoutes, { prefix: '/api/v1/vapi' });
 
 // Start server
 const start = async () => {
