@@ -27,6 +27,13 @@ export {
   type AssistantConfig,
 } from "./assistant-config.js";
 
+// Booking Configuration (for scheduling appointments)
+export {
+  createBookingAssistantConfig,
+  type BookingRequest,
+  type BookingAssistantConfig,
+} from "./booking-assistant-config.js";
+
 // Webhook Configuration (shared with Kestra scripts via dist/)
 export {
   createWebhookAssistantConfig,
