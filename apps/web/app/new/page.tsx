@@ -8,7 +8,6 @@ import { Search, MapPin, AlertCircle, Sparkles } from "lucide-react";
 import {
   simulateCall,
   selectBestProvider,
-  scheduleAppointment,
 } from "@/lib/services/geminiService";
 import { searchProviders as searchProvidersWorkflow } from "@/lib/services/workflowService";
 import {
@@ -252,18 +251,14 @@ export default function NewRequest() {
       updateRequest(reqId, { interactions: [searchLog, ...finalLogs] });
 
       if (analysis.selectedId) {
-        // 4. Schedule
+        // 4. Mark best provider selected (user will be notified via SMS/VAPI later)
         const provider = providers.find((p) => p.id === analysis.selectedId);
         if (provider) {
           updateRequest(reqId, { selectedProvider: provider });
-          const bookingLog = await scheduleAppointment(
-            provider.name,
-            data.description,
-          );
-          const outcome = `Booked with ${provider.name}. ${analysis.reasoning}`;
+          const outcome = `Selected ${provider.name}. ${analysis.reasoning}`;
           updateRequest(reqId, {
             status: RequestStatus.COMPLETED,
-            interactions: [searchLog, ...finalLogs, bookingLog],
+            interactions: [searchLog, ...finalLogs],
             finalOutcome: outcome,
           });
           // Update DB with final status and outcome

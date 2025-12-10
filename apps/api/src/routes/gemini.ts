@@ -4,7 +4,6 @@ import {
   searchProviders,
   simulateCall,
   selectBestProvider,
-  scheduleAppointment,
   type Provider,
   type InteractionLog,
 } from "../services/gemini.js";
@@ -62,11 +61,6 @@ const selectBestProviderSchema = z.object({
       source: z.enum(["Google Maps", "User Input"]).optional(),
     }),
   ),
-});
-
-const scheduleAppointmentSchema = z.object({
-  providerName: z.string().min(1, "Provider name is required"),
-  details: z.string().min(1, "Details are required"),
 });
 
 const analyzeDirectTaskSchema = z.object({
@@ -392,82 +386,6 @@ export default async function geminiRoutes(fastify: FastifyInstance) {
           body.requestTitle,
           body.interactions as InteractionLog[],
           body.providers as Provider[],
-        );
-        return result;
-      } catch (error: any) {
-        if (error instanceof z.ZodError) {
-          return reply.status(400).send({
-            error: "Validation Error",
-            details: error.errors,
-          });
-        }
-        fastify.log.error(error);
-        return reply.status(500).send({
-          error: "Internal Server Error",
-          message: error.message,
-        });
-      }
-    },
-  );
-
-  /**
-   * POST /schedule-appointment
-   * Schedule an appointment with a provider (simulated)
-   */
-  fastify.post(
-    "/schedule-appointment",
-    {
-      schema: {
-        description:
-          "Schedule an appointment with a selected provider (simulated)",
-        tags: ["gemini"],
-        body: {
-          type: "object",
-          required: ["providerName", "details"],
-          properties: {
-            providerName: {
-              type: "string",
-              description: "Name of the provider",
-            },
-            details: {
-              type: "string",
-              description: "Appointment details and requirements",
-            },
-          },
-        },
-        response: {
-          200: {
-            type: "object",
-            properties: {
-              timestamp: { type: "string" },
-              stepName: { type: "string" },
-              detail: { type: "string" },
-              status: { type: "string" },
-            },
-          },
-          400: {
-            type: "object",
-            properties: {
-              error: { type: "string" },
-              details: { type: "array" },
-            },
-          },
-          500: {
-            type: "object",
-            properties: {
-              error: { type: "string" },
-              message: { type: "string" },
-            },
-          },
-        },
-      },
-    },
-    async (request, reply) => {
-      try {
-        const body = scheduleAppointmentSchema.parse(request.body);
-        const result = await scheduleAppointment(
-          body.providerName,
-          body.details,
         );
         return result;
       } catch (error: any) {

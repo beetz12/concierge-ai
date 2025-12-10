@@ -2,6 +2,17 @@
 
 An AI-powered receptionist and secretary designed to help you research local service providers and book appointments effortlessly.
 
+## Sponsors & Technologies
+
+This project was built for a hackathon using these sponsor technologies:
+
+| Sponsor | Technology | Usage |
+|---------|------------|-------|
+| **Kestra** | Workflow Orchestration | Orchestrates multi-step AI workflows (research, call, recommend, book) |
+| **VAPI.ai** | Voice AI | Makes automated phone calls to verify provider availability/rates |
+| **Google Gemini** | LLM | Powers research (Maps grounding), analysis, and dynamic prompt generation |
+| **Vercel** | Deployment | Hosts the production web application |
+
 ## Live Deployment
 
 - **Production Web App**: [https://concierge-ai-web.vercel.app/](https://concierge-ai-web.vercel.app/)
@@ -32,6 +43,33 @@ The application will:
 
 It also maintains a history of requests, detailed logs of AI analysis and interactions, and supports direct tasks where you provide specific contact info for the AI to call.
 
+## Two Request Types
+
+The application supports two ways to use the AI assistant:
+
+### Research & Book (`/new` page)
+
+Full automated workflow for finding and booking service providers:
+
+1. **User submits request** - Describe service needed, location, and criteria
+2. **AI researches** - Finds 10+ providers via Gemini + Google Places API
+3. **AI calls providers** - Makes real phone calls (VAPI.ai) to verify availability/rates
+4. **AI recommends** - Analyzes call results, presents **top 3 providers** with scores and reasoning
+5. **User selects** - Choose preferred provider from recommendations
+6. **AI books** - Calls provider back to schedule appointment
+7. **Confirmation** - Notified when booking is complete
+
+### Direct Task (`/direct` page)
+
+Single-call tasks where you provide contact information:
+
+- User provides: contact name, phone number, task description
+- AI analyzes task type (negotiate, complain, inquire, schedule, etc.)
+- Generates task-specific prompts dynamically
+- Makes the call and reports results with full transcript
+
+**Supported task types:** `negotiate_price`, `request_refund`, `complain_issue`, `schedule_appointment`, `cancel_service`, `make_inquiry`, `general_task`
+
 ## Tech Stack
 
 This project is a monorepo managed by **Turborepo**.
@@ -58,8 +96,33 @@ Key capabilities:
 - Conditional callback scheduling (only if ALL criteria met)
 - Earliest availability tracking (specific date/time)
 - Single-person verification (ensures ONE technician has ALL requirements)
+- **Concurrent calling**: Call multiple providers simultaneously (configurable via `VAPI_MAX_CONCURRENT_CALLS`)
 
 For detailed architecture, see `docs/VAPI_FALLBACK_ARCHITECTURE.md`.
+
+### Concurrent Provider Calling
+
+The system supports calling multiple providers simultaneously to reduce total wait time by 80%+. Instead of sequential calls (5 providers × 5 min = 25 min), concurrent calling processes them in parallel batches.
+
+**Configuration:**
+```bash
+# In apps/api/.env
+VAPI_MAX_CONCURRENT_CALLS=5  # Number of simultaneous calls (default: 5)
+```
+
+**API Endpoint:** `POST /api/v1/providers/batch-call`
+```json
+{
+  "providers": [{"name": "ABC Plumbing", "phone": "+1234567890"}],
+  "serviceNeeded": "plumbing",
+  "userCriteria": "Licensed and insured",
+  "location": "Greenville, SC",
+  "urgency": "within_2_days",
+  "maxConcurrent": 5
+}
+```
+
+**Kestra Workflow:** `contact_providers_concurrent.yaml` uses `EachParallel` with `concurrencyLimit` for orchestrated concurrent calling.
 
 ### Live Call Configuration
 

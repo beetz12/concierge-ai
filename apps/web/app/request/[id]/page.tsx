@@ -5,6 +5,9 @@ import { useParams } from "next/navigation";
 import Link from "next/link";
 import { useAppContext } from "@/lib/providers/AppProvider";
 import StatusBadge from "@/components/StatusBadge";
+import LiveStatus from "@/components/LiveStatus";
+import RecommendedProviders from "@/components/RecommendedProviders";
+import SelectionModal from "@/components/SelectionModal";
 import {
   ArrowLeft,
   MapPin,
@@ -20,6 +23,7 @@ import {
   ServiceRequest,
   RequestStatus,
   RequestType,
+  Provider,
 } from "@/lib/types";
 import { createClient } from "@/lib/supabase/client";
 
@@ -86,12 +90,38 @@ export default function RequestDetails() {
   const { requests, addRequest } = useAppContext();
   const localRequest = requests.find((r) => r.id === id);
   const [dbRequest, setDbRequest] = useState<ServiceRequest | null>(null);
+  const [realtimeRequest, setRealtimeRequest] = useState<ServiceRequest | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
 
-  // Use local request if available (for real-time updates), otherwise use DB request
-  const request = localRequest || dbRequest;
+  // Component state for new features
+  const [selectedProvider, setSelectedProvider] = useState<{
+    providerId: string;
+    providerName: string;
+    phone: string;
+    earliestAvailability: string;
+  } | null>(null);
+  const [showModal, setShowModal] = useState(false);
+  const [bookingLoading, setBookingLoading] = useState(false);
+  const [recommendations, setRecommendations] = useState<{
+    providers: Array<{
+      providerId: string;
+      providerName: string;
+      phone: string;
+      rating: number;
+      reviewCount?: number;
+      earliestAvailability: string;
+      estimatedRate: string;
+      score: number;
+      reasoning: string;
+      criteriaMatched?: string[];
+    }>;
+    overallRecommendation: string;
+  } | null>(null);
+
+  // Use realtime data if available, otherwise local request, otherwise DB request
+  const request = realtimeRequest || localRequest || dbRequest;
 
   // Helper to check if string is valid UUID format
   const isValidUuid = (str: string) => {
@@ -145,10 +175,95 @@ export default function RequestDetails() {
     }
   }, [id, localRequest, dbRequest, loading, addRequest]);
 
+  // Real-time subscription for live updates
+  useEffect(() => {
+    if (!id || !isValidUuid(id)) return;
+
+    const supabase = createClient();
+    const channel = supabase
+      .channel(`request-${id}`)
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "service_requests",
+          filter: `id=eq.${id}`,
+        },
+        (payload) => {
+          console.log("Real-time update:", payload);
+          if (payload.eventType === "UPDATE" && payload.new) {
+            // Convert DB format to frontend format
+            const converted: ServiceRequest = {
+              id: payload.new.id,
+              type: payload.new.type as RequestType,
+              title: payload.new.title,
+              description: payload.new.description,
+              criteria: payload.new.criteria,
+              location: payload.new.location || undefined,
+              status: payload.new.status as RequestStatus,
+              createdAt: payload.new.created_at,
+              providersFound: [],
+              interactions: [],
+              finalOutcome: payload.new.final_outcome || undefined,
+            };
+            setRealtimeRequest(converted);
+            // Also update context for consistency
+            addRequest(converted);
+          }
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [id, addRequest]);
+
   useEffect(() => {
     // Auto scroll to bottom when new logs arrive
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [request?.interactions.length]);
+
+  // Handler for provider selection
+  const handleProviderSelect = (provider: {
+    providerId: string;
+    providerName: string;
+    phone: string;
+    rating: number;
+    reviewCount?: number;
+    earliestAvailability: string;
+    estimatedRate: string;
+    score: number;
+    reasoning: string;
+    criteriaMatched?: string[];
+  }) => {
+    setSelectedProvider({
+      providerId: provider.providerId,
+      providerName: provider.providerName,
+      phone: provider.phone,
+      earliestAvailability: provider.earliestAvailability,
+    });
+    setShowModal(true);
+  };
+
+  // Handler for confirming booking
+  const handleConfirmBooking = async () => {
+    setBookingLoading(true);
+    try {
+      // TODO: Call booking API endpoint
+      // await bookProvider(id, selectedProvider);
+      console.log("Booking provider:", selectedProvider);
+
+      // For now, just close the modal after a brief delay
+      await new Promise((resolve) => setTimeout(resolve, 1000));
+    } catch (error) {
+      console.error("Error booking provider:", error);
+    } finally {
+      setBookingLoading(false);
+      setShowModal(false);
+    }
+  };
 
   if (loading) {
     return (
@@ -182,6 +297,9 @@ export default function RequestDetails() {
           <h1 className="text-2xl font-bold text-slate-100">{request.title}</h1>
           <StatusBadge status={request.status} />
         </div>
+
+        {/* LiveStatus Component */}
+        <LiveStatus status={request.status} />
 
         <p className="text-slate-400 mb-6">{request.description}</p>
 
@@ -276,6 +394,29 @@ export default function RequestDetails() {
           )}
         </div>
       </div>
+
+      {/* RecommendedProviders Section */}
+      {(request.status === RequestStatus.ANALYZING ||
+        request.status === RequestStatus.COMPLETED) &&
+        recommendations && (
+          <div className="mt-8">
+            <RecommendedProviders
+              providers={recommendations.providers}
+              overallRecommendation={recommendations.overallRecommendation}
+              onSelect={handleProviderSelect}
+            />
+          </div>
+        )}
+
+      {/* SelectionModal */}
+      {showModal && selectedProvider && (
+        <SelectionModal
+          provider={selectedProvider}
+          onConfirm={handleConfirmBooking}
+          onCancel={() => setShowModal(false)}
+          loading={bookingLoading}
+        />
+      )}
     </div>
   );
 }

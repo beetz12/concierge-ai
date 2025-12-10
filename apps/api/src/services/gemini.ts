@@ -424,20 +424,3 @@ export const selectBestProvider = async (
   }
 };
 
-/**
- * Step 4: Schedule appointment (Simulated)
- */
-export const scheduleAppointment = async (
-  providerName: string,
-  details: string,
-): Promise<InteractionLog> => {
-  // Simulate scheduling delay
-  await new Promise((r) => setTimeout(r, 1500));
-
-  return {
-    timestamp: new Date().toISOString(),
-    stepName: "Booking Appointment",
-    detail: `Appointment confirmed with ${providerName}. Confirmation email sent to user.`,
-    status: "success",
-  };
-};

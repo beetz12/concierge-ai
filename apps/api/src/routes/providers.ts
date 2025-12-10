@@ -9,6 +9,7 @@ import {
   ProviderCallingService,
   ConcurrentCallService,
 } from "../services/vapi/index.js";
+import { RecommendationService } from "../services/recommendations/recommend.service.js";
 
 // Schema for Gemini-generated custom prompts
 const generatedPromptSchema = z.object({
@@ -57,10 +58,18 @@ const batchCallSchema = z.object({
   maxConcurrent: z.number().int().min(1).max(10).optional(),
 });
 
+// Recommendation schema for analyzing call results
+const recommendationSchema = z.object({
+  callResults: z.array(z.any()), // CallResult[] from vapi/types.ts
+  originalCriteria: z.string().min(1, "Original criteria is required"),
+  serviceRequestId: z.string().min(1, "Service request ID is required"),
+});
+
 export default async function providerRoutes(fastify: FastifyInstance) {
   // Create service instances with fastify logger
   const callingService = new ProviderCallingService(fastify.log);
   const concurrentCallService = new ConcurrentCallService(fastify.log);
+  const recommendationService = new RecommendationService();
 
   /**
    * POST /api/v1/providers/call
@@ -421,10 +430,21 @@ export default async function providerRoutes(fastify: FastifyInstance) {
         // Validate request body with Zod
         const validated = batchCallSchema.parse(request.body);
 
-        // Initiate batch calls
-        const result = await concurrentCallService.callProvidersBatch(
-          validated,
-        );
+        // Transform validated data to CallRequest[] format
+        const requests = validated.providers.map((provider) => ({
+          providerName: provider.name,
+          providerPhone: provider.phone,
+          serviceNeeded: validated.serviceNeeded,
+          userCriteria: validated.userCriteria,
+          location: validated.location,
+          urgency: validated.urgency,
+          serviceRequestId: validated.serviceRequestId,
+        }));
+
+        // Initiate batch calls using ProviderCallingService
+        const result = await callingService.callProvidersBatch(requests, {
+          maxConcurrent: validated.maxConcurrent,
+        });
 
         return reply.send({
           success: true,
@@ -432,6 +452,145 @@ export default async function providerRoutes(fastify: FastifyInstance) {
         });
       } catch (error: unknown) {
         request.log.error({ error }, "Batch provider calls failed");
+
+        // Handle Zod validation errors
+        if (error instanceof z.ZodError) {
+          return reply.status(400).send({
+            success: false,
+            error: "Validation error",
+            details: error.errors,
+          });
+        }
+
+        // Handle other errors
+        const errorMessage =
+          error instanceof Error ? error.message : "Unknown error";
+        return reply.status(500).send({
+          success: false,
+          error: errorMessage,
+        });
+      }
+    },
+  );
+
+  /**
+   * POST /api/v1/providers/recommend
+   * Analyze call results and recommend top 3 providers
+   */
+  fastify.post(
+    "/recommend",
+    {
+      schema: {
+        tags: ["providers"],
+        summary: "Analyze call results and recommend top 3 providers",
+        description:
+          "Uses Gemini 2.0 Flash to analyze call results from multiple providers and recommend the top 3 based on availability, rates, criteria match, call quality, and professionalism.",
+        body: {
+          type: "object",
+          required: ["callResults", "originalCriteria", "serviceRequestId"],
+          properties: {
+            callResults: {
+              type: "array",
+              description: "Array of call results from provider calls",
+              items: {
+                type: "object",
+                properties: {
+                  status: { type: "string" },
+                  callId: { type: "string" },
+                  duration: { type: "number" },
+                  transcript: { type: "string" },
+                  analysis: { type: "object" },
+                  provider: { type: "object" },
+                },
+              },
+            },
+            originalCriteria: {
+              type: "string",
+              description: "Original user criteria/requirements",
+            },
+            serviceRequestId: {
+              type: "string",
+              description: "ID of the service request",
+            },
+          },
+        },
+        response: {
+          200: {
+            type: "object",
+            properties: {
+              success: { type: "boolean" },
+              data: {
+                type: "object",
+                properties: {
+                  recommendations: {
+                    type: "array",
+                    items: {
+                      type: "object",
+                      properties: {
+                        providerName: { type: "string" },
+                        phone: { type: "string" },
+                        score: { type: "number" },
+                        reasoning: { type: "string" },
+                        criteriaMatched: {
+                          type: "array",
+                          items: { type: "string" },
+                        },
+                        earliestAvailability: { type: "string" },
+                        estimatedRate: { type: "string" },
+                        callQualityScore: { type: "number" },
+                        professionalismScore: { type: "number" },
+                      },
+                    },
+                  },
+                  overallRecommendation: { type: "string" },
+                  analysisNotes: { type: "string" },
+                  stats: {
+                    type: "object",
+                    properties: {
+                      totalCalls: { type: "number" },
+                      qualifiedProviders: { type: "number" },
+                      disqualifiedProviders: { type: "number" },
+                      failedCalls: { type: "number" },
+                    },
+                  },
+                },
+              },
+            },
+          },
+          400: {
+            type: "object",
+            properties: {
+              success: { type: "boolean" },
+              error: { type: "string" },
+              details: { type: "array" },
+            },
+          },
+          500: {
+            type: "object",
+            properties: {
+              success: { type: "boolean" },
+              error: { type: "string" },
+            },
+          },
+        },
+      },
+    },
+    async (request, reply) => {
+      try {
+        // Validate request body with Zod
+        const validated = recommendationSchema.parse(request.body);
+
+        // Generate recommendations
+        const recommendations = await recommendationService.generateRecommendations(
+          validated
+        );
+
+        return reply.send({
+          success: true,
+          data: recommendations,
+        });
+      } catch (error: unknown) {
+        request.log.error({ error }, "Provider recommendation failed");
 
         // Handle Zod validation errors
         if (error instanceof z.ZodError) {

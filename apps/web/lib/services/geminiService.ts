@@ -129,30 +129,6 @@ export const selectBestProvider = async (
 };
 
 /**
- * Step 4: Schedule appointment (Simulated)
- * Now calls backend API instead of Gemini directly
- */
-export const scheduleAppointment = async (
-  providerName: string,
-  details: string,
-): Promise<InteractionLog> => {
-  try {
-    const result = await apiRequest<InteractionLog>("/schedule-appointment", {
-      providerName,
-      details,
-    });
-    return result;
-  } catch (error: any) {
-    return {
-      timestamp: new Date().toISOString(),
-      stepName: "Booking Appointment",
-      detail: `Failed to schedule appointment: ${error.message}`,
-      status: "error",
-    };
-  }
-};
-
-/**
  * Analyze a direct task using Gemini to generate dynamic prompts
  * This creates task-specific prompts for VAPI calls based on the user's intent
  */

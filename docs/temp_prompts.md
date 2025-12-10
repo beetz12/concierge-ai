@@ -1,3 +1,50 @@
+Ok I need you to help me review '/Users/dave/Work/concierge-ai/docs/5_DAY_HACKATHON_SCHEDULE.md' and create a new 3-day plan based on the following because our implementation has drifted from the original plan. Currently there are now only three days remaining In the hackathon, we should create a 3-day plan based on the similar plan in the 5_DAY_HACKATHON_SCHEDULE.md. 
+1. please first analyze our project to check for completion of the tasks and mark the tasks that are completed and the tasks that are not completed. And also if the implementation is different from the plan. Then please update the completed task in the plan to reflect the current state. 
+2. We decided not to use Google Calendar But we are using Google Places API to get detailed information about providers.
+3. We're no longer automatically booking a slot for the user. Instead, we're use kestra (or direct api call) to research and find 10 suitable service providers, and calling each one until we find the three most qualified providers with their earliest availability. Then we will update the user via phone or text with the info. The user then decides which provider they want. Based on their response, our agent calls the chosen provider, schedules the appointment, and sends the user a confirmation using the same notification method once it's confirmed.
+4. We've added various CLine CLI commands to our package.json to help us with our workflow. 
+5. We have already deployed our app to vercel and railway so not sure if Final Docker applies but we still need to configure Kestra cloud.
+6. Unfortunately, we are going to have vapi initiate the call and stream the response to gemini and for gemini live to respond and stream the voice back to vapi.ai to the user but that will be fairly complex so we decided to generate a vapi.ai agent for now and use gemini to generate a custom prompt for the vapi.ai agent and for the vapi.agent to return the results back to us via webhook. After the call is completed, we will also call the vapi.ai endpoint manually to get the full conversation.
+7. Please also analyze @docs/architecture.md and all relevant docs if needed to Get a good understanding of our current state app state and update the 5_DAY_HACKATHON_SCHEDULE.md plan.
+
+
+Here are the crucial tasks remaining:
+
+1. Update the VAPI agent to be able to handle voicemails / no answer - it should immediately disconnect and mark the call as failed. 
+2. After each call we store the results in our db and after all calls have been completed, we need to analyze the results and select the top 3 providers with their earliest availability and provide the overall recommendation and reasons for the recommendation. We will need to create a new kestra workflow and direct api call to do this - recommend_providers.
+3. Show proper loading state and status updates in the UI while the calls are happening (maybe use supabase realtime)
+4. As each call is finished, show the transcript of the call (that we fetch from VAPI.ai) in the UI. 
+5. We need to update the UI to show the top 3 providers with their earliest availability and provide the overall recommendation and reasons for the recommendation. 
+6. We need to add web app capability (on the requests page) that shows users the recommended providers and allow the user to select one of the providers. 
+7. We need to add text capability (using twilio, make, etc) that lets us text the user with the recommended providers and allow the user to select one of the providers. 
+8. We need to add phone capability (using our existing vapi.ai integration) that lets us call the user with the recommended providers and allow the user to select one of the providers. 
+9. We need to create a new kestra workflow and direct call that will handle 6-8 above - call it 'notify_user'
+10. After the user confirms the provider they want, we need to dispatch a new agent to schedule the service with the provider. We need to create a new kestra workflow and direct call that will handle this.
+11. After the agent Successfully schedules the service with the provider, we need to 1) update the UI to show the confirmation and send a confirmation to the user via text or phone. We need to create a new kestra workflow and direct api call for this - 'show_confirmation'. We also need to update the database to indicate completion. 
+12. Before calling the service provider, make sure that the current time is within their operating hours So that we don't waste tokens calling service providers when they are not open for business. 
+13. Update the history page UI to show for each call the top 3 providers with their earliest availability (if applicable), the call transcript, and the overall recommendation and reasons for the recommendation. 
+14. Create 2 min walkthrough video demonstrating integration with the 4 sponsors.
+15. Integrate our app with Kestra Cloud and deploy our workflows to it. 
+
+Please analyze these issues  
+using your  multi-agent team with up to 3 agentsand come up with a unified plan with 90% confidence and wait for further instructions. My mortgage payment depends on this and If you get this right on the first try, I will tip you $200. ultrathink   
+
+Bonus nice to have tasks: 
+Add ability for the user to use their current location instead of entering their location. 
+Integrate gemini live into our app instead of using vapi.ai agent which will significantly improve the user experience but may add additional latency to the app. 
+
+Stats/Charts - Simple chart: "Time Saved by AI" vs "Manual Calling"
+Animation - Add framer-motion. Make the "Thinking" state look cool/premium.  
+Integrate Oumi AI into our app and use a custom trained model to select providers and make recommendations. 
+Seed data - Create "Fake History" so the app looks used/popular in the demo. 
+Implement supabase auth So that different users can have separate profiles and call history.
+
+
+
+
+
+
+
 
 Currently we're working on @about.md for @hackathon.md. We already have working direct api call and kestra code that will help us find providers and call them. 
 But now we also need to notify the user once we have found suitable providers. Here's what I would like to do: 
@@ -45,6 +92,15 @@ Ok perfect. Please update our @docs/architecture.md and all relevant
   specialized multi-agent team to analyze in parallel with up to 3 agents
   with 90% confidence and implement it. If you get this right on the first
   try, I will tip you $200. ultrathink
+
+# update completion docs
+
+  Ok perfect. Please update the @docs/3_DAY_HACKATHON_SPRINT.md and
+  @docs/3_DAY_HACKATHON_PLAN.md  to reflect completion of those tasks.
+  Use your
+  specialized multi-agent team to analyze in parallel with up to 3 agents
+  with 90% confidence and implement it. If you get this right on the first
+  try, I will tip you $200. ultrathink 
   
 
 # agent work

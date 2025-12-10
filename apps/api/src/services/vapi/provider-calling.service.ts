@@ -53,7 +53,8 @@ export class ProviderCallingService {
 
     try {
       if (useKestra) {
-        result = await this.kestraClient.triggerContactFlow(request);
+        // For single provider, triggerContactFlow returns CallResult
+        result = await this.kestraClient.triggerContactFlow(request) as CallResult;
       } else {
         result = await this.directVapiClient.initiateCall(request);
       }
@@ -115,7 +116,8 @@ export class ProviderCallingService {
 
   /**
    * Call multiple providers concurrently
-   * Routes to Kestra or Direct VAPI based on configuration and availability
+   * Makes a SINGLE routing decision at the start (Kestra vs Direct VAPI)
+   * All requests in the batch are processed using the same method
    */
   async callProvidersBatch(
     requests: CallRequest[],
@@ -126,6 +128,7 @@ export class ProviderCallingService {
       throw new Error("No requests provided for batch calling");
     }
 
+    // Single routing decision for entire batch
     const useKestra = await this.shouldUseKestra();
 
     this.logger.info(
@@ -134,54 +137,53 @@ export class ProviderCallingService {
         providerCount: requests.length,
         maxConcurrent: options?.maxConcurrent,
       },
-      "Initiating batch provider calls",
+      "Initiating batch provider calls (single routing decision)",
     );
 
     try {
-      let results: CallResult[];
-
       if (useKestra) {
-        // Use Kestra's concurrent flow
-        // Use first request for shared config (all requests should have same service/location/urgency)
-        const firstRequest = requests[0]!; // Safe due to validation above
-        results = await this.kestraClient.triggerConcurrentContactFlow(
-          requests.map((r) => ({ name: r.providerName, phone: r.providerPhone })),
-          {
-            serviceNeeded: firstRequest.serviceNeeded,
-            userCriteria: firstRequest.userCriteria,
-            location: firstRequest.location,
-            urgency: firstRequest.urgency,
-            maxConcurrent: options?.maxConcurrent,
-          },
-        );
-
-        // Calculate stats for Kestra results
-        const stats = {
-          total: results.length,
-          successful: results.filter((r) => r.status === "completed").length,
-          failed: results.filter((r) => r.status === "error").length,
-          timedOut: results.filter((r) => r.status === "timeout").length,
-          durationMs: 0, // Kestra handles timing internally
-        };
+        // Use Kestra's batch flow
+        const result = await this.kestraClient.triggerContactFlow(requests, options);
 
         this.logger.info(
-          { stats, method: "kestra" },
+          { stats: (result as ConcurrentCallResult).stats, method: "kestra" },
           "Batch provider calls completed via Kestra",
         );
 
-        return { results, stats };
+        return result as ConcurrentCallResult;
       }
 
-      // Fall back to direct concurrent calls
+      // Use Direct VAPI batch processing via callProvidersBatch()
       const concurrentService = new ConcurrentCallService(this.logger);
-      const result = await concurrentService.callAllProviders(requests, options);
 
-      // Save all results to database
-      await Promise.all(
-        result.results.map((callResult, index) =>
-          this.callResultService.saveCallResult(callResult, requests[index]!),
-        ),
-      );
+      // Extract common parameters from first request
+      // Note: All requests in a batch should have the same service details
+      const firstRequest = requests[0]!;
+
+      const batchResult = await concurrentService.callProvidersBatch({
+        providers: requests.map(req => ({
+          name: req.providerName,
+          phone: req.providerPhone,
+        })),
+        serviceNeeded: firstRequest.serviceNeeded,
+        userCriteria: firstRequest.userCriteria,
+        location: firstRequest.location,
+        urgency: firstRequest.urgency,
+        serviceRequestId: firstRequest.serviceRequestId,
+        maxConcurrent: options?.maxConcurrent,
+      });
+
+      // Convert BatchCallResult to ConcurrentCallResult
+      const result: ConcurrentCallResult = {
+        results: batchResult.results,
+        stats: {
+          total: batchResult.stats.total,
+          successful: batchResult.stats.completed,
+          failed: batchResult.stats.failed,
+          timedOut: batchResult.stats.timeout,
+          durationMs: batchResult.stats.duration,
+        },
+      };
 
       this.logger.info(
         { stats: result.stats, method: "direct_vapi" },

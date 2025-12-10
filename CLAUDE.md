@@ -4,7 +4,11 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-AI Concierge - An AI receptionist/secretary that researches local service providers and books appointments. Users submit requests (e.g., "find a plumber in Greenville SC"), the AI searches providers via Google Maps grounding, simulates phone calls to verify availability/rates, selects the best match, and schedules appointments.
+AI Concierge - An AI receptionist/secretary that researches local service providers and books appointments. Users submit requests (e.g., "find a plumber in Greenville SC"), the AI searches providers via Google Maps grounding, makes real phone calls (VAPI.ai) to verify availability/rates, recommends the **top 3 providers** with AI reasoning, and lets the user select which provider to book.
+
+**Two Request Types:**
+- **Research & Book** (`/new`) - Full flow: research → call → recommend top 3 → user selects → book
+- **Direct Task** (`/direct`) - Single call with dynamic prompts (negotiate, complain, inquire, etc.)
 
 ## Commands
 
@@ -118,7 +122,8 @@ Note: Gemini API key is backend-only (not exposed to client).
 - **Backend**: Fastify 5, Google GenAI SDK, Zod validation
 - **Database**: Supabase (PostgreSQL with RLS, real-time)
 - **AI**: Google Gemini 2.5 Flash with Google Maps grounding
-- **Voice AI**: VAPI.ai for automated provider calling
+- **Voice AI**: VAPI.ai for automated provider calling (concurrent calls supported)
+- **Workflow**: Kestra for orchestration (optional, with direct API fallback)
 
 ## VAPI Assistant Configuration
 
@@ -159,8 +164,10 @@ Benefits of hybrid mode:
 
 **Key Features**:
 
+- **Concurrent Calling**: Call up to 5 providers simultaneously via `VAPI_MAX_CONCURRENT_CALLS`
 - **Disqualification Detection**: Politely exits calls when provider cannot meet requirements
 - **Conditional Closing**: Uses callback script ("I'll call you back to schedule") only if ALL criteria met
 - **Earliest Availability**: Captures specific date/time when provider can start work
 - **Structured Data**: Returns typed results including `disqualified`, `disqualification_reason`, `earliest_availability`
 - **Single Person Tracking**: Ensures all requirements met by ONE person, not different technicians
+- **Top 3 Recommendations**: After calls complete, AI analyzes results and recommends top 3 providers with scores and reasoning

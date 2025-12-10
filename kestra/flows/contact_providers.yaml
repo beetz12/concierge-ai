@@ -1,4 +1,4 @@
-id: contact_providers_concurrent
+id: contact_providers
 namespace: ai_concierge
 description: "Call multiple service providers concurrently with controlled concurrency"
 

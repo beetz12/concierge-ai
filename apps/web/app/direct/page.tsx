@@ -12,7 +12,6 @@ import {
 import { Phone, User, MessageSquare, PhoneCall } from "lucide-react";
 import {
   simulateCall,
-  scheduleAppointment,
   analyzeDirectTask,
 } from "@/lib/services/geminiService";
 import {
@@ -157,21 +156,10 @@ export default function DirectTask() {
       }
 
       if (log.status === "success") {
-        let finalLogs = [log];
-        let outcome = "Call completed successfully.";
-
-        if (
-          data.task.toLowerCase().includes("schedule") ||
-          data.task.toLowerCase().includes("appointment")
-        ) {
-          const booking = await scheduleAppointment(data.name, data.task);
-          finalLogs.push(booking);
-          outcome = "Appointment scheduled.";
-        }
-
+        const outcome = "Call completed successfully.";
         updateRequest(reqId, {
           status: RequestStatus.COMPLETED,
-          interactions: finalLogs,
+          interactions: [log],
           finalOutcome: outcome,
         });
         // Update database
