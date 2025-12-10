@@ -42,10 +42,14 @@ interface VapiCall {
 export class DirectVapiClient {
   private client: VapiClient;
   private phoneNumberId: string;
+  private webhookUrl: string | undefined;
+  private backendUrl: string;
 
   constructor(private logger: Logger) {
     const apiKey = process.env.VAPI_API_KEY;
     this.phoneNumberId = process.env.VAPI_PHONE_NUMBER_ID || "";
+    this.webhookUrl = process.env.VAPI_WEBHOOK_URL;
+    this.backendUrl = process.env.BACKEND_URL || "http://localhost:8000";
 
     if (!apiKey || !this.phoneNumberId) {
       throw new Error(
@@ -54,11 +58,24 @@ export class DirectVapiClient {
     }
 
     this.client = new VapiClient({ token: apiKey });
+
+    if (this.webhookUrl) {
+      this.logger.info(
+        { webhookUrl: this.webhookUrl },
+        "Webhook URL configured - using hybrid mode",
+      );
+    } else {
+      this.logger.info({}, "No webhook URL - using polling-only mode");
+    }
   }
 
   /**
    * Initiate a phone call to a service provider
-   * This method handles the full call lifecycle: creation, polling, and result extraction
+   * This method handles the full call lifecycle: creation, polling/webhook, and result extraction
+   *
+   * HYBRID APPROACH:
+   * - When VAPI_WEBHOOK_URL is set: Try webhook first (fast path), fall back to polling
+   * - When not set: Use polling only (original behavior)
    */
   async initiateCall(request: CallRequest): Promise<CallResult> {
     // Pass customPrompt to createAssistantConfig for dynamic Direct Task prompts
@@ -69,22 +86,44 @@ export class DirectVapiClient {
         provider: request.providerName,
         phone: request.providerPhone,
         service: request.serviceNeeded,
+        webhookEnabled: !!this.webhookUrl,
       },
       "Initiating direct VAPI call",
     );
 
     try {
-      // Create the call using the SDK
-      // The SDK may return different response types, so we handle it generically
-      const callResponse = await this.client.calls.create({
+      // Build call parameters
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const callParams: any = {
         phoneNumberId: this.phoneNumberId,
         customer: {
           number: request.providerPhone,
           name: request.providerName,
         },
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        assistant: assistantConfig as any,
-      });
+        assistant: assistantConfig,
+      };
+
+      // Add webhook config when URL is available
+      if (this.webhookUrl) {
+        callParams.serverUrl = this.webhookUrl;
+        callParams.metadata = {
+          serviceRequestId: request.serviceRequestId || "",
+          providerId: request.providerId || "",
+          providerName: request.providerName,
+          providerPhone: request.providerPhone,
+          serviceNeeded: request.serviceNeeded,
+          userCriteria: request.userCriteria,
+          location: request.location,
+          urgency: request.urgency,
+        };
+        this.logger.debug(
+          { metadata: callParams.metadata },
+          "Adding webhook metadata to call",
+        );
+      }
+
+      // Create the call using the SDK
+      const callResponse = await this.client.calls.create(callParams);
 
       // Extract call data - handle both single call and batch responses
       const call = this.extractCallFromResponse(callResponse);
@@ -93,11 +132,28 @@ export class DirectVapiClient {
         {
           callId: call.id,
           status: call.status,
+          webhookEnabled: !!this.webhookUrl,
         },
         "VAPI call created",
       );
 
-      // Poll for completion
+      // HYBRID APPROACH: Try webhook first if configured
+      if (this.webhookUrl) {
+        const webhookResult = await this.waitForWebhookResult(call.id);
+        if (webhookResult) {
+          this.logger.info(
+            { callId: call.id },
+            "Got result from webhook (fast path)",
+          );
+          return webhookResult;
+        }
+        this.logger.info(
+          { callId: call.id },
+          "Webhook timeout, falling back to VAPI polling",
+        );
+      }
+
+      // FALLBACK: Poll VAPI directly (original behavior)
       const completedCall = await this.pollCallCompletion(call.id);
 
       return this.formatCallResult(completedCall, request);
@@ -112,6 +168,66 @@ export class DirectVapiClient {
 
       return this.createErrorResult(request, error);
     }
+  }
+
+  /**
+   * Wait for webhook result by polling the backend cache
+   * Returns the result if found, or null to trigger fallback to VAPI polling
+   */
+  private async waitForWebhookResult(
+    callId: string,
+    timeoutMs: number = 300000, // 5 minutes default
+  ): Promise<CallResult | null> {
+    const startTime = Date.now();
+    const pollInterval = 2000; // Poll backend cache every 2s
+
+    this.logger.debug(
+      { callId, timeoutMs },
+      "Waiting for webhook result from backend cache",
+    );
+
+    while (Date.now() - startTime < timeoutMs) {
+      try {
+        const response = await fetch(
+          `${this.backendUrl}/api/v1/vapi/calls/${callId}`,
+        );
+
+        if (response.ok) {
+          const result = (await response.json()) as { data?: CallResult & { dataStatus?: string } };
+          const data = result.data;
+
+          // Check if data is complete (webhook received and enriched)
+          if (data && data.dataStatus === "complete") {
+            this.logger.info(
+              { callId, dataStatus: data.dataStatus },
+              "Got complete result from webhook cache",
+            );
+            return data as CallResult;
+          }
+
+          // Data exists but still partial - keep waiting
+          if (data && data.dataStatus === "partial") {
+            this.logger.debug(
+              { callId, dataStatus: "partial" },
+              "Webhook received but enrichment in progress",
+            );
+          }
+        }
+      } catch (error) {
+        this.logger.debug(
+          { callId, error },
+          "Error polling webhook cache, will retry",
+        );
+      }
+
+      await new Promise((resolve) => setTimeout(resolve, pollInterval));
+    }
+
+    this.logger.warn(
+      { callId, timeoutMs },
+      "Webhook result timeout, will fall back to polling",
+    );
+    return null;
   }
 
   /**

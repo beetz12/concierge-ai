@@ -51,8 +51,12 @@ export async function searchProviders(
     body: JSON.stringify(request),
   });
 
+  // Check response.ok BEFORE parsing JSON to handle non-JSON error responses
   if (!response.ok) {
-    throw new Error(`Research failed: ${response.statusText}`);
+    const errorData = await response
+      .json()
+      .catch(() => ({ message: `Research failed: ${response.status}` }));
+    throw new Error(errorData.message || `Research failed: ${response.status}`);
   }
 
   const result = await response.json();
@@ -64,8 +68,16 @@ export async function searchProviders(
  */
 export async function getWorkflowStatus(): Promise<WorkflowStatus> {
   const response = await fetch("/api/v1/workflows/status");
+
+  // Check response.ok BEFORE parsing JSON to handle non-JSON error responses
   if (!response.ok) {
-    throw new Error(`Status check failed: ${response.statusText}`);
+    const errorData = await response
+      .json()
+      .catch(() => ({ message: `Status check failed: ${response.status}` }));
+    throw new Error(
+      errorData.message || `Status check failed: ${response.status}`,
+    );
   }
+
   return response.json();
 }

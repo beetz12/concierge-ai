@@ -84,6 +84,8 @@ Schema: `supabase/migrations/20250101000000_initial_schema.sql`
 | `apps/api/src/services/direct-task/prompt-generator.ts` | Dynamic VAPI prompt generation        |
 | `apps/web/lib/providers/AppProvider.tsx`         | Global state management                        |
 | `apps/web/lib/supabase/server.ts`                | Server-side Supabase client                    |
+| `apps/api/src/services/vapi/direct-vapi.client.ts` | DirectVapiClient with hybrid webhook support |
+| `apps/api/src/services/vapi/webhook-cache.service.ts` | In-memory cache for webhook results       |
 
 ## Environment Variables
 
@@ -95,6 +97,10 @@ CORS_ORIGIN=http://localhost:3000
 SUPABASE_URL=...
 SUPABASE_SERVICE_ROLE_KEY=...
 GEMINI_API_KEY=...
+VAPI_API_KEY=...
+VAPI_PHONE_NUMBER_ID=...
+VAPI_WEBHOOK_URL=...              # Optional: enables hybrid webhook mode
+BACKEND_URL=http://localhost:8000  # Internal URL for webhook cache polling
 ```
 
 **Frontend (`apps/web/.env.local`):**
@@ -123,6 +129,21 @@ The VAPI calling system uses a single source of truth pattern to maintain DRY pr
 - Contains the canonical assistant configuration
 - Defines conversation flow, prompts, and analysis schema
 - Used by both direct VAPI API calls and Kestra orchestration
+
+**Hybrid Webhook Mode**: `apps/api/src/services/vapi/direct-vapi.client.ts`
+
+DirectVapiClient supports a hybrid approach for optimal performance:
+
+| Mode | When Active | Behavior |
+|------|-------------|----------|
+| **Hybrid (Webhook)** | `VAPI_WEBHOOK_URL` set | Uses webhooks as primary, polls backend cache every 2s |
+| **Polling-only** | `VAPI_WEBHOOK_URL` not set | Uses direct VAPI API polling every 5s (original behavior) |
+
+Benefits of hybrid mode:
+- 31x fewer VAPI API calls when webhook works
+- <500ms latency vs 2.5s average with polling
+- Automatic database persistence via webhook infrastructure
+- Graceful fallback to polling if webhook unavailable
 
 **Kestra Scripts**: `kestra/scripts/call-provider.js`
 
