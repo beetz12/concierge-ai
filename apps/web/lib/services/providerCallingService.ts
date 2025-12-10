@@ -121,15 +121,18 @@ export async function callProviderLive(
       body: JSON.stringify(request),
     });
 
-    const result = await response.json();
-
+    // Check response.ok BEFORE parsing JSON to handle non-JSON error responses
     if (!response.ok) {
+      const errorData = await response
+        .json()
+        .catch(() => ({ error: `API error: ${response.status}` }));
       return {
         success: false,
-        error: result.error || `API error: ${response.status}`,
+        error: errorData.error || `API error: ${response.status}`,
       };
     }
 
+    const result = await response.json();
     return result;
   } catch (error) {
     const errorMessage =

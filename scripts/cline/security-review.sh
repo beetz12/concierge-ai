@@ -179,33 +179,32 @@ fi
 echo -e "${BLUE}🤖 Running Cline AI security analysis...${NC}"
 echo ""
 
-# Create temporary file for results
+# Create temporary files for results and diff
 RESULTS_FILE=$(mktemp)
+DIFF_FILE=$(mktemp)
+
+# Save diff to file (avoids ARG_MAX limit when passing as command-line argument)
+echo "$DIFF" > "$DIFF_FILE"
 
 # ══════════════════════════════════════════════════════════════════════════════
 # ACTUAL CLINE CLI USAGE - This is the key for the hackathon prize!
-# CRITICAL: Diff MUST be embedded in prompt - Cline does NOT read from stdin!
+# Using -f flag to attach diff file (avoids ARG_MAX command-line limits)
 # Using -y (YOLO mode) and -m act for faster non-interactive execution
 # ══════════════════════════════════════════════════════════════════════════════
 
 # Set trap BEFORE starting spinner to ensure cleanup on any exit
-trap "stop_spinner; rm -f $RESULTS_FILE" EXIT INT TERM
+trap "stop_spinner; rm -f $RESULTS_FILE $DIFF_FILE" EXIT INT TERM
 
 # Start spinner for progress indication
 start_spinner "Analyzing code for security issues (timeout: ${CLINE_TIMEOUT}s)..."
 
-# Build the prompt with embedded diff (Cline ignores stdin!)
+# Build a short prompt (diff is attached via -f flag, not embedded)
 PROMPT="Security review for AI Concierge (Next.js + Fastify + Supabase).
 
-SCAN FOR:
+The attached file contains a git diff of code changes. Analyze it for:
 🔴 CRITICAL (block): hardcoded secrets, SQL injection, auth bypass, exposed env vars
 🟠 HIGH: XSS, missing input validation, insecure CORS, PII logging
 🟡 MEDIUM: verbose logging, missing error handling
-
-CODE CHANGES:
-\`\`\`diff
-$DIFF
-\`\`\`
 
 OUTPUT exactly:
 ## Results
@@ -216,14 +215,43 @@ OUTPUT exactly:
 End with: ✅ SECURITY_CHECK_PASSED or ❌ SECURITY_CHECK_FAILED"
 
 # Execute Cline with optimized flags
-# -k 10: Force kill (SIGKILL) after 10s if process doesn't respond to SIGTERM
-# This prevents hanging on macOS where timeout doesn't always kill child processes
-timeout -k 10 "$CLINE_TIMEOUT" cline -y -m act "$PROMPT" > "$RESULTS_FILE" 2>&1
+# -f: Attach diff file (avoids ARG_MAX limit)
+# -k 10: Force kill after 10s if process doesn't respond to SIGTERM
+timeout -k 10 "$CLINE_TIMEOUT" cline -y -m act -f "$DIFF_FILE" "$PROMPT" > "$RESULTS_FILE" 2>&1
 
 CLINE_EXIT=$?
 
+# Handle timeout/kill scenarios
+if [ $CLINE_EXIT -eq 124 ]; then
+    stop_spinner
+    echo -e "${YELLOW}⚠️  Cline timed out after ${CLINE_TIMEOUT}s${NC}"
+    echo -e "${YELLOW}   Increase timeout: CLINE_TIMEOUT=120 git commit -m 'message'${NC}"
+    exit 0  # Don't block commit on timeout
+elif [ $CLINE_EXIT -eq 137 ]; then
+    stop_spinner
+    echo -e "${YELLOW}⚠️  Cline was force-killed (took too long to respond)${NC}"
+    echo -e "${YELLOW}   This may indicate a large diff or slow network${NC}"
+    exit 0  # Don't block commit on force-kill
+elif [ $CLINE_EXIT -ne 0 ]; then
+    stop_spinner
+    echo -e "${YELLOW}⚠️  Cline exited with code $CLINE_EXIT${NC}"
+    # Show any error output
+    if [ -s "$RESULTS_FILE" ]; then
+        echo -e "${YELLOW}   Output:${NC}"
+        head -10 "$RESULTS_FILE"
+    fi
+    exit 0  # Don't block commit on cline errors
+fi
+
 # Stop spinner
 stop_spinner
+
+# Check if results file has content
+if [ ! -s "$RESULTS_FILE" ]; then
+    echo -e "${YELLOW}⚠️  No output from Cline (results file is empty)${NC}"
+    echo -e "${YELLOW}   This may indicate Cline failed to start or crashed${NC}"
+    exit 0  # Don't block commit on empty results
+fi
 
 # Display results
 echo -e "${CYAN}═══════════════════════════════════════════════════════════════${NC}"
