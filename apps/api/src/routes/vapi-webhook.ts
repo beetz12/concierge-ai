@@ -598,6 +598,14 @@ function transformVapiWebhookToCallResult(
   const userCriteria = (metadata.userCriteria as string) || "";
   const urgency = (metadata.urgency as string) || "flexible";
 
+  // Extract and format messages array
+  const messages = call.messages || [];
+  const formattedMessages = messages.map((msg) => ({
+    role: msg.role,
+    message: msg.message,
+    time: msg.time,
+  }));
+
   return {
     status,
     callId: call.id,
@@ -621,6 +629,7 @@ function transformVapiWebhookToCallResult(
       urgency,
     },
     cost: call.cost || call.costBreakdown?.total || 0,
+    messages: formattedMessages,
   };
 }
 

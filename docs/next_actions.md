@@ -1,4 +1,10 @@
-tasks:
+*tasks*:
+
+ketra cloud integration
+fix ui display
+
+
+
 0. update existing research feature to select 10 providers, capturing distance, location, phone, hours of operation, and rating that meet the user's criteria. 
 1. wire up vapi / research features to current /new page 
 - requests new service provider, 

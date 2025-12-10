@@ -29,9 +29,22 @@ import {
 const LIVE_CALL_ENABLED =
   process.env.NEXT_PUBLIC_LIVE_CALL_ENABLED === "true";
 
-// Admin test mode: when set, only call this test number instead of actual phone
-const ADMIN_TEST_NUMBER = process.env.NEXT_PUBLIC_ADMIN_TEST_NUMBER;
-const isAdminTestMode = !!ADMIN_TEST_NUMBER;
+// Admin test mode: Array of test phone numbers for testing
+// For direct tasks, uses the first test phone in the array
+const ADMIN_TEST_PHONES_RAW = process.env.NEXT_PUBLIC_ADMIN_TEST_PHONES;
+const ADMIN_TEST_PHONES = ADMIN_TEST_PHONES_RAW
+  ? ADMIN_TEST_PHONES_RAW.split(",").map((p) => p.trim()).filter(Boolean)
+  : [];
+
+// Backward compatibility: single test number (deprecated)
+const ADMIN_TEST_NUMBER_LEGACY = process.env.NEXT_PUBLIC_ADMIN_TEST_NUMBER;
+if (ADMIN_TEST_NUMBER_LEGACY && ADMIN_TEST_PHONES.length === 0) {
+  ADMIN_TEST_PHONES.push(ADMIN_TEST_NUMBER_LEGACY);
+}
+
+const isAdminTestMode = ADMIN_TEST_PHONES.length > 0;
+// For direct tasks, use the first test phone
+const ADMIN_TEST_NUMBER = ADMIN_TEST_PHONES[0] || null;
 
 export default function DirectTask() {
   const router = useRouter();

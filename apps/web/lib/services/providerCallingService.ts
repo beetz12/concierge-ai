@@ -52,6 +52,11 @@ export interface CallProviderResponse {
     duration?: number;
     endedReason?: string;
     transcript?: string;
+    messages?: Array<{
+      role: string;
+      message: string;
+      time?: number;
+    }>;
     analysis?: {
       summary?: string;
       structuredData?: Record<string, unknown>;
@@ -169,36 +174,75 @@ export function callResponseToInteractionLog(
   let status: "success" | "error" | "warning" = "success";
   let detail = "";
 
+  // Status logic:
+  // - "completed" status = "success" (the call itself succeeded)
+  // - Detail message indicates if provider was disqualified or criteria unmet
+  // - Only set warning/error for actual call failures
   if (data.status === "completed") {
     const structuredData = data.analysis?.structuredData as Record<string, unknown> | undefined;
+    status = "success"; // Completed call is always a success
 
-    // Check if provider was disqualified
     if (structuredData?.disqualified) {
-      status = "warning";
-      detail = `${providerName} was disqualified: ${structuredData.disqualification_reason || "Does not meet criteria"}`;
+      detail = `${providerName}: Disqualified - ${structuredData.disqualification_reason || "Does not meet requirements"}`;
     } else if (structuredData?.all_criteria_met === false) {
-      status = "warning";
-      detail = `${providerName}: ${data.analysis?.summary || "Does not meet all criteria"}`;
+      detail = `${providerName}: ${data.analysis?.summary || "Some criteria not met"}`;
     } else {
-      // Successful call with matching criteria
+      // Successful call with all criteria met - show summary and available data
       const availability = structuredData?.earliest_availability || structuredData?.availability;
       const rate = structuredData?.estimated_rate;
       detail = `${providerName}: ${data.analysis?.summary || "Call completed successfully"}`;
       if (availability) detail += ` Available: ${availability}.`;
       if (rate) detail += ` Rate: ${rate}.`;
     }
-  } else if (data.status === "no_answer" || data.endedReason === "no-answer") {
+  } else if (data.status === "no_answer") {
     status = "warning";
-    detail = `${providerName}: No answer - call went unanswered`;
+    detail = `${providerName}: No answer`;
   } else if (data.status === "voicemail") {
     status = "warning";
     detail = `${providerName}: Reached voicemail`;
-  } else if (data.status === "failed" || data.status === "error") {
+  } else if (data.status === "error" || data.status === "timeout") {
     status = "error";
-    detail = `${providerName}: Call failed - ${data.error || data.endedReason || "Unknown error"}`;
+    detail = `${providerName}: ${data.error || "Call failed"}`;
   } else {
     status = "warning";
-    detail = `${providerName}: ${data.analysis?.summary || `Call ended: ${data.endedReason || "Unknown reason"}`}`;
+    detail = `${providerName}: ${data.endedReason || "Unknown status"}`;
+  }
+
+  // Transform VAPI messages array to UI transcript format
+  let transcript: { speaker: string; text: string }[] | undefined;
+
+  if (data.messages && Array.isArray(data.messages) && data.messages.length > 0) {
+    const speakerMap: Record<string, string> = {
+      assistant: "AI",
+      user: "Provider",
+      bot: "AI"  // Some VAPI versions use "bot"
+    };
+    transcript = data.messages
+      .filter((m: { role: string }) => m.role !== "system" && m.role !== "function")
+      .map((m: { role: string; message: string }) => ({
+        speaker: speakerMap[m.role] || m.role,
+        text: m.message
+      }));
+  }
+
+  // Fallback: parse raw transcript string if messages not available
+  if (!transcript && data.transcript && typeof data.transcript === "string" && data.transcript.length > 0) {
+    transcript = data.transcript
+      .split("\n")
+      .filter((line: string) => line.trim())
+      .map((line: string) => {
+        const colonIndex = line.indexOf(": ");
+        if (colonIndex > -1) {
+          const speaker = line.substring(0, colonIndex);
+          const speakerMap: Record<string, string> = { Assistant: "AI", User: "Provider" };
+          return {
+            speaker: speakerMap[speaker] || speaker,
+            text: line.substring(colonIndex + 2),
+          };
+        }
+        return { speaker: "Call", text: line };
+      })
+      .filter((entry: { text: string }) => entry.text.trim().length > 0);
   }
 
   return {
@@ -206,6 +250,7 @@ export function callResponseToInteractionLog(
     stepName: `Calling ${providerName}`,
     detail,
     status,
+    transcript,
     // Store additional data for analysis phase
     callData: {
       callId: data.callId,

@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useRef, useState } from "react";
+import React, { useEffect, useRef, useState, useCallback } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
 import { useAppContext } from "@/lib/providers/AppProvider";
@@ -119,6 +119,8 @@ export default function RequestDetails() {
     }>;
     overallRecommendation: string;
   } | null>(null);
+  const [recommendationsLoading, setRecommendationsLoading] = useState(false);
+  const [recommendationsChecked, setRecommendationsChecked] = useState(false);
 
   // Use realtime data if available, otherwise local request, otherwise DB request
   const request = realtimeRequest || localRequest || dbRequest;
@@ -129,6 +131,138 @@ export default function RequestDetails() {
       /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
     return uuidRegex.test(str);
   };
+
+  // Check if all provider calls are complete and generate recommendations
+  const checkAndGenerateRecommendations = useCallback(async () => {
+    // Only check once and only for valid UUIDs
+    if (recommendationsChecked || !id || !isValidUuid(id) || !request) {
+      return;
+    }
+
+    try {
+      const supabase = createClient();
+
+      // Fetch all providers for this request with their call results
+      const { data: providers, error } = await supabase
+        .from("providers")
+        .select("*")
+        .eq("request_id", id);
+
+      if (error) {
+        console.error("Error fetching providers:", error);
+        return;
+      }
+
+      if (!providers || providers.length === 0) {
+        console.log("No providers found for request");
+        return;
+      }
+
+      // Check if all providers have been called (have call_status)
+      const calledProviders = providers.filter((p) => p.call_status);
+      const allProvidersCalled = calledProviders.length === providers.length;
+
+      console.log(
+        `Providers called: ${calledProviders.length}/${providers.length}`
+      );
+
+      if (!allProvidersCalled) {
+        console.log("Not all providers have been called yet, waiting...");
+        return;
+      }
+
+      // Mark as checked to prevent duplicate API calls
+      setRecommendationsChecked(true);
+      setRecommendationsLoading(true);
+
+      // Transform database providers to CallResult format for the API
+      const callResults = calledProviders.map((p) => {
+        // Type cast call_result from JSONB
+        const callResultData = p.call_result as any;
+
+        return {
+          status: p.call_status,
+          callId: p.call_id || "",
+          callMethod: p.call_method || "direct_vapi",
+          duration: p.call_duration_minutes || 0,
+          endedReason: callResultData?.endedReason || "",
+          transcript: p.call_transcript || "",
+          analysis: callResultData?.analysis || {
+            summary: p.call_summary || "",
+            structuredData: callResultData?.structuredData || {},
+            successEvaluation: "",
+          },
+          provider: {
+            name: p.name,
+            phone: p.phone || "",
+            service: request.title || "",
+            location: request.location || "",
+          },
+          request: {
+            criteria: request.criteria || "",
+            urgency: "within_2_days",
+          },
+        };
+      });
+
+      console.log("Calling recommendations API with", callResults.length, "results");
+
+      // Call the recommendations API
+      const response = await fetch("/api/v1/providers/recommend", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          callResults,
+          originalCriteria: request.criteria || "",
+          serviceRequestId: id,
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error(`Recommendations API failed: ${response.status}`);
+      }
+
+      const result = await response.json();
+
+      if (result.success && result.data) {
+        const { recommendations: recs, overallRecommendation } = result.data;
+
+        // Transform backend format to frontend format
+        const transformedProviders = recs.map((rec: any) => {
+          // Find the matching provider to get rating and review count
+          const dbProvider = providers.find((p) => p.name === rec.providerName);
+
+          return {
+            providerId: dbProvider?.id || "",
+            providerName: rec.providerName,
+            phone: rec.phone,
+            rating: dbProvider?.rating || 4.5,
+            reviewCount: dbProvider?.review_count,
+            earliestAvailability: rec.earliestAvailability || "Not specified",
+            estimatedRate: rec.estimatedRate || "Not specified",
+            score: rec.score,
+            reasoning: rec.reasoning,
+            criteriaMatched: rec.criteriaMatched || [],
+          };
+        });
+
+        setRecommendations({
+          providers: transformedProviders,
+          overallRecommendation,
+        });
+
+        console.log("Recommendations generated:", transformedProviders.length);
+      } else {
+        console.error("Invalid response from recommendations API:", result);
+      }
+    } catch (error) {
+      console.error("Error generating recommendations:", error);
+    } finally {
+      setRecommendationsLoading(false);
+    }
+  }, [id, request, recommendationsChecked]);
 
   // Fetch from database if not in localStorage
   useEffect(() => {
@@ -143,35 +277,71 @@ export default function RequestDetails() {
       setLoading(true);
       const supabase = createClient();
 
-      supabase
-        .from("service_requests")
-        .select("*")
-        .eq("id", id)
-        .single()
-        .then(({ data, error: fetchError }) => {
-          if (fetchError) {
-            setError("Request not found");
-          } else if (data) {
-            // Convert DB format to frontend format
-            const converted: ServiceRequest = {
-              id: data.id,
-              type: data.type as RequestType,
-              title: data.title,
-              description: data.description,
-              criteria: data.criteria,
-              location: data.location || undefined,
-              status: data.status as RequestStatus,
-              createdAt: data.created_at,
-              providersFound: [],
-              interactions: [],
-              finalOutcome: data.final_outcome || undefined,
-            };
-            setDbRequest(converted);
-            // Also add to context so it persists during this session
-            addRequest(converted);
-          }
+      // Fetch service request with providers and interaction logs
+      Promise.all([
+        supabase
+          .from("service_requests")
+          .select("*")
+          .eq("id", id)
+          .single(),
+        supabase
+          .from("providers")
+          .select("*")
+          .eq("request_id", id),
+        supabase
+          .from("interaction_logs")
+          .select("*")
+          .eq("request_id", id)
+          .order("timestamp", { ascending: true }),
+      ]).then(([requestResult, providersResult, logsResult]) => {
+        if (requestResult.error) {
+          setError("Request not found");
           setLoading(false);
-        });
+          return;
+        }
+
+        const data = requestResult.data;
+        const providers = providersResult.data || [];
+        const logs = logsResult.data || [];
+
+        // Convert DB format to frontend format
+        const converted: ServiceRequest = {
+          id: data.id,
+          type: data.type as RequestType,
+          title: data.title,
+          description: data.description,
+          criteria: data.criteria,
+          location: data.location || undefined,
+          status: data.status as RequestStatus,
+          createdAt: data.created_at,
+          providersFound: providers.map((p) => ({
+            id: p.id,
+            name: p.name,
+            phone: p.phone || "",
+            rating: p.rating || 0,
+            address: p.address || "",
+            source: p.source || "User Input",
+          })),
+          interactions: logs.map((log) => ({
+            timestamp: log.timestamp,
+            stepName: log.step_name,
+            detail: log.detail,
+            status: log.status as "success" | "warning" | "error" | "info",
+            transcript: log.transcript as { speaker: string; text: string }[] | undefined,
+          })),
+          finalOutcome: data.final_outcome || undefined,
+          directContactInfo: data.direct_contact_info
+            ? {
+                name: (data.direct_contact_info as any).name,
+                phone: (data.direct_contact_info as any).phone,
+              }
+            : undefined,
+        };
+        setDbRequest(converted);
+        // Also add to context so it persists during this session
+        addRequest(converted);
+        setLoading(false);
+      });
     }
   }, [id, localRequest, dbRequest, loading, addRequest]);
 
@@ -213,17 +383,122 @@ export default function RequestDetails() {
           }
         }
       )
+      .on(
+        "postgres_changes",
+        {
+          event: "UPDATE",
+          schema: "public",
+          table: "providers",
+          filter: `request_id=eq.${id}`,
+        },
+        (payload) => {
+          console.log("Provider update received:", payload);
+          // Trigger recommendations check when provider calls complete
+          if (payload.new && payload.new.call_status) {
+            checkAndGenerateRecommendations();
+          }
+        }
+      )
+      .on(
+        "postgres_changes",
+        {
+          event: "INSERT",
+          schema: "public",
+          table: "interaction_logs",
+          filter: `request_id=eq.${id}`,
+        },
+        (payload) => {
+          console.log("Interaction log added:", payload);
+          // Refetch all data when new interaction log is added
+          if (payload.new) {
+            const supabase2 = createClient();
+            Promise.all([
+              supabase2
+                .from("service_requests")
+                .select("*")
+                .eq("id", id)
+                .single(),
+              supabase2
+                .from("providers")
+                .select("*")
+                .eq("request_id", id),
+              supabase2
+                .from("interaction_logs")
+                .select("*")
+                .eq("request_id", id)
+                .order("timestamp", { ascending: true }),
+            ]).then(([requestResult, providersResult, logsResult]) => {
+              if (requestResult.data) {
+                const data = requestResult.data;
+                const providers = providersResult.data || [];
+                const logs = logsResult.data || [];
+
+                const converted: ServiceRequest = {
+                  id: data.id,
+                  type: data.type as RequestType,
+                  title: data.title,
+                  description: data.description,
+                  criteria: data.criteria,
+                  location: data.location || undefined,
+                  status: data.status as RequestStatus,
+                  createdAt: data.created_at,
+                  providersFound: providers.map((p) => ({
+                    id: p.id,
+                    name: p.name,
+                    phone: p.phone || "",
+                    rating: p.rating || 0,
+                    address: p.address || "",
+                    source: p.source || "User Input",
+                  })),
+                  interactions: logs.map((log) => ({
+                    timestamp: log.timestamp,
+                    stepName: log.step_name,
+                    detail: log.detail,
+                    status: log.status as "success" | "warning" | "error" | "info",
+                    transcript: log.transcript as { speaker: string; text: string }[] | undefined,
+                  })),
+                  finalOutcome: data.final_outcome || undefined,
+                  directContactInfo: data.direct_contact_info
+                    ? {
+                        name: (data.direct_contact_info as any).name,
+                        phone: (data.direct_contact_info as any).phone,
+                      }
+                    : undefined,
+                };
+                setRealtimeRequest(converted);
+                addRequest(converted);
+              }
+            });
+          }
+        }
+      )
       .subscribe();
 
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [id, addRequest]);
+  }, [id, addRequest, checkAndGenerateRecommendations]);
 
   useEffect(() => {
     // Auto scroll to bottom when new logs arrive
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [request?.interactions.length]);
+
+  // Check for recommendations when status changes to ANALYZING or COMPLETED
+  useEffect(() => {
+    if (
+      request &&
+      (request.status === RequestStatus.ANALYZING ||
+        request.status === RequestStatus.COMPLETED) &&
+      !recommendationsChecked &&
+      !recommendationsLoading
+    ) {
+      console.log(
+        `Request status is ${request.status}, checking for recommendations...`
+      );
+      checkAndGenerateRecommendations();
+    }
+  }, [request?.status, recommendationsChecked, recommendationsLoading, checkAndGenerateRecommendations]);
 
   // Handler for provider selection
   const handleProviderSelect = (provider: {
@@ -249,19 +524,62 @@ export default function RequestDetails() {
 
   // Handler for confirming booking
   const handleConfirmBooking = async () => {
+    if (!selectedProvider || !request) return;
+
     setBookingLoading(true);
     try {
-      // TODO: Call booking API endpoint
-      // await bookProvider(id, selectedProvider);
-      console.log("Booking provider:", selectedProvider);
+      console.log("Initiating booking call for:", selectedProvider);
 
-      // For now, just close the modal after a brief delay
-      await new Promise((resolve) => setTimeout(resolve, 1000));
+      // Call the booking API endpoint
+      const response = await fetch("/api/v1/providers/book", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          providerId: selectedProvider.providerId,
+          providerName: selectedProvider.providerName,
+          providerPhone: selectedProvider.phone,
+          serviceNeeded: request.title,
+          serviceRequestId: id,
+          location: request.location || "",
+          preferredDateTime: selectedProvider.earliestAvailability,
+          additionalNotes: request.criteria,
+        }),
+      });
+
+      const result = await response.json();
+
+      if (!response.ok) {
+        throw new Error(result.error || "Failed to book appointment");
+      }
+
+      console.log("Booking call result:", result);
+
+      // Check if booking was confirmed
+      if (result.data.bookingConfirmed) {
+        // Success - show confirmation
+        alert(
+          `Appointment confirmed!\n\nProvider: ${selectedProvider.providerName}\nDate: ${result.data.confirmedDate}\nTime: ${result.data.confirmedTime}\n${result.data.confirmationNumber ? `Confirmation: ${result.data.confirmationNumber}` : ""}`
+        );
+
+        // Close modal
+        setShowModal(false);
+
+        // Real-time subscription will handle updating the UI with the new status
+      } else {
+        // Booking failed
+        throw new Error(
+          `Booking unsuccessful: ${result.data.callOutcome || "Unknown reason"}\n\nNext steps: ${result.data.nextSteps || "Please try again later"}`
+        );
+      }
     } catch (error) {
       console.error("Error booking provider:", error);
+      alert(
+        `Failed to book appointment: ${error instanceof Error ? error.message : "Unknown error"}`
+      );
     } finally {
       setBookingLoading(false);
-      setShowModal(false);
     }
   };
 
@@ -397,16 +715,24 @@ export default function RequestDetails() {
 
       {/* RecommendedProviders Section */}
       {(request.status === RequestStatus.ANALYZING ||
-        request.status === RequestStatus.COMPLETED) &&
-        recommendations && (
-          <div className="mt-8">
+        request.status === RequestStatus.COMPLETED) && (
+        <div className="mt-8">
+          {recommendationsLoading ? (
+            <RecommendedProviders
+              providers={[]}
+              overallRecommendation=""
+              onSelect={handleProviderSelect}
+              loading={true}
+            />
+          ) : recommendations ? (
             <RecommendedProviders
               providers={recommendations.providers}
               overallRecommendation={recommendations.overallRecommendation}
               onSelect={handleProviderSelect}
             />
-          </div>
-        )}
+          ) : null}
+        </div>
+      )}
 
       {/* SelectionModal */}
       {showModal && selectedProvider && (
