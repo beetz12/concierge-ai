@@ -702,6 +702,107 @@ export interface CallRequest {
 | `/api/v1/providers/call`        | POST   | Initiate phone call to provider             |
 | `/api/v1/providers/call/status` | GET    | Check system status (active method, health) |
 
+### Admin Test Mode Architecture (December 2025)
+
+The Admin Test Mode allows developers to safely test VAPI integration with real phone calls without calling actual providers. The architecture supports both single-phone testing (legacy) and multi-phone concurrent testing (recommended).
+
+#### Array-Based Test Phone Numbers
+
+**Problem Solved:**
+
+Previously, `NEXT_PUBLIC_ADMIN_TEST_NUMBER` only supported a single test phone number. When testing concurrent calling (5 providers simultaneously), all calls went to the same phone - not a realistic test scenario.
+
+**Solution:** `NEXT_PUBLIC_ADMIN_TEST_PHONES` accepts a comma-separated array of test phone numbers:
+
+```bash
+# In apps/web/.env.local
+NEXT_PUBLIC_ADMIN_TEST_PHONES=+13105551234,+13105555678,+13105559012
+```
+
+**Behavior:**
+
+| Config | Research Returns | Providers Called | Phone Assignment |
+|--------|------------------|------------------|------------------|
+| 3 test phones | 10 providers | 3 | Provider 1 → Phone 1, Provider 2 → Phone 2, Provider 3 → Phone 3 |
+| 1 test phone | 10 providers | 1 | Provider 1 → Phone 1 (backward compat) |
+| No test phones | 10 providers | 10 | Each provider uses their real phone |
+
+#### Implementation Flow
+
+```mermaid
+flowchart TD
+    A[User Submits Request] --> B[Research Returns N Providers]
+    B --> C{Test Mode?}
+    C -->|Yes| D[Parse ADMIN_TEST_PHONES Array]
+    C -->|No| E[Use All Providers with Real Phones]
+    D --> F[Slice Providers to Array Length]
+    F --> G[Map Phones 1:1 to Providers]
+    G --> H[Execute Concurrent Calls]
+    E --> H
+    H --> I[Results Display]
+
+    style D fill:#4a90e2,color:#fff
+    style F fill:#7bed9f,color:#000
+    style G fill:#7bed9f,color:#000
+```
+
+#### Key Implementation Files
+
+| File | Purpose |
+|------|---------|
+| `apps/web/app/new/page.tsx` | Parses `ADMIN_TEST_PHONES`, limits providers, maps phones 1:1 |
+| `apps/web/app/direct/page.tsx` | Uses first test phone from array for single direct tasks |
+| `apps/web/.env.local.example` | Documents both new and legacy env vars |
+
+#### Code Implementation
+
+```typescript
+// apps/web/app/new/page.tsx
+
+// Parse array of test phones (comma-separated)
+const ADMIN_TEST_PHONES_RAW = process.env.NEXT_PUBLIC_ADMIN_TEST_PHONES;
+const ADMIN_TEST_PHONES = ADMIN_TEST_PHONES_RAW
+  ? ADMIN_TEST_PHONES_RAW.split(",").map((p) => p.trim()).filter(Boolean)
+  : [];
+
+// Backward compatibility with legacy single number
+const ADMIN_TEST_NUMBER_LEGACY = process.env.NEXT_PUBLIC_ADMIN_TEST_NUMBER;
+if (ADMIN_TEST_NUMBER_LEGACY && ADMIN_TEST_PHONES.length === 0) {
+  ADMIN_TEST_PHONES.push(ADMIN_TEST_NUMBER_LEGACY);
+}
+
+const isAdminTestMode = ADMIN_TEST_PHONES.length > 0;
+
+// In the call loop:
+// 1. Limit providers to test phone count
+const providersToCall = isAdminTestMode
+  ? providers.slice(0, ADMIN_TEST_PHONES.length)
+  : providers;
+
+// 2. Map test phones 1:1 to providers
+const phoneToCall = isAdminTestMode
+  ? normalizePhoneNumber(ADMIN_TEST_PHONES[providerIndex]!)
+  : normalizePhoneNumber(provider.phone);
+```
+
+#### Console Logging in Test Mode
+
+When running in test mode, the console shows clear mapping information:
+
+```
+[Concierge] Starting calls to 3 providers (LIVE_CALL_ENABLED=true, ADMIN_TEST_MODE=true)
+[Concierge] ADMIN TEST MODE: Will call 3 provider(s) using test phones: +13105551234, +13105555678, +13105559012
+[Concierge] Phone mapping: ABC Plumbing → +13105551234, XYZ Electric → +13105555678, 123 HVAC → +13105559012
+```
+
+#### Backward Compatibility
+
+The implementation maintains full backward compatibility:
+
+1. **New array variable takes precedence** - If `ADMIN_TEST_PHONES` is set, it's used
+2. **Legacy single variable still works** - If only `ADMIN_TEST_NUMBER` is set, it's treated as an array with one element
+3. **No breaking changes** - Existing `.env.local` files with single test number continue to work
+
 ### Environment Configuration
 
 ```bash

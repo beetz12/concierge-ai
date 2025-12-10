@@ -134,7 +134,16 @@ BACKEND_URL=http://localhost:8000  # Internal URL for webhook cache polling
 ```
 NEXT_PUBLIC_SUPABASE_URL=...
 NEXT_PUBLIC_SUPABASE_ANON_KEY=...
+NEXT_PUBLIC_LIVE_CALL_ENABLED=true          # Enable real VAPI calls
+NEXT_PUBLIC_ADMIN_TEST_PHONES=+1234,+5678   # Comma-separated test phones (recommended)
+NEXT_PUBLIC_ADMIN_TEST_NUMBER=+1234         # Legacy single test phone (deprecated)
 ```
+
+**Admin Test Phone Array** (`NEXT_PUBLIC_ADMIN_TEST_PHONES`):
+- Comma-separated E.164 phone numbers for concurrent testing
+- Limits providers called to the number of test phones
+- Maps phones 1:1 to providers (Provider 1 → Phone 1, Provider 2 → Phone 2)
+- Backward compatible: `ADMIN_TEST_NUMBER` still works if `ADMIN_TEST_PHONES` is not set
 
 Note: Gemini API key is backend-only (not exposed to client).
 

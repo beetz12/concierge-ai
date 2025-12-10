@@ -131,30 +131,42 @@ The `/new` page supports both simulated (Gemini-based) calls and real VAPI phone
 | Variable | Values | Description |
 |----------|--------|-------------|
 | `NEXT_PUBLIC_LIVE_CALL_ENABLED` | `true` / `false` | Enable real VAPI calls (`false` = simulated) |
-| `NEXT_PUBLIC_ADMIN_TEST_NUMBER` | E.164 phone (e.g., `+15551234567`) | Admin test mode override |
+| `NEXT_PUBLIC_ADMIN_TEST_PHONES` | Comma-separated E.164 phones | **Recommended**: Array of test phones for concurrent testing |
+| `NEXT_PUBLIC_ADMIN_TEST_NUMBER` | Single E.164 phone | **Deprecated**: Legacy single test number (still supported) |
 
 #### Configuration Modes
 
 **Development (Default)** - Simulated calls via Gemini:
 ```bash
 NEXT_PUBLIC_LIVE_CALL_ENABLED=false
-# NEXT_PUBLIC_ADMIN_TEST_NUMBER not set
+# No test phones set
 ```
 
-**Testing Live Calls** - Real VAPI calls to YOUR phone (safe testing):
+**Testing Concurrent Calls (Recommended)** - Real VAPI calls to multiple test phones:
 ```bash
 NEXT_PUBLIC_LIVE_CALL_ENABLED=true
-NEXT_PUBLIC_ADMIN_TEST_NUMBER=+15551234567  # Your test phone number
+NEXT_PUBLIC_ADMIN_TEST_PHONES=+15551234567,+15559876543,+15555551234
+```
+In this mode:
+- **Only N providers are called** (where N = number of test phones)
+- Each provider is mapped 1:1 to a test phone (Provider 1 → Phone 1, Provider 2 → Phone 2, etc.)
+- Perfect for testing **concurrent calling** with multiple real phones
+- If research returns 10 providers but you have 3 test phones, only 3 calls are made
+
+**Testing Single Call (Legacy)** - Real VAPI calls to one test phone:
+```bash
+NEXT_PUBLIC_LIVE_CALL_ENABLED=true
+NEXT_PUBLIC_ADMIN_TEST_NUMBER=+15551234567  # Deprecated, use ADMIN_TEST_PHONES instead
 ```
 In this mode:
 - Only the **first provider** is called
-- Call goes to **your test number** (not the provider's real number)
-- Perfect for verifying VAPI integration works before going live
+- Call goes to **your single test number**
+- Backward compatible with existing setups
 
 **Production** - Real VAPI calls to actual providers:
 ```bash
 NEXT_PUBLIC_LIVE_CALL_ENABLED=true
-# NEXT_PUBLIC_ADMIN_TEST_NUMBER not set or empty
+# No test phones set - calls go to real provider numbers
 ```
 
 #### Backend Configuration

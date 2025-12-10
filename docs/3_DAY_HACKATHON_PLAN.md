@@ -5,9 +5,9 @@
 **Hackathon Sponsors:** Kestra (workflow orchestration), VAPI.ai (voice AI), Gemini (LLM), Vercel (deployment)
 
 **Team Composition:**
-- **S1 (Senior):** 17 years experience - Architecture, complex integrations, critical path items
-- **M1 (Mid-level):** 5 years experience - Feature development, API work, moderate complexity
-- **J1 (Junior):** 1 year experience - UI components, testing, documentation, guided tasks
+- **David (Lead):** 17 years full stack - Architecture, critical path, Kestra Cloud integration
+- **Ajay:** 5 years app development - Feature development, APIs, Kestra workflows
+- **Hasan:** 4 years SaaS - Frontend components, notifications, UI polish
 
 **Timeline:** December 10-12, 2025 (3 days remaining)
 
@@ -65,27 +65,27 @@ AI Concierge is an AI-powered assistant that handles the tedious task of finding
 │     └── Handles: voicemail, no-answer, disqualification                     │
 │                           │                                                  │
 │                           ▼                                                  │
-│  4. AI ANALYZES & RECOMMENDS (Gemini)  ◄── 🔴 NEEDS IMPLEMENTATION         │
+│  4. AI ANALYZES & RECOMMENDS (Gemini)  ◄── ✅ DONE                         │
 │     └── Scores providers based on call results                              │
 │     └── Returns top 3 with reasoning                                        │
 │                           │                                                  │
 │                           ▼                                                  │
-│  5. NOTIFY USER  ◄── 🔴 NEEDS IMPLEMENTATION                                │
+│  5. NOTIFY USER  ◄── 🔴 TODO (Hasan)                                       │
 │     └── SMS (Twilio) / Call (VAPI) / Web (real-time UI)                    │
 │     └── "Here are your top 3 providers, reply 1/2/3 to book"               │
 │                           │                                                  │
 │                           ▼                                                  │
-│  6. USER SELECTS PROVIDER  ◄── 🔴 NEEDS UI                                  │
+│  6. USER SELECTS PROVIDER  ◄── ✅ DONE                                      │
 │     └── Web: Click "Select This Provider" button                            │
 │     └── SMS: Reply with number                                              │
 │                           │                                                  │
 │                           ▼                                                  │
-│  7. AI BOOKS APPOINTMENT  ◄── 🔴 NEEDS IMPLEMENTATION                       │
+│  7. AI BOOKS APPOINTMENT  ◄── 🟡 BACKEND READY                              │
 │     └── Calls chosen provider back                                          │
-│     └── Uses booking-focused VAPI assistant                                 │
+│     └── Uses booking-focused VAPI assistant (booking-assistant-config.ts)  │
 │                           │                                                  │
 │                           ▼                                                  │
-│  8. CONFIRMATION  ◄── 🔴 NEEDS IMPLEMENTATION                               │
+│  8. CONFIRMATION  ◄── 🔴 TODO (Hasan)                                       │
 │     └── Updates database with final outcome                                 │
 │     └── Sends confirmation via same channel user selected                   │
 │                                                                              │
@@ -261,20 +261,18 @@ google_maps_uri     TEXT
 website             TEXT
 ```
 
-### ✅ Kestra Workflows (4 of 7 Complete)
+### ✅ Kestra Workflows (2 Complete, 3 Pending)
 
-**Existing Flows:**
-| Flow | File | Status |
-|------|------|--------|
-| `research_providers` | `research_agent.yaml` | ✅ Working |
-| `contact_providers` | `contact_agent.yaml` | ✅ Working |
-| `contact_providers_concurrent` | `contact_providers_concurrent.yaml` | ✅ Working |
-| `book_appointment` | `booking_agent.yaml` | ✅ Working (but uses old GCal) |
+**Current Workflows:**
+| Flow | File | Status | Owner |
+|------|------|--------|-------|
+| `research_providers` | `research_agent.yaml` | ✅ DONE (120 lines) | - |
+| `contact_providers` | `contact_providers.yaml` | ✅ DONE (95 lines) | - |
+| `recommend_providers` | `recommend_providers.yaml` | 🟡 IN PROGRESS | Ajay |
+| `notify_user` | `notify_user.yaml` | 🔴 TODO | Hasan |
+| `schedule_service` | - | 🟡 Backend API ready | David |
 
-**Missing Flows:**
-- `recommend_providers` - Analyze calls, select top 3
-- `notify_user` - Send SMS/call to user
-- `schedule_service` - Book with chosen provider
+**Note:** `contact_agent.yaml` and `booking_agent.yaml` removed in commit 4f5d13c (functionality moved to direct API calls).
 
 ### ✅ Deployment (100% Complete)
 
@@ -302,44 +300,49 @@ pnpm cline:docs        # Update documentation
 
 | # | Feature | Description | Effort | Owner | Status |
 |---|---------|-------------|--------|-------|--------|
-| 1 | VAPI Voicemail Auto-Disconnect | Detect voicemail within 10s and invoke `endCall` immediately | Low | S1 | ✅ DONE |
-| 2 | recommend_providers API | Analyze call results, return top 3 with AI reasoning | Medium | S1 | ✅ DONE |
-| 3 | Real-time UI Updates | Enable Supabase real-time subscriptions on request detail page | Medium | M1 | ✅ DONE |
-| 4 | Top 3 Providers Display | Card component showing recommendations with "Select" button | Medium | M1 | ✅ DONE |
-| 5 | User Selection Flow | Handle provider selection, show confirmation modal | Medium | M1 | ✅ DONE |
-| 6 | Demo Video | 2-minute walkthrough showing all 4 sponsors | Low | All | 🔴 TODO |
+| 1 | VAPI Voicemail Auto-Disconnect | Detect voicemail within 10s and invoke `endCall` immediately | Low | David | ✅ DONE |
+| 2 | recommend_providers API | Analyze call results, return top 3 with AI reasoning | Medium | David | ✅ DONE |
+| 3 | Real-time UI Updates | Enable Supabase real-time subscriptions on request detail page | Medium | Hasan | ✅ DONE |
+| 4 | Top 3 Providers Display | Card component showing recommendations with "Select" button | Medium | Hasan | ✅ DONE |
+| 5 | User Selection Flow | Handle provider selection, show confirmation modal | Medium | Hasan | ✅ DONE |
+| 6 | /direct Transcript Display | Show call transcript after direct task completes | Medium | David | 🟡 IN PROGRESS |
+| 7 | /direct Results Summary | Display task outcome, key findings | Medium | David | 🟡 IN PROGRESS |
+| 8 | Demo Video | 2-minute walkthrough showing all 4 sponsors | Low | All | 🔴 TODO |
 
 **✅ Implementation Complete (Dec 10, 2025):**
 
-**Backend Changes:**
-- `apps/api/src/services/vapi/assistant-config.ts` - Added `voicemailDetection` config + prompt instructions
-- `apps/api/src/services/recommendations/recommend.service.ts` - NEW: Gemini-powered provider scoring
+**Backend Changes (VERIFIED):**
+- `apps/api/src/services/vapi/assistant-config.ts` - Voicemail detection in all 3 assistant configs (Twilio, 10s detection)
+- `apps/api/src/services/vapi/booking-assistant-config.ts` - NEW: Booking workflow assistant (295 lines)
+- `apps/api/src/services/recommendations/recommend.service.ts` - NEW: Gemini-powered scoring (267 lines)
 - `apps/api/src/services/recommendations/types.ts` - NEW: TypeScript interfaces
-- `apps/api/src/routes/providers.ts` - Added `POST /api/v1/providers/recommend` endpoint
+- `apps/api/src/routes/providers.ts` - Added `/recommend` (lines 502-639) and `/book` endpoints
 
-**Frontend Changes:**
-- `apps/web/components/LiveStatus.tsx` - NEW: Real-time status animations
-- `apps/web/components/RecommendedProviders.tsx` - NEW: Top 3 provider cards with scores
-- `apps/web/components/SelectionModal.tsx` - NEW: Booking confirmation modal
-- `apps/web/app/request/[id]/page.tsx` - Added Supabase real-time subscriptions + component integration
+**Frontend Changes (VERIFIED):**
+- `apps/web/components/LiveStatus.tsx` - Real-time status animations (5 states)
+- `apps/web/components/RecommendedProviders.tsx` - Top 3 provider cards with scoring
+- `apps/web/components/SelectionModal.tsx` - Booking confirmation modal
+- `apps/web/app/request/[id]/page.tsx` - Supabase real-time subscriptions (748 lines total)
 
 ### 🟡 Important (Should Have)
 
-| # | Feature | Description | Effort | Owner |
-|---|---------|-------------|--------|-------|
-| 7 | notify_user API | Send SMS (Twilio) or call (VAPI) to user with recommendations | High | S1 |
-| 8 | schedule_service API | Call provider back to book appointment | Medium | S1 |
-| 9 | show_confirmation API | Send final confirmation, update DB | Low | M1 |
-| 10 | Kestra Cloud Deployment | Deploy all 7 workflows to Kestra Cloud | Medium | M1 |
-| 11 | Business Hours Check | Skip calling providers that are currently closed | Low | J1 |
+| # | Feature | Description | Effort | Owner | Status |
+|---|---------|-------------|--------|-------|--------|
+| 9 | notify_user API | Send SMS (Twilio) or call (VAPI) to user with recommendations | High | Hasan | 🔴 TODO |
+| 10 | schedule_service API | Call provider back to book appointment | Medium | David | 🟡 booking-assistant-config.ts ready |
+| 11 | show_confirmation API | Send final confirmation, update DB | Low | Hasan | 🔴 TODO |
+| 12 | Kestra Cloud Deployment | Deploy workflows to Kestra Cloud | Medium | David | 🟡 IN PROGRESS |
+| 13 | recommend_providers.yaml | Kestra workflow wrapper for recommend API | Low | Ajay | 🟡 IN PROGRESS |
+| 14 | notify_user.yaml | Kestra workflow for Twilio SMS notifications | Medium | Hasan | 🔴 TODO |
+| 15 | Business Hours Check | Skip calling providers that are currently closed | Low | Ajay | 🔴 TODO |
 
 ### 🟢 Nice to Have
 
-| # | Feature | Description | Effort | Owner |
-|---|---------|-------------|--------|-------|
-| 12 | History Page Enhancement | Show transcripts, recommendations for past requests | Low | J1 |
-| 13 | Loading Skeletons | Better loading states during operations | Low | J1 |
-| 14 | Error Recovery UI | Retry buttons, better error messages | Low | J1 |
+| # | Feature | Description | Effort | Owner | Status |
+|---|---------|-------------|--------|-------|--------|
+| 16 | History Page Enhancement | Show transcripts, recommendations for past requests | Low | Ajay | 🔴 TODO |
+| 17 | Loading Skeletons | Better loading states during operations | Low | Hasan | 🔴 TODO |
+| 18 | Error Recovery UI | Retry buttons, better error messages | Low | Ajay | 🔴 TODO |
 
 ---
 
@@ -350,21 +353,24 @@ pnpm cline:docs        # Update documentation
 ```
 apps/api/src/
 ├── routes/
-│   ├── providers.ts        # 🔴 ADD: /recommend, /schedule endpoints
-│   ├── notifications.ts    # 🔴 CREATE: /notify, /confirm endpoints
-│   └── vapi.ts             # Webhook handler (complete)
+│   ├── providers.ts        # ✅ DONE: /recommend, /book endpoints
+│   ├── notifications.ts    # 🔴 CREATE: /notify, /confirm endpoints (Hasan)
+│   └── vapi-webhook.ts     # ✅ DONE: Webhook handler
 ├── services/
 │   ├── vapi/
-│   │   ├── assistant-config.ts  # 🔴 MODIFY: Add voicemail detection
-│   │   ├── direct-vapi.client.ts
-│   │   └── concurrent-call.service.ts
+│   │   ├── assistant-config.ts       # ✅ DONE: Voicemail detection in all 3 configs
+│   │   ├── booking-assistant-config.ts # ✅ DONE: Booking workflow (295 lines)
+│   │   ├── direct-vapi.client.ts     # ✅ DONE: Hybrid webhook + polling
+│   │   └── concurrent-call.service.ts # ✅ DONE: Batch calling
 │   ├── research/
-│   │   └── research.service.ts
-│   ├── notifications/       # 🔴 CREATE: New folder
-│   │   ├── twilio.service.ts
-│   │   └── notification.service.ts
-│   └── recommendations/     # 🔴 CREATE: New folder
-│       └── recommend.service.ts
+│   │   └── research.service.ts       # ✅ DONE
+│   ├── notifications/       # 🔴 CREATE: New folder (Hasan)
+│   │   ├── twilio.service.ts        # 🔴 CREATE: SMS sending
+│   │   └── notification.service.ts  # 🔴 CREATE: Notification orchestration
+│   └── recommendations/     # ✅ DONE: Complete folder
+│       ├── recommend.service.ts     # ✅ DONE: Gemini scoring (267 lines)
+│       ├── types.ts                 # ✅ DONE: TypeScript interfaces
+│       └── index.ts                 # ✅ DONE: Exports
 ```
 
 ### Frontend - Where to Make Changes
@@ -373,18 +379,22 @@ apps/api/src/
 apps/web/
 ├── app/
 │   ├── request/[id]/
-│   │   └── page.tsx        # 🔴 MODIFY: Add real-time, top 3 display
+│   │   └── page.tsx        # ✅ DONE: Real-time + components (748 lines)
+│   ├── direct/
+│   │   └── page.tsx        # 🟡 IN PROGRESS: Transcript display (David)
 │   └── history/
-│       └── page.tsx        # 🟢 MODIFY: Enhance with transcripts
+│       └── page.tsx        # 🔴 TODO: Enhance with transcripts (Ajay)
 ├── components/
-│   ├── RecommendedProviders.tsx  # 🔴 CREATE: Top 3 card
-│   ├── ProviderSelection.tsx     # 🔴 CREATE: Selection modal
-│   └── LiveStatus.tsx            # 🔴 CREATE: Real-time status
+│   ├── RecommendedProviders.tsx  # ✅ DONE: Top 3 cards with scoring
+│   ├── SelectionModal.tsx        # ✅ DONE: Booking confirmation modal
+│   ├── LiveStatus.tsx            # ✅ DONE: Real-time status animations
+│   └── LogItem.tsx               # ✅ EXISTS: Transcript rendering
 ├── lib/
 │   ├── hooks/
-│   │   └── useServiceRequests.ts  # EXISTS but UNUSED - enable it
+│   │   └── useServiceRequests.ts  # ✅ Real-time enabled directly in page.tsx
 │   └── services/
-│       └── notificationService.ts # 🔴 CREATE: API client
+│       ├── geminiService.ts       # ✅ EXISTS: Frontend API client
+│       └── providerCallingService.ts # ✅ EXISTS: VAPI call client
 ```
 
 ### Kestra - Workflow Files
@@ -392,25 +402,28 @@ apps/web/
 ```
 kestra/
 ├── flows/
-│   ├── research_agent.yaml           # ✅ Complete
-│   ├── contact_agent.yaml            # ✅ Complete
-│   ├── contact_providers_concurrent.yaml  # ✅ Complete
-│   ├── booking_agent.yaml            # ✅ Complete (needs update)
-│   ├── recommend_providers.yaml      # 🔴 CREATE
-│   ├── notify_user.yaml              # 🔴 CREATE
-│   └── schedule_service.yaml         # 🔴 CREATE
+│   ├── research_agent.yaml           # ✅ DONE (120 lines, Gemini grounding)
+│   ├── contact_providers.yaml        # ✅ DONE (95 lines, EachParallel)
+│   ├── recommend_providers.yaml      # 🟡 IN PROGRESS (Ajay) - API wrapper
+│   ├── notify_user.yaml              # 🔴 CREATE (Hasan) - Twilio SMS
+│   └── schedule_service.yaml         # 🟡 Backend ready, Kestra optional
 └── scripts/
-    ├── call-provider.js              # ✅ Complete
-    └── create-event.js               # ✅ Complete
+    ├── call-provider.js              # ✅ PRIMARY (203 lines, imports TS config)
+    ├── call-provider-webhook.js      # 🟡 ALTERNATIVE (325 lines, webhook version)
+    └── call-provider-improved.js     # 📦 PROTOTYPE (deprecated)
 ```
+
+**Note:** `contact_agent.yaml` and `booking_agent.yaml` were consolidated into direct API paths (commit 4f5d13c).
 
 ---
 
-## Day 1: Backend APIs & VAPI Fixes (Tuesday)
+## Day 1: Backend APIs & VAPI Fixes (Tuesday) - ✅ MOSTLY COMPLETE
 
 **Goal:** All backend APIs complete and tested. VAPI handles voicemail correctly.
 
-### S1 (Senior) - Critical Path
+**Status:** Backend core complete. Notifications service pending (Hasan).
+
+### David (Lead) - Critical Path
 
 #### Morning (4 hours)
 
@@ -759,7 +772,7 @@ Test the full backend flow:
 
 ---
 
-### M1 (Mid-level) - Supporting APIs
+### Hasan - Supporting APIs & Notifications
 
 #### All Day Tasks
 
@@ -818,7 +831,7 @@ Add TypeScript interfaces for all new endpoints in `apps/api/src/services/vapi/t
 
 ---
 
-### J1 (Junior) - Testing & Documentation
+### Ajay - Testing, Documentation & Kestra Workflows
 
 #### All Day Tasks
 
@@ -888,11 +901,13 @@ Update `CLAUDE.md` with new endpoints and their usage.
 
 ---
 
-## Day 2: Frontend & Real-Time (Wednesday)
+## Day 2: Frontend & Real-Time (Wednesday) - ✅ MOSTLY COMPLETE
 
 **Goal:** User can see live updates, view recommendations, and select a provider.
 
-### M1 (Mid-level) - Core Frontend
+**Status:** Core frontend complete. Direct task transcript display in progress (David).
+
+### Hasan - Core Frontend
 
 #### Morning (4 hours)
 
@@ -1241,19 +1256,23 @@ Update `apps/web/app/request/[id]/page.tsx` to use new components.
 
 ---
 
-### S1 (Senior) - Backend Support
+### David (Lead) - Backend Support & Direct Task
 
-**Task 2.6: Debug Real-Time Issues** (P1, 2 hours)
+**Task 2.6: Debug Real-Time Issues** (P1, 2 hours) - ✅ DONE
 
-Help M1 troubleshoot any Supabase real-time subscription issues.
+Helped with Supabase real-time subscription debugging.
 
-**Task 2.7: API Refinements** (P1, 2 hours)
+**Task 2.7: API Refinements** (P1, 2 hours) - ✅ DONE
 
-Adjust APIs based on frontend needs discovered during integration.
+Adjusted APIs based on frontend integration needs.
+
+**Task 2.X: Direct Task Transcript/Results** (P0, ongoing) - 🟡 IN PROGRESS
+
+Implementing transcript display and results summary for `/direct` page.
 
 ---
 
-### J1 (Junior) - UI Polish
+### Ajay - UI Polish
 
 **Task 2.8: History Page Enhancement** (P2, 3 hours)
 
@@ -1275,11 +1294,16 @@ Test all new components on mobile viewports.
 
 ---
 
-## Day 3: Kestra Cloud & Demo (Thursday)
+## Day 3: Kestra Cloud & Demo (Thursday) - 🟡 IN PROGRESS
 
 **Goal:** Deploy to Kestra Cloud, final testing, record demo video.
 
-### M1 (Mid-level) - Kestra Cloud
+**Current Status:**
+- Kestra Cloud deployment in progress (David)
+- recommend_providers.yaml in progress (Ajay)
+- notify_user.yaml pending (Hasan)
+
+### Ajay - Kestra Workflows
 
 #### Morning (4 hours)
 
@@ -1369,7 +1393,7 @@ outputs:
 
 ---
 
-### S1 (Senior) - Final Integration
+### David (Lead) - Final Integration & Kestra Cloud
 
 #### Morning (2 hours)
 
@@ -1593,6 +1617,11 @@ git push origin main   # Triggers Vercel + Railway deploy
 
 ---
 
-**Last Updated:** December 9, 2025
-**Confidence Level:** 90%
-**Plan Author:** AI Assistant based on comprehensive codebase analysis
+**Last Updated:** December 10, 2025 (Verified by multi-agent codebase analysis)
+**Team:** David (Lead), Ajay, Hasan
+**Plan Status:** ~70% Complete
+- ✅ Core flow working (research → call → recommend → select)
+- 🟡 Direct task transcript display in progress (David)
+- 🟡 Kestra Cloud deployment in progress (David)
+- 🟡 recommend_providers.yaml in progress (Ajay)
+- 🔴 Notifications service pending (Hasan)
