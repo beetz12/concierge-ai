@@ -8,6 +8,7 @@ import { Search, MapPin, AlertCircle, Sparkles, User } from "lucide-react";
 import {
   simulateCall,
   selectBestProvider,
+  analyzeResearchPrompt,
 } from "@/lib/services/geminiService";
 import { searchProviders as searchProvidersWorkflow } from "@/lib/services/workflowService";
 import {
@@ -205,6 +206,26 @@ export default function NewRequest() {
         );
       }
 
+      // Generate context-aware prompts with Gemini
+      console.log('[Concierge] Generating context-aware prompts with Gemini...');
+      let researchPrompt = null;
+      try {
+        researchPrompt = await analyzeResearchPrompt({
+          serviceType: data.title,
+          problemDescription: data.description,
+          userCriteria: data.criteria,
+          location: data.location,
+          urgency: data.urgency,
+          providerName: providers[0]?.name || "the provider",
+          clientName: data.clientName,
+        });
+        if (researchPrompt) {
+          console.log(`[Concierge] Generated ${researchPrompt.serviceCategory} prompts for ${data.title}`);
+        }
+      } catch (error) {
+        console.error('[Concierge] Failed to generate prompts, using defaults:', error);
+      }
+
       for (const [providerIndex, provider] of providers.entries()) {
         let log;
 
@@ -253,6 +274,11 @@ export default function NewRequest() {
                 urgency: data.urgency,
                 serviceRequestId: reqId,
                 providerId: provider.id,
+                customPrompt: researchPrompt ? {
+                  systemPrompt: researchPrompt.systemPrompt,
+                  firstMessage: researchPrompt.firstMessage,
+                  closingScript: "Thank you so much for your time. Have a wonderful day!"
+                } : undefined,
               });
 
               // Convert response to InteractionLog format

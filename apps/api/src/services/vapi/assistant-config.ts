@@ -332,8 +332,70 @@ Was the task completed successfully? What specific outcome was achieved?`,
 /**
  * Creates assistant config for Research & Book requests
  * AI searches for service providers and gathers information
+ *
+ * Supports two modes:
+ * 1. Gemini-generated custom prompt (when request.customPrompt provided) - Natural language
+ * 2. Template-based prompt (fallback) - String concatenation from request fields
  */
 function createProviderSearchConfig(request: CallRequest) {
+  // If Gemini-generated customPrompt is provided, use it directly
+  // This gives us natural language without string concatenation
+  if (request.customPrompt?.systemPrompt && request.customPrompt?.firstMessage) {
+    console.log('[AssistantConfig] Using Gemini-generated customPrompt');
+
+    const clientName = request.clientName || "my client";
+
+    return {
+      name: `Concierge-${Date.now().toString().slice(-8)}`,
+      voice: {
+        provider: "11labs" as const,
+        voiceId: "21m00Tcm4TlvDq8ikWAM",
+        stability: 0.5,
+        similarityBoost: 0.75,
+      },
+      model: {
+        provider: "google" as const,
+        model: "gemini-2.0-flash-exp",
+        messages: [{ role: "system" as const, content: request.customPrompt.systemPrompt }],
+        tools: [{ type: "endCall" }],
+        temperature: 0.3,
+      },
+      transcriber: {
+        provider: "deepgram" as const,
+        model: "nova-2",
+        language: "en-US",
+      },
+      voicemailDetection: {
+        provider: "twilio",
+        enabled: true,
+        machineDetectionTimeout: 5000,
+        machineDetectionSpeechThreshold: 3000,
+        machineDetectionSpeechEndThreshold: 1200,
+      },
+      firstMessage: request.customPrompt.firstMessage,
+      endCallFunctionEnabled: true,
+      endCallMessage: request.customPrompt.closingScript || "Thank you so much for your time. Have a wonderful day!",
+      analysisPlan: {
+        structuredDataSchema: {
+          type: "object",
+          properties: {
+            available: { type: "boolean", description: "Whether they can help" },
+            earliest_availability: { type: "string", description: "When they're available" },
+            rate: { type: "string", description: "Their rate/price" },
+            accepts_requirements: { type: "boolean", description: "Whether they meet the requirements" },
+            notes: { type: "string", description: "Any additional notes" },
+            disqualified: { type: "boolean", description: "Whether they cannot help" },
+            disqualification_reason: { type: "string", description: "Why they can't help" },
+          },
+        },
+        successEvaluationPrompt: `Evaluate if ${clientName}'s needs can be met by this provider based on the call.`,
+        successEvaluationRubric: "AutomaticRubric",
+        summaryPrompt: `Summarize the key information gathered for ${clientName}: availability, rates, and whether requirements are met.`,
+      },
+    };
+  }
+
+  // FALLBACK: Original template-based approach
   const urgencyText = request.urgency.replace(/_/g, " ");
   const clientName = request.clientName || "my client";
 

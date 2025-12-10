@@ -35,22 +35,75 @@ export interface PromptAnalysisResult {
 export async function analyzeResearchPrompt(request: ResearchPromptRequest): Promise<PromptAnalysisResult> {
   const ai = getAiClient();
 
-  const analysisPrompt = `Analyze this service request and provide terminology and questions.
+  const analysisPrompt = `You are an expert at writing natural, conversational phone call scripts for AI assistants.
 
-Service Type: ${request.serviceType}
-Problem: ${request.problemDescription}
-Location: ${request.location}
+<context>
+<client_name>${request.clientName}</client_name>
+<service_type>${request.serviceType}</service_type>
+<problem_description>${request.problemDescription || "General inquiry"}</problem_description>
+<requirements>${request.userCriteria}</requirements>
+<location>${request.location}</location>
+<urgency>${request.urgency.replace(/_/g, " ")}</urgency>
+<provider_being_called>${request.providerName}</provider_being_called>
+</context>
 
-Respond in JSON format:
+<task>
+Write TWO natural, grammatically perfect pieces for a VAPI phone assistant:
+
+1. FIRST MESSAGE (the opening line when the call connects):
+   - Introduce yourself as [client_name]'s personal AI assistant
+   - Naturally explain WHY you're calling (weave in the problem/service needed)
+   - Ask if they have a moment
+   - Should sound warm and human, NOT templated or robotic
+   - 2-3 sentences maximum
+   - Example good: "Hi! I'm David's personal AI assistant. David has been having severe molar pain and needs to see a dentist urgently. Do you have a quick moment?"
+   - Example bad: "Hi there! This is David's personal AI assistant calling to check on dentist services. David my molar is killing me."
+
+2. SYSTEM PROMPT (comprehensive instructions for the AI during the call):
+   Write this as if you're briefing a skilled human assistant about to make this exact call. Include:
+
+   - WHO: You are [client_name]'s personal AI assistant calling [provider_name]
+   - SITUATION: [client_name]'s problem ([problem_description]), timeline ([urgency]), location ([location])
+   - WHAT TO ASK (in order):
+     * Availability - use correct phrasing based on service type:
+       - Medical/dental/salon: "What's your earliest available appointment?"
+       - Home service/plumber/electrician: "When could you come out?"
+     * Rates: "What would the cost be for this type of [appointment/service call]?"
+     * 1-2 contextual questions based on user requirements
+   - HOW TO HANDLE UNKNOWN INFO: If asked for address, phone, insurance, etc. say: "I'm just checking availability right now. If [client_name] decides to schedule, they'll provide all those details when we call back to book."
+   - SPEECH STYLE:
+     * Use contractions naturally (I'm, you're, that's, we'll)
+     * Acknowledge responses before moving on ("Great!", "Perfect, thank you!", "That works!")
+     * Vary response length - don't be robotic
+     * Sound warm and friendly
+   - VOICEMAIL: If voicemail detected, immediately use endCall tool. Don't leave message.
+   - ENDING: After gathering info, say something like "This is really helpful, thank you! I'll share this with [client_name] and if they'd like to proceed, we'll call back to schedule. Have a wonderful day!" Then IMMEDIATELY use endCall tool.
+
+CRITICAL GRAMMAR RULES - YOU MUST FOLLOW THESE:
+- Use possessives correctly: "[client_name]'s molar" NOT "[client_name] my molar"
+- Use third person: "[client_name] has been having..." NOT "I have been having..."
+- Use correct pronouns: "he" or "she" for named individuals, NOT "they"
+- Use correct terminology:
+  * Medical (dentist, doctor): "appointment", "patient", "doctor/dentist"
+  * Home service (plumber, electrician): "service call", "technician", "come out"
+  * Professional (lawyer, accountant): "consultation", "attorney"
+- Use correct urgency grammar: "urgent help" or "help urgently", NOT "help immediate"
+</task>
+
+<output_format>
+Return ONLY valid JSON (no markdown, no explanation):
 {
   "serviceCategory": "medical" | "home_service" | "professional" | "retail" | "other",
   "terminology": {
-    "providerTerm": "what to call them (e.g., dentist, plumber, lawyer)",
-    "appointmentTerm": "appointment or service call or consultation",
+    "providerTerm": "the correct term for this provider (dentist, plumber, attorney, etc.)",
+    "appointmentTerm": "appointment" or "service call" or "consultation",
     "visitDirection": "patient visits provider" or "provider comes to location"
   },
-  "contextualQuestions": ["1-3 service-specific questions to ask"]
-}`;
+  "firstMessage": "[YOUR COMPLETE NATURAL OPENING - write the entire thing, no placeholders]",
+  "systemPrompt": "[YOUR COMPLETE SYSTEM INSTRUCTIONS - write the entire thing, no placeholders]",
+  "contextualQuestions": ["1-3 service-specific questions based on the requirements"]
+}
+</output_format>`;
 
   const response = await ai.models.generateContent({
     model: "gemini-2.0-flash-exp",
@@ -68,18 +121,24 @@ Respond in JSON format:
 
   const analysis = JSON.parse(jsonMatch[0]);
 
-  // Build the prompts using the analysis
-  const systemPrompt = buildSystemPrompt(request, analysis);
-  const firstMessage = buildFirstMessage(request, analysis);
+  // Validate that Gemini provided the required fields
+  if (!analysis.firstMessage || !analysis.systemPrompt) {
+    console.error("[PromptAnalyzer] Gemini did not generate complete prompts, using fallback");
+    return getDefaultAnalysis(request);
+  }
 
+  // Return Gemini's output directly - NO STRING CONCATENATION
   return {
-    ...analysis,
-    systemPrompt,
-    firstMessage,
+    serviceCategory: analysis.serviceCategory,
+    terminology: analysis.terminology,
+    contextualQuestions: analysis.contextualQuestions || [],
+    systemPrompt: analysis.systemPrompt,
+    firstMessage: analysis.firstMessage,
   };
 }
 
 function getDefaultAnalysis(request: ResearchPromptRequest): PromptAnalysisResult {
+  const clientName = request.clientName || "my client";
   return {
     serviceCategory: "other",
     terminology: {
@@ -88,96 +147,22 @@ function getDefaultAnalysis(request: ResearchPromptRequest): PromptAnalysisResul
       visitDirection: "provider comes to location",
     },
     contextualQuestions: ["Are you available for this type of service?"],
-    systemPrompt: buildSystemPrompt(request, {
-      terminology: { providerTerm: "provider", appointmentTerm: "service", visitDirection: "provider comes to location" },
-      contextualQuestions: [],
-    }),
-    firstMessage: buildFirstMessage(request, {
-      terminology: { providerTerm: "service", appointmentTerm: "service", visitDirection: "provider comes to location" },
-    }),
+    firstMessage: `Hi! I'm ${clientName}'s personal AI assistant calling about ${request.serviceType} services. Do you have a quick moment?`,
+    systemPrompt: `You are ${clientName}'s personal AI assistant calling ${request.providerName} in ${request.location}.
+
+${clientName}'s situation: They need ${request.serviceType} services. ${request.problemDescription ? `The issue: ${request.problemDescription}.` : ""} Timeline: ${request.urgency.replace(/_/g, " ")}.
+
+Ask about:
+1. Availability
+2. Rates
+3. Any specific requirements: ${request.userCriteria}
+
+If asked for information you don't have (address, phone, insurance), say: "I'm just checking availability right now. ${clientName} will provide those details when scheduling."
+
+Be warm and friendly. Use contractions. Acknowledge responses ("Great!", "Perfect!").
+
+When done, thank them and say you'll have ${clientName} call back to schedule if interested. Then use endCall tool immediately.`,
   };
-}
-
-function buildSystemPrompt(request: ResearchPromptRequest, analysis: any): string {
-  const { terminology, contextualQuestions } = analysis;
-  const clientName = request.clientName || "my client";
-  const urgencyText = request.urgency.replace(/_/g, " ");
-
-  return `You are a warm, friendly personal AI assistant making a real phone call to ${request.providerName}.
-You are calling on behalf of ${clientName} in ${request.location}.
-
-═══════════════════════════════════════════════════════════════════
-YOUR IDENTITY
-═══════════════════════════════════════════════════════════════════
-You are ${clientName}'s personal AI assistant. When introducing yourself, say:
-"Hi there! This is ${clientName}'s personal AI assistant..."
-
-═══════════════════════════════════════════════════════════════════
-${clientName.toUpperCase()}'S SITUATION
-═══════════════════════════════════════════════════════════════════
-Service needed: ${request.serviceType}
-Problem: ${request.problemDescription || "General inquiry"}
-Timeline: ${urgencyText}
-Requirements: ${request.userCriteria}
-
-═══════════════════════════════════════════════════════════════════
-HANDLING REQUESTS FOR INFORMATION YOU DON'T HAVE
-═══════════════════════════════════════════════════════════════════
-If the provider asks for information you don't have, such as:
-- Client's address
-- Client's phone number
-- Insurance information
-- Specific details about the property/situation
-- Payment information
-
-RESPOND WITH:
-"I'm just checking availability and rates right now. If ${clientName} decides to schedule with you, they'll provide all those details when we call back to book the appointment."
-
-DO NOT make up information. DO NOT guess addresses or phone numbers.
-Simply explain you're gathering initial information first.
-
-═══════════════════════════════════════════════════════════════════
-TERMINOLOGY (USE THESE EXACT TERMS)
-═══════════════════════════════════════════════════════════════════
-- Refer to provider as: "${terminology.providerTerm}"
-- This is a "${terminology.appointmentTerm}" type service
-- ${terminology.visitDirection === "patient visits provider"
-    ? `${clientName} will COME TO the provider's location`
-    : `The provider will COME OUT to ${clientName}'s location`}
-
-═══════════════════════════════════════════════════════════════════
-QUESTIONS TO ASK
-═══════════════════════════════════════════════════════════════════
-1. Availability: "${clientName} needs this ${urgencyText}. Are you available?"
-   - If YES: "${terminology.visitDirection === "patient visits provider"
-     ? "What's your earliest available appointment?"
-     : "When could you come out?"}"
-2. Rates: "What would the rate be for this type of ${terminology.appointmentTerm}?"
-${contextualQuestions?.map((q: string, i: number) => `${i + 3}. ${q}`).join('\n') || ''}
-
-═══════════════════════════════════════════════════════════════════
-VOICEMAIL DETECTION
-═══════════════════════════════════════════════════════════════════
-If you detect voicemail or answering machine, IMMEDIATELY use the endCall tool.
-DO NOT leave a message. DO NOT wait for beep.
-
-═══════════════════════════════════════════════════════════════════
-ENDING THE CALL
-═══════════════════════════════════════════════════════════════════
-After gathering information, say:
-"Thank you so much! I'll share this with ${clientName} and if they'd like to proceed, we'll call back to schedule. Have a wonderful day!"
-
-Then IMMEDIATELY use the endCall tool. DO NOT wait for their response.`;
-}
-
-function buildFirstMessage(request: ResearchPromptRequest, analysis: any): string {
-  const clientName = request.clientName || "my client";
-  const urgencyText = request.urgency.replace(/_/g, " ");
-  const problem = request.problemDescription
-    ? ` ${clientName} ${request.problemDescription}.`
-    : "";
-
-  return `Hi there! This is ${clientName}'s personal AI assistant calling to check on ${request.serviceType} services.${problem} Do you have just a quick moment?`;
 }
 
 export default { analyzeResearchPrompt };
