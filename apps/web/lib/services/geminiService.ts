@@ -26,6 +26,30 @@ export interface AnalyzeDirectTaskResponse {
   generatedPrompt: GeneratedPrompt;
 }
 
+export interface ResearchPromptRequest {
+  serviceType: string;
+  problemDescription: string;
+  userCriteria: string;
+  location: string;
+  urgency: string;
+  providerName: string;
+  clientName: string;
+}
+
+export interface ServiceTerminology {
+  providerTerm: string;
+  appointmentTerm: string;
+  visitDirection: "patient visits provider" | "provider comes to location";
+}
+
+export interface PromptAnalysisResult {
+  serviceCategory: "medical" | "home_service" | "professional" | "retail" | "other";
+  terminology: ServiceTerminology;
+  contextualQuestions: string[];
+  systemPrompt: string;
+  firstMessage: string;
+}
+
 /**
  * Generic API request handler with error handling
  */
@@ -149,6 +173,26 @@ export const analyzeDirectTask = async (
     return result;
   } catch (error: any) {
     console.error("[analyzeDirectTask] Failed to analyze task:", error);
+    // Return null to allow fallback to default prompts
+    return null;
+  }
+};
+
+/**
+ * Analyze a research prompt using Gemini to generate dynamic assistant configuration
+ * This creates context-aware prompts for VAPI research calls based on service type
+ */
+export const analyzeResearchPrompt = async (
+  request: ResearchPromptRequest
+): Promise<PromptAnalysisResult | null> => {
+  try {
+    const result = await apiRequest<PromptAnalysisResult>(
+      "/analyze-research-prompt",
+      { ...request },
+    );
+    return result;
+  } catch (error: any) {
+    console.error("[analyzeResearchPrompt] Failed to analyze research prompt:", error);
     // Return null to allow fallback to default prompts
     return null;
   }

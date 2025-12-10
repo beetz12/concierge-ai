@@ -20,6 +20,16 @@ export interface Provider {
   address?: string;
   reason?: string;
   source?: string;
+  // Google Places enrichment data
+  placeId?: string;
+  reviewCount?: number;
+  distance?: number;
+  distanceText?: string;
+  hoursOfOperation?: string[] | string;
+  isOpenNow?: boolean;
+  googleMapsUri?: string;
+  website?: string;
+  internationalPhone?: string;
 }
 
 export interface ResearchResult {

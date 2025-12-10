@@ -26,6 +26,8 @@ const callProviderSchema = z.object({
     .regex(/^\+1\d{10}$/, "Phone must be E.164 format (+1XXXXXXXXXX)"),
   serviceNeeded: z.string().min(1, "Service type is required"),
   userCriteria: z.string().min(1, "User criteria is required"),
+  problemDescription: z.string().optional(),
+  clientName: z.string().optional(),
   location: z.string().min(1, "Location is required"),
   urgency: z.enum([
     "immediate",
@@ -111,6 +113,14 @@ export default async function providerRoutes(fastify: FastifyInstance) {
             userCriteria: {
               type: "string",
               description: "User requirements and criteria for the service",
+            },
+            problemDescription: {
+              type: "string",
+              description: "Optional: Detailed problem description",
+            },
+            clientName: {
+              type: "string",
+              description: "Optional: Client's name for personalized greeting",
             },
             location: {
               type: "string",

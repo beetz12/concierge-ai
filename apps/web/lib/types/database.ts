@@ -103,6 +103,26 @@ export interface Database {
           address: string | null;
           source: "Google Maps" | "User Input" | null;
           created_at: string;
+          // Call tracking columns (from migration 20250108)
+          call_status: string | null;
+          call_result: Json | null;
+          call_transcript: string | null;
+          call_summary: string | null;
+          call_duration_minutes: number | null;
+          call_cost: number | null;
+          call_method: string | null;
+          call_id: string | null;
+          called_at: string | null;
+          // Google Places / Research columns (from migration 20250109)
+          place_id: string | null;
+          review_count: number | null;
+          distance: number | null;
+          distance_text: string | null;
+          hours_of_operation: Json | null;
+          is_open_now: boolean | null;
+          google_maps_uri: string | null;
+          website: string | null;
+          international_phone: string | null;
         };
         Insert: {
           id?: string;
@@ -113,6 +133,26 @@ export interface Database {
           address?: string | null;
           source?: "Google Maps" | "User Input" | null;
           created_at?: string;
+          // Call tracking columns
+          call_status?: string | null;
+          call_result?: Json | null;
+          call_transcript?: string | null;
+          call_summary?: string | null;
+          call_duration_minutes?: number | null;
+          call_cost?: number | null;
+          call_method?: string | null;
+          call_id?: string | null;
+          called_at?: string | null;
+          // Google Places / Research columns
+          place_id?: string | null;
+          review_count?: number | null;
+          distance?: number | null;
+          distance_text?: string | null;
+          hours_of_operation?: Json | null;
+          is_open_now?: boolean | null;
+          google_maps_uri?: string | null;
+          website?: string | null;
+          international_phone?: string | null;
         };
         Update: {
           id?: string;
@@ -123,6 +163,26 @@ export interface Database {
           address?: string | null;
           source?: "Google Maps" | "User Input" | null;
           created_at?: string;
+          // Call tracking columns
+          call_status?: string | null;
+          call_result?: Json | null;
+          call_transcript?: string | null;
+          call_summary?: string | null;
+          call_duration_minutes?: number | null;
+          call_cost?: number | null;
+          call_method?: string | null;
+          call_id?: string | null;
+          called_at?: string | null;
+          // Google Places / Research columns
+          place_id?: string | null;
+          review_count?: number | null;
+          distance?: number | null;
+          distance_text?: string | null;
+          hours_of_operation?: Json | null;
+          is_open_now?: boolean | null;
+          google_maps_uri?: string | null;
+          website?: string | null;
+          international_phone?: string | null;
         };
         Relationships: [
           {

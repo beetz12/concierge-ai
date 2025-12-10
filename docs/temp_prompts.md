@@ -1,3 +1,24 @@
+ok currently I'm working on @docs/hackathon.md. See @docs/3_DAY_HACKATHON_PLAN.md for context. Curerntly when I initiate a new request on the /new page the agent is quite dumb and doesn't understand the context provided by the user. For example, I'm passing this payload: {
+    "providerName": "Dentistry of Uptown Charlotte",
+    "providerPhone": "+13106992541",
+    "serviceNeeded": "dentist",
+    "userCriteria": "available today, accept new patients, 4.5+ avg rating",
+    "location": "charlotte nc",
+    "urgency": "within_2_days",
+    "serviceRequestId": "ed1d9fa2-7e35-4fc8-9f53-6e31b2dc56a4",
+    "providerId": "ChIJRURMfy-gVogRtM_hIBmcucM"
+}
+
+but here's how the call went - see docs/transcript.md. This is an extremely unuusal way to ask for a dentist. It seems to be following the same script for every call instead of customizing the script based on the user's request. I specifically requested a dentist available same day. Yet the frontend passed "urgency": "within_2_days". Also the agent said " My client needs help within 2 days." instead of passing in the issue the client has - "my molar is killing me". I don't even see this in the payload. The agent then said "Great. What's your soonest availability? When could you come out?". The last sentence doesn't make sense for a dentist since the patient usually goes to see the dentist for an appointment. I believe we have gemini generate a custom prompt for the vapi.ai agent and for the vapi.agent to use the custom script with full context of the user's request and be able to make the appropriate responses but from this transcript, it doesn't seem to be working. Finally, after the agent says "Great. Have a wonderful day.", it doesn't hang up the phone. The user has to say "Okay." before the agent hangs up the phone. This should be fixed to avoid extra costs. 
+Please analyze these issues  
+using your  multi-agent team with up to 3 agentsand come up with a unified plan with 90% confidence and wait for further instructions. My mortgage payment depends on this and If you get this right on the first try, I will tip you $200. ultrathink  
+
+ok currently I'm working on @docs/hackathon.md. See @docs/3_DAY_HACKATHON_PLAN.md for context. Currently we have several issues: 1. after I end the
+  call, the frontend http://localhost:3000/request/ed1d9fa2-7e35-4fc8-9f53-6e31b2dc56a4 page shows call failed. I don't see any specific error in my
+  backend log except @docs/error_logs.md. NOt sure why get endless incoming requests and then trying to check the call in the cache.  
+
+ok we are working on @3_DAY_HACKATHON_PLAN.md for the @hackathon.md event and a team member just asked an important question. Please analyze our code and help me respond. Please first determine if based on our current architecture we meet the @hackathon.md rules. While we don't have a fully automatically workflow that calls all agents autonomously, we do have separate agents that will be invokved to perform certain aspects. Also, I agree that currently kestra offers no advantage over our direct call architecture since in each we call the scripts separately but is there a way to update kestra to handle everything automatically? Are we using it wrong or did we implement the wrong architecture or is this just how kestra is supposed to work? My mortgage payment depends on this and If you get this right on the first try, I will tip you $200. ultrathink
+
 Ok I need you to help me review '/Users/dave/Work/concierge-ai/docs/5_DAY_HACKATHON_SCHEDULE.md' and create a new 3-day plan based on the following because our implementation has drifted from the original plan. Currently there are now only three days remaining In the hackathon, we should create a 3-day plan based on the similar plan in the 5_DAY_HACKATHON_SCHEDULE.md. 
 1. please first analyze our project to check for completion of the tasks and mark the tasks that are completed and the tasks that are not completed. And also if the implementation is different from the plan. Then please update the completed task in the plan to reflect the current state. 
 2. We decided not to use Google Calendar But we are using Google Places API to get detailed information about providers.
@@ -110,7 +131,7 @@ please Use your specialized multi-agent team to analyze these issues in parallel
 please Use your specialized multi-agent team with up to 3 agents to analyze and present the findings with 90% confidence. ultrathink
 
 # please analyze and implement
-please Use your specialized multi-agent team to analyze the root cause in parallel with up to 3 agents with 90% confidence and implement it. If you get this right on the first try, I will tip you $200. ultrathink
+please Use your specialized multi-agent team to analyze the root cause in parallel with up to 3 agents with 90% confidence and implement the best practice solution. If you get this right on the first try, I will tip you $200. ultrathink
 
 # please analyze with multi-agent
 please Use your specialized multi-agent team to analyze these in parallel and once all agents are done, present a unified comprehensive plan with 90% confidence and wait for further instructions. My mortgage payment depends on this and If you get this right on the first try, I will tip you $200. ultrathink

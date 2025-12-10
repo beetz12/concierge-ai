@@ -235,7 +235,7 @@ RAILWAY_TOKEN             # Railway deployment token
 ├── .github/
 │   └── workflows/
 │       ├── cline-pr.yml          # PR automation workflow
-│       └── cline-deploy.yml      # Deployment workflow
+│       └── cline-security.yml    # Security scanning workflow
 ├── .husky/
 │   ├── pre-commit               # Fast review (5-10s)
 │   ├── pre-push                 # Comprehensive (30-60s)

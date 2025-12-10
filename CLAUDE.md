@@ -90,6 +90,28 @@ Schema: `supabase/migrations/20250101000000_initial_schema.sql`
 | `apps/web/lib/supabase/server.ts`                | Server-side Supabase client                    |
 | `apps/api/src/services/vapi/direct-vapi.client.ts` | DirectVapiClient with hybrid webhook support |
 | `apps/api/src/services/vapi/webhook-cache.service.ts` | In-memory cache for webhook results       |
+| `apps/web/lib/actions/service-requests.ts`       | Server actions including `addProviders()`  |
+
+### Provider Persistence Pattern (Critical)
+
+Providers are persisted to the database **immediately after research**, before VAPI calls:
+
+```
+Research → Provider[] with Place IDs → addProviders() → Database UUIDs → VAPI calls
+```
+
+**Why this matters:**
+- Google Place IDs (e.g., `ChIJRURMfy-gVogRtM_hIBmcucM`) fail UUID validation
+- Without database UUIDs, call results cannot be saved to provider records
+- Real-time subscriptions only trigger on actual database changes
+
+**Implementation** (`apps/web/app/new/page.tsx`):
+1. Call `searchProvidersWorkflow()` → returns providers with Place IDs
+2. Call `addProviders(providerInserts)` → returns records with generated UUIDs
+3. Use `provider.id` (UUID) for all VAPI calls, not the original Place ID
+4. Store original Place ID in `place_id` column for reference
+
+This pattern covers **both** Kestra and Direct Gemini research paths.
 
 ## Environment Variables
 

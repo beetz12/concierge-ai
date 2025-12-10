@@ -173,6 +173,10 @@ export class DirectVapiClient {
   /**
    * Wait for webhook result by polling the backend cache
    * Returns the result if found, or null to trigger fallback to VAPI polling
+   *
+   * IMPORTANT: If webhook (ngrok) is not running, we'll get 404s from the cache.
+   * We detect this pattern and fall back to VAPI polling early instead of waiting
+   * the full timeout.
    */
   private async waitForWebhookResult(
     callId: string,
@@ -181,8 +185,14 @@ export class DirectVapiClient {
     const startTime = Date.now();
     const pollInterval = 2000; // Poll backend cache every 2s
 
+    // Early fallback detection: if we get too many consecutive 404s,
+    // the webhook likely isn't working (e.g., ngrok not running)
+    const MAX_CONSECUTIVE_404S = 30; // 30 * 2s = 60 seconds of 404s before giving up
+    let consecutive404Count = 0;
+    let hasEverReceivedData = false;
+
     this.logger.debug(
-      { callId, timeoutMs },
+      { callId, timeoutMs, maxConsecutive404s: MAX_CONSECUTIVE_404S },
       "Waiting for webhook result from backend cache",
     );
 
@@ -195,6 +205,10 @@ export class DirectVapiClient {
         if (response.ok) {
           const result = (await response.json()) as { data?: CallResult & { dataStatus?: string } };
           const data = result.data;
+
+          // Reset 404 counter on successful response
+          consecutive404Count = 0;
+          hasEverReceivedData = true;
 
           // Check if data is complete (webhook received and enriched)
           if (data && data.dataStatus === "complete") {
@@ -211,6 +225,25 @@ export class DirectVapiClient {
               { callId, dataStatus: "partial" },
               "Webhook received but enrichment in progress",
             );
+          }
+        } else if (response.status === 404) {
+          consecutive404Count++;
+
+          // Only log periodically to avoid spam
+          if (consecutive404Count % 10 === 0) {
+            this.logger.debug(
+              { callId, consecutive404Count, max: MAX_CONSECUTIVE_404S },
+              "Webhook cache returning 404s (webhook may not be configured)",
+            );
+          }
+
+          // If we've never received data and keep getting 404s, webhook likely isn't working
+          if (!hasEverReceivedData && consecutive404Count >= MAX_CONSECUTIVE_404S) {
+            this.logger.warn(
+              { callId, consecutive404Count },
+              "Too many consecutive 404s - webhook appears unavailable (is ngrok running?). Falling back to VAPI polling.",
+            );
+            return null;
           }
         }
       } catch (error) {

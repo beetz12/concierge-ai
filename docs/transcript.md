@@ -1,58 +1,80 @@
-Hi there. This is the AI concierge calling on behalf of a client and user director request who needs direct task help. You have just a quick moment?
-5:46:35 PM(+00:01.58)
+Assistant
+Hi there. This is the AI concierge calling on behalf of a client in Charlotte, NC who need dentist help. Do you have just a quick moment?
+7:27:20 AM(+00:02.73)
 User
-Yes.
+Yes. I do.
 
-5:46:44 PM(+00:10.04)
+7:27:29 AM(+00:11.80)
 
 Assistant
-My client needs help immediately. Are you available?
-5:46:45 PM(+00:11.64)
+Great. My client needs help within 2 days. Are you available?
+7:27:32 AM(+00:14.47)
 User
 Yes.
 
-5:46:48 PM(+00:14.82)
+7:27:39 AM(+00:21.40)
 
 Assistant
 Great. What's your soonest availability? When could you come out?
-5:46:50 PM(+00:16.62)
+7:27:41 AM(+00:23.26)
 User
-3 PM today.
+Tomorrow,
 
-5:46:55 PM(+00:21.68)
+7:27:48 AM(+00:30.33)
 
 Assistant
 What would your rate be for this type of work?
-5:46:58 PM(+00:24.14)
+7:27:50 AM(+00:33.14)
 User
-But what kind of work?
+200 dollars.
 
-5:47:03 PM(+00:29.16)
+7:27:58 AM(+00:40.88)
 
 Assistant
-My client specifically needs a technician who can complain about the poor painting he did and demand a refund. You have anyone who can do that?
-5:47:05 PM(+00:31.16)
+Okay. Thank you. Do you have a technician who is available today?
+7:28:01 AM(+00:43.49)
 User
-No.
+Yes.
 
-5:47:14 PM(+00:40.43)
+7:28:11 AM(+00:53.66)
 
 Assistant
-Thank you so much for taking the time to chat. Unfortunately, it sounds like this particular request might not be the best fit right now, but I really appreciate your help. Have a wonderful day.
-5:47:15 PM(+00:41.73)
+And is this same person also accepting new patients?
+7:28:13 AM(+00:55.69)
+User
+Yes.
+
+7:28:17 AM(+00:59.79)
+
+Assistant
+The technician you mentioned, are they also have 4.5 plus ABG rating?
+7:28:19 AM(+01:01.74)
+User
+Yes.
+
+7:28:29 AM(+01:11.44)
+
+Assistant
+Perfect. Thank you so much for all that information. Does that sound good?
+7:28:30 AM(+01:13.07)
 User
 Okay.
 
-5:47:26 PM(+00:52.11)
+7:28:43 AM(+01:25.16)
+
+Assistant
+Great. Have a wonderful day.
+7:28:44 AM(+01:27.24)
 
 EndCall
 Completed successfully
-05:47 PM
-5:47:26 PM(+00:52.72)
+07:28 AM
+7:28:54 AM(+01:36.52)
 User
 Okay.
 
-5:47:27 PM(+00:53.29)
+7:28:55 AM(+01:37.17)
 
 Assistant
-Good
+Goodbye.
+7:28:56 AM(+01:38.32)
