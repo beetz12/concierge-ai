@@ -31,6 +31,8 @@ export interface CallProviderRequest {
   providerPhone: string; // Must be E.164 format (+1XXXXXXXXXX)
   serviceNeeded: string;
   userCriteria: string;
+  problemDescription?: string; // Detailed problem description
+  clientName?: string; // Client's name for personalized greeting
   location: string;
   urgency: "immediate" | "within_24_hours" | "within_2_days" | "flexible";
   serviceRequestId?: string;

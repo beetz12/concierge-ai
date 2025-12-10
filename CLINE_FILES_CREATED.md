@@ -111,13 +111,10 @@ This document lists all files created for the Cline CLI integration.
     - Merge blocking on critical issues
     - **Duration**: 9-14 minutes
 
-16. **`.github/workflows/cline-deploy.yml`**
-    - Deployment pipeline
-    - Pre-deploy validation
-    - Vercel deployment (web)
-    - Railway deployment (api)
-    - Post-deploy health checks
-    - **Duration**: 5-10 minutes
+16. **`.github/workflows/cline-security.yml`**
+    - Security scanning workflow
+    - Automated vulnerability detection
+    - **Note**: Deployment handled natively by Vercel/Railway integrations
 
 ### 🪝 Git Hooks (3 files - created by setup script)
 
@@ -169,7 +166,7 @@ This document lists all files created for the Cline CLI integration.
 | security-scan.sh             | Script   | ~250  | High       |
 | refactor-analysis.sh         | Script   | ~150  | Medium     |
 | cline-pr.yml                 | Workflow | ~200  | High       |
-| cline-deploy.yml             | Workflow | ~150  | Medium     |
+| cline-security.yml           | Workflow | ~400  | Medium     |
 
 ## Directory Structure
 
@@ -178,7 +175,7 @@ concierge-ai/
 ├── .github/
 │   └── workflows/
 │       ├── cline-pr.yml              # ✅ Created
-│       └── cline-deploy.yml          # ✅ Created
+│       └── cline-security.yml        # ✅ Created
 ├── .husky/                            # ⚙️ Created by setup script
 │   ├── pre-commit                    # ✅ Created
 │   ├── pre-push                      # ✅ Created

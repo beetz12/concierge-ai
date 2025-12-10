@@ -38,6 +38,7 @@ export default function DirectTask() {
   const { addRequest, updateRequest } = useAppContext();
 
   const [formData, setFormData] = useState({
+    clientName: "",
     name: "",
     phone: "",
     task: "",
@@ -137,6 +138,7 @@ export default function DirectTask() {
             providerPhone: phoneToCall,
             serviceNeeded: "Direct Task",
             userCriteria: data.task,
+            clientName: data.clientName,
             location: "User Direct Request",
             urgency: "immediate",
             serviceRequestId: reqId,
@@ -215,6 +217,24 @@ export default function DirectTask() {
         onSubmit={handleSubmit}
         className="bg-surface p-8 rounded-2xl border border-surface-highlight shadow-xl space-y-6"
       >
+        <div className="mb-6">
+          <label className="block text-sm font-semibold text-slate-300 mb-2">
+            Your Name
+          </label>
+          <div className="relative">
+            <User className="absolute left-3 top-3.5 w-5 h-5 text-slate-500" />
+            <input
+              type="text"
+              required
+              placeholder="e.g. John Smith"
+              className="w-full pl-10 pr-4 py-3 rounded-xl border border-surface-highlight focus:border-primary-500 focus:ring-2 focus:ring-primary-500/20 outline-none transition-all bg-abyss text-slate-100 placeholder-slate-600"
+              value={formData.clientName}
+              onChange={(e) => setFormData({ ...formData, clientName: e.target.value })}
+            />
+          </div>
+          <p className="text-xs text-slate-500 mt-1">The AI will introduce itself as your personal assistant</p>
+        </div>
+
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div>
             <label className="block text-sm font-semibold text-slate-300 mb-2">

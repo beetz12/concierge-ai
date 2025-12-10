@@ -62,8 +62,8 @@
      └─ README.md                    - Scripts documentation
 
   ⚙️ GitHub Actions (2 files):
-  ├─ .github/workflows/cline-pr.yml     - PR automation (9-14m)
-  └─ .github/workflows/cline-deploy.yml - Deploy pipeline (5-10m)
+  ├─ .github/workflows/cline-pr.yml       - PR automation (9-14m)
+  └─ .github/workflows/cline-security.yml - Security scanning
 
   🪝 Git Hooks (3 files - created by setup):
   ├─ .husky/pre-commit               - Fast review (5-10s)

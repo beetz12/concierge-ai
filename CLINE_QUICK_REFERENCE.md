@@ -332,7 +332,7 @@ scripts/cline/
 
 .github/workflows/
 ├── cline-pr.yml           # PR automation
-└── cline-deploy.yml       # Deployment pipeline
+└── cline-security.yml     # Security scanning
 ```
 
 ### Environment Files

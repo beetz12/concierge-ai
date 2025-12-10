@@ -1148,6 +1148,152 @@ erDiagram
     }
 ```
 
+### Provider Persistence Architecture (December 2025)
+
+This section documents the database-first pattern for provider persistence, which ensures proper UUID-based tracking through the entire call lifecycle.
+
+#### The Problem Solved
+
+Previously, providers from research used Google Place IDs (e.g., `ChIJRURMfy-gVogRtM_hIBmcucM`) as their identifiers. These IDs:
+- Were never persisted to the database
+- Failed UUID validation in `CallResultService`
+- Prevented call results from being saved to provider records
+- Broke Supabase real-time subscriptions (no DB changes to trigger)
+
+#### The Solution: Database-First Pattern
+
+Providers are now INSERT-ed into the database **immediately after research completes**, before any VAPI calls are made. This generates proper UUIDs that flow through the entire system.
+
+```mermaid
+flowchart TD
+    subgraph Research Phase
+        A[User submits request] --> B[searchProvidersWorkflow]
+        B --> C{Kestra or Direct?}
+        C -->|Kestra| D[Kestra Research Flow]
+        C -->|Direct| E[Direct Gemini + Maps]
+        D --> F[Provider[] with Place IDs]
+        E --> F
+    end
+
+    subgraph Persistence Phase
+        F --> G[addProviders Server Action]
+        G --> H[(Supabase INSERT)]
+        H --> I[Returns records with UUIDs]
+    end
+
+    subgraph Calling Phase
+        I --> J[callProviderLive with UUID]
+        J --> K[VAPI Call + UUID in metadata]
+        K --> L{Webhook or Polling?}
+        L -->|Webhook| M[Webhook extracts UUID]
+        L -->|Polling| N[Direct poll completes]
+        M --> O[CallResultService.saveCallResult]
+        N --> O
+        O --> P[(UPDATE providers SET call_result...)]
+    end
+
+    subgraph Real-time Phase
+        P --> Q[Supabase triggers change]
+        Q --> R[Frontend subscription fires]
+        R --> S[UI updates automatically]
+    end
+
+    style G fill:#4a90e2,color:#fff
+    style H fill:#7bed9f,color:#000
+    style I fill:#7bed9f,color:#000
+    style P fill:#7bed9f,color:#000
+```
+
+#### Key Implementation Details
+
+**1. Provider Insertion** (`apps/web/app/new/page.tsx`):
+
+```typescript
+// After research completes, INSERT providers into database
+const providerInserts = workflowResult.providers.map((p) => ({
+  request_id: reqId,
+  name: p.name,
+  phone: p.phone || null,
+  rating: p.rating || null,
+  address: p.address || null,
+  source: "Google Maps" as const,
+  place_id: p.placeId || p.id || null,  // Store Google Place ID for reference
+  review_count: p.reviewCount || null,
+  distance: p.distance || null,
+  // ... other enrichment data
+}));
+
+// Database generates UUIDs automatically
+const dbProviders = await addProviders(providerInserts);
+
+// Use database UUIDs for all subsequent operations
+providers = dbProviders.map((dbp) => ({
+  id: dbp.id,  // Database UUID - NOT Google Place ID
+  name: dbp.name,
+  placeId: dbp.place_id,  // Keep Place ID for reference only
+  // ...
+}));
+```
+
+**2. UUID in VAPI Metadata** (`apps/api/src/services/vapi/webhook-config.ts`):
+
+```typescript
+export function createWebhookMetadata(request: CallRequest) {
+  return {
+    providerId: request.providerId || "",  // Database UUID
+    serviceRequestId: request.serviceRequestId || "",
+    providerName: request.providerName,
+    // ...
+  };
+}
+```
+
+**3. UUID Validation** (`apps/api/src/services/vapi/call-result.service.ts`):
+
+```typescript
+// Only update if providerId is a valid UUID
+if (request.providerId && isValidUuid(request.providerId)) {
+  await this.updateProvider(request.providerId, result);
+} else if (request.providerId) {
+  // Non-UUID IDs (e.g., "task-123" for Direct Tasks) are logged and skipped
+  this.logger.info({ providerId }, "Skipping - non-UUID ID");
+}
+```
+
+#### Coverage: Both Kestra and Direct API Paths
+
+This fix covers **both** research paths because:
+
+1. **Unified Frontend**: `searchProvidersWorkflow()` abstracts both Kestra and Direct Gemini backends
+2. **Single Insertion Point**: `addProviders()` is called regardless of research method
+3. **Same Provider[] Interface**: Both backends return the same `ResearchResult` structure
+
+| Research Path | ID Before Fix | ID After Fix |
+|---------------|---------------|--------------|
+| Kestra | `kestra-1733800000-0` | UUID from database |
+| Direct Gemini (Places) | `ChIJ0Y...` (Place ID) | UUID from database |
+| Direct Gemini (Maps) | `gemini-maps-1733800000-0` | UUID from database |
+| Direct Gemini (JSON) | `gemini-json-1733800000-0` | UUID from database |
+
+#### Data Flow Summary
+
+| Step | Component | ID Type | Purpose |
+|------|-----------|---------|---------|
+| 1 | Research API | Place ID / Temp ID | Initial search results |
+| 2 | `addProviders()` | **UUID generated** | Database persistence |
+| 3 | `callProviderLive()` | UUID | VAPI call request |
+| 4 | VAPI Metadata | UUID | Travels with call |
+| 5 | Webhook/Polling | UUID | Extracted from metadata |
+| 6 | `CallResultService` | UUID | Database UPDATE query |
+| 7 | Real-time Sub | UUID | Triggers on provider update |
+
+#### Benefits
+
+1. **Call Results Persist**: `CallResultService.updateProvider()` can find and update provider records
+2. **Real-time Works**: Supabase subscriptions trigger on actual database changes
+3. **Foreign Keys Valid**: `selected_provider_id` references work correctly
+4. **Audit Trail**: Complete history of provider research → calling → selection
+
 ### Call Tracking Columns (providers table)
 
 | Column                  | Type        | Description                                                                     |

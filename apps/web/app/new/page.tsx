@@ -4,7 +4,7 @@ import React, { useState } from "react";
 import { useRouter } from "next/navigation";
 import { useAppContext } from "@/lib/providers/AppProvider";
 import { RequestStatus, RequestType, ServiceRequest } from "@/lib/types";
-import { Search, MapPin, AlertCircle, Sparkles } from "lucide-react";
+import { Search, MapPin, AlertCircle, Sparkles, User } from "lucide-react";
 import {
   simulateCall,
   selectBestProvider,
@@ -27,6 +27,7 @@ const isAdminTestMode = !!ADMIN_TEST_NUMBER;
 import {
   createServiceRequest,
   updateServiceRequest,
+  addProviders,
 } from "@/lib/actions/service-requests";
 
 export default function NewRequest() {
@@ -34,10 +35,13 @@ export default function NewRequest() {
   const { addRequest, updateRequest } = useAppContext();
 
   const [formData, setFormData] = useState({
+    clientName: "",
     title: "",
     description: "",
     location: "",
     criteria: "",
+    urgency: "within_2_days" as "immediate" | "within_24_hours" | "within_2_days" | "flexible",
+    minRating: 4.5,
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -99,18 +103,71 @@ export default function NewRequest() {
       const workflowResult = await searchProvidersWorkflow({
         service: data.title,
         location: data.location,
+        minRating: data.minRating,
         serviceRequestId: reqId,
       });
 
-      // Map workflow result to match existing format
-      const providers = workflowResult.providers.map((p) => ({
-        id: p.id,
+      // CRITICAL: Insert providers into database with proper UUIDs
+      // This enables call results to be persisted and real-time subscriptions to work
+      const providerInserts = workflowResult.providers.map((p) => ({
+        request_id: reqId,
         name: p.name,
-        phone: p.phone,
-        rating: p.rating,
-        address: p.address,
-        reason: p.reason || "",
+        phone: p.phone || null,
+        rating: p.rating || null,
+        address: p.address || null,
+        source: "Google Maps" as const,
+        // Store Google Place ID and other research data
+        place_id: p.placeId || p.id || null,
+        review_count: p.reviewCount || null,
+        distance: p.distance || null,
+        distance_text: p.distanceText || null,
+        hours_of_operation: p.hoursOfOperation || null,
+        is_open_now: p.isOpenNow ?? null,
+        google_maps_uri: p.googleMapsUri || null,
+        website: p.website || null,
+        international_phone: p.internationalPhone || null,
       }));
+
+      let providers: Array<{
+        id: string;
+        name: string;
+        phone?: string;
+        rating?: number;
+        address?: string;
+        reason: string;
+        placeId?: string;
+      }> = [];
+
+      try {
+        // Insert into database - returns records with generated UUIDs
+        const dbProviders = await addProviders(providerInserts);
+        console.log(
+          `[Concierge] Persisted ${dbProviders.length} providers to database with UUIDs`,
+        );
+
+        // Map database records to local format, using database UUIDs as IDs
+        providers = dbProviders.map((dbp, idx) => ({
+          id: dbp.id, // This is the database UUID - critical for VAPI call persistence
+          name: dbp.name,
+          phone: dbp.phone || undefined,
+          rating: dbp.rating || undefined,
+          address: dbp.address || undefined,
+          reason: workflowResult.providers[idx]?.reason || "",
+          placeId: dbp.place_id || undefined, // Keep original Place ID for reference
+        }));
+      } catch (dbErr) {
+        console.error("[Concierge] Failed to persist providers to database:", dbErr);
+        // Fallback to original IDs if database insert fails (less ideal but keeps flow working)
+        providers = workflowResult.providers.map((p) => ({
+          id: p.id,
+          name: p.name,
+          phone: p.phone,
+          rating: p.rating,
+          address: p.address,
+          reason: p.reason || "",
+          placeId: p.placeId || p.id,
+        }));
+      }
 
       const searchLog = {
         timestamp: new Date().toISOString(),
@@ -189,9 +246,11 @@ export default function NewRequest() {
                 providerName: provider.name,
                 providerPhone: phoneToCall,
                 serviceNeeded: data.title,
+                problemDescription: data.description,
                 userCriteria: data.criteria,
                 location: data.location,
-                urgency: "within_2_days",
+                clientName: data.clientName,
+                urgency: data.urgency,
                 serviceRequestId: reqId,
                 providerId: provider.id,
               });
@@ -311,6 +370,24 @@ export default function NewRequest() {
       >
         <div>
           <label className="block text-sm font-semibold text-slate-300 mb-2">
+            Your Name
+          </label>
+          <div className="relative">
+            <User className="absolute left-3 top-3.5 w-5 h-5 text-slate-500" />
+            <input
+              type="text"
+              required
+              placeholder="e.g. John Smith"
+              className="w-full pl-10 pr-4 py-3 rounded-xl border border-surface-highlight focus:border-primary-500 focus:ring-2 focus:ring-primary-500/20 outline-none transition-all bg-abyss text-slate-100 placeholder-slate-600"
+              value={formData.clientName}
+              onChange={(e) => setFormData({ ...formData, clientName: e.target.value })}
+            />
+          </div>
+          <p className="text-xs text-slate-500 mt-1">The AI will introduce itself as your personal assistant</p>
+        </div>
+
+        <div>
+          <label className="block text-sm font-semibold text-slate-300 mb-2">
             What service do you need?
           </label>
           <div className="relative">
@@ -349,6 +426,38 @@ export default function NewRequest() {
 
         <div>
           <label className="block text-sm font-semibold text-slate-300 mb-2">
+            How Urgent?
+          </label>
+          <select
+            value={formData.urgency}
+            onChange={(e) => setFormData({ ...formData, urgency: e.target.value as typeof formData.urgency })}
+            className="w-full px-4 py-3 rounded-xl border border-surface-highlight focus:border-primary-500 focus:ring-2 focus:ring-primary-500/20 outline-none transition-all bg-abyss text-slate-100"
+          >
+            <option value="immediate">Immediate (ASAP)</option>
+            <option value="within_24_hours">Within 24 hours</option>
+            <option value="within_2_days">Within 2 days</option>
+            <option value="flexible">Flexible timing</option>
+          </select>
+        </div>
+
+        <div>
+          <label className="block text-sm font-semibold text-slate-300 mb-2">
+            Minimum Rating: {formData.minRating.toFixed(1)} stars
+          </label>
+          <input
+            type="range"
+            min="0"
+            max="5"
+            step="0.5"
+            value={formData.minRating}
+            onChange={(e) => setFormData({ ...formData, minRating: parseFloat(e.target.value) })}
+            className="w-full h-2 bg-surface-highlight rounded-lg appearance-none cursor-pointer accent-primary-500"
+          />
+          <p className="text-xs text-slate-500 mt-1">Providers below this rating will be filtered out</p>
+        </div>
+
+        <div>
+          <label className="block text-sm font-semibold text-slate-300 mb-2">
             Detailed Description
           </label>
           <textarea
@@ -377,7 +486,7 @@ export default function NewRequest() {
           <input
             type="text"
             required
-            placeholder="e.g. 4.7+ stars, available within 2 days, licensed"
+            placeholder="e.g. licensed, accepts new patients, background check required"
             className="w-full px-4 py-3 rounded-xl border border-surface-highlight focus:border-primary-500 focus:ring-2 focus:ring-primary-500/20 outline-none transition-all bg-abyss text-slate-100 placeholder-slate-600"
             value={formData.criteria}
             onChange={(e) =>

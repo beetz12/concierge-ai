@@ -8,6 +8,7 @@ import {
   type InteractionLog,
 } from "../services/gemini.js";
 import { analyzeDirectTask, type AnalyzeDirectTaskRequest } from "../services/direct-task/index.js";
+import { analyzeResearchPrompt, type ResearchPromptRequest } from "../services/research/prompt-analyzer.js";
 
 // Zod schemas for request validation
 const searchProvidersSchema = z.object({
@@ -67,6 +68,16 @@ const analyzeDirectTaskSchema = z.object({
   taskDescription: z.string().min(1, "Task description is required"),
   contactName: z.string().min(1, "Contact name is required"),
   contactPhone: z.string().optional(),
+});
+
+const analyzeResearchPromptSchema = z.object({
+  serviceType: z.string().min(1, "Service type is required"),
+  problemDescription: z.string().optional().default(""),
+  userCriteria: z.string().min(1, "User criteria is required"),
+  location: z.string().min(1, "Location is required"),
+  urgency: z.string().min(1, "Urgency is required"),
+  providerName: z.string().min(1, "Provider name is required"),
+  clientName: z.string().min(1, "Client name is required"),
 });
 
 export default async function geminiRoutes(fastify: FastifyInstance) {
@@ -484,6 +495,120 @@ export default async function geminiRoutes(fastify: FastifyInstance) {
       try {
         const body = analyzeDirectTaskSchema.parse(request.body);
         const result = await analyzeDirectTask(body);
+        return result;
+      } catch (error: any) {
+        if (error instanceof z.ZodError) {
+          return reply.status(400).send({
+            error: "Validation Error",
+            details: error.errors,
+          });
+        }
+        fastify.log.error(error);
+        return reply.status(500).send({
+          error: "Internal Server Error",
+          message: error.message,
+        });
+      }
+    },
+  );
+
+  /**
+   * POST /analyze-research-prompt
+   * Analyze a research request and generate service-specific VAPI prompt
+   */
+  fastify.post(
+    "/analyze-research-prompt",
+    {
+      schema: {
+        description: "Analyze research request and generate contextual VAPI prompt using Gemini",
+        tags: ["gemini"],
+        body: {
+          type: "object",
+          required: ["serviceType", "userCriteria", "location", "urgency", "providerName", "clientName"],
+          properties: {
+            serviceType: {
+              type: "string",
+              description: "Type of service being requested",
+            },
+            problemDescription: {
+              type: "string",
+              description: "Description of the problem (optional)",
+            },
+            userCriteria: {
+              type: "string",
+              description: "User's specific requirements and criteria",
+            },
+            location: {
+              type: "string",
+              description: "Location where service is needed",
+            },
+            urgency: {
+              type: "string",
+              description: "Timeline/urgency of the request",
+            },
+            providerName: {
+              type: "string",
+              description: "Name of the provider to call",
+            },
+            clientName: {
+              type: "string",
+              description: "Name of the client requesting service",
+            },
+          },
+        },
+        response: {
+          200: {
+            type: "object",
+            properties: {
+              serviceCategory: {
+                type: "string",
+                enum: ["medical", "home_service", "professional", "retail", "other"],
+              },
+              terminology: {
+                type: "object",
+                properties: {
+                  providerTerm: { type: "string" },
+                  appointmentTerm: { type: "string" },
+                  visitDirection: { type: "string" },
+                },
+              },
+              contextualQuestions: {
+                type: "array",
+                items: { type: "string" },
+              },
+              systemPrompt: { type: "string" },
+              firstMessage: { type: "string" },
+            },
+          },
+          400: {
+            type: "object",
+            properties: {
+              error: { type: "string" },
+              details: { type: "array" },
+            },
+          },
+          500: {
+            type: "object",
+            properties: {
+              error: { type: "string" },
+              message: { type: "string" },
+            },
+          },
+        },
+      },
+    },
+    async (request, reply) => {
+      try {
+        const body = analyzeResearchPromptSchema.parse(request.body);
+        const result = await analyzeResearchPrompt({
+          serviceType: body.serviceType,
+          problemDescription: body.problemDescription || "",
+          userCriteria: body.userCriteria,
+          location: body.location,
+          urgency: body.urgency,
+          providerName: body.providerName,
+          clientName: body.clientName,
+        });
         return result;
       } catch (error: any) {
         if (error instanceof z.ZodError) {

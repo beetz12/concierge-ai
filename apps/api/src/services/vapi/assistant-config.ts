@@ -335,14 +335,35 @@ Was the task completed successfully? What specific outcome was achieved?`,
  */
 function createProviderSearchConfig(request: CallRequest) {
   const urgencyText = request.urgency.replace(/_/g, " ");
+  const clientName = request.clientName || "my client";
 
   const systemPrompt = `You are a warm, friendly AI Concierge making a real phone call to ${request.providerName}.
-You are calling on behalf of a client in ${request.location} who needs ${request.serviceNeeded} services.
+
+═══════════════════════════════════════════════════════════════════
+YOUR IDENTITY
+═══════════════════════════════════════════════════════════════════
+You are ${clientName}'s personal AI assistant. Introduce yourself as:
+"Hi there! This is ${clientName}'s personal AI assistant..."
+
+You are calling on behalf of ${clientName} in ${request.location} who needs ${request.serviceNeeded} services.
+
+═══════════════════════════════════════════════════════════════════
+HANDLING REQUESTS FOR INFORMATION YOU DON'T HAVE
+═══════════════════════════════════════════════════════════════════
+If the provider asks for information you don't have (like ${clientName}'s address,
+phone number, insurance, payment info, etc.), respond:
+
+"I'm just checking availability and rates right now. If ${clientName} decides
+to schedule with you, they'll provide all those details when we call back
+to book the appointment."
+
+DO NOT make up information. DO NOT guess. Just explain you're gathering
+initial information first.
 
 ═══════════════════════════════════════════════════════════════════
 CRITICAL: SINGLE PERSON REQUIREMENT
 ═══════════════════════════════════════════════════════════════════
-Your client needs to find ONE SINGLE PERSON who has ALL of these qualities:
+${clientName} needs to find ONE SINGLE PERSON who has ALL of these qualities:
 ${request.userCriteria}
 
 You are NOT looking for different people with different qualities.
@@ -391,7 +412,7 @@ As you gather information, watch for responses that DISQUALIFY the provider:
 - They say their rate is significantly higher than reasonable
 
 If disqualified, politely wrap up:
-"Thank you so much for taking the time to chat. Unfortunately, it sounds like this particular request might not be the best fit right now, but I really appreciate your help. Have a wonderful day!"
+"Thank you so much for taking the time to chat. Unfortunately, it sounds like this particular request might not be the best fit for ${clientName} right now, but I really appreciate your help. Have a wonderful day!"
 Then immediately invoke endCall.
 
 DO NOT mention calling back to schedule if they are disqualified.
@@ -411,7 +432,7 @@ CONVERSATION FLOW
 ═══════════════════════════════════════════════════════════════════
 1. GREETING: Ask if they have a moment to chat
 
-2. AVAILABILITY: "My client needs help ${urgencyText}. Are you available?"
+2. AVAILABILITY: "${clientName} needs help ${urgencyText}. Are you available?"
    - If NO: Thank them warmly and END THE CALL
    - If YES: "Great! What's your soonest availability? When could you come out?"
    - Get their specific earliest date/time (e.g., "Tomorrow at 2pm", "Friday morning")
@@ -425,22 +446,24 @@ CONVERSATION FLOW
 
 5. CLOSING & CALLBACK:
    IF provider meets ALL criteria:
-   Say: "Perfect, thank you so much for all that information! Once I confirm with my client, if they decide to proceed, I'll call you back to schedule. Does that sound good?"
+   Say: "Perfect, thank you so much for all that information! I'll share this with ${clientName} and if they'd like to proceed, we'll call back to schedule. Does that sound good?"
    - Wait for their response (usually "yes", "sounds good", etc.)
    - Acknowledge: "Great, have a wonderful day!"
    - Then IMMEDIATELY invoke endCall
 
    IF provider is disqualified:
    Use the polite exit script (no mention of scheduling):
-   "Thank you so much for taking the time to chat. Unfortunately, it sounds like this particular request might not be the best fit right now, but I really appreciate your help. Have a wonderful day!"
+   "Thank you so much for taking the time to chat. Unfortunately, it sounds like this particular request might not be the best fit for ${clientName} right now, but I really appreciate your help. Have a wonderful day!"
    - Then IMMEDIATELY invoke endCall
 
 ═══════════════════════════════════════════════════════════════════
 ENDING THE CALL
 ═══════════════════════════════════════════════════════════════════
-You have an endCall function available. You MUST use it to hang up.
-After your closing statement, immediately invoke endCall.
-DO NOT wait for them to hang up - YOU end the call.
+After gathering the information you need, say:
+"Thank you so much! I'll share this with ${clientName} and if they'd like to proceed, we'll call back to schedule. Have a wonderful day!"
+
+Then IMMEDIATELY use the endCall tool. DO NOT wait for their response.
+DO NOT say "goodbye" - just invoke endCall right after your closing statement.
 
 Use endCall when:
 - You have all the information you need
@@ -453,7 +476,7 @@ TONE
 ═══════════════════════════════════════════════════════════════════
 Be warm, genuine, and conversational - like a helpful friend.
 Acknowledge their answers: "That's great!", "Perfect!", "I appreciate that!"
-For unusual requirements, frame naturally: "My client specifically mentioned..."`;
+For unusual requirements, frame naturally: "${clientName} specifically mentioned..."`;
 
   return {
     name: `Concierge-${Date.now().toString().slice(-8)}`,
@@ -476,6 +499,8 @@ For unusual requirements, frame naturally: "My client specifically mentioned..."
           content: systemPrompt,
         },
       ],
+      tools: [{ type: "endCall" }],  // Best practice for 2025 - explicit tool declaration
+      temperature: 0.3,  // Lower temperature for reliable tool invocation
     },
 
     // Transcription
@@ -494,7 +519,12 @@ For unusual requirements, frame naturally: "My client specifically mentioned..."
     },
 
     // First message
-    firstMessage: `Hi there! This is the AI Concierge calling on behalf of a client in ${request.location} who needs ${request.serviceNeeded} help. Do you have just a quick moment?`,
+    firstMessage: (() => {
+      const problemText = request.problemDescription
+        ? ` ${clientName} ${request.problemDescription}.`
+        : "";
+      return `Hi there! This is ${clientName}'s personal AI assistant calling to check on ${request.serviceNeeded} services.${problemText} Do you have just a quick moment?`;
+    })(),
 
     // Enable endCall function (VAPI handles tool registration automatically)
     endCallFunctionEnabled: true,
@@ -507,7 +537,7 @@ For unusual requirements, frame naturally: "My client specifically mentioned..."
           {
             role: "system" as const,
             content:
-              "Summarize: Was ONE person found with ALL required qualities? What are their rates? What is their soonest/earliest availability (specific date/time)? Does the provider meet all client requirements?",
+              `Summarize: Was ONE person found with ALL required qualities? What are their rates? What is their soonest/earliest availability (specific date/time)? Does the provider meet all ${clientName}'s requirements?`,
           },
         ],
       },
@@ -546,7 +576,7 @@ For unusual requirements, frame naturally: "My client specifically mentioned..."
             },
             all_criteria_met: {
               type: "boolean",
-              description: "Does the SAME person meet ALL client requirements?",
+              description: `Does the SAME person meet ALL ${clientName}'s requirements?`,
             },
             criteria_details: {
               type: "object",
@@ -589,7 +619,7 @@ For unusual requirements, frame naturally: "My client specifically mentioned..."
         messages: [
           {
             role: "system" as const,
-            content: `Analyze this call. The client needed ONE SINGLE PERSON with ALL these qualities:
+            content: `Analyze this call. ${clientName} needed ONE SINGLE PERSON with ALL these qualities:
 ${request.userCriteria}
 
 Key questions:

@@ -107,16 +107,9 @@ Developer Workflow
 - **Duration**: 9-14 minutes
 - **Merge blocking**: Yes (on critical issues)
 
-#### cline-deploy.yml
+#### Deployment
 
-- **Trigger**: Push to main
-- **Jobs**:
-  - Pre-deploy checks
-  - Deploy to Vercel (web)
-  - Deploy to Railway (api)
-  - Post-deploy validation
-- **Duration**: 5-10 minutes
-- **Rollback**: Automatic on failure
+Deployments are handled natively by Vercel and Railway integrations (auto-deploy on push to main). No GitHub Actions workflow needed.
 
 ## Implementation Status
 
@@ -143,7 +136,7 @@ Developer Workflow
 
 - `/package.json` - Updated with Cline scripts
 - `/.github/workflows/cline-pr.yml` - PR automation
-- `/.github/workflows/cline-deploy.yml` - Deployment pipeline
+- `/.github/workflows/cline-security.yml` - Security scanning
 - `/scripts/setup-husky.sh` - One-command setup
 - `/scripts/cline/*.sh` - Automation scripts
 
@@ -516,7 +509,8 @@ ROI:                    14,783%
 ### Workflows
 
 - **PR Pipeline**: `/.github/workflows/cline-pr.yml`
-- **Deploy Pipeline**: `/.github/workflows/cline-deploy.yml`
+- **Security Pipeline**: `/.github/workflows/cline-security.yml`
+- **Deployment**: Handled natively by Vercel/Railway (no workflow needed)
 
 ### Commands
 
