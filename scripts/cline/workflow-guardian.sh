@@ -225,7 +225,7 @@ PROJECT CONTEXT:
 - AI Concierge is an AI receptionist that researches providers and books appointments
 - Uses Kestra for workflow orchestration
 - Integrates with: Google Gemini (AI), VAPI (phone calls), Supabase (database)
-- Critical flows: research_providers, contact_agent, booking_agent
+- Critical flows: research_providers, contact_agent, contact_providers_concurrent
 
 VALIDATE THIS KESTRA WORKFLOW YAML FOR:
 

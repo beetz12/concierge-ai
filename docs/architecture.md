@@ -428,7 +428,7 @@ graph TD
     end
 
     subgraph External [External APIs]
-        GCal[Google Calendar API]
+        Places[Google Places API]
     end
 
     User((User)) --> Browser
@@ -441,7 +441,7 @@ graph TD
     Kestra -->|Webhook| API
     Kestra -->|Trigger Call| VAPI
     Kestra -->|Generate/Search| Gemini
-    Kestra -->|Schedule Event| GCal
+    Kestra -->|Enrich Data| Places
 
     VAPI -->|Call| PSTN
     VAPI <-->|Stream Audio| Gemini
@@ -974,7 +974,7 @@ Individual flows exist and are now callable via fallback services when Kestra is
 
 - `research_agent.yaml`: Functional (Gemini Search) - **Now with Direct Gemini fallback via ResearchService**.
 - `contact_agent.yaml`: Functional (VAPI Script) - **Now with Direct VAPI fallback via ProviderCallingService**.
-- `booking_agent.yaml`: Functional (GCal Script).
+- `contact_providers_concurrent.yaml`: Functional (Batch concurrent calls).
 
 ### Research Agent Fallback Flow
 
@@ -994,7 +994,7 @@ flowchart TD
 
 ### Target State
 
-The core "Concierge" agentic workflow.
+The core "Concierge" agentic workflow. **Note:** Users select from top 3 recommended providers (not auto-booking).
 
 ```mermaid
 flowchart LR
@@ -1003,20 +1003,32 @@ flowchart LR
     subgraph Agents
         Research["Research Agent<br/>(Gemini Search)"]
         Contact["Contact Agent<br/>(VAPI.ai + Kestra Script)"]
-        Analysis["Analysis Agent<br/>(Evaluation)"]
-        Booking["Booking Agent<br/>(Google Calendar API)"]
+        Analysis["Recommend Agent<br/>(Top 3 Selection)"]
+        Booking["Schedule Agent<br/>(Provider Callback)"]
     end
 
     Research -->|List of Providers| Contact
     Contact -->|Call Transcripts| Analysis
-    Analysis -->|Best Option| Booking
+    Analysis -->|Top 3 Options| UserSelect([User Selects])
+    UserSelect -->|Chosen Provider| Booking
     Booking -->|Confirmation| End([Notify User])
 
     Research -.->|Queries| Gemini[Gemini Grounding]
     Contact -.->|Phone Calls| VAPI[VAPI.ai]
     VAPI -.->|Voice Stream| Gemini
-    Booking -.->|Create Event| GCal[Google Calendar]
+    Analysis -.->|Score & Rank| Gemini
 ```
+
+### Kestra Workflow Status
+
+| Workflow | File | Status |
+|----------|------|--------|
+| `research_providers` | `research_agent.yaml` | Done |
+| `contact_providers` | `contact_agent.yaml` | Done |
+| `contact_providers_concurrent` | `contact_providers_concurrent.yaml` | Done |
+| `recommend_providers` | - | **Needed** |
+| `notify_user` | - | **Needed** (SMS via Twilio) |
+| `schedule_service` | - | **Needed** (VAPI callback) |
 
 ## 3. Data Flow & Real-Time Updates
 

@@ -306,12 +306,10 @@ case "$MODE" in
         ;;
     --full)
         # Handle repos with < 5 commits
-        local commit_count
         commit_count=$(git rev-list --count HEAD 2>/dev/null || echo "0")
 
         if [[ "$commit_count" -lt 5 ]]; then
             echo -e "${BLUE}📋 Mode: Full security audit (all $commit_count commits)${NC}"
-            local base_ref
             base_ref=$(git rev-list --max-parents=0 HEAD 2>/dev/null || echo "HEAD")
             while IFS= read -r file; do
                 [[ -n "$file" ]] && CHANGED_FILES_ARRAY+=("$file")
@@ -348,7 +346,6 @@ if [[ $FILE_COUNT -gt $MAX_FILES ]]; then
     declare -a SIZED_FILES=()
     for file in "${CHANGED_FILES_ARRAY[@]}"; do
         if [[ -f "$file" ]] && [[ -r "$file" ]]; then
-            local lines
             lines=$(wc -l < "$file" 2>/dev/null || echo "0")
             SIZED_FILES+=("$lines:$file")
         fi
@@ -357,7 +354,7 @@ if [[ $FILE_COUNT -gt $MAX_FILES ]]; then
     # Sort and rebuild array
     CHANGED_FILES_ARRAY=()
     while IFS= read -r entry; do
-        local file="${entry#*:}"
+        file="${entry#*:}"
         [[ -n "$file" ]] && CHANGED_FILES_ARRAY+=("$file")
     done < <(printf '%s\n' "${SIZED_FILES[@]}" | sort -t: -k1 -rn | head -n "$MAX_FILES")
 
@@ -400,7 +397,8 @@ fi
 DIFF_LINES=$(echo "$DIFF" | wc -l | tr -d ' ')
 if [[ "$DIFF_LINES" -gt "$MAX_DIFF_LINES" ]]; then
     echo -e "${YELLOW}⚠️  Diff too large ($DIFF_LINES lines), truncating to $MAX_DIFF_LINES lines${NC}"
-    DIFF=$(echo "$DIFF" | head -n "$MAX_DIFF_LINES")
+    # Use printf and || true to avoid SIGPIPE with large diffs
+    DIFF=$(printf '%s' "$DIFF" | head -n "$MAX_DIFF_LINES" || true)
     DIFF="$DIFF
 
 ... [TRUNCATED - showing first $MAX_DIFF_LINES of $DIFF_LINES lines]"

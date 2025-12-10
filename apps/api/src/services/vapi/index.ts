@@ -16,7 +16,6 @@ export { CallResultService } from "./call-result.service.js";
 export { WebhookCacheService } from "./webhook-cache.service.js";
 export {
   ConcurrentCallService,
-  type ConcurrentCallOptions,
   type ConcurrentCallResult,
   type BatchCallOptions,
   type BatchCallResult,

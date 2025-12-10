@@ -46,8 +46,8 @@ echo "━━━━━━━━━━━━━━━━━━━━━━━━�
 echo "🛡️  Step 2/3: Workflow Guardian (Kestra)"
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 
-# Check if any Kestra YAML files are staged
-STAGED_KESTRA=$(git diff --cached --name-only | grep -E 'kestra/flows/.*\.(yaml|yml)$' || true)
+# Check if any Kestra YAML files are staged (excluding deleted files, including renames)
+STAGED_KESTRA=$(git diff --cached --name-only --diff-filter=ACMR | grep -E 'kestra/flows/.*\.(yaml|yml)$' || true)
 
 if [ -n "$STAGED_KESTRA" ]; then
     if [ -x "$PROJECT_ROOT/scripts/cline/workflow-guardian.sh" ]; then

@@ -78,3 +78,51 @@ export type CallStatus = CallResult["status"];
 export type CallMethod = CallResult["callMethod"];
 export type AvailabilityStatus = StructuredCallData["availability"];
 export type CallOutcome = StructuredCallData["call_outcome"];
+
+/**
+ * Factory function to create standardized error results
+ * Used by both Direct VAPI and Kestra paths for consistent error handling
+ */
+export function createErrorResult(
+  error: Error | string,
+  request: Partial<CallRequest>,
+  callMethod: CallMethod
+): CallResult {
+  const errorMessage = error instanceof Error ? error.message : error;
+  return {
+    status: "error",
+    callId: "",
+    callMethod,
+    duration: 0,
+    endedReason: errorMessage,
+    transcript: "",
+    analysis: {
+      summary: "",
+      structuredData: {
+        availability: "unclear",
+        earliest_availability: "",
+        estimated_rate: "",
+        single_person_found: false,
+        all_criteria_met: false,
+        criteria_details: {},
+        disqualified: true,
+        disqualification_reason: errorMessage,
+        call_outcome: "negative",
+        recommended: false,
+        notes: errorMessage,
+      },
+      successEvaluation: "",
+    },
+    provider: {
+      name: request.providerName || "Unknown",
+      phone: request.providerPhone || "",
+      service: request.serviceNeeded || "",
+      location: request.location || "",
+    },
+    request: {
+      criteria: request.userCriteria || "",
+      urgency: request.urgency || "flexible",
+    },
+    error: errorMessage,
+  };
+}

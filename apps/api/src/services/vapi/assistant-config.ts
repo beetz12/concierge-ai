@@ -78,6 +78,20 @@ SPEECH RULES
 - If they ask who you are, say you're an AI assistant calling on behalf of your client
 
 ═══════════════════════════════════════════════════════════════════
+VOICEMAIL / ANSWERING MACHINE DETECTION
+═══════════════════════════════════════════════════════════════════
+If you hear ANY of these indicators, IMMEDIATELY invoke endCall:
+- "Please leave a message after the beep"
+- "You have reached the voicemail of"
+- "No one is available to take your call"
+- "Leave your name and number"
+- Long automated greeting (more than 10 seconds)
+- Beep sound indicating recording
+
+DO NOT leave a voicemail message. DO NOT wait for the beep.
+Simply invoke endCall immediately - we will try again later.
+
+═══════════════════════════════════════════════════════════════════
 CONVERSATION FLOW
 ═══════════════════════════════════════════════════════════════════
 1. GREETING: "Hi, this is an AI assistant calling on behalf of my client. Do you have a moment?"
@@ -128,6 +142,13 @@ Thank them genuinely when they help.`;
     transcriber: {
       provider: "deepgram" as const,
       language: "en",
+    },
+    voicemailDetection: {
+      provider: "twilio",
+      enabled: true,
+      machineDetectionTimeout: 10,
+      machineDetectionSpeechThreshold: 2500,
+      machineDetectionSpeechEndThreshold: 1200,
     },
     firstMessage: `Hi there! This is an AI assistant calling on behalf of my client regarding ${request.providerName}. Do you have just a moment?`,
     endCallFunctionEnabled: true,
@@ -226,6 +247,13 @@ function createDynamicDirectTaskConfig(request: CallRequest, customPrompt: Gener
     transcriber: {
       provider: "deepgram" as const,
       language: "en",
+    },
+    voicemailDetection: {
+      provider: "twilio",
+      enabled: true,
+      machineDetectionTimeout: 10,
+      machineDetectionSpeechThreshold: 2500,
+      machineDetectionSpeechEndThreshold: 1200,
     },
     firstMessage: customPrompt.firstMessage,
     endCallFunctionEnabled: true,
@@ -340,6 +368,20 @@ DO NOT ask questions that are not in the criteria above.
 DO NOT ask about licensing/certification unless it's in the criteria.
 
 ═══════════════════════════════════════════════════════════════════
+VOICEMAIL / ANSWERING MACHINE DETECTION
+═══════════════════════════════════════════════════════════════════
+If you hear ANY of these indicators, IMMEDIATELY invoke endCall:
+- "Please leave a message after the beep"
+- "You have reached the voicemail of"
+- "No one is available to take your call"
+- "Leave your name and number"
+- Long automated greeting (more than 10 seconds)
+- Beep sound indicating recording
+
+DO NOT leave a voicemail message. DO NOT wait for the beep.
+Simply invoke endCall immediately - we will try again later.
+
+═══════════════════════════════════════════════════════════════════
 DISQUALIFICATION DETECTION
 ═══════════════════════════════════════════════════════════════════
 As you gather information, watch for responses that DISQUALIFY the provider:
@@ -440,6 +482,15 @@ For unusual requirements, frame naturally: "My client specifically mentioned..."
     transcriber: {
       provider: "deepgram" as const,
       language: "en",
+    },
+
+    // Voicemail detection
+    voicemailDetection: {
+      provider: "twilio",
+      enabled: true,
+      machineDetectionTimeout: 10,
+      machineDetectionSpeechThreshold: 2500,
+      machineDetectionSpeechEndThreshold: 1200,
     },
 
     // First message

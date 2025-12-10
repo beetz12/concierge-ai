@@ -11,6 +11,7 @@ import type {
   KestraExecutionStatus,
   StructuredCallData,
 } from "./types.js";
+import type { ConcurrentCallResult } from "./concurrent-call.service.js";
 
 interface Logger {
   info: (obj: Record<string, unknown>, msg?: string) => void;
@@ -23,7 +24,6 @@ export class KestraClient {
   private baseUrl: string;
   private namespace: string;
   private flowId = "contact_providers";
-  private concurrentFlowId = "contact_providers_concurrent";
 
   constructor(private logger: Logger) {
     this.baseUrl = process.env.KESTRA_URL || "http://localhost:8082";
@@ -51,15 +51,25 @@ export class KestraClient {
 
   /**
    * Trigger the contact_providers flow and wait for completion
+   * Handles both single provider and array of providers
    */
-  async triggerContactFlow(request: CallRequest): Promise<CallResult> {
+  async triggerContactFlow(
+    request: CallRequest | CallRequest[],
+    options?: { maxConcurrent?: number }
+  ): Promise<CallResult | ConcurrentCallResult> {
+    // Handle array input - use concurrent flow
+    if (Array.isArray(request)) {
+      return this.triggerBatchContactFlow(request, options);
+    }
+
+    // Handle single provider
     this.logger.info(
       {
         provider: request.providerName,
         phone: request.providerPhone,
         flowId: this.flowId,
       },
-      "Triggering Kestra contact flow",
+      "Triggering Kestra contact flow (single provider)",
     );
 
     try {
@@ -77,30 +87,7 @@ export class KestraClient {
         "Kestra flow failed",
       );
 
-      return {
-        status: "error",
-        callId: "",
-        callMethod: "kestra",
-        duration: 0,
-        endedReason: "kestra_error",
-        transcript: "",
-        analysis: {
-          summary: "",
-          structuredData: {} as StructuredCallData,
-          successEvaluation: "",
-        },
-        provider: {
-          name: request.providerName,
-          phone: request.providerPhone,
-          service: request.serviceNeeded,
-          location: request.location,
-        },
-        request: {
-          criteria: request.userCriteria,
-          urgency: request.urgency,
-        },
-        error: error instanceof Error ? error.message : "Unknown error",
-      };
+      return this.createErrorResult(error, request, "kestra");
     }
   }
 
@@ -241,37 +228,43 @@ export class KestraClient {
   }
 
   /**
-   * Trigger concurrent contact flow for multiple providers
-   * Uses Kestra's EachParallel or custom concurrent flow
+   * Trigger batch contact flow for multiple providers
+   * Uses the unified Kestra flow with concurrent processing
    */
-  async triggerConcurrentContactFlow(
-    providers: Array<{ name: string; phone: string }>,
-    config: {
-      serviceNeeded: string;
-      userCriteria: string;
-      location: string;
-      urgency: string;
-      maxConcurrent?: number;
-    },
-  ): Promise<CallResult[]> {
+  private async triggerBatchContactFlow(
+    requests: CallRequest[],
+    options?: { maxConcurrent?: number }
+  ): Promise<ConcurrentCallResult> {
+    if (requests.length === 0) {
+      throw new Error("No requests provided for batch calling");
+    }
+
+    // Use first request for shared config (all requests should have same service/location/urgency)
+    const firstRequest = requests[0]!;
+
     this.logger.info(
       {
-        providerCount: providers.length,
-        flowId: this.concurrentFlowId,
-        maxConcurrent: config.maxConcurrent || 5,
+        providerCount: requests.length,
+        flowId: this.flowId,
+        maxConcurrent: options?.maxConcurrent || 5,
       },
-      "Triggering Kestra concurrent contact flow",
+      "Triggering Kestra batch contact flow",
     );
 
     try {
-      // Prepare inputs for Kestra flow
+      // Prepare inputs for unified Kestra flow
+      const providers = requests.map((r) => ({
+        name: r.providerName,
+        phone: r.providerPhone,
+      }));
+
       const inputs = {
         providers: JSON.stringify(providers),
-        service_needed: config.serviceNeeded,
-        user_criteria: config.userCriteria,
-        location: config.location,
-        urgency: config.urgency,
-        max_concurrent: config.maxConcurrent || 5,
+        service_needed: firstRequest.serviceNeeded,
+        user_criteria: firstRequest.userCriteria,
+        location: firstRequest.location,
+        urgency: firstRequest.urgency,
+        max_concurrent: options?.maxConcurrent || 5,
       };
 
       // Trigger execution
@@ -283,60 +276,41 @@ export class KestraClient {
       // Parse and return results
       return this.parseConcurrentExecutionResults(
         finalState,
-        providers,
-        config,
+        requests,
       );
     } catch (error) {
       this.logger.error(
-        { error, providerCount: providers.length },
-        "Kestra concurrent flow failed",
+        { error, providerCount: requests.length },
+        "Kestra batch flow failed",
       );
 
       // Return error results for all providers
-      return providers.map((provider) => ({
-        status: "error" as const,
-        callId: "",
-        callMethod: "kestra" as const,
-        duration: 0,
-        endedReason: "kestra_error",
-        transcript: "",
-        analysis: {
-          summary: "",
-          structuredData: {
-            availability: "unavailable" as const,
-            estimated_rate: "unknown",
-            single_person_found: false,
-            all_criteria_met: false,
-            call_outcome: "negative" as const,
-            recommended: false,
-            disqualified: true,
-            disqualification_reason: error instanceof Error ? error.message : "Kestra flow failed",
-          },
-          successEvaluation: "",
+      const errorResults = requests.map((request) =>
+        this.createErrorResult(error, request, "kestra")
+      );
+
+      return {
+        results: errorResults,
+        stats: {
+          total: requests.length,
+          successful: 0,
+          failed: requests.length,
+          timedOut: 0,
+          durationMs: 0,
         },
-        provider: {
-          name: provider.name,
-          phone: provider.phone,
-          service: config.serviceNeeded,
-          location: config.location,
-        },
-        request: {
-          criteria: config.userCriteria,
-          urgency: config.urgency,
-        },
-        error: error instanceof Error ? error.message : "Unknown error",
-      }));
+      };
     }
   }
 
   /**
    * Trigger concurrent Kestra execution with flow inputs
+   * Uses the unified flow (contact_providers) with concurrent processing
    */
   private async triggerConcurrentExecution(
     inputs: Record<string, unknown>,
   ): Promise<{ id: string }> {
     const response = await axios.post(
-      `${this.baseUrl}/api/v1/executions/${this.namespace}/${this.concurrentFlowId}`,
+      `${this.baseUrl}/api/v1/executions/${this.namespace}/${this.flowId}`,
       inputs,
       {
         headers: { "Content-Type": "application/json" },
@@ -347,7 +321,7 @@ export class KestraClient {
       {
         executionId: response.data.id,
         namespace: this.namespace,
-        flowId: this.concurrentFlowId,
+        flowId: this.flowId,
       },
       "Kestra concurrent execution triggered",
     );
@@ -361,52 +335,33 @@ export class KestraClient {
    */
   private parseConcurrentExecutionResults(
     state: KestraExecutionStatus,
-    providers: Array<{ name: string; phone: string }>,
-    config: {
-      serviceNeeded: string;
-      userCriteria: string;
-      location: string;
-      urgency: string;
-    },
-  ): CallResult[] {
+    requests: CallRequest[],
+  ): ConcurrentCallResult {
     if (state.state !== "SUCCESS") {
       this.logger.error(
         { state: state.state, executionId: state.id },
-        "Kestra concurrent execution failed",
+        "Kestra batch execution failed",
       );
 
       // Return error results for all providers
-      return providers.map((provider) => ({
-        status: "error" as const,
-        callId: state.id,
-        callMethod: "kestra" as const,
-        duration: 0,
-        endedReason: state.state.toLowerCase(),
-        transcript: "",
-        analysis: {
-          summary: "",
-          structuredData: {
-            availability: "unavailable" as const,
-            estimated_rate: "unknown",
-            single_person_found: false,
-            all_criteria_met: false,
-            call_outcome: "negative" as const,
-            recommended: false,
-          },
-          successEvaluation: "",
+      const errorResults = requests.map((request) =>
+        this.createErrorResult(
+          new Error(`Kestra execution ${state.state.toLowerCase()}`),
+          request,
+          "kestra"
+        )
+      );
+
+      return {
+        results: errorResults,
+        stats: {
+          total: requests.length,
+          successful: 0,
+          failed: requests.length,
+          timedOut: 0,
+          durationMs: 0,
         },
-        provider: {
-          name: provider.name,
-          phone: provider.phone,
-          service: config.serviceNeeded,
-          location: config.location,
-        },
-        request: {
-          criteria: config.userCriteria,
-          urgency: config.urgency,
-        },
-        error: `Kestra execution ${state.state.toLowerCase()}`,
-      }));
+      };
     }
 
     // Try to extract results from different possible output keys
@@ -416,41 +371,28 @@ export class KestraClient {
     if (!rawOutput) {
       this.logger.warn(
         { executionId: state.id },
-        "No results found in Kestra concurrent execution output",
+        "No results found in Kestra batch execution output",
       );
 
-      // Return empty/error results
-      return providers.map((provider) => ({
-        status: "error" as const,
-        callId: state.id,
-        callMethod: "kestra" as const,
-        duration: 0,
-        endedReason: "no_output",
-        transcript: "",
-        analysis: {
-          summary: "",
-          structuredData: {
-            availability: "unavailable" as const,
-            estimated_rate: "unknown",
-            single_person_found: false,
-            all_criteria_met: false,
-            call_outcome: "negative" as const,
-            recommended: false,
-          },
-          successEvaluation: "",
+      // Return error results
+      const errorResults = requests.map((request) =>
+        this.createErrorResult(
+          new Error("No output from Kestra execution"),
+          request,
+          "kestra"
+        )
+      );
+
+      return {
+        results: errorResults,
+        stats: {
+          total: requests.length,
+          successful: 0,
+          failed: requests.length,
+          timedOut: 0,
+          durationMs: 0,
         },
-        provider: {
-          name: provider.name,
-          phone: provider.phone,
-          service: config.serviceNeeded,
-          location: config.location,
-        },
-        request: {
-          criteria: config.userCriteria,
-          urgency: config.urgency,
-        },
-        error: "No output from Kestra execution",
-      }));
+      };
     }
 
     // Parse the results
@@ -458,9 +400,67 @@ export class KestraClient {
       typeof rawOutput === "string" ? JSON.parse(rawOutput) : rawOutput;
 
     // Ensure all results have kestra method identifier
-    return results.map((result) => ({
+    const callResults = results.map((result) => ({
       ...result,
       callMethod: "kestra" as const,
     }));
+
+    // Calculate stats
+    const stats = {
+      total: callResults.length,
+      successful: callResults.filter((r) => r.status === "completed").length,
+      failed: callResults.filter((r) => r.status === "error").length,
+      timedOut: callResults.filter((r) => r.status === "timeout").length,
+      durationMs: 0, // Kestra handles timing internally
+    };
+
+    return {
+      results: callResults,
+      stats,
+    };
+  }
+
+  /**
+   * Create an error result when call fails
+   * Shared utility for consistent error handling
+   */
+  private createErrorResult(
+    error: unknown,
+    request: CallRequest,
+    callMethod: "kestra" | "direct_vapi"
+  ): CallResult {
+    return {
+      status: "error",
+      callId: "",
+      callMethod,
+      duration: 0,
+      endedReason: "kestra_error",
+      transcript: "",
+      analysis: {
+        summary: "",
+        structuredData: {
+          availability: "unavailable",
+          estimated_rate: "unknown",
+          single_person_found: false,
+          all_criteria_met: false,
+          call_outcome: "negative",
+          recommended: false,
+          disqualified: true,
+          disqualification_reason: error instanceof Error ? error.message : "Unknown error",
+        },
+        successEvaluation: "",
+      },
+      provider: {
+        name: request.providerName,
+        phone: request.providerPhone,
+        service: request.serviceNeeded,
+        location: request.location,
+      },
+      request: {
+        criteria: request.userCriteria,
+        urgency: request.urgency,
+      },
+      error: error instanceof Error ? error.message : "Unknown error",
+    };
   }
 }
