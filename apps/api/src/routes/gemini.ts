@@ -8,6 +8,7 @@ import {
   type Provider,
   type InteractionLog,
 } from "../services/gemini.js";
+import { analyzeDirectTask, type AnalyzeDirectTaskRequest } from "../services/direct-task/index.js";
 
 // Zod schemas for request validation
 const searchProvidersSchema = z.object({
@@ -66,6 +67,12 @@ const selectBestProviderSchema = z.object({
 const scheduleAppointmentSchema = z.object({
   providerName: z.string().min(1, "Provider name is required"),
   details: z.string().min(1, "Details are required"),
+});
+
+const analyzeDirectTaskSchema = z.object({
+  taskDescription: z.string().min(1, "Task description is required"),
+  contactName: z.string().min(1, "Contact name is required"),
+  contactPhone: z.string().optional(),
 });
 
 export default async function geminiRoutes(fastify: FastifyInstance) {
@@ -462,6 +469,103 @@ export default async function geminiRoutes(fastify: FastifyInstance) {
           body.providerName,
           body.details,
         );
+        return result;
+      } catch (error: any) {
+        if (error instanceof z.ZodError) {
+          return reply.status(400).send({
+            error: "Validation Error",
+            details: error.errors,
+          });
+        }
+        fastify.log.error(error);
+        return reply.status(500).send({
+          error: "Internal Server Error",
+          message: error.message,
+        });
+      }
+    },
+  );
+
+  /**
+   * POST /analyze-direct-task
+   * Analyze a direct task and generate a dynamic VAPI prompt
+   */
+  fastify.post(
+    "/analyze-direct-task",
+    {
+      schema: {
+        description: "Analyze a direct task and generate dynamic VAPI prompt using Gemini",
+        tags: ["gemini"],
+        body: {
+          type: "object",
+          required: ["taskDescription", "contactName"],
+          properties: {
+            taskDescription: {
+              type: "string",
+              description: "What the user wants the AI to do",
+            },
+            contactName: {
+              type: "string",
+              description: "Name of the contact to call",
+            },
+            contactPhone: {
+              type: "string",
+              description: "Phone number of the contact (optional)",
+            },
+          },
+        },
+        response: {
+          200: {
+            type: "object",
+            properties: {
+              taskAnalysis: {
+                type: "object",
+                properties: {
+                  taskType: { type: "string" },
+                  intent: { type: "string" },
+                  difficulty: { type: "string" },
+                },
+              },
+              strategicGuidance: {
+                type: "object",
+                properties: {
+                  keyGoals: { type: "array", items: { type: "string" } },
+                  talkingPoints: { type: "array", items: { type: "string" } },
+                  objectionHandlers: { type: "object" },
+                  successCriteria: { type: "array", items: { type: "string" } },
+                },
+              },
+              generatedPrompt: {
+                type: "object",
+                properties: {
+                  systemPrompt: { type: "string" },
+                  firstMessage: { type: "string" },
+                  closingScript: { type: "string" },
+                },
+              },
+            },
+          },
+          400: {
+            type: "object",
+            properties: {
+              error: { type: "string" },
+              details: { type: "array" },
+            },
+          },
+          500: {
+            type: "object",
+            properties: {
+              error: { type: "string" },
+              message: { type: "string" },
+            },
+          },
+        },
+      },
+    },
+    async (request, reply) => {
+      try {
+        const body = analyzeDirectTaskSchema.parse(request.body);
+        const result = await analyzeDirectTask(body);
         return result;
       } catch (error: any) {
         if (error instanceof z.ZodError) {

@@ -93,9 +93,23 @@ export default function RequestDetails() {
   // Use local request if available (for real-time updates), otherwise use DB request
   const request = localRequest || dbRequest;
 
+  // Helper to check if string is valid UUID format
+  const isValidUuid = (str: string) => {
+    const uuidRegex =
+      /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+    return uuidRegex.test(str);
+  };
+
   // Fetch from database if not in localStorage
   useEffect(() => {
     if (!localRequest && !dbRequest && !loading) {
+      // Only query Supabase if ID is a valid UUID
+      // Direct Task IDs (task-xxx) are localStorage-only and not in the database
+      if (!isValidUuid(id)) {
+        setError("Request not found (session-only request may have expired)");
+        return;
+      }
+
       setLoading(true);
       const supabase = createClient();
 

@@ -14,6 +14,13 @@ interface Logger {
   warn: (obj: Record<string, unknown>, msg?: string) => void;
 }
 
+// Helper to check if string is valid UUID format
+const isValidUuid = (str: string): boolean => {
+  const uuidRegex =
+    /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+  return uuidRegex.test(str);
+};
+
 export class CallResultService {
   private supabase: SupabaseClient | null;
 
@@ -49,14 +56,26 @@ export class CallResultService {
     }
 
     try {
-      // Update provider if providerId is provided
-      if (request.providerId) {
+      // Update provider if providerId is provided AND is a valid UUID
+      // Direct Tasks use non-UUID IDs (task-xxx) which are localStorage-only
+      if (request.providerId && isValidUuid(request.providerId)) {
         await this.updateProvider(request.providerId, result);
+      } else if (request.providerId) {
+        this.logger.info(
+          { providerId: request.providerId },
+          "Skipping provider update - non-UUID ID (localStorage-only)",
+        );
       }
 
-      // Create interaction log if serviceRequestId is provided
-      if (request.serviceRequestId) {
+      // Create interaction log if serviceRequestId is provided AND is a valid UUID
+      // Direct Tasks use non-UUID IDs (task-xxx) which are localStorage-only
+      if (request.serviceRequestId && isValidUuid(request.serviceRequestId)) {
         await this.createInteractionLog(request.serviceRequestId, result);
+      } else if (request.serviceRequestId) {
+        this.logger.info(
+          { serviceRequestId: request.serviceRequestId },
+          "Skipping interaction log - non-UUID ID (localStorage-only)",
+        );
       }
 
       this.logger.info(

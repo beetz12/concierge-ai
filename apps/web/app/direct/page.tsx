@@ -13,6 +13,7 @@ import { Phone, User, MessageSquare, PhoneCall } from "lucide-react";
 import {
   simulateCall,
   scheduleAppointment,
+  analyzeDirectTask,
 } from "@/lib/services/geminiService";
 import {
   callProviderLive,
@@ -20,6 +21,10 @@ import {
   normalizePhoneNumber,
   isValidE164Phone,
 } from "@/lib/services/providerCallingService";
+import {
+  createServiceRequest,
+  updateServiceRequest,
+} from "@/lib/actions/service-requests";
 
 // Environment toggle for live VAPI calls vs simulated calls
 const LIVE_CALL_ENABLED =
@@ -44,23 +49,45 @@ export default function DirectTask() {
     e.preventDefault();
     setIsSubmitting(true);
 
-    const newRequest: ServiceRequest = {
-      id: `task-${Date.now()}`,
-      type: RequestType.DIRECT_TASK,
-      title: `Call ${formData.name}`,
-      description: formData.task,
-      criteria: "Complete the user's objective",
-      status: RequestStatus.CALLING,
-      createdAt: new Date().toISOString(),
-      providersFound: [],
-      interactions: [],
-      directContactInfo: { name: formData.name, phone: formData.phone },
-    };
+    try {
+      // Create request in database first to get proper UUID
+      const dbRequest = await createServiceRequest({
+        type: "DIRECT_TASK",
+        title: `Call ${formData.name}`,
+        description: formData.task,
+        criteria: "Complete the user's objective",
+        status: "CALLING",
+      });
 
-    addRequest(newRequest);
-    router.push(`/request/${newRequest.id}`);
+      const newRequest: ServiceRequest = {
+        id: dbRequest.id,
+        type: RequestType.DIRECT_TASK,
+        title: `Call ${formData.name}`,
+        description: formData.task,
+        criteria: "Complete the user's objective",
+        status: RequestStatus.CALLING,
+        createdAt: dbRequest.created_at,
+        providersFound: [],
+        interactions: [],
+        directContactInfo: { name: formData.name, phone: formData.phone },
+      };
 
-    // Run Direct Process
+      addRequest(newRequest);
+      router.push(`/request/${newRequest.id}`);
+
+      // Run Direct Process
+      runDirectTask(newRequest.id, formData, newRequest);
+    } catch (error) {
+      console.error("Failed to create request:", error);
+      setIsSubmitting(false);
+    }
+  };
+
+  const runDirectTask = async (
+    reqId: string,
+    data: typeof formData,
+    request: ServiceRequest,
+  ) => {
     try {
       let log: InteractionLog;
 
@@ -69,45 +96,64 @@ export default function DirectTask() {
         // In admin test mode, override with the test number
         const phoneToCall = isAdminTestMode
           ? normalizePhoneNumber(ADMIN_TEST_NUMBER!)
-          : normalizePhoneNumber(formData.phone);
+          : normalizePhoneNumber(data.phone);
 
         if (!isValidE164Phone(phoneToCall)) {
           console.warn(
-            `[Direct] Invalid phone number: ${isAdminTestMode ? ADMIN_TEST_NUMBER : formData.phone} -> ${phoneToCall}`,
+            `[Direct] Invalid phone number: ${isAdminTestMode ? ADMIN_TEST_NUMBER : data.phone} -> ${phoneToCall}`,
           );
           log = {
             timestamp: new Date().toISOString(),
-            stepName: `Calling ${formData.name}`,
-            detail: `Invalid phone number format: ${formData.phone}`,
+            stepName: `Calling ${data.name}`,
+            detail: `Invalid phone number format: ${data.phone}`,
             status: "error" as const,
           };
         } else {
           const testModeLabel = isAdminTestMode ? " (TEST MODE)" : "";
           console.log(
-            `[Direct] Calling ${formData.name} at ${phoneToCall} via VAPI...${testModeLabel}`,
+            `[Direct] Calling ${data.name} at ${phoneToCall} via VAPI...${testModeLabel}`,
           );
 
-          // Make real VAPI call
+          // Analyze task with Gemini to generate dynamic prompt
+          console.log(`[Direct] Analyzing task with Gemini...`);
+          const taskAnalysis = await analyzeDirectTask(
+            data.task,
+            data.name,
+            phoneToCall,
+          );
+
+          if (taskAnalysis) {
+            console.log(
+              `[Direct] Task analyzed: ${taskAnalysis.taskAnalysis.taskType} (${taskAnalysis.taskAnalysis.difficulty})`,
+            );
+          } else {
+            console.log(
+              `[Direct] Task analysis failed, using default prompt`,
+            );
+          }
+
+          // Make real VAPI call with dynamic prompt (if available)
           const response = await callProviderLive({
-            providerName: formData.name,
+            providerName: data.name,
             providerPhone: phoneToCall,
             serviceNeeded: "Direct Task",
-            userCriteria: formData.task,
+            userCriteria: data.task,
             location: "User Direct Request",
             urgency: "immediate",
-            serviceRequestId: newRequest.id,
+            serviceRequestId: reqId,
+            customPrompt: taskAnalysis?.generatedPrompt,
           });
 
           // Convert response to InteractionLog format
-          log = callResponseToInteractionLog(formData.name, response);
+          log = callResponseToInteractionLog(data.name, response);
 
           console.log(
-            `[Direct] Call to ${formData.name} completed: ${log.status}`,
+            `[Direct] Call to ${data.name} completed: ${log.status}`,
           );
         }
       } else {
         // Simulated calls via Gemini (existing behavior)
-        log = await simulateCall(formData.name, formData.task, true);
+        log = await simulateCall(data.name, data.task, true);
       }
 
       if (log.status === "success") {
@@ -115,31 +161,53 @@ export default function DirectTask() {
         let outcome = "Call completed successfully.";
 
         if (
-          formData.task.toLowerCase().includes("schedule") ||
-          formData.task.toLowerCase().includes("appointment")
+          data.task.toLowerCase().includes("schedule") ||
+          data.task.toLowerCase().includes("appointment")
         ) {
-          const booking = await scheduleAppointment(
-            formData.name,
-            formData.task,
-          );
+          const booking = await scheduleAppointment(data.name, data.task);
           finalLogs.push(booking);
           outcome = "Appointment scheduled.";
         }
 
-        updateRequest(newRequest.id, {
+        updateRequest(reqId, {
           status: RequestStatus.COMPLETED,
           interactions: finalLogs,
           finalOutcome: outcome,
         });
+        // Update database
+        await updateServiceRequest(reqId, {
+          status: "COMPLETED",
+          final_outcome: outcome,
+        });
       } else {
-        updateRequest(newRequest.id, {
+        const outcome = "Call did not result in a positive outcome.";
+        updateRequest(reqId, {
           status: RequestStatus.FAILED,
           interactions: [log],
-          finalOutcome: "Call did not result in a positive outcome.",
+          finalOutcome: outcome,
+        });
+        // Update database
+        await updateServiceRequest(reqId, {
+          status: "FAILED",
+          final_outcome: outcome,
         });
       }
     } catch (e) {
-      updateRequest(newRequest.id, { status: RequestStatus.FAILED });
+      console.error(e);
+      const outcome =
+        e instanceof Error ? e.message : "An unexpected error occurred";
+      updateRequest(reqId, {
+        status: RequestStatus.FAILED,
+        finalOutcome: outcome,
+      });
+      try {
+        await updateServiceRequest(reqId, {
+          status: "FAILED",
+          final_outcome: outcome,
+        });
+      } catch (dbErr) {
+        console.error("Failed to update DB on error:", dbErr);
+      }
     }
   };
 

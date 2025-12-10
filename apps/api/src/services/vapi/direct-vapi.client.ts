@@ -61,7 +61,8 @@ export class DirectVapiClient {
    * This method handles the full call lifecycle: creation, polling, and result extraction
    */
   async initiateCall(request: CallRequest): Promise<CallResult> {
-    const assistantConfig = createAssistantConfig(request);
+    // Pass customPrompt to createAssistantConfig for dynamic Direct Task prompts
+    const assistantConfig = createAssistantConfig(request, request.customPrompt);
 
     this.logger.info(
       {
