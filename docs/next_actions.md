@@ -12,7 +12,7 @@ tasks:
 
 Questions: 
 1. Can I make multiple calls at the same time using the same phone number in VAPI.ai?
-2. can I use vapi.ai API to send texts from my number instead of using twilio?
+2. can I use vapi.ai API to send texts from my vapi.ai number instead of using twilio?
 
 
 in progress:

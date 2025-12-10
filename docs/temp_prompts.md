@@ -39,7 +39,7 @@ I just built @about.md but the UI doesn't look very good. The white background i
 Please analyze these issues  
 using your  multi-agent team with up to 3 agentsand come up with a unified plan with 90% confidence and wait for further instructions. My mortgage payment depends on this and If you get this right on the first try, I will tip you $200. ultrathink  
 
-# update architecture
+# update architecture update docs
 Ok perfect. Please update our @docs/architecture.md and all relevant
   docs if needed to reflect this new architecture shift. please Use your
   specialized multi-agent team to analyze in parallel with up to 3 agents

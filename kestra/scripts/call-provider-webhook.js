@@ -24,9 +24,9 @@
 
 const { VapiClient } = require('@vapi-ai/server-sdk');
 
-// NOTE: Shared assistant configuration is imported dynamically in main()
-// from: apps/api/dist/services/vapi/assistant-config.js
-// This is the source of truth for assistant behavior and prompts
+// NOTE: Shared configurations are imported dynamically in main()
+// from: apps/api/dist/services/vapi/webhook-config.js
+// This is the source of truth for webhook-enabled assistant configuration
 
 // ============================================================================
 // CLI ARGUMENT PARSING
@@ -72,46 +72,41 @@ const vapi = new VapiClient({ token: VAPI_API_KEY });
 // ============================================================================
 
 /**
- * Creates VAPI assistant configuration with webhook enhancements.
+ * Creates VAPI assistant configuration with script-specific enhancements.
  *
- * This function wraps the shared createAssistantConfig from the TypeScript source
- * and adds webhook-specific configuration that's unique to this script.
+ * Uses the shared createWebhookAssistantConfig from the TypeScript source
+ * (apps/api/dist/services/vapi/webhook-config.js) which handles:
+ * - Base assistant config (voice, prompts, analysis schema)
+ * - Webhook server URL and timeout configuration
+ * - Server messages configuration
  *
- * The base config comes from: apps/api/src/services/vapi/assistant-config.ts
+ * This wrapper adds script-specific enhancements:
+ * - Enhanced first message with CLIENT_NAME and PROBLEM_DESCRIPTION
+ * - End call message
+ * - Reduced silence timeout
  *
- * Webhook-specific additions:
- * - Server URL configuration for webhook callbacks
- * - Backend polling logic
- * - Enhanced first message with problem description and client name
- *
- * @param {Function} createAssistantConfig - Imported function from shared config
+ * @param {Function} sharedCreateWebhookAssistantConfig - Imported from shared config
  */
-function createWebhookAssistantConfig(createAssistantConfig) {
-    // Get base configuration from shared source
-    const baseConfig = createAssistantConfig({
-        providerName: PROVIDER_NAME,
-        location: LOCATION,
-        serviceNeeded: SERVICE_TYPE,
-        userCriteria: USER_CRITERIA,
-        urgency: URGENCY
-    });
-
-    // Add webhook-specific configuration
-    return {
-        ...baseConfig,
-
-        // Webhook configuration (webhook-specific)
-        server: {
-            url: VAPI_WEBHOOK_URL,
-            timeoutSeconds: 20
+function createEnhancedWebhookAssistantConfig(sharedCreateWebhookAssistantConfig) {
+    // Get webhook-enabled configuration from shared source
+    const baseWebhookConfig = sharedCreateWebhookAssistantConfig(
+        {
+            providerName: PROVIDER_NAME,
+            providerPhone: PHONE_NUMBER,
+            location: LOCATION,
+            serviceNeeded: SERVICE_TYPE,
+            userCriteria: USER_CRITERIA,
+            urgency: URGENCY
         },
-        serverMessages: [
-            "status-update",
-            "end-of-call-report"
-        ],
+        VAPI_WEBHOOK_URL
+    );
 
-        // Override first message with more context (webhook-specific enhancement)
-        // Note: Using CLIENT_NAME and PROBLEM_DESCRIPTION from webhook script
+    // Add script-specific enhancements
+    return {
+        ...baseWebhookConfig,
+
+        // Override first message with more context (script-specific enhancement)
+        // Note: Using CLIENT_NAME and PROBLEM_DESCRIPTION from Kestra script CLI args
         firstMessage: `Hi there! I'm ${CLIENT_NAME}'s personal AI assistant. ${CLIENT_NAME} is in ${LOCATION} and has a ${SERVICE_TYPE} issue - ${PROBLEM_DESCRIPTION}. Do you have just a quick moment to see if you might be able to help?`,
 
         // Add end call message
@@ -228,20 +223,20 @@ async function main() {
 
     try {
         // Step 1: Load shared config and create assistant configuration
-        console.log("\n[Step 1/3] Loading shared assistant config...");
-        console.log("[Config] Importing from: ../../apps/api/dist/services/vapi/assistant-config.js");
+        console.log("\n[Step 1/3] Loading shared webhook config...");
+        console.log("[Config] Importing from: ../../apps/api/dist/services/vapi/webhook-config.js");
 
         // Dynamic import of ESM module from CommonJS
-        const { createAssistantConfig } = await import('../../apps/api/dist/services/vapi/assistant-config.js');
+        const { createWebhookAssistantConfig } = await import('../../apps/api/dist/services/vapi/webhook-config.js');
 
-        console.log("[Config] Creating VAPI assistant with webhook enhancements...");
-        const assistantConfig = createWebhookAssistantConfig(createAssistantConfig);
+        console.log("[Config] Creating VAPI assistant with shared webhook config + script enhancements...");
+        const assistantConfig = createEnhancedWebhookAssistantConfig(createWebhookAssistantConfig);
         console.log("[Config] Voice: ElevenLabs Rachel (from shared config)");
         console.log("[Config] EndCall tool: Enabled (from shared config)");
         console.log("[Config] Single-person tracking: Enabled (from shared config)");
-        console.log("[Config] Personal AI assistant framing: Enhanced (webhook-specific)");
-        console.log("[Config] Webhook URL: Configured (webhook-specific)");
-        console.log("[Config] Server Messages: status-update, end-of-call-report (webhook-specific)");
+        console.log("[Config] Webhook URL: Configured (from shared webhook-config)");
+        console.log("[Config] Server Messages: status-update, end-of-call-report (from shared webhook-config)");
+        console.log("[Config] Personal AI assistant framing: Enhanced (script-specific)");
 
         // Step 2: Initiate the call
         console.log("\n[Step 2/3] Initiating VAPI call...");

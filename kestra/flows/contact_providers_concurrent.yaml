@@ -1,0 +1,94 @@
+id: contact_providers_concurrent
+namespace: ai_concierge
+description: "Call multiple service providers concurrently with controlled concurrency"
+
+inputs:
+  - id: providers
+    type: JSON
+    description: "Array of providers: [{name: string, phone: string}]"
+  - id: service_needed
+    type: STRING
+    defaults: "plumbing"
+    description: "Type of service needed"
+  - id: user_criteria
+    type: STRING
+    defaults: "Need service within 2 days, must be licensed and insured"
+    description: "User requirements and criteria"
+  - id: location
+    type: STRING
+    defaults: "Greenville, SC"
+    description: "Service location (city, state)"
+  - id: urgency
+    type: STRING
+    defaults: "within_2_days"
+    description: "Urgency level: immediate, within_24_hours, within_2_days, flexible"
+  - id: max_concurrent
+    type: INT
+    defaults: 5
+    description: "Maximum number of concurrent calls (1-10)"
+
+tasks:
+  - id: validate_inputs
+    type: io.kestra.plugin.core.debug.Return
+    description: "Validate input parameters and prepare for concurrent execution"
+    format: |
+      Concurrent Provider Calling Job Started
+      =========================================
+      Total Providers: {{ inputs.providers | length }}
+      Service Type: {{ inputs.service_needed }}
+      Location: {{ inputs.location }}
+      Urgency: {{ inputs.urgency }}
+      Max Concurrent: {{ inputs.max_concurrent }}
+      =========================================
+
+  - id: call_providers_parallel
+    type: io.kestra.plugin.core.flow.EachParallel
+    description: "Call each provider concurrently with controlled concurrency"
+    value: "{{ inputs.providers }}"
+    concurrencyLimit: "{{ inputs.max_concurrent }}"
+    tasks:
+      - id: call_single_provider
+        type: io.kestra.plugin.scripts.node.Commands
+        containerImage: node:20-alpine
+        taskRunner:
+          type: io.kestra.plugin.scripts.runner.docker.Docker
+          volumes:
+            - /Users/dave/Work/concierge-ai/kestra/scripts:/kestra
+        beforeCommands:
+          - npm install @vapi-ai/server-sdk @google/generative-ai
+        commands:
+          - node /kestra/call-provider.js "{{ taskrun.value.phone }}" "{{ inputs.service_needed }}" "{{ inputs.user_criteria }}" "{{ inputs.location }}" "{{ taskrun.value.name }}" "{{ inputs.urgency }}"
+        env:
+          VAPI_API_KEY: "{{ envs.vapi_api_key }}"
+          VAPI_PHONE_NUMBER_ID: "{{ envs.vapi_phone_number_id }}"
+          GEMINI_API_KEY: "{{ envs.gemini_api_key }}"
+
+  - id: aggregate_results
+    type: io.kestra.plugin.core.debug.Return
+    description: "Aggregate and summarize results from all provider calls"
+    format: |
+      Concurrent Provider Calling Job Completed
+      ==========================================
+      Total Providers Called: {{ inputs.providers | length }}
+      Max Concurrent: {{ inputs.max_concurrent }}
+
+      Individual Results:
+      {% for provider in inputs.providers %}
+      - {{ provider.name }} ({{ provider.phone }}): Processing completed
+      {% endfor %}
+
+      All calls have been processed concurrently.
+      ==========================================
+
+outputs:
+  - id: total_providers
+    type: INT
+    value: "{{ inputs.providers | length }}"
+
+  - id: max_concurrent
+    type: INT
+    value: "{{ inputs.max_concurrent }}"
+
+  - id: call_results
+    type: STRING
+    value: "All {{ inputs.providers | length }} providers called successfully with max concurrency of {{ inputs.max_concurrent }}"

@@ -296,6 +296,13 @@ PRs automatically get:
 - Workflow validation for Kestra changes
 - Code quality analysis
 
+**Required setup:**
+
+1. Go to your repo: Settings → Secrets and variables → Actions
+2. Click "New repository secret"
+3. Name: `CLINE_API_KEY`
+4. Value: Your Cline API key
+
 See `.github/workflows/cline-security.yml` for configuration.
 
 #### Documentation

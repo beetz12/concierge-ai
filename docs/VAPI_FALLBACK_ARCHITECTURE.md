@@ -38,23 +38,33 @@ BACKEND_URL=http://localhost:8000
 
 The system now follows a strict DRY (Don't Repeat Yourself) principle:
 
-**Single Source of Truth**: `apps/api/src/services/vapi/assistant-config.ts`
+**Configuration Services**: `apps/api/src/services/vapi/`
 
-- Contains the canonical VAPI assistant configuration
-- Defines all prompts, conversation flow, analysis schema
-- Used by BOTH Kestra scripts AND direct API calls
+| File | Purpose |
+|------|---------|
+| `assistant-config.ts` | Base VAPI assistant configuration (voice, prompts, analysis schema) |
+| `webhook-config.ts` | Webhook-enabled configuration (server URL, metadata, timeout settings) |
 
-**Kestra Script Integration**: `kestra/scripts/call-provider.js`
+**Key Functions**:
 
-- Imports configuration from compiled TypeScript: `apps/api/dist/services/vapi/assistant-config.js`
+- `createAssistantConfig()` - Base assistant behavior
+- `createWebhookAssistantConfig()` - Wraps base config with webhook server settings
+- `createWebhookMetadata()` - Creates metadata for webhook callbacks
+
+**Kestra Script Integration**: `kestra/scripts/call-provider-webhook.js`
+
+- Imports configuration from compiled TypeScript: `apps/api/dist/services/vapi/webhook-config.js`
 - No configuration duplication
 - Requires `pnpm build` before execution
 
+**SDK Compatibility**: VAPI SDK v0.11.0+ deprecated `callParams.serverUrl`. The `webhook-config.ts` module handles this by using `assistant.server.url` instead.
+
 **Benefits**:
 
-- Single place to update prompts and logic
+- Single place to update prompts and webhook logic
 - Guaranteed consistency across execution paths
 - Type-safe configuration with TypeScript
+- SDK deprecation handled in one place
 - Reduces maintenance burden
 
 ## Architecture Diagram
@@ -130,8 +140,10 @@ apps/api/src/
 │   └── vapi.config.ts              # Environment-based configuration
 ├── services/
 │   ├── vapi/
-│   │   ├── assistant-config.ts     # SINGLE SOURCE OF TRUTH for VAPI config
-│   │   └── types.ts                # VAPI-specific types
+│   │   ├── assistant-config.ts     # SOURCE OF TRUTH for base VAPI config
+│   │   ├── webhook-config.ts       # SOURCE OF TRUTH for webhook config
+│   │   ├── types.ts                # VAPI-specific types
+│   │   └── index.ts                # Service exports
 │   ├── providerCalling.service.ts  # Main orchestrator service
 │   ├── kestra.client.ts            # Kestra API client
 │   ├── vapi.client.ts              # Direct VAPI.ai client
@@ -144,7 +156,8 @@ apps/api/src/
     └── vapi.types.ts               # Shared type definitions
 
 kestra/scripts/
-└── call-provider.js                # Imports from apps/api/dist/services/vapi/assistant-config.js
+├── call-provider.js                # Imports from apps/api/dist/services/vapi/assistant-config.js
+└── call-provider-webhook.js        # Imports from apps/api/dist/services/vapi/webhook-config.js
 ```
 
 ## New Features (Latest Version)
