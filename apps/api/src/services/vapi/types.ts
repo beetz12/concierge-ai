@@ -3,6 +3,8 @@
  * Used by both Kestra and Direct VAPI paths
  */
 
+import type { GeneratedPrompt } from "../direct-task/types.js";
+
 export interface CallRequest {
   providerName: string;
   providerPhone: string; // E.164 format: +1XXXXXXXXXX
@@ -12,7 +14,11 @@ export interface CallRequest {
   urgency: "immediate" | "within_24_hours" | "within_2_days" | "flexible";
   serviceRequestId?: string; // For DB linking
   providerId?: string; // For DB linking
+  customPrompt?: GeneratedPrompt; // Optional Gemini-generated dynamic prompt for Direct Tasks
 }
+
+// Re-export GeneratedPrompt for convenience
+export type { GeneratedPrompt } from "../direct-task/types.js";
 
 export interface CallResult {
   status: "completed" | "timeout" | "error" | "no_answer" | "voicemail";

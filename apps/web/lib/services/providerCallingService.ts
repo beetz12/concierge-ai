@@ -15,6 +15,15 @@ import { InteractionLog } from "../types";
 const API_BASE = "/api/v1/providers";
 
 /**
+ * Generated prompt structure from Gemini task analyzer
+ */
+export interface GeneratedPrompt {
+  systemPrompt: string;
+  firstMessage: string;
+  closingScript: string;
+}
+
+/**
  * Request payload for calling a provider
  */
 export interface CallProviderRequest {
@@ -26,6 +35,7 @@ export interface CallProviderRequest {
   urgency: "immediate" | "within_24_hours" | "within_2_days" | "flexible";
   serviceRequestId?: string;
   providerId?: string;
+  customPrompt?: GeneratedPrompt; // Gemini-generated dynamic prompt for Direct Tasks
 }
 
 /**

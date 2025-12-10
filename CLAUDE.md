@@ -58,6 +58,7 @@ Key endpoints:
 - `POST /api/v1/gemini/simulate-call` - AI phone call simulation
 - `POST /api/v1/gemini/select-best-provider` - AI analysis
 - `POST /api/v1/gemini/schedule-appointment` - Booking
+- `POST /api/v1/gemini/analyze-direct-task` - AI task analysis for dynamic VAPI prompts
 
 ### State Management
 
@@ -73,13 +74,16 @@ Schema: `supabase/migrations/20250101000000_initial_schema.sql`
 
 ### Key Files
 
-| Path                                     | Purpose                               |
-| ---------------------------------------- | ------------------------------------- |
-| `apps/web/lib/services/geminiService.ts` | Frontend API client for AI operations |
-| `apps/api/src/services/gemini.ts`        | Backend Gemini AI integration         |
-| `apps/api/src/routes/gemini.ts`          | API endpoints with Zod validation     |
-| `apps/web/lib/providers/AppProvider.tsx` | Global state management               |
-| `apps/web/lib/supabase/server.ts`        | Server-side Supabase client           |
+| Path                                             | Purpose                                        |
+| ------------------------------------------------ | ---------------------------------------------- |
+| `apps/web/lib/services/geminiService.ts`         | Frontend API client for AI operations          |
+| `apps/api/src/services/gemini.ts`                | Backend Gemini AI integration                  |
+| `apps/api/src/routes/gemini.ts`                  | API endpoints with Zod validation              |
+| `apps/api/src/services/direct-task/types.ts`     | Direct Task type definitions                   |
+| `apps/api/src/services/direct-task/analyzer.ts`  | Gemini-powered task analyzer                   |
+| `apps/api/src/services/direct-task/prompt-generator.ts` | Dynamic VAPI prompt generation        |
+| `apps/web/lib/providers/AppProvider.tsx`         | Global state management                        |
+| `apps/web/lib/supabase/server.ts`                | Server-side Supabase client                    |
 
 ## Environment Variables
 

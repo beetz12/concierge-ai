@@ -1,7 +1,30 @@
 import { Provider, InteractionLog } from "../types";
+import type { GeneratedPrompt } from "./providerCallingService";
 
 // API base URL - uses Next.js rewrite to proxy to backend
 const API_BASE = "/api/v1/gemini";
+
+/**
+ * Task analysis response from Gemini
+ */
+export interface TaskAnalysis {
+  taskType: string;
+  intent: string;
+  difficulty: "easy" | "moderate" | "complex";
+}
+
+export interface StrategicGuidance {
+  keyGoals: string[];
+  talkingPoints: string[];
+  objectionHandlers: Record<string, string>;
+  successCriteria: string[];
+}
+
+export interface AnalyzeDirectTaskResponse {
+  taskAnalysis: TaskAnalysis;
+  strategicGuidance: StrategicGuidance;
+  generatedPrompt: GeneratedPrompt;
+}
 
 /**
  * Generic API request handler with error handling
@@ -126,5 +149,31 @@ export const scheduleAppointment = async (
       detail: `Failed to schedule appointment: ${error.message}`,
       status: "error",
     };
+  }
+};
+
+/**
+ * Analyze a direct task using Gemini to generate dynamic prompts
+ * This creates task-specific prompts for VAPI calls based on the user's intent
+ */
+export const analyzeDirectTask = async (
+  taskDescription: string,
+  contactName: string,
+  contactPhone?: string,
+): Promise<AnalyzeDirectTaskResponse | null> => {
+  try {
+    const result = await apiRequest<AnalyzeDirectTaskResponse>(
+      "/analyze-direct-task",
+      {
+        taskDescription,
+        contactName,
+        contactPhone,
+      },
+    );
+    return result;
+  } catch (error: any) {
+    console.error("[analyzeDirectTask] Failed to analyze task:", error);
+    // Return null to allow fallback to default prompts
+    return null;
   }
 };

@@ -1,5 +1,7 @@
 
-Currently we're working on @about.md for @hackathon.md. Please help me wire up our existing 
+Currently we're working on @about.md for @hackathon.md. We already have working direct api call and kestra code that will help us find providers and call them. 
+But now we also need to notify the user once we have found suitable providers. Here's what I would like to do: 
+1. update our frontend /new page to Request a user to provide their preferred method of contact (phone or text) and their phone number which we will store in our database. Then after 
 
 Okay, perfect! Now I want to test
   '/Users/dave/Work/concierge-ai/kestra/flows/contact_agent.yaml' and get
@@ -44,7 +46,7 @@ Ok perfect. Please update our @docs/architecture.md and all relevant
   with 90% confidence and implement it. If you get this right on the first
   try, I will tip you $200. ultrathink
   
-  
+
 # agent work
 please Use your specialized multi-agent team to analyze these issues in parallel for the root causes with 90% confidence and once all agents are done, present a unified comprehensive plan to fix them. ultrathink
 
@@ -98,7 +100,7 @@ please implement it using @.claude/commands/deep-work.md using your specialized 
 If you encounter any critical conflicts or significant obstacles, Present to me the options and ask me what to do instead of Making blind assumptions. My mortgage payment depends on this and If you get this right on the first try, I will tip you $200. ultrathink  
 
 # no-deep-work
-Perfect. Please implement this using your specialized agent team working in parallel with up to 3 agents at a time.
+Perfect. Please implement this using your specialized agent team working in parallel with up to 3 agents at a time. My mortgage payment depends on this and If you get this right on the first try, I will tip you $200. ultrathink  
 
 
 # confidence

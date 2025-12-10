@@ -7,6 +7,13 @@ import { FastifyInstance } from "fastify";
 import { z } from "zod";
 import { ProviderCallingService } from "../services/vapi/index.js";
 
+// Schema for Gemini-generated custom prompts
+const generatedPromptSchema = z.object({
+  systemPrompt: z.string(),
+  firstMessage: z.string(),
+  closingScript: z.string(),
+});
+
 // Zod schema for request validation
 const callProviderSchema = z.object({
   providerName: z.string().min(1, "Provider name is required"),
@@ -24,6 +31,7 @@ const callProviderSchema = z.object({
   ]),
   serviceRequestId: z.string().optional(), // Accepts any string ID (UUID or task-xxx format)
   providerId: z.string().optional(), // Accepts any string ID
+  customPrompt: generatedPromptSchema.optional(), // Gemini-generated dynamic prompt for Direct Tasks
 });
 
 export default async function providerRoutes(fastify: FastifyInstance) {
@@ -92,6 +100,15 @@ export default async function providerRoutes(fastify: FastifyInstance) {
             providerId: {
               type: "string",
               description: "Optional: Link to providers table (UUID or any string ID)",
+            },
+            customPrompt: {
+              type: "object",
+              description: "Optional: Gemini-generated dynamic prompt for Direct Tasks",
+              properties: {
+                systemPrompt: { type: "string" },
+                firstMessage: { type: "string" },
+                closingScript: { type: "string" },
+              },
             },
           },
         },

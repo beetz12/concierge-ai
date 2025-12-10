@@ -34,6 +34,309 @@ The VAPI calling system has undergone significant architectural improvements imp
 
 ---
 
+## Direct Task Dynamic Prompt Architecture (December 2025)
+
+### Overview
+
+The Direct Tasks feature (`/direct` page) allows users to have the AI handle general tasks like negotiating bills, requesting refunds, filing complaints, or making inquiries. Previously, all tasks used a **static, one-size-fits-all prompt** that didn't understand the specific intent or context of each task type, leading to generic conversations that failed to achieve user goals.
+
+The new architecture introduces **Gemini-powered task analysis** that:
+
+1. **Classifies tasks** into 7 specific types (negotiate_price, request_refund, complain_issue, etc.)
+2. **Generates dynamic, task-specific prompts** tailored to the user's exact needs
+3. **Fixes database-first pattern** where tasks now get proper UUIDs before any operations (replacing buggy `task-xxx` local IDs)
+
+### Problem Solved
+
+**Before**: Static prompt couldn't adapt to different task types
+
+```typescript
+// Same prompt for ALL tasks - completely generic
+const staticPrompt = "Hello, I'm calling on behalf of a client who needs assistance...";
+// Result: AI didn't know if it should negotiate, complain, request refund, or just inquire
+```
+
+**After**: Dynamic prompts tailored to exact task intent
+
+```typescript
+// Negotiate bill example
+"I'm calling about our recent $250 internet bill. We've been loyal customers for 3 years
+and found that new customers get the same service for $150/month. Can we discuss matching
+that promotional rate?"
+
+// Complaint example
+"I'm calling to file a formal complaint about unresolved billing errors that have been
+ongoing for 2 months. We need this resolved immediately and want to speak with a supervisor."
+```
+
+### Architecture Flow
+
+```mermaid
+sequenceDiagram
+    participant User
+    participant UI as Direct Task UI
+    participant DB as Supabase
+    participant API as Gemini Service
+    participant Analyzer as Task Analyzer
+    participant Generator as Prompt Generator
+    participant VAPI as VAPI Calling Service
+
+    User->>UI: Enter task details
+    UI->>DB: Create service_request (get UUID)
+    DB-->>UI: Return UUID
+
+    UI->>API: POST /analyze-direct-task
+    API->>Analyzer: Classify task type
+    Analyzer-->>API: Task type + confidence
+    API->>Generator: Generate dynamic prompt
+    Generator-->>API: Custom prompt
+    API-->>UI: Analysis result
+
+    UI->>VAPI: Call with customPrompt
+    VAPI->>VAPI: Use custom prompt instead of static
+    VAPI-->>UI: Call initiated
+
+    Note over UI,VAPI: Call executes with task-specific conversation flow
+```
+
+### Task Types Supported
+
+| Task Type           | Description                                            | Example Use Cases                                    |
+| ------------------- | ------------------------------------------------------ | ---------------------------------------------------- |
+| `negotiate_price`   | Price negotiation, bill reduction                      | "Lower my cable bill", "Negotiate gym membership"    |
+| `request_refund`    | Charge disputes, refund requests                       | "Get refund for cancelled flight", "Dispute charge"  |
+| `complain_issue`    | Filing complaints, demanding resolution                | "Complaint about service outage", "Demand fix"       |
+| `schedule_appointment` | Booking, scheduling                                 | "Schedule dentist appointment", "Book car service"   |
+| `cancel_service`    | Service cancellation                                   | "Cancel subscription", "End membership"              |
+| `make_inquiry`      | Information gathering, asking questions                | "Ask about hours", "Check policy"                    |
+| `general_task`      | Catch-all for tasks that don't fit other categories    | Any other type of task                               |
+
+### Service Layer Files
+
+| File                                                | Purpose                                                        |
+| --------------------------------------------------- | -------------------------------------------------------------- |
+| `apps/api/src/services/direct-task/types.ts`        | TypeScript definitions for all 7 task types and analysis schema |
+| `apps/api/src/services/direct-task/analyzer.ts`     | Gemini-powered task classification (determines task type)       |
+| `apps/api/src/services/direct-task/prompt-generator.ts` | Generates dynamic prompts based on task type and context    |
+| `apps/api/src/services/vapi/types.ts`               | Updated `CallRequest` with optional `customPrompt` field       |
+
+### API Endpoint
+
+#### POST `/api/v1/gemini/analyze-direct-task`
+
+Analyzes a user's task description and generates a custom prompt for VAPI calls.
+
+**Request Body:**
+
+```typescript
+{
+  taskDescription: string;      // User's description of what they want done
+  businessName: string;         // Company to contact
+  phoneNumber: string;          // Phone number to call
+  accountInfo?: string;         // Account number, customer ID, etc.
+  previousContext?: string;     // Any prior interactions or history
+}
+```
+
+**Response:**
+
+```typescript
+{
+  taskType: TaskType;           // One of 7 task types
+  confidence: number;           // Classification confidence (0-1)
+  customPrompt: string;         // Generated task-specific prompt
+  suggestedApproach: string;    // Strategy recommendation
+  keyPoints: string[];          // Important points to cover
+}
+```
+
+**Example:**
+
+```bash
+POST /api/v1/gemini/analyze-direct-task
+{
+  "taskDescription": "I want to negotiate my $200/month internet bill down because I've been a customer for 5 years",
+  "businessName": "Comcast",
+  "phoneNumber": "+18005551234",
+  "accountInfo": "Account #12345"
+}
+
+# Response
+{
+  "taskType": "negotiate_price",
+  "confidence": 0.95,
+  "customPrompt": "Hello, I'm calling on behalf of a long-term customer (5 years) regarding their internet service bill which is currently $200/month. We'd like to discuss available discounts or promotional rates for loyal customers. The customer has been very satisfied with the service and would like to continue, but needs a more competitive rate to stay within budget. Can we review the account to see what options are available?",
+  "suggestedApproach": "Start friendly, mention loyalty, ask about promotions",
+  "keyPoints": [
+    "5-year customer loyalty",
+    "Current rate: $200/month",
+    "Open to promotions/discounts",
+    "Wants to continue service"
+  ]
+}
+```
+
+### Call Flow Integration
+
+The `customPrompt` field flows through the entire calling chain:
+
+```typescript
+// 1. Frontend creates request with custom prompt
+const callRequest: CallRequest = {
+  phoneNumber: "+18005551234",
+  providerName: "Comcast",
+  customPrompt: analysisResult.customPrompt,  // NEW: Dynamic prompt
+  // ... other fields
+};
+
+// 2. ProviderCallingService receives it
+async makeCall(request: CallRequest): Promise<CallResult> {
+  // Passes customPrompt to DirectVapiClient or KestraClient
+}
+
+// 3. DirectVapiClient uses custom prompt
+const assistantConfig = {
+  firstMessage: request.customPrompt || DEFAULT_PROMPT,  // Use custom if available
+  // ... rest of config
+};
+
+// 4. VAPI executes call with task-specific opening
+```
+
+### Updated Type Definitions
+
+**CallRequest** (in `apps/api/src/services/vapi/types.ts`):
+
+```typescript
+export interface CallRequest {
+  phoneNumber: string;
+  serviceNeeded?: string;
+  userCriteria?: string;
+  location?: string;
+  providerName: string;
+  urgency?: string;
+  customPrompt?: string;        // NEW: Optional custom prompt for Direct Tasks
+}
+```
+
+### Example: Complaint Task Flow
+
+Let's trace a complaint task through the system:
+
+**User Input:**
+```
+Task: "I need to complain about billing errors on my account that haven't been fixed for 2 months"
+Business: "Verizon Wireless"
+Phone: "+18005551234"
+Account: "#987654"
+```
+
+**Step 1: Task Analysis**
+```typescript
+// POST /api/v1/gemini/analyze-direct-task
+{
+  taskType: "complain_issue",
+  confidence: 0.92,
+  customPrompt: "I'm calling to file a formal complaint regarding persistent billing errors on account #987654. These issues have been ongoing for 2 months despite multiple attempts to resolve them. The customer needs this addressed immediately and would like to escalate to a supervisor if necessary. Can you help resolve these billing discrepancies?",
+  suggestedApproach: "Be firm but professional, document issue timeline, request supervisor escalation if needed",
+  keyPoints: [
+    "Formal complaint",
+    "2 months of unresolved issues",
+    "Account #987654",
+    "Previous attempts made",
+    "Supervisor escalation may be needed"
+  ]
+}
+```
+
+**Step 2: Create Database Record**
+```typescript
+// Create service_request first to get UUID
+const { data } = await supabase
+  .from('service_requests')
+  .insert({
+    content: taskDescription,
+    status: 'pending',
+    criteria: { taskType: 'complain_issue' }
+  })
+  .select()
+  .single();
+
+const requestId = data.id; // Proper UUID: "550e8400-e29b-41d4-a716-446655440000"
+```
+
+**Step 3: Make VAPI Call with Custom Prompt**
+```typescript
+const callRequest: CallRequest = {
+  phoneNumber: "+18005551234",
+  providerName: "Verizon Wireless",
+  customPrompt: analysisResult.customPrompt,  // Task-specific prompt
+  urgency: "high"
+};
+
+await providerCallingService.makeCall(callRequest);
+```
+
+**Step 4: VAPI Call Execution**
+```
+AI: "I'm calling to file a formal complaint regarding persistent billing
+     errors on account #987654. These issues have been ongoing for 2 months..."
+
+Rep: "I'm sorry to hear that. Let me pull up your account..."
+
+AI: "We've tried to resolve this multiple times. Can I speak with a supervisor?"
+
+Rep: "Let me transfer you to our escalations department..."
+
+[Call continues with complaint-specific conversation]
+```
+
+### Database-First Pattern Fix
+
+**Previous Bug**: Used temporary `task-xxx` IDs that broke on database save
+
+```typescript
+// OLD - BROKEN
+const tempId = `task-${Date.now()}`;  // "task-1234567890"
+// Later: Database expects UUID, receives "task-1234567890" → ERROR
+```
+
+**New Solution**: Create database record FIRST
+
+```typescript
+// NEW - CORRECT
+// 1. Create DB record immediately
+const { data } = await supabase
+  .from('service_requests')
+  .insert({ content, status: 'pending' })
+  .select()
+  .single();
+
+// 2. Use real UUID for all operations
+const requestId = data.id;  // "550e8400-e29b-41d4-a716-446655440000"
+
+// 3. All subsequent operations use valid UUID
+await analyzeTask(requestId);
+await makeCall(requestId);
+```
+
+### Benefits of Dynamic Prompts
+
+1. **Task-Specific Conversations**: AI knows exact intent (negotiate vs complain vs inquire)
+2. **Better Success Rates**: Tailored approach increases likelihood of achieving user's goal
+3. **Context Awareness**: Prompts include account info, history, and specific details
+4. **Professional Tone Matching**: Negotiation is friendly, complaints are firm, inquiries are neutral
+5. **Clearer Instructions**: AI receives explicit guidance on what to accomplish
+
+### Future Enhancements
+
+- **Multi-step task flows**: Chain multiple calls or actions for complex tasks
+- **Learning from outcomes**: Refine prompts based on successful vs failed calls
+- **Industry-specific templates**: Specialized prompts for healthcare, utilities, retail, etc.
+- **User preference memory**: Remember user's preferred tone, aggression level, etc.
+
+---
+
 ## 1. High-Level System Architecture
 
 ### Current State (Day 3+)
@@ -314,6 +617,32 @@ flowchart TD
 
 - ✅ Qualified: `disqualified: false`, uses callback closing, captures all criteria details
 - ❌ Disqualified: `disqualified: true`, `disqualification_reason: string`, polite exit only
+
+### CallRequest Type Definition
+
+```typescript
+export interface CallRequest {
+  phoneNumber: string;
+  serviceNeeded?: string;
+  userCriteria?: string;
+  location?: string;
+  providerName: string;
+  urgency?: string;
+  customPrompt?: string;        // NEW: Optional custom prompt for Direct Tasks
+}
+```
+
+**Fields:**
+
+| Field           | Type     | Required | Description                                                    |
+| --------------- | -------- | -------- | -------------------------------------------------------------- |
+| `phoneNumber`   | string   | Yes      | Provider's phone number to call                                |
+| `serviceNeeded` | string   | No       | Type of service (e.g., "plumbing", "electrical")               |
+| `userCriteria`  | string   | No       | Requirements (e.g., "Licensed, 10+ years experience")          |
+| `location`      | string   | No       | Service location                                               |
+| `providerName`  | string   | Yes      | Name of the provider being called                              |
+| `urgency`       | string   | No       | Timeline (e.g., "within_2_days", "emergency")                  |
+| `customPrompt`  | string   | No       | **NEW**: Custom opening prompt for Direct Tasks (overrides default) |
 
 ### API Endpoints
 
