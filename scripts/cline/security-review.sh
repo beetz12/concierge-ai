@@ -24,25 +24,32 @@ MODE="${1:---staged}"
 CLINE_TIMEOUT="${CLINE_TIMEOUT:-60}"  # Reduced from 120s for faster feedback
 MAX_DIFF_LINES="${CLINE_MAX_DIFF_LINES:-500}"  # Limit diff size to prevent token explosion
 
-# Spinner function for progress indication
+# Spinner function for progress indication (writes to stderr to avoid stdout conflicts)
 SPINNER_PID=""
 start_spinner() {
     local msg="${1:-Processing}"
     local spin='⠋⠙⠹⠸⠼⠴⠦⠧⠇⠏'
     local i=0
-    while true; do
-        printf "\r${BLUE}%s %s${NC} " "${spin:i++%${#spin}:1}" "$msg"
-        sleep 0.1
-    done &
+    # Run spinner in subshell, output to stderr
+    (
+        while true; do
+            printf "\r%s %s " "${spin:i++%${#spin}:1}" "$msg" >&2
+            sleep 0.1
+        done
+    ) &
     SPINNER_PID=$!
+    disown "$SPINNER_PID" 2>/dev/null  # Prevent job control messages
 }
 
 stop_spinner() {
     if [ -n "$SPINNER_PID" ]; then
-        kill "$SPINNER_PID" 2>/dev/null
-        wait "$SPINNER_PID" 2>/dev/null
+        # Kill the spinner process and all its children
+        kill "$SPINNER_PID" 2>/dev/null || true
+        # Don't wait indefinitely - use timeout approach
+        ( sleep 0.5; kill -9 "$SPINNER_PID" 2>/dev/null ) &
+        wait "$SPINNER_PID" 2>/dev/null || true
         SPINNER_PID=""
-        printf "\r\033[K"  # Clear the spinner line
+        printf "\r\033[K" >&2  # Clear the spinner line on stderr
     fi
 }
 
@@ -174,13 +181,15 @@ echo ""
 
 # Create temporary file for results
 RESULTS_FILE=$(mktemp)
-trap "stop_spinner; rm -f $RESULTS_FILE" EXIT
 
 # ══════════════════════════════════════════════════════════════════════════════
 # ACTUAL CLINE CLI USAGE - This is the key for the hackathon prize!
 # CRITICAL: Diff MUST be embedded in prompt - Cline does NOT read from stdin!
 # Using -y (YOLO mode) and -m act for faster non-interactive execution
 # ══════════════════════════════════════════════════════════════════════════════
+
+# Set trap BEFORE starting spinner to ensure cleanup on any exit
+trap "stop_spinner; rm -f $RESULTS_FILE" EXIT INT TERM
 
 # Start spinner for progress indication
 start_spinner "Analyzing code for security issues (timeout: ${CLINE_TIMEOUT}s)..."
@@ -207,7 +216,9 @@ OUTPUT exactly:
 End with: ✅ SECURITY_CHECK_PASSED or ❌ SECURITY_CHECK_FAILED"
 
 # Execute Cline with optimized flags
-timeout "$CLINE_TIMEOUT" cline -y -m act "$PROMPT" > "$RESULTS_FILE" 2>&1
+# -k 10: Force kill (SIGKILL) after 10s if process doesn't respond to SIGTERM
+# This prevents hanging on macOS where timeout doesn't always kill child processes
+timeout -k 10 "$CLINE_TIMEOUT" cline -y -m act "$PROMPT" > "$RESULTS_FILE" 2>&1
 
 CLINE_EXIT=$?
 
