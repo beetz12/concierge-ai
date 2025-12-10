@@ -175,19 +175,21 @@ The `DirectVapiClient` now supports **hybrid mode** for optimal performance when
 └──────────────────────────────────────────────────────────────────────────────┘
 
 STEP 1: Create VAPI call with webhook configuration
-┌─────────────────────────────────────┐
-│ DirectVapiClient                    │
-│                                     │
-│  if (VAPI_WEBHOOK_URL) {            │
-│    callParams.serverUrl = webhook   │
-│    callParams.metadata = {          │
-│      serviceRequestId,              │
-│      providerId,                    │
-│      providerName,                  │
-│      ...                            │
-│    }                                │
-│  }                                  │
-└───────────┬─────────────────────────┘
+┌─────────────────────────────────────────────────────────────┐
+│ DirectVapiClient                                             │
+│                                                              │
+│  // Uses shared webhook-config.ts (DRY principle)            │
+│  import { createWebhookAssistantConfig,                      │
+│           createWebhookMetadata } from "./webhook-config.js" │
+│                                                              │
+│  if (this.webhookUrl) {                                      │
+│    // Uses assistant.server.url (not callParams.serverUrl)   │
+│    callParams.assistant = createWebhookAssistantConfig(      │
+│      request, this.webhookUrl                                │
+│    );                                                        │
+│    callParams.metadata = createWebhookMetadata(request);     │
+│  }                                                           │
+└───────────┬─────────────────────────────────────────────────┘
             │
             ▼
      ┌──────────────┐
@@ -303,11 +305,15 @@ BACKEND_URL=https://your-domain.com  # or http://localhost:8000 for local
 
 ### Key Implementation Details
 
-1. **serverUrl**: VAPI SDK field that tells VAPI where to send webhooks
-2. **metadata**: Custom fields passed through VAPI and returned in webhook
-3. **dataStatus**: Cache field indicating 'partial' (webhook received) or 'complete' (enriched)
-4. **waitForWebhookResult()**: Polls backend cache every 2s for up to 5 minutes
-5. **Fallback**: If webhook times out, falls back to original VAPI polling behavior
+1. **webhook-config.ts**: Shared configuration service for webhook-enabled calls (DRY principle)
+2. **assistant.server.url**: VAPI SDK v0.11.0+ requires webhook URL in assistant config, not call params
+3. **createWebhookAssistantConfig()**: Wraps base assistant config with server URL and timeout settings
+4. **createWebhookMetadata()**: Creates metadata object that travels with VAPI webhook callbacks
+5. **dataStatus**: Cache field indicating 'partial' (webhook received) or 'complete' (enriched)
+6. **waitForWebhookResult()**: Polls backend cache every 2s for up to 5 minutes
+7. **Fallback**: If webhook times out, falls back to original VAPI polling behavior
+
+**SDK Deprecation Note**: VAPI SDK v0.11.0 deprecated `callParams.serverUrl`. Use `assistant.server.url` via `createWebhookAssistantConfig()` instead.
 
 ---
 
@@ -563,7 +569,8 @@ concierge-ai/
 │   │   │   │   ├── gemini.ts ─────────────► Existing (reference)
 │   │   │   │   └── vapi/
 │   │   │   │       ├── types.ts ──────────► Shared types (CallRequest, CallResult)
-│   │   │   │       ├── assistant-config.ts ► SOURCE OF TRUTH for VAPI config
+│   │   │   │       ├── assistant-config.ts ► SOURCE OF TRUTH for base VAPI config
+│   │   │   │       ├── webhook-config.ts ──► SOURCE OF TRUTH for webhook config
 │   │   │   │       ├── webhook-cache.service.ts ► In-memory cache (30min TTL)
 │   │   │   │       ├── direct-vapi.client.ts ► Direct VAPI client
 │   │   │   │       ├── kestra.client.ts ──► Kestra integration
@@ -598,14 +605,20 @@ concierge-ai/
 
 ### DRY Principle Implementation
 
-The VAPI assistant configuration follows the DRY (Don't Repeat Yourself) principle:
+The VAPI assistant and webhook configuration follows the DRY (Don't Repeat Yourself) principle:
 
-- **Single Source of Truth**: `apps/api/src/services/vapi/assistant-config.ts` is the authoritative configuration
-- **Shared Types**: `apps/api/src/services/vapi/types.ts` defines `CallRequest` and `CallResult` interfaces
-- **Kestra Integration**: Kestra scripts import from the compiled TypeScript configuration
-- **No Duplication**: Both Direct VAPI and Kestra paths use the same `createAssistantConfig()` function
-- **Version Control**: Changes to call behavior only need to be made in one place
+**Configuration Services:**
+- **assistant-config.ts**: Base assistant behavior (voice, prompts, analysis schema)
+- **webhook-config.ts**: Webhook-enabled configuration (server URL, metadata, timeout settings)
+
+**Key Points:**
+- **Single Source of Truth**: TypeScript configuration files in `apps/api/src/services/vapi/`
+- **Shared Types**: `types.ts` defines `CallRequest`, `CallResult`, and webhook metadata interfaces
+- **Kestra Integration**: Kestra scripts import from compiled TypeScript (`apps/api/dist/`)
+- **No Duplication**: Both DirectVapiClient and Kestra use `createWebhookAssistantConfig()`
+- **SDK Compatibility**: `webhook-config.ts` handles VAPI SDK v0.11.0+ deprecation of `serverUrl`
 - **Consistent Structured Data**: All paths return the same `CallResult` format with disqualification fields
+- **Version Control**: Changes to webhook behavior only need to be made in one place
 
 ---
 

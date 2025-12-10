@@ -7,6 +7,10 @@
 import { VapiClient } from "@vapi-ai/server-sdk";
 import type { CallRequest, CallResult, StructuredCallData } from "./types.js";
 import { createAssistantConfig } from "./assistant-config.js";
+import {
+  createWebhookAssistantConfig,
+  createWebhookMetadata,
+} from "./webhook-config.js";
 
 interface Logger {
   info: (obj: Record<string, unknown>, msg?: string) => void;
@@ -105,17 +109,13 @@ export class DirectVapiClient {
 
       // Add webhook config when URL is available
       if (this.webhookUrl) {
-        callParams.serverUrl = this.webhookUrl;
-        callParams.metadata = {
-          serviceRequestId: request.serviceRequestId || "",
-          providerId: request.providerId || "",
-          providerName: request.providerName,
-          providerPhone: request.providerPhone,
-          serviceNeeded: request.serviceNeeded,
-          userCriteria: request.userCriteria,
-          location: request.location,
-          urgency: request.urgency,
-        };
+        // Replace assistant with webhook-enabled version (uses assistant.server.url)
+        callParams.assistant = createWebhookAssistantConfig(
+          request,
+          this.webhookUrl,
+          request.customPrompt
+        );
+        callParams.metadata = createWebhookMetadata(request);
         this.logger.debug(
           { metadata: callParams.metadata },
           "Adding webhook metadata to call",

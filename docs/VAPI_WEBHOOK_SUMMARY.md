@@ -72,7 +72,8 @@ apps/api/src/
 ├── routes/vapi-webhook.ts           # Webhook + cache endpoints
 ├── services/vapi/
 │   ├── types.ts                     # CallRequest, CallResult types
-│   ├── assistant-config.ts          # SOURCE OF TRUTH for VAPI config
+│   ├── assistant-config.ts          # Base assistant behavior (voice, prompts, schema)
+│   ├── webhook-config.ts            # Webhook-enabled config (server URL, metadata)
 │   ├── webhook-cache.service.ts     # In-memory cache with TTL
 │   ├── direct-vapi.client.ts        # Direct VAPI API client
 │   ├── kestra.client.ts             # Kestra workflow integration
@@ -82,7 +83,19 @@ apps/api/src/
 
 ### 4. Assistant Configuration
 
-**Single Source of Truth**: `/apps/api/src/services/vapi/assistant-config.ts`
+**Configuration Services**: `/apps/api/src/services/vapi/`
+
+| File | Purpose |
+|------|---------|
+| `assistant-config.ts` | Base assistant behavior (voice, prompts, analysis schema) |
+| `webhook-config.ts` | Webhook-enabled config (server URL, metadata, timeout settings) |
+
+**Key Functions**:
+- `createAssistantConfig()` - Base assistant behavior
+- `createWebhookAssistantConfig()` - Wraps base config with webhook server settings
+- `createWebhookMetadata()` - Creates metadata for webhook callbacks
+
+**SDK Compatibility**: VAPI SDK v0.11.0+ deprecated `callParams.serverUrl`. The `webhook-config.ts` module handles this by using `assistant.server.url` instead.
 
 **Key Features:**
 
@@ -140,10 +153,18 @@ apps/api/src/
 
 ### Assistant Configuration
 
+**Base Configuration**:
 - **Path**: `/Users/dave/Work/concierge-ai/apps/api/src/services/vapi/assistant-config.ts`
-- **Purpose**: Single source of truth for VAPI assistant behavior
+- **Purpose**: Base assistant behavior (voice, prompts, analysis schema)
 - **Export**: `createAssistantConfig(request: CallRequest)`
-- **Used by**: Kestra scripts (via compiled JS), Direct VAPI client
+
+**Webhook Configuration**:
+- **Path**: `/Users/dave/Work/concierge-ai/apps/api/src/services/vapi/webhook-config.ts`
+- **Purpose**: Webhook-enabled config (server URL, metadata, timeout settings)
+- **Exports**: `createWebhookAssistantConfig()`, `createWebhookMetadata()`, `WEBHOOK_SERVER_CONFIG`
+- **SDK Fix**: Uses `assistant.server.url` instead of deprecated `callParams.serverUrl`
+
+**Used by**: Kestra scripts (via compiled JS), Direct VAPI client
 
 ### Types
 
@@ -153,9 +174,12 @@ apps/api/src/
 ### Kestra Scripts
 
 - **Path**: `/Users/dave/Work/concierge-ai/kestra/scripts/call-provider.js`
-- **Purpose**: Initiates VAPI calls using shared assistant config
+- **Purpose**: Initiates VAPI calls with VAPI SDK polling
+- **Imports**: `createAssistantConfig()` from compiled `assistant-config.js`
+
 - **Path**: `/Users/dave/Work/concierge-ai/kestra/scripts/call-provider-webhook.js`
-- **Purpose**: Polls backend API for cached results
+- **Purpose**: Initiates VAPI calls with webhook-based backend polling
+- **Imports**: `createWebhookAssistantConfig()` from compiled `webhook-config.js`
 
 ### Environment Variables
 

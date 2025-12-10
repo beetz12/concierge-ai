@@ -1,176 +1,414 @@
 #!/bin/bash
 #
-# Cline CLI Refactoring Analysis Script
-# Identifies refactoring opportunities and suggests improvements
-# Usage: ./scripts/cline/refactor-analysis.sh [--path <directory>]
+# Cline CLI Refactoring Analysis Script (Production-Ready)
+# Identifies refactoring opportunities and suggests improvements using AI
+#
+# 2025 Best Practices Applied:
+# - Strict mode (set -euo pipefail)
+# - Proper signal handling (EXIT, INT, TERM)
+# - Temp file cleanup with TEMP_FILES array
+# - GNU timeout with macOS fallback
+# - NO_COLOR support
+#
+# Usage: ./scripts/cline/refactor-analysis.sh [--path <directory>|--help]
+#
+# Environment Variables:
+#   CLINE_ENABLED     Enable/disable (default: true)
+#   CLINE_TIMEOUT     Timeout in seconds (default: 120)
 #
 
-set -e
+# ══════════════════════════════════════════════════════════════════════════════
+# STRICT MODE
+# ══════════════════════════════════════════════════════════════════════════════
+set -euo pipefail
 
-# Colors
-RED='\033[0;31m'
-GREEN='\033[0;32m'
-YELLOW='\033[1;33m'
-BLUE='\033[0;34m'
-NC='\033[0m'
+# ══════════════════════════════════════════════════════════════════════════════
+# COLORS (respect NO_COLOR env var)
+# ══════════════════════════════════════════════════════════════════════════════
+if [[ -z "${NO_COLOR:-}" ]] && [[ -t 1 ]]; then
+    readonly RED='\033[0;31m'
+    readonly GREEN='\033[0;32m'
+    readonly YELLOW='\033[1;33m'
+    readonly BLUE='\033[0;34m'
+    readonly CYAN='\033[0;36m'
+    readonly NC='\033[0m'
+else
+    readonly RED=''
+    readonly GREEN=''
+    readonly YELLOW=''
+    readonly BLUE=''
+    readonly CYAN=''
+    readonly NC=''
+fi
 
-# Configuration
+# ══════════════════════════════════════════════════════════════════════════════
+# CONFIGURATION
+# ══════════════════════════════════════════════════════════════════════════════
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
-CLINE_ENABLED="${CLINE_ENABLED:-true}"
-OUTPUT_FILE="$PROJECT_ROOT/docs/REFACTORING_OPPORTUNITIES.md"
+readonly OUTPUT_FILE="$PROJECT_ROOT/docs/REFACTORING_OPPORTUNITIES.md"
+readonly CLINE_ENABLED="${CLINE_ENABLED:-true}"
+readonly CLINE_TIMEOUT="${CLINE_TIMEOUT:-120}"
+
+# ══════════════════════════════════════════════════════════════════════════════
+# GLOBAL STATE
+# ══════════════════════════════════════════════════════════════════════════════
+SPINNER_PID=""
+TEMP_FILES=()
+CLEANUP_DONE=false
+
+# ══════════════════════════════════════════════════════════════════════════════
+# USAGE
+# ══════════════════════════════════════════════════════════════════════════════
+show_usage() {
+    cat << 'EOF'
+Usage: refactor-analysis.sh [--path <directory>|--help]
+
+Options:
+  --path <dir>  Analyze a specific directory (default: entire project)
+  --help        Show this help message
+
+Environment Variables:
+  CLINE_ENABLED     Enable/disable (default: true)
+  CLINE_TIMEOUT     Timeout in seconds (default: 120)
+
+Examples:
+  ./refactor-analysis.sh
+  ./refactor-analysis.sh --path apps/api/src
+  ./refactor-analysis.sh --path apps/web/lib
+  CLINE_TIMEOUT=180 ./refactor-analysis.sh --path apps/api
+
+Output:
+  docs/REFACTORING_OPPORTUNITIES.md
+
+Analysis Includes:
+  - Code duplication detection
+  - Complexity analysis
+  - Type safety issues
+  - Performance concerns
+  - Best practices violations
+EOF
+}
+
+# ══════════════════════════════════════════════════════════════════════════════
+# CLEANUP
+# ══════════════════════════════════════════════════════════════════════════════
+cleanup() {
+    if [[ "$CLEANUP_DONE" == "true" ]]; then
+        return
+    fi
+    CLEANUP_DONE=true
+
+    # Stop spinner
+    if [[ -n "$SPINNER_PID" ]] && kill -0 "$SPINNER_PID" 2>/dev/null; then
+        kill "$SPINNER_PID" 2>/dev/null || true
+        local count=0
+        while kill -0 "$SPINNER_PID" 2>/dev/null && [[ $count -lt 5 ]]; do
+            sleep 0.1
+            count=$((count + 1))
+        done
+        if kill -0 "$SPINNER_PID" 2>/dev/null; then
+            kill -9 "$SPINNER_PID" 2>/dev/null || true
+        fi
+        printf "\r\033[K" >&2
+    fi
+    SPINNER_PID=""
+
+    # Remove temp files
+    if [[ ${#TEMP_FILES[@]} -gt 0 ]]; then
+        for file in "${TEMP_FILES[@]}"; do
+            rm -f "$file" 2>/dev/null || true
+        done
+    fi
+    TEMP_FILES=()
+}
+
+# ══════════════════════════════════════════════════════════════════════════════
+# SPINNER FUNCTIONS
+# ══════════════════════════════════════════════════════════════════════════════
+start_spinner() {
+    local msg="${1:-Processing}"
+    local spin='⠋⠙⠹⠸⠼⠴⠦⠧⠇⠏'
+
+    (
+        trap 'exit 0' TERM INT
+        local i=0
+        while true; do
+            printf "\r%s %s " "${spin:i++%${#spin}:1}" "$msg" >&2
+            sleep 0.1
+        done
+    ) &
+    SPINNER_PID=$!
+}
+
+stop_spinner() {
+    if [[ -n "$SPINNER_PID" ]] && kill -0 "$SPINNER_PID" 2>/dev/null; then
+        kill "$SPINNER_PID" 2>/dev/null || true
+        wait "$SPINNER_PID" 2>/dev/null || true
+        printf "\r\033[K" >&2
+    fi
+    SPINNER_PID=""
+}
+
+# ══════════════════════════════════════════════════════════════════════════════
+# HELPER FUNCTIONS
+# ══════════════════════════════════════════════════════════════════════════════
+create_temp_file() {
+    local temp_file
+    temp_file=$(mktemp) || {
+        echo -e "${RED}ERROR: Failed to create temporary file${NC}" >&2
+        exit 1
+    }
+    TEMP_FILES+=("$temp_file")
+    echo "$temp_file"
+}
+
+check_timeout_command() {
+    if command -v timeout >/dev/null 2>&1; then
+        if timeout --help 2>&1 | grep -q '\-k'; then
+            echo "gnu"
+        else
+            echo "basic"
+        fi
+    else
+        echo "none"
+    fi
+}
+
+run_with_timeout() {
+    local timeout_secs="$1"
+    shift
+    local timeout_type
+    timeout_type=$(check_timeout_command)
+
+    case "$timeout_type" in
+        gnu)
+            timeout -k 10 "$timeout_secs" "$@"
+            ;;
+        basic)
+            timeout "$timeout_secs" "$@"
+            ;;
+        none)
+            "$@"
+            ;;
+    esac
+}
+
+# ══════════════════════════════════════════════════════════════════════════════
+# MAIN SCRIPT
+# ══════════════════════════════════════════════════════════════════════════════
+
+# Set trap
+trap cleanup EXIT INT TERM
 
 # Check if Cline is enabled
-if [ "$CLINE_ENABLED" != "true" ]; then
-    echo -e "${YELLOW}⚠ Cline is disabled${NC}"
+if [[ "$CLINE_ENABLED" != "true" ]]; then
+    echo -e "${YELLOW}⚠ Cline is disabled (CLINE_ENABLED=false)${NC}"
     exit 0
 fi
 
 # Check if Cline CLI is installed
 if ! command -v cline &> /dev/null; then
-    echo -e "${RED}✗ Cline CLI not found${NC}"
+    echo -e "${RED}✗ Cline CLI not found. Install with: npm install -g @cline/cli${NC}"
     exit 1
 fi
 
 # Parse arguments
 TARGET_PATH="$PROJECT_ROOT"
-if [ "$1" = "--path" ] && [ -n "$2" ]; then
-    TARGET_PATH="$2"
+
+while [[ $# -gt 0 ]]; do
+    case $1 in
+        --help|-h)
+            show_usage
+            exit 0
+            ;;
+        --path)
+            if [[ -n "${2:-}" ]]; then
+                TARGET_PATH="$2"
+                shift 2
+            else
+                echo -e "${RED}ERROR: --path requires a directory argument${NC}" >&2
+                exit 1
+            fi
+            ;;
+        *)
+            echo -e "${RED}Unknown option: $1${NC}" >&2
+            echo "Use --help for usage information" >&2
+            exit 1
+            ;;
+    esac
+done
+
+# Validate path
+if [[ ! -d "$TARGET_PATH" ]]; then
+    echo -e "${RED}❌ Directory not found: $TARGET_PATH${NC}"
+    exit 1
 fi
 
-echo -e "${BLUE}🔍 Analyzing code for refactoring opportunities...${NC}"
-echo -e "${BLUE}Path: $TARGET_PATH${NC}"
-
+# Change to project root
 cd "$PROJECT_ROOT"
 
-# Initialize report
-cat > "$OUTPUT_FILE" << 'EOF'
-# Refactoring Opportunities
+# Display banner
+echo -e "${CYAN}╔════════════════════════════════════════════════════════════╗${NC}"
+echo -e "${CYAN}║  🔍 Cline CLI Refactoring Analysis                         ║${NC}"
+echo -e "${CYAN}║  AI-Powered Code Quality Analysis                          ║${NC}"
+echo -e "${CYAN}╚════════════════════════════════════════════════════════════╝${NC}"
+echo ""
 
-Generated by Cline CLI
+echo -e "${BLUE}📁 Target: $TARGET_PATH${NC}"
+echo ""
 
-## Summary
+# Create temp files
+SOURCE_FILE=$(create_temp_file)
+RESULTS_FILE=$(create_temp_file)
 
-This report identifies code smells, duplication, and refactoring opportunities.
+# Collect source files
+echo -e "${BLUE}📊 Collecting source files...${NC}"
+{
+    echo "# Source Code for Refactoring Analysis"
+    echo ""
+    echo "## Project: AI Concierge"
+    echo "## Path: ${TARGET_PATH#$PROJECT_ROOT/}"
+    echo ""
 
----
+    # Find TypeScript files (limit to 50 to stay within token limits)
+    find "$TARGET_PATH" -type f \( -name "*.ts" -o -name "*.tsx" \) \
+        -not -path "*/node_modules/*" \
+        -not -path "*/.next/*" \
+        -not -path "*/dist/*" \
+        -not -name "*.test.*" \
+        -not -name "*.spec.*" \
+        -not -name "*.d.ts" \
+        2>/dev/null | head -50 | while read -r file; do
+        echo "=== FILE: ${file#$PROJECT_ROOT/} ==="
+        head -200 "$file"  # Limit lines per file
+        echo ""
+        echo "=== END FILE ==="
+        echo ""
+    done
+} > "$SOURCE_FILE"
 
-EOF
-
-# Analyze different aspects
-
-# 1. Code Duplication
-echo -e "\n${BLUE}📊 Checking for code duplication...${NC}"
-cline analyze-duplication \
-    --path "$TARGET_PATH" \
-    --threshold 5 \
-    --output "$OUTPUT_FILE" \
-    --append
-
-# 2. Complexity Analysis
-echo -e "\n${BLUE}📊 Analyzing code complexity...${NC}"
-cline analyze-complexity \
-    --path "$TARGET_PATH" \
-    --threshold 10 \
-    --output "$OUTPUT_FILE" \
-    --append
-
-# 3. Type Safety Issues
-echo -e "\n${BLUE}📊 Checking type safety...${NC}"
-cline analyze-types \
-    --path "$TARGET_PATH" \
-    --strict-mode \
-    --output "$OUTPUT_FILE" \
-    --append
-
-# 4. Performance Issues
-echo -e "\n${BLUE}📊 Identifying performance issues...${NC}"
-cline analyze-performance \
-    --path "$TARGET_PATH" \
-    --context "React 19, Next.js 16, Fastify 5" \
-    --output "$OUTPUT_FILE" \
-    --append
-
-# 5. Security Concerns
-echo -e "\n${BLUE}📊 Scanning for security issues...${NC}"
-cline analyze-security \
-    --path "$TARGET_PATH" \
-    --output "$OUTPUT_FILE" \
-    --append
-
-# 6. Best Practices
-echo -e "\n${BLUE}📊 Checking best practices...${NC}"
-cline analyze-best-practices \
-    --path "$TARGET_PATH" \
-    --framework "nextjs,fastify,supabase" \
-    --output "$OUTPUT_FILE" \
-    --append
-
-# 7. API Design Analysis (for backend)
-if [[ "$TARGET_PATH" =~ apps/api ]]; then
-    echo -e "\n${BLUE}📊 Analyzing API design...${NC}"
-    cline analyze-api-design \
-        --path "$TARGET_PATH" \
-        --standard "REST" \
-        --output "$OUTPUT_FILE" \
-        --append
+# Check if we have content
+if [[ ! -s "$SOURCE_FILE" ]]; then
+    echo -e "${YELLOW}⚠️  No source files found in $TARGET_PATH${NC}"
+    exit 0
 fi
 
-# 8. Component Structure (for frontend)
-if [[ "$TARGET_PATH" =~ apps/web ]]; then
-    echo -e "\n${BLUE}📊 Analyzing component structure...${NC}"
-    cline analyze-components \
-        --path "$TARGET_PATH" \
-        --framework "react" \
-        --output "$OUTPUT_FILE" \
-        --append
-fi
+# Start analysis
+start_spinner "Analyzing code for refactoring opportunities..."
 
-# Generate priority recommendations
-echo -e "\n${BLUE}📊 Generating priority recommendations...${NC}"
+# Build prompt
+PROMPT="Perform a comprehensive refactoring analysis on the attached TypeScript codebase.
 
-cat >> "$OUTPUT_FILE" << 'EOF'
+PROJECT CONTEXT:
+- AI Concierge: AI receptionist/scheduler application
+- Tech stack: Next.js 16, Fastify 5, Supabase, Google Gemini, VAPI
+- Architecture: Turborepo monorepo (apps/web, apps/api)
 
----
+ANALYZE FOR:
 
-## Priority Recommendations
+## 1. Code Duplication
+- Identify repeated code patterns
+- Suggest extraction into reusable functions/components
+- Look for copy-paste across files
 
-Based on the analysis above, here are the top refactoring priorities:
+## 2. Complexity Issues
+- Functions over 50 lines
+- Deeply nested conditionals (>3 levels)
+- Cyclomatic complexity concerns
 
-EOF
+## 3. Type Safety
+- Use of 'any' type
+- Missing type annotations
+- Unsafe type assertions
 
-cline prioritize-refactoring \
-    --input "$OUTPUT_FILE" \
-    --output "$OUTPUT_FILE" \
-    --append
+## 4. Performance Concerns
+- Unnecessary re-renders (React)
+- Missing memoization
+- N+1 query patterns
+- Large bundle imports
 
-# Format the output
-if command -v prettier &> /dev/null; then
-    prettier --write "$OUTPUT_FILE" > /dev/null 2>&1
-fi
+## 5. Best Practices
+- Missing error handling
+- Inconsistent patterns
+- Security concerns
+- Code organization
 
-# Display summary
-echo -e "\n${GREEN}✓ Analysis complete${NC}"
-echo -e "${BLUE}Report saved to: $OUTPUT_FILE${NC}"
+OUTPUT FORMAT:
 
-# Show quick summary
-echo -e "\n${BLUE}Quick Summary:${NC}"
-if command -v head &> /dev/null && command -v tail &> /dev/null; then
-    head -n 50 "$OUTPUT_FILE" | tail -n 30
-fi
+# Refactoring Analysis Report
 
-# Open in editor if available
-if [ -n "$EDITOR" ]; then
-    echo -e "\n${YELLOW}Open report in editor? (y/N)${NC}"
-    read -p "" -n 1 -r
-    echo
-    if [[ $REPLY =~ ^[Yy]$ ]]; then
-        $EDITOR "$OUTPUT_FILE"
+## Executive Summary
+[Brief overview of findings]
+
+## Critical Issues (High Priority)
+[Issues that should be fixed immediately]
+
+## Recommended Improvements (Medium Priority)
+[Improvements that would benefit codebase]
+
+## Minor Suggestions (Low Priority)
+[Nice-to-have improvements]
+
+## Metrics
+- Files Analyzed: [X]
+- Critical Issues: [X]
+- Warnings: [X]
+- Suggestions: [X]
+
+## Action Items
+[Prioritized list of specific refactoring tasks]"
+
+# Execute Cline
+CLINE_EXIT=0
+run_with_timeout "$CLINE_TIMEOUT" cline -y -m act -f "$SOURCE_FILE" "$PROMPT" > "$RESULTS_FILE" 2>&1 || CLINE_EXIT=$?
+
+# Stop spinner
+stop_spinner
+
+# Handle errors
+if [[ $CLINE_EXIT -eq 124 ]] || [[ $CLINE_EXIT -eq 137 ]]; then
+    echo -e "${YELLOW}⚠️  Analysis timed out after ${CLINE_TIMEOUT}s${NC}"
+    echo -e "${YELLOW}   Try increasing timeout: CLINE_TIMEOUT=180 ./refactor-analysis.sh${NC}"
+    exit 1
+elif [[ $CLINE_EXIT -ne 0 ]]; then
+    echo -e "${RED}❌ Analysis failed (exit: $CLINE_EXIT)${NC}"
+    if [[ -s "$RESULTS_FILE" ]]; then
+        echo -e "${YELLOW}Output:${NC}"
+        head -20 "$RESULTS_FILE"
     fi
+    exit 1
 fi
 
-echo -e "\n${YELLOW}Next steps:${NC}"
-echo "  1. Review the report: $OUTPUT_FILE"
+# Check results
+if [[ ! -s "$RESULTS_FILE" ]]; then
+    echo -e "${RED}❌ No analysis generated${NC}"
+    exit 1
+fi
+
+# Ensure docs directory exists
+mkdir -p "$(dirname "$OUTPUT_FILE")"
+
+# Write results
+cat "$RESULTS_FILE" > "$OUTPUT_FILE"
+
+# Format if prettier available
+if command -v prettier &> /dev/null; then
+    prettier --write "$OUTPUT_FILE" > /dev/null 2>&1 || true
+fi
+
+# Display results
+echo ""
+echo -e "${CYAN}═══════════════════════════════════════════════════════════════${NC}"
+cat "$OUTPUT_FILE"
+echo -e "${CYAN}═══════════════════════════════════════════════════════════════${NC}"
+
+# Summary
+echo ""
+echo -e "${GREEN}✅ Refactoring analysis complete${NC}"
+echo -e "${BLUE}📄 Report saved to: $OUTPUT_FILE${NC}"
+echo ""
+echo -e "${YELLOW}Next steps:${NC}"
+echo "  1. Review the report above"
 echo "  2. Prioritize refactoring tasks"
 echo "  3. Create GitHub issues for high-priority items"
-echo "  4. Update backlog in project board"
