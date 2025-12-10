@@ -295,7 +295,7 @@ export class DirectVapiClient {
     while (attempts < maxAttempts) {
       // SDK uses object parameter for get
       const callResponse = await this.client.calls.get({ id: callId });
-      const call = this.extractCallFromResponse(callResponse);
+      let call = this.extractCallFromResponse(callResponse);
 
       this.logger.debug(
         {
@@ -309,6 +309,58 @@ export class DirectVapiClient {
 
       // Check if call has ended (not in active states)
       if (!["queued", "ringing", "in-progress"].includes(call.status)) {
+        // VAPI processes analysis ASYNC after call ends
+        // Wait and retry to ensure we get structuredData
+        const ENRICHMENT_DELAYS_MS = [3000, 5000, 8000]; // 3s, 5s, 8s
+
+        for (let enrichAttempt = 0; enrichAttempt < ENRICHMENT_DELAYS_MS.length; enrichAttempt++) {
+          // Check if we already have analysis data
+          const hasAnalysis = !!(call.analysis?.structuredData || call.analysis?.summary);
+          const hasTranscript = (call.artifact?.transcript || "").length > 50;
+
+          if (hasAnalysis && hasTranscript) {
+            this.logger.info(
+              { callId, enrichAttempt },
+              "Call data complete, returning"
+            );
+            return call;
+          }
+
+          // Wait before re-fetching
+          const delay = ENRICHMENT_DELAYS_MS[enrichAttempt];
+          this.logger.info(
+            { callId, delay, enrichAttempt: enrichAttempt + 1 },
+            "Waiting for VAPI analysis processing"
+          );
+          await new Promise((resolve) => setTimeout(resolve, delay));
+
+          // Re-fetch to get updated analysis
+          const enrichedResponse = await this.client.calls.get({ id: callId });
+          const enrichedCall = this.extractCallFromResponse(enrichedResponse);
+
+          // Check if analysis is now ready
+          const enrichedHasAnalysis = !!(
+            enrichedCall.analysis?.structuredData || enrichedCall.analysis?.summary
+          );
+          const enrichedHasTranscript = (enrichedCall.artifact?.transcript || "").length > 50;
+
+          if (enrichedHasAnalysis && enrichedHasTranscript) {
+            this.logger.info(
+              { callId, enrichAttempt: enrichAttempt + 1 },
+              "Analysis data ready after enrichment"
+            );
+            return enrichedCall;
+          }
+
+          // Update call reference for next iteration check
+          call = enrichedCall;
+        }
+
+        // Fallback: return whatever we have after all retries
+        this.logger.warn(
+          { callId, hasAnalysis: !!call.analysis?.structuredData },
+          "Analysis not ready after enrichment attempts, returning partial data"
+        );
         return call;
       }
 
@@ -345,6 +397,16 @@ export class DirectVapiClient {
     const transcriptStr =
       typeof transcript === "string" ? transcript : JSON.stringify(transcript);
 
+    // Extract messages array from artifact or call
+    const messages = call.artifact?.messages || [];
+    const formattedMessages = Array.isArray(messages)
+      ? messages.map((msg: any) => ({
+          role: msg.role || "unknown",
+          message: msg.message || msg.content || "",
+          time: msg.time || msg.secondsFromStart,
+        }))
+      : [];
+
     // Extract analysis data
     const analysis = call.analysis || {};
     const structuredData = (analysis.structuredData ||
@@ -373,6 +435,7 @@ export class DirectVapiClient {
         urgency: request.urgency,
       },
       cost: call.costBreakdown?.total,
+      messages: formattedMessages,
     };
   }
 

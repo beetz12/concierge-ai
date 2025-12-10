@@ -379,14 +379,41 @@ function createProviderSearchConfig(request: CallRequest) {
         structuredDataSchema: {
           type: "object",
           properties: {
-            available: { type: "boolean", description: "Whether they can help" },
-            earliest_availability: { type: "string", description: "When they're available" },
-            rate: { type: "string", description: "Their rate/price" },
-            accepts_requirements: { type: "boolean", description: "Whether they meet the requirements" },
-            notes: { type: "string", description: "Any additional notes" },
-            disqualified: { type: "boolean", description: "Whether they cannot help" },
-            disqualification_reason: { type: "string", description: "Why they can't help" },
+            availability: {
+              type: "string",
+              description: "When they're available (specific date/time if given)",
+            },
+            estimated_rate: {
+              type: "string",
+              description: "Cost estimate or rate information",
+            },
+            all_criteria_met: {
+              type: "boolean",
+              description: "Does the provider meet ALL of the client's requirements?",
+            },
+            earliest_availability: {
+              type: "string",
+              description: "Earliest date/time they can start work",
+            },
+            disqualified: {
+              type: "boolean",
+              description: "Was the provider disqualified due to not meeting requirements?",
+            },
+            disqualification_reason: {
+              type: "string",
+              description: "Reason the provider was disqualified (if applicable)",
+            },
+            call_outcome: {
+              type: "string",
+              enum: ["positive", "negative", "neutral", "no_answer", "voicemail"],
+              description: "Overall outcome of the call",
+            },
+            notes: {
+              type: "string",
+              description: "Any additional notes from the conversation",
+            },
           },
+          required: ["availability", "all_criteria_met", "call_outcome"],
         },
         successEvaluationPrompt: `Evaluate if ${clientName}'s needs can be met by this provider based on the call.`,
         successEvaluationRubric: "AutomaticRubric",

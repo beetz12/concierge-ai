@@ -52,6 +52,12 @@ export interface CallResult {
   fetchedAt?: string; // ISO timestamp when REST API fetch completed
   fetchAttempts?: number; // Number of fetch attempts made
   fetchError?: string; // Error message if fetch failed
+  // Structured conversation messages from VAPI
+  messages?: Array<{
+    role: string;
+    message: string;
+    time?: number;
+  }>;
 }
 
 export interface StructuredCallData {

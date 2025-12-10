@@ -22,9 +22,21 @@ import {
 const LIVE_CALL_ENABLED =
   process.env.NEXT_PUBLIC_LIVE_CALL_ENABLED === "true";
 
-// Admin test mode: when set, only call first provider using this test number
-const ADMIN_TEST_NUMBER = process.env.NEXT_PUBLIC_ADMIN_TEST_NUMBER;
-const isAdminTestMode = !!ADMIN_TEST_NUMBER;
+// Admin test mode: Array of test phone numbers for concurrent testing
+// Format: comma-separated E.164 numbers (e.g., "+13105551234,+13105555678,+13105559012")
+// When set, only calls providers up to the count of test phones available
+const ADMIN_TEST_PHONES_RAW = process.env.NEXT_PUBLIC_ADMIN_TEST_PHONES;
+const ADMIN_TEST_PHONES = ADMIN_TEST_PHONES_RAW
+  ? ADMIN_TEST_PHONES_RAW.split(",").map((p) => p.trim()).filter(Boolean)
+  : [];
+
+// Backward compatibility: single test number (deprecated, use ADMIN_TEST_PHONES instead)
+const ADMIN_TEST_NUMBER_LEGACY = process.env.NEXT_PUBLIC_ADMIN_TEST_NUMBER;
+if (ADMIN_TEST_NUMBER_LEGACY && ADMIN_TEST_PHONES.length === 0) {
+  ADMIN_TEST_PHONES.push(ADMIN_TEST_NUMBER_LEGACY);
+}
+
+const isAdminTestMode = ADMIN_TEST_PHONES.length > 0;
 import {
   createServiceRequest,
   updateServiceRequest,
@@ -196,13 +208,21 @@ export default function NewRequest() {
       await updateStatus("CALLING");
       const callLogs = [];
 
+      // In test mode, limit providers to the number of test phones available
+      const providersToCall = isAdminTestMode
+        ? providers.slice(0, ADMIN_TEST_PHONES.length)
+        : providers;
+
       console.log(
-        `[Concierge] Starting calls to ${providers.length} providers (LIVE_CALL_ENABLED=${LIVE_CALL_ENABLED}, ADMIN_TEST_MODE=${isAdminTestMode})`,
+        `[Concierge] Starting calls to ${providersToCall.length} providers (LIVE_CALL_ENABLED=${LIVE_CALL_ENABLED}, ADMIN_TEST_MODE=${isAdminTestMode})`,
       );
 
       if (isAdminTestMode) {
         console.log(
-          `[Concierge] ADMIN TEST MODE: Will call only first provider using test number ${ADMIN_TEST_NUMBER}`,
+          `[Concierge] ADMIN TEST MODE: Will call ${ADMIN_TEST_PHONES.length} provider(s) using test phones: ${ADMIN_TEST_PHONES.join(", ")}`,
+        );
+        console.log(
+          `[Concierge] Phone mapping: ${providersToCall.map((p, i) => `${p.name} → ${ADMIN_TEST_PHONES[i]}`).join(", ")}`,
         );
       }
 
@@ -226,7 +246,7 @@ export default function NewRequest() {
         console.error('[Concierge] Failed to generate prompts, using defaults:', error);
       }
 
-      for (const [providerIndex, provider] of providers.entries()) {
+      for (const [providerIndex, provider] of providersToCall.entries()) {
         let log;
 
         if (LIVE_CALL_ENABLED) {
@@ -241,14 +261,16 @@ export default function NewRequest() {
             };
           } else {
             // Normalize phone to E.164 format
-            // In admin test mode, override with the test number
+            // In admin test mode, use test phone at same index (1:1 mapping)
+            // Note: providerIndex is guaranteed to be within ADMIN_TEST_PHONES bounds
+            // because we sliced providersToCall to ADMIN_TEST_PHONES.length
             const phoneToCall = isAdminTestMode
-              ? normalizePhoneNumber(ADMIN_TEST_NUMBER!)
+              ? normalizePhoneNumber(ADMIN_TEST_PHONES[providerIndex]!)
               : normalizePhoneNumber(provider.phone);
 
             if (!isValidE164Phone(phoneToCall)) {
               console.warn(
-                `[Concierge] Skipping ${provider.name}: invalid phone ${isAdminTestMode ? ADMIN_TEST_NUMBER : provider.phone} -> ${phoneToCall}`,
+                `[Concierge] Skipping ${provider.name}: invalid phone ${isAdminTestMode ? ADMIN_TEST_PHONES[providerIndex] : provider.phone} -> ${phoneToCall}`,
               );
               log = {
                 timestamp: new Date().toISOString(),
@@ -302,14 +324,6 @@ export default function NewRequest() {
         updateRequest(reqId, {
           interactions: [searchLog, ...callLogs],
         });
-
-        // Admin test mode: stop after first provider call
-        if (isAdminTestMode && providerIndex === 0) {
-          console.log(
-            "[Concierge] ADMIN TEST MODE: Stopping after first provider call",
-          );
-          break;
-        }
 
         // Small delay between calls
         await new Promise((r) => setTimeout(r, LIVE_CALL_ENABLED ? 2000 : 1000));

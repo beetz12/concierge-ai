@@ -67,6 +67,22 @@ const recommendationSchema = z.object({
   serviceRequestId: z.string().min(1, "Service request ID is required"),
 });
 
+// Booking schema for scheduling appointments
+const bookingSchema = z.object({
+  providerId: z.string().min(1, "Provider ID is required"),
+  providerName: z.string().min(1, "Provider name is required"),
+  providerPhone: z
+    .string()
+    .regex(/^\+1\d{10}$/, "Phone must be E.164 format (+1XXXXXXXXXX)"),
+  serviceNeeded: z.string().min(1, "Service type is required"),
+  serviceRequestId: z.string().min(1, "Service request ID is required"),
+  clientName: z.string().optional(),
+  clientPhone: z.string().optional(),
+  location: z.string().min(1, "Location is required"),
+  preferredDateTime: z.string().optional(),
+  additionalNotes: z.string().optional(),
+});
+
 export default async function providerRoutes(fastify: FastifyInstance) {
   // Create service instances with fastify logger
   const callingService = new ProviderCallingService(fastify.log);
@@ -601,6 +617,336 @@ export default async function providerRoutes(fastify: FastifyInstance) {
         });
       } catch (error: unknown) {
         request.log.error({ error }, "Provider recommendation failed");
+
+        // Handle Zod validation errors
+        if (error instanceof z.ZodError) {
+          return reply.status(400).send({
+            success: false,
+            error: "Validation error",
+            details: error.errors,
+          });
+        }
+
+        // Handle other errors
+        const errorMessage =
+          error instanceof Error ? error.message : "Unknown error";
+        return reply.status(500).send({
+          success: false,
+          error: errorMessage,
+        });
+      }
+    },
+  );
+
+  /**
+   * POST /api/v1/providers/book
+   * Book an appointment with a selected provider
+   */
+  fastify.post(
+    "/book",
+    {
+      schema: {
+        tags: ["providers"],
+        summary: "Book an appointment with a selected provider",
+        description:
+          "Calls the provider back via VAPI.ai to schedule a confirmed appointment time. Updates the service request and provider records with booking outcome.",
+        body: {
+          type: "object",
+          required: [
+            "providerId",
+            "providerName",
+            "providerPhone",
+            "serviceNeeded",
+            "serviceRequestId",
+            "location",
+          ],
+          properties: {
+            providerId: {
+              type: "string",
+              description: "UUID of the provider in the database",
+            },
+            providerName: {
+              type: "string",
+              description: "Name of the service provider",
+            },
+            providerPhone: {
+              type: "string",
+              description: "Phone number in E.164 format (+1XXXXXXXXXX)",
+              pattern: "^\\+1\\d{10}$",
+            },
+            serviceNeeded: {
+              type: "string",
+              description: "Type of service being booked",
+            },
+            serviceRequestId: {
+              type: "string",
+              description: "UUID of the service request",
+            },
+            clientName: {
+              type: "string",
+              description: "Optional: Client's name for the appointment",
+            },
+            clientPhone: {
+              type: "string",
+              description: "Optional: Client's callback phone number",
+            },
+            location: {
+              type: "string",
+              description: "Service location (city, state)",
+            },
+            preferredDateTime: {
+              type: "string",
+              description:
+                "Optional: Preferred appointment date/time (e.g., 'Tomorrow at 2pm')",
+            },
+            additionalNotes: {
+              type: "string",
+              description:
+                "Optional: Additional notes or requirements for the booking",
+            },
+          },
+        },
+        response: {
+          200: {
+            type: "object",
+            properties: {
+              success: { type: "boolean" },
+              data: {
+                type: "object",
+                properties: {
+                  bookingConfirmed: { type: "boolean" },
+                  callId: { type: "string" },
+                  confirmedDate: { type: "string" },
+                  confirmedTime: { type: "string" },
+                  confirmationNumber: { type: "string" },
+                  callOutcome: { type: "string" },
+                  transcript: { type: "string" },
+                  summary: { type: "string" },
+                  nextSteps: { type: "string" },
+                },
+              },
+            },
+          },
+          400: {
+            type: "object",
+            properties: {
+              success: { type: "boolean" },
+              error: { type: "string" },
+              details: { type: "array" },
+            },
+          },
+          500: {
+            type: "object",
+            properties: {
+              success: { type: "boolean" },
+              error: { type: "string" },
+            },
+          },
+        },
+      },
+    },
+    async (request, reply) => {
+      try {
+        // Validate request body with Zod
+        const validated = bookingSchema.parse(request.body);
+
+        request.log.info(
+          {
+            providerId: validated.providerId,
+            providerName: validated.providerName,
+            serviceRequestId: validated.serviceRequestId,
+          },
+          "Initiating booking call",
+        );
+
+        // Import booking config
+        const { createBookingAssistantConfig } = await import(
+          "../services/vapi/booking-assistant-config.js"
+        );
+
+        // Create booking assistant configuration
+        const bookingConfig = createBookingAssistantConfig({
+          providerName: validated.providerName,
+          providerPhone: validated.providerPhone,
+          serviceNeeded: validated.serviceNeeded,
+          clientName: validated.clientName,
+          clientPhone: validated.clientPhone,
+          location: validated.location,
+          preferredDateTime: validated.preferredDateTime,
+          serviceRequestId: validated.serviceRequestId,
+          providerId: validated.providerId,
+          additionalNotes: validated.additionalNotes,
+        });
+
+        // Build call parameters directly
+        const callParams: any = {
+          phoneNumberId: process.env.VAPI_PHONE_NUMBER_ID,
+          customer: {
+            number: validated.providerPhone,
+            name: validated.providerName,
+          },
+          assistant: bookingConfig,
+        };
+
+        // Use VAPI SDK directly for booking calls
+        const { VapiClient } = await import("@vapi-ai/server-sdk");
+        const vapi = new VapiClient({ token: process.env.VAPI_API_KEY! });
+
+        request.log.info(
+          { provider: validated.providerName, phone: validated.providerPhone },
+          "Creating booking call via VAPI",
+        );
+
+        // Create the call
+        const callResponse = await vapi.calls.create(callParams);
+
+        // Extract call from response (handle different SDK response types)
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        let call: any;
+        if (Array.isArray(callResponse)) {
+          call = callResponse[0];
+        } else if ((callResponse as any).id) {
+          call = callResponse;
+        } else if ((callResponse as any).data?.id) {
+          call = (callResponse as any).data;
+        } else {
+          throw new Error("Unexpected response format from VAPI calls.create");
+        }
+
+        request.log.info(
+          { callId: call.id, status: call.status },
+          "Booking call created, waiting for completion",
+        );
+
+        // Poll for completion
+        const maxAttempts = 60; // 5 minutes
+        let attempts = 0;
+        let completedCall: any = null;
+
+        while (attempts < maxAttempts) {
+          const callData = await vapi.calls.get({ id: call.id });
+
+          // Extract call from response (handle different SDK response types)
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          let currentCall: any;
+          if (Array.isArray(callData)) {
+            currentCall = callData[0];
+          } else if ((callData as any).id) {
+            currentCall = callData;
+          } else if ((callData as any).data?.id) {
+            currentCall = (callData as any).data;
+          } else {
+            throw new Error("Unexpected response format from VAPI calls.get");
+          }
+
+          if (!["queued", "ringing", "in-progress"].includes(currentCall.status)) {
+            completedCall = currentCall;
+            break;
+          }
+
+          await new Promise((resolve) => setTimeout(resolve, 5000));
+          attempts++;
+        }
+
+        if (!completedCall) {
+          throw new Error(`Booking call ${call.id} timed out after ${maxAttempts * 5} seconds`);
+        }
+
+        request.log.info(
+          { callId: completedCall.id, status: completedCall.status },
+          "Booking call completed",
+        );
+
+        // Extract structured data from call result
+        const analysis = completedCall.analysis || {};
+        const structuredData = analysis.structuredData || {};
+        const bookingConfirmed = structuredData.booking_confirmed || false;
+
+        // Extract transcript
+        const transcript = completedCall.artifact?.transcript || "";
+        const transcriptStr =
+          typeof transcript === "string" ? transcript : JSON.stringify(transcript);
+
+        // Update database with booking result
+        const { createClient: createSupabaseClient } = await import(
+          "@supabase/supabase-js"
+        );
+        const supabase = createSupabaseClient(
+          process.env.SUPABASE_URL!,
+          process.env.SUPABASE_SERVICE_ROLE_KEY!,
+        );
+
+        // Update provider record with booking details
+        const { error: updateProviderError } = await supabase
+          .from("providers")
+          .update({
+            booking_confirmed: bookingConfirmed,
+            booking_date: structuredData.confirmed_date,
+            booking_time: structuredData.confirmed_time,
+            confirmation_number: structuredData.confirmation_number,
+            last_call_at: new Date().toISOString(),
+            call_transcript: transcriptStr,
+          })
+          .eq("id", validated.providerId);
+
+        if (updateProviderError) {
+          request.log.error(
+            { error: updateProviderError },
+            "Failed to update provider record",
+          );
+        }
+
+        // If booking confirmed, update service request
+        if (bookingConfirmed) {
+          const { error: updateRequestError } = await supabase
+            .from("service_requests")
+            .update({
+              selected_provider_id: validated.providerId,
+              status: "COMPLETED",
+              final_outcome: `Appointment confirmed with ${validated.providerName} for ${structuredData.confirmed_date || "TBD"} at ${structuredData.confirmed_time || "TBD"}`,
+            })
+            .eq("id", validated.serviceRequestId);
+
+          if (updateRequestError) {
+            request.log.error(
+              { error: updateRequestError },
+              "Failed to update service request",
+            );
+          }
+
+          // Create interaction log
+          await supabase.from("interaction_logs").insert({
+            request_id: validated.serviceRequestId,
+            step_name: "Booking Confirmed",
+            detail: `Successfully booked appointment with ${validated.providerName}. Confirmation: ${structuredData.confirmation_number || "N/A"}`,
+            status: "success",
+          });
+        } else {
+          // Booking failed - log it
+          await supabase.from("interaction_logs").insert({
+            request_id: validated.serviceRequestId,
+            step_name: "Booking Failed",
+            detail: `Failed to confirm booking with ${validated.providerName}. Outcome: ${structuredData.call_outcome || "unknown"}`,
+            status: "warning",
+          });
+        }
+
+        return reply.send({
+          success: true,
+          data: {
+            bookingConfirmed,
+            callId: completedCall.id,
+            confirmedDate: structuredData.confirmed_date || "",
+            confirmedTime: structuredData.confirmed_time || "",
+            confirmationNumber: structuredData.confirmation_number || "",
+            callOutcome: structuredData.call_outcome || "unknown",
+            transcript: transcriptStr,
+            summary: analysis.summary || "",
+            nextSteps: structuredData.next_steps || "",
+          },
+        });
+      } catch (error: unknown) {
+        request.log.error({ error }, "Booking call failed");
 
         // Handle Zod validation errors
         if (error instanceof z.ZodError) {
