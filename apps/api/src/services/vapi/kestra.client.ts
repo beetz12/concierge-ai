@@ -527,4 +527,170 @@ export class KestraClient {
       error: error instanceof Error ? error.message : "Unknown error",
     };
   }
+
+  /**
+   * Trigger the notify_user flow to send SMS notification
+   */
+  async triggerNotifyUserFlow(request: {
+    userPhone: string;
+    userName?: string;
+    requestUrl?: string;
+    providers: Array<{ name: string; earliestAvailability: string }>;
+  }): Promise<{ success: boolean; executionId?: string; error?: string }> {
+    this.logger.info(
+      {
+        userPhone: request.userPhone,
+        providerCount: request.providers.length,
+        flowId: "notify_user",
+      },
+      "Triggering Kestra notify_user flow",
+    );
+
+    try {
+      const inputs = {
+        user_phone: request.userPhone,
+        user_name: request.userName || "Customer",
+        request_url: request.requestUrl || "",
+        providers: JSON.stringify(request.providers),
+      };
+
+      const response = await axios.post(
+        `${this.baseUrl}/api/v1/executions/${this.namespace}/notify_user`,
+        inputs,
+        {
+          headers: { "Content-Type": "application/json" },
+        },
+      );
+
+      this.logger.info(
+        {
+          executionId: response.data.id,
+          namespace: this.namespace,
+          flowId: "notify_user",
+        },
+        "Kestra notify_user execution triggered",
+      );
+
+      // Poll for completion (shorter timeout for notifications - 30 seconds)
+      const finalState = await this.pollExecutionWithTimeout(response.data.id, 30000);
+
+      return {
+        success: finalState.state === "SUCCESS",
+        executionId: response.data.id,
+        error: finalState.state !== "SUCCESS" ? `Execution ${finalState.state.toLowerCase()}` : undefined,
+      };
+    } catch (error) {
+      this.logger.error({ error }, "Kestra notify_user flow failed");
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : "Unknown error",
+      };
+    }
+  }
+
+  /**
+   * Trigger the schedule_service flow to make booking call
+   */
+  async triggerScheduleServiceFlow(request: {
+    providerPhone: string;
+    providerName?: string;
+    serviceDescription?: string;
+    preferredDate?: string;
+    preferredTime?: string;
+    customerName?: string;
+    customerPhone?: string;
+    location?: string;
+  }): Promise<{ success: boolean; executionId?: string; bookingStatus?: string; error?: string }> {
+    this.logger.info(
+      {
+        providerPhone: request.providerPhone,
+        providerName: request.providerName,
+        flowId: "schedule_service",
+      },
+      "Triggering Kestra schedule_service flow",
+    );
+
+    try {
+      const inputs = {
+        provider_phone: request.providerPhone,
+        provider_name: request.providerName || "Service Provider",
+        service_description: request.serviceDescription || "service",
+        preferred_date: request.preferredDate || "this week",
+        preferred_time: request.preferredTime || "morning",
+        customer_name: request.customerName || "Customer",
+        customer_phone: request.customerPhone || "",
+        location: request.location || "",
+      };
+
+      const response = await axios.post(
+        `${this.baseUrl}/api/v1/executions/${this.namespace}/schedule_service`,
+        inputs,
+        {
+          headers: { "Content-Type": "application/json" },
+        },
+      );
+
+      this.logger.info(
+        {
+          executionId: response.data.id,
+          namespace: this.namespace,
+          flowId: "schedule_service",
+        },
+        "Kestra schedule_service execution triggered",
+      );
+
+      // Poll for completion (longer timeout for booking calls - 5 minutes)
+      const finalState = await this.pollExecutionWithTimeout(response.data.id, 300000);
+
+      return {
+        success: finalState.state === "SUCCESS",
+        executionId: response.data.id,
+        bookingStatus: finalState.outputs?.booking_status as string | undefined,
+        error: finalState.state !== "SUCCESS" ? `Execution ${finalState.state.toLowerCase()}` : undefined,
+      };
+    } catch (error) {
+      this.logger.error({ error }, "Kestra schedule_service flow failed");
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : "Unknown error",
+      };
+    }
+  }
+
+  /**
+   * Poll Kestra execution with custom timeout
+   */
+  private async pollExecutionWithTimeout(
+    executionId: string,
+    timeoutMs: number,
+  ): Promise<KestraExecutionStatus> {
+    const pollIntervalMs = 2000; // Poll every 2 seconds
+    const maxAttempts = Math.ceil(timeoutMs / pollIntervalMs);
+    let attempts = 0;
+
+    while (attempts < maxAttempts) {
+      const status = await this.getExecutionStatus(executionId);
+
+      this.logger.debug(
+        {
+          executionId,
+          state: status.state,
+          attempt: attempts + 1,
+          maxAttempts,
+        },
+        "Polling Kestra execution",
+      );
+
+      if (["SUCCESS", "FAILED", "KILLED"].includes(status.state)) {
+        return status;
+      }
+
+      await new Promise((resolve) => setTimeout(resolve, pollIntervalMs));
+      attempts++;
+    }
+
+    throw new Error(
+      `Kestra execution ${executionId} timed out after ${timeoutMs / 1000} seconds`,
+    );
+  }
 }
