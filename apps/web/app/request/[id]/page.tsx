@@ -149,6 +149,34 @@ export default function RequestDetails() {
     return uuidRegex.test(str);
   };
 
+  // Calculate real-time call progress from provider data
+  const callProgress = React.useMemo(() => {
+    if (!request || !request.providersFound || request.providersFound.length === 0) return null;
+
+    const providers = request.providersFound;
+    const finalStatuses = ["completed", "failed", "no_answer", "voicemail", "error", "busy"];
+
+    const queued = providers.filter((p) => p.callStatus === "queued").length;
+    const inProgress = providers.filter((p) => p.callStatus === "in_progress").length;
+    const completed = providers.filter((p) =>
+      p.callStatus && finalStatuses.includes(p.callStatus)
+    ).length;
+    const total = providers.filter((p) => p.callStatus).length; // Only count providers with a call status
+
+    if (total === 0) return null;
+
+    const currentProvider = providers.find((p) => p.callStatus === "in_progress");
+
+    return {
+      total,
+      queued,
+      inProgress,
+      completed,
+      currentProviderName: currentProvider?.name || null,
+      percent: Math.round((completed / total) * 100),
+    };
+  }, [request]);
+
   // Check if all provider calls are complete and generate recommendations
   const checkAndGenerateRecommendations = useCallback(async () => {
     // Only check once and only for valid UUIDs
@@ -830,7 +858,7 @@ export default function RequestDetails() {
         </div>
 
         {/* LiveStatus Component */}
-        <LiveStatus status={request.status} />
+        <LiveStatus status={request.status} callProgress={callProgress} />
 
         <p className="text-slate-400 mb-6">{request.description}</p>
 

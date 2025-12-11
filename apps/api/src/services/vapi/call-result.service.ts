@@ -99,6 +99,43 @@ export class CallResultService {
   }
 
   /**
+   * Mark a provider call as in-progress.
+   * Called immediately after VAPI call is created but before waiting for completion.
+   * This triggers Supabase real-time for frontend progress updates.
+   */
+  async markCallInProgress(providerId: string, callId: string): Promise<void> {
+    if (!this.supabase) return;
+
+    try {
+      const { error } = await this.supabase
+        .from("providers")
+        .update({
+          call_status: "in_progress",
+          call_id: callId,
+          called_at: new Date().toISOString(),
+        })
+        .eq("id", providerId);
+
+      if (error) {
+        this.logger.warn(
+          { providerId, callId, error },
+          "Failed to mark call in_progress"
+        );
+      } else {
+        this.logger.info(
+          { providerId, callId },
+          "Provider call marked in_progress"
+        );
+      }
+    } catch (err) {
+      this.logger.error(
+        { providerId, callId, error: err },
+        "Error marking call in_progress"
+      );
+    }
+  }
+
+  /**
    * Update provider record with call results
    */
   private async updateProvider(

@@ -5,11 +5,14 @@
 
 import { FastifyInstance } from "fastify";
 import { z } from "zod";
+import crypto from "crypto";
+import { createClient } from "@supabase/supabase-js";
 import {
   ProviderCallingService,
   ConcurrentCallService,
   KestraClient,
 } from "../services/vapi/index.js";
+import type { CallRequest } from "../services/vapi/types.js";
 import { RecommendationService } from "../services/recommendations/recommend.service.js";
 
 // Schema for Gemini-generated custom prompts
@@ -507,6 +510,287 @@ export default async function providerRoutes(fastify: FastifyInstance) {
         });
       }
     },
+  );
+
+  /**
+   * POST /api/v1/providers/batch-call-async
+   *
+   * Async batch call endpoint - Returns 202 Accepted immediately.
+   * Calls run in background, results delivered via Supabase real-time subscriptions.
+   *
+   * 2025 Best Practice: HTTP 202 Accepted pattern for long-running operations
+   */
+  fastify.post(
+    "/batch-call-async",
+    {
+      schema: {
+        tags: ["providers"],
+        summary: "Start provider calls asynchronously",
+        description: "Returns immediately with execution ID. Monitor progress via real-time subscriptions or polling endpoint.",
+        body: batchCallSchema,
+        response: {
+          202: {
+            type: "object",
+            properties: {
+              success: { type: "boolean" },
+              data: {
+                type: "object",
+                properties: {
+                  executionId: { type: "string" },
+                  status: { type: "string" },
+                  providersQueued: { type: "number" },
+                  message: { type: "string" },
+                  statusUrl: { type: "string" },
+                },
+              },
+            },
+          },
+          400: {
+            type: "object",
+            properties: {
+              success: { type: "boolean" },
+              error: { type: "string" },
+              details: { type: "array" },
+            },
+          },
+          500: {
+            type: "object",
+            properties: {
+              success: { type: "boolean" },
+              error: { type: "string" },
+            },
+          },
+        },
+      },
+    },
+    async (request, reply) => {
+      try {
+        const validated = batchCallSchema.parse(request.body);
+
+        // Generate execution ID for tracking
+        const executionId = crypto.randomUUID();
+
+        fastify.log.info(
+          { executionId, providerCount: validated.providers.length },
+          "Starting async batch call"
+        );
+
+        // Create Supabase client
+        const supabase = createClient(
+          process.env.SUPABASE_URL!,
+          process.env.SUPABASE_SERVICE_ROLE_KEY!
+        );
+
+        // Build request objects for each provider
+        const requests: CallRequest[] = validated.providers.map((p) => ({
+          providerName: p.name,
+          providerPhone: p.phone,
+          providerId: p.id,
+          serviceNeeded: validated.serviceNeeded,
+          userCriteria: validated.userCriteria,
+          problemDescription: validated.problemDescription,
+          clientName: validated.clientName,
+          location: validated.location,
+          urgency: validated.urgency,
+          customPrompt: validated.customPrompt,
+          serviceRequestId: validated.serviceRequestId,
+        }));
+
+        // Mark all providers as "queued" immediately (triggers real-time)
+        const providerIds = validated.providers.map((p) => p.id).filter(Boolean);
+        if (providerIds.length > 0) {
+          await supabase
+            .from("providers")
+            .update({ call_status: "queued" })
+            .in("id", providerIds);
+        }
+
+        // Log the execution start
+        if (validated.serviceRequestId) {
+          await supabase.from("interaction_logs").insert({
+            request_id: validated.serviceRequestId,
+            step_name: "Batch Calls Started",
+            detail: `Queued ${validated.providers.length} providers for calling (execution: ${executionId})`,
+            status: "info",
+          });
+        }
+
+        // Start background processing - DO NOT AWAIT
+        setImmediate(async () => {
+          try {
+            fastify.log.info({ executionId }, "Background batch call processing started");
+
+            await callingService.callProvidersBatch(requests, {
+              maxConcurrent: validated.maxConcurrent || 5,
+            });
+
+            fastify.log.info({ executionId }, "Background batch call processing completed");
+          } catch (error) {
+            fastify.log.error(
+              { executionId, error },
+              "Background batch call processing failed"
+            );
+
+            // Log error to database for visibility
+            if (validated.serviceRequestId) {
+              await supabase.from("interaction_logs").insert({
+                request_id: validated.serviceRequestId,
+                step_name: "Batch Calls Error",
+                detail: `Background processing failed: ${error instanceof Error ? error.message : "Unknown error"}`,
+                status: "error",
+              });
+            }
+          }
+        });
+
+        // Return 202 Accepted immediately
+        return reply.status(202).send({
+          success: true,
+          data: {
+            executionId,
+            status: "accepted",
+            providersQueued: validated.providers.length,
+            message: "Calls started. Monitor progress via real-time subscriptions.",
+            statusUrl: `/api/v1/providers/batch-status/${validated.serviceRequestId}`,
+          },
+        });
+      } catch (error) {
+        fastify.log.error({ error }, "Failed to start async batch call");
+
+        if (error instanceof z.ZodError) {
+          return reply.status(400).send({
+            success: false,
+            error: "Validation failed",
+            details: error.errors,
+          });
+        }
+
+        return reply.status(500).send({
+          success: false,
+          error: error instanceof Error ? error.message : "Unknown error",
+        });
+      }
+    }
+  );
+
+  /**
+   * GET /api/v1/providers/batch-status/:serviceRequestId
+   *
+   * Status polling endpoint for clients without real-time support.
+   * Returns current state of all provider calls for a request.
+   */
+  fastify.get(
+    "/batch-status/:serviceRequestId",
+    {
+      schema: {
+        tags: ["providers"],
+        summary: "Get batch call status",
+        description: "Returns current state of all provider calls. Use for polling fallback when real-time unavailable.",
+        params: {
+          type: "object",
+          properties: {
+            serviceRequestId: { type: "string", format: "uuid" },
+          },
+          required: ["serviceRequestId"],
+        },
+        response: {
+          200: {
+            type: "object",
+            properties: {
+              success: { type: "boolean" },
+              data: {
+                type: "object",
+                properties: {
+                  status: { type: "string" },
+                  stats: {
+                    type: "object",
+                    properties: {
+                      total: { type: "number" },
+                      queued: { type: "number" },
+                      inProgress: { type: "number" },
+                      completed: { type: "number" },
+                    },
+                  },
+                  providers: {
+                    type: "array",
+                    items: {
+                      type: "object",
+                      properties: {
+                        id: { type: "string" },
+                        name: { type: "string" },
+                        callStatus: { type: "string" },
+                        calledAt: { type: "string" },
+                      },
+                    },
+                  },
+                },
+              },
+            },
+          },
+          500: {
+            type: "object",
+            properties: {
+              success: { type: "boolean" },
+              error: { type: "string" },
+            },
+          },
+        },
+      },
+    },
+    async (request, reply) => {
+      try {
+        const { serviceRequestId } = request.params as { serviceRequestId: string };
+
+        // Create Supabase client
+        const supabase = createClient(
+          process.env.SUPABASE_URL!,
+          process.env.SUPABASE_SERVICE_ROLE_KEY!
+        );
+
+        const { data: providers, error } = await supabase
+          .from("providers")
+          .select("id, name, call_status, called_at, call_duration_minutes")
+          .eq("request_id", serviceRequestId);
+
+        if (error) {
+          throw error;
+        }
+
+        const providerList = providers || [];
+        const finalStatuses = ["completed", "failed", "no_answer", "voicemail", "error", "busy"];
+
+        const stats = {
+          total: providerList.length,
+          queued: providerList.filter((p) => p.call_status === "queued").length,
+          inProgress: providerList.filter((p) => p.call_status === "in_progress").length,
+          completed: providerList.filter((p) =>
+            p.call_status && finalStatuses.includes(p.call_status)
+          ).length,
+        };
+
+        const allComplete = stats.completed === stats.total && stats.total > 0;
+
+        return reply.send({
+          success: true,
+          data: {
+            status: allComplete ? "completed" : stats.inProgress > 0 ? "in_progress" : "queued",
+            stats,
+            providers: providerList.map((p) => ({
+              id: p.id,
+              name: p.name,
+              callStatus: p.call_status,
+              calledAt: p.called_at,
+            })),
+          },
+        });
+      } catch (error) {
+        fastify.log.error({ error }, "Failed to get batch status");
+        return reply.status(500).send({
+          success: false,
+          error: error instanceof Error ? error.message : "Unknown error",
+        });
+      }
+    }
   );
 
   /**

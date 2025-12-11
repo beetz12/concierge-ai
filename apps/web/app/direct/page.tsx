@@ -10,6 +10,7 @@ import {
   ServiceRequest,
 } from "@/lib/types";
 import { Phone, User, MessageSquare, PhoneCall, AlertCircle } from "lucide-react";
+import { SegmentedControl } from "@repo/ui/segmented-control";
 import { usePhoneValidation } from "@/lib/hooks/usePhoneValidation";
 import {
   simulateCall,
@@ -364,32 +365,16 @@ export default function DirectTask() {
           <label className="block text-sm font-medium text-slate-300">
             How should we notify you of the result?
           </label>
-          <div className="flex gap-6">
-            <label className="flex items-center gap-2 cursor-pointer group">
-              <input
-                type="radio"
-                name="preferredContact"
-                value="text"
-                checked={formData.preferredContact === "text"}
-                onChange={(e) => setFormData({...formData, preferredContact: e.target.value as "phone" | "text"})}
-                className="w-4 h-4 text-primary-600 border-slate-600 focus:ring-primary-500 bg-abyss"
-              />
-              <MessageSquare className="w-4 h-4 text-slate-400 group-hover:text-primary-400 transition-colors" />
-              <span className="text-slate-200 group-hover:text-slate-100 transition-colors">Text Message (SMS)</span>
-            </label>
-            <label className="flex items-center gap-2 cursor-pointer group">
-              <input
-                type="radio"
-                name="preferredContact"
-                value="phone"
-                checked={formData.preferredContact === "phone"}
-                onChange={(e) => setFormData({...formData, preferredContact: e.target.value as "phone" | "text"})}
-                className="w-4 h-4 text-primary-600 border-slate-600 focus:ring-primary-500 bg-abyss"
-              />
-              <PhoneCall className="w-4 h-4 text-slate-400 group-hover:text-primary-400 transition-colors" />
-              <span className="text-slate-200 group-hover:text-slate-100 transition-colors">Phone Call</span>
-            </label>
-          </div>
+          <SegmentedControl
+            options={[
+              { value: "text", label: "Text (SMS)", icon: <MessageSquare className="w-5 h-5" /> },
+              { value: "phone", label: "Phone Call", icon: <PhoneCall className="w-5 h-5" /> },
+            ]}
+            value={formData.preferredContact}
+            onChange={(value) => setFormData({...formData, preferredContact: value})}
+            name="preferredContact"
+            aria-label="Preferred contact method"
+          />
 
           {/* Phone Number Input */}
           <div className="relative">

@@ -11,6 +11,7 @@ import {
   createWebhookAssistantConfig,
   createWebhookMetadata,
 } from "./webhook-config.js";
+import { CallResultService } from "./call-result.service.js";
 
 interface Logger {
   info: (obj: Record<string, unknown>, msg?: string) => void;
@@ -48,6 +49,7 @@ export class DirectVapiClient {
   private phoneNumberId: string;
   private webhookUrl: string | undefined;
   private backendUrl: string;
+  private callResultService: CallResultService;
 
   constructor(private logger: Logger) {
     const apiKey = process.env.VAPI_API_KEY;
@@ -62,6 +64,7 @@ export class DirectVapiClient {
     }
 
     this.client = new VapiClient({ token: apiKey });
+    this.callResultService = new CallResultService(logger);
 
     if (this.webhookUrl) {
       this.logger.info(
@@ -137,6 +140,11 @@ export class DirectVapiClient {
         },
         "VAPI call created",
       );
+
+      // Mark call as in_progress immediately for real-time frontend updates
+      if (request.providerId && this.callResultService) {
+        await this.callResultService.markCallInProgress(request.providerId, call.id);
+      }
 
       // HYBRID APPROACH: Try webhook first if configured
       if (this.webhookUrl) {
