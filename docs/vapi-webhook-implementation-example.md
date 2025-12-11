@@ -13,188 +13,199 @@ Instead of polling for call results, VAPI can push results to your server via we
 Add this to your Fastify API (`apps/api/src/routes/vapi-webhooks.ts`):
 
 ```typescript
-import { FastifyInstance } from 'fastify';
-import { z } from 'zod';
+import { FastifyInstance } from "fastify";
+import { z } from "zod";
 
 // Zod schema for VAPI webhook payload
 const VapiWebhookEventSchema = z.object({
-    type: z.enum([
-        'end-of-call-report',
-        'status-update',
-        'transcript',
-        'function-call',
-        'hang',
-        'speech-update',
-    ]),
-    call: z.object({
-        id: z.string(),
-        status: z.enum([
-            'queued',
-            'ringing',
-            'in-progress',
-            'forwarding',
-            'ended',
-        ]),
-        endedReason: z.string().optional(),
-        artifact: z.object({
-            transcript: z.string().optional(),
-            video: z.string().optional(),
-            stereoRecordings: z.array(z.string()).optional(),
-            performanceMetrics: z.object({
-                turnLatencies: z.array(z.number()).optional(),
-                interruptionCount: z.number().optional(),
-                averageLatency: z.number().optional(),
-            }).optional(),
-        }).optional(),
-        analysis: z.object({
-            summary: z.string().optional(),
-            structuredData: z.any().optional(),
-            successEvaluation: z.union([z.string(), z.number()]).optional(),
-        }).optional(),
-        messages: z.array(z.any()).optional(),
-        costBreakdown: z.object({
-            transport: z.number().optional(),
-            stt: z.number().optional(),
-            llm: z.number().optional(),
-            tts: z.number().optional(),
-            vapi: z.number().optional(),
-            total: z.number().optional(),
-        }).optional(),
-        durationMinutes: z.number().optional(),
-    }),
-    timestamp: z.string().optional(),
+  type: z.enum([
+    "end-of-call-report",
+    "status-update",
+    "transcript",
+    "function-call",
+    "hang",
+    "speech-update",
+  ]),
+  call: z.object({
+    id: z.string(),
+    status: z.enum(["queued", "ringing", "in-progress", "forwarding", "ended"]),
+    endedReason: z.string().optional(),
+    artifact: z
+      .object({
+        transcript: z.string().optional(),
+        video: z.string().optional(),
+        stereoRecordings: z.array(z.string()).optional(),
+        performanceMetrics: z
+          .object({
+            turnLatencies: z.array(z.number()).optional(),
+            interruptionCount: z.number().optional(),
+            averageLatency: z.number().optional(),
+          })
+          .optional(),
+      })
+      .optional(),
+    analysis: z
+      .object({
+        summary: z.string().optional(),
+        structuredData: z.any().optional(),
+        successEvaluation: z.union([z.string(), z.number()]).optional(),
+      })
+      .optional(),
+    messages: z.array(z.any()).optional(),
+    costBreakdown: z
+      .object({
+        transport: z.number().optional(),
+        stt: z.number().optional(),
+        llm: z.number().optional(),
+        tts: z.number().optional(),
+        vapi: z.number().optional(),
+        total: z.number().optional(),
+      })
+      .optional(),
+    durationMinutes: z.number().optional(),
+  }),
+  timestamp: z.string().optional(),
 });
 
 type VapiWebhookEvent = z.infer<typeof VapiWebhookEventSchema>;
 
 export default async function vapiWebhookRoutes(fastify: FastifyInstance) {
-    // Webhook endpoint for VAPI events
-    fastify.post('/webhooks/vapi', async (request, reply) => {
-        try {
-            // Parse and validate webhook payload
-            const event = VapiWebhookEventSchema.parse(request.body);
+  // Webhook endpoint for VAPI events
+  fastify.post("/webhooks/vapi", async (request, reply) => {
+    try {
+      // Parse and validate webhook payload
+      const event = VapiWebhookEventSchema.parse(request.body);
 
-            fastify.log.info({
-                type: event.type,
-                callId: event.call.id,
-                status: event.call.status,
-            }, 'Received VAPI webhook event');
+      fastify.log.info(
+        {
+          type: event.type,
+          callId: event.call.id,
+          status: event.call.status,
+        },
+        "Received VAPI webhook event",
+      );
 
-            // Handle end-of-call-report
-            if (event.type === 'end-of-call-report') {
-                await handleEndOfCallReport(event, fastify);
-            }
+      // Handle end-of-call-report
+      if (event.type === "end-of-call-report") {
+        await handleEndOfCallReport(event, fastify);
+      }
 
-            // Handle other event types as needed
-            // if (event.type === 'status-update') { ... }
-            // if (event.type === 'function-call') { ... }
+      // Handle other event types as needed
+      // if (event.type === 'status-update') { ... }
+      // if (event.type === 'function-call') { ... }
 
-            // Acknowledge webhook
-            reply.status(200).send({ received: true });
-
-        } catch (error) {
-            fastify.log.error(error, 'Error processing VAPI webhook');
-            reply.status(500).send({ error: 'Failed to process webhook' });
-        }
-    });
+      // Acknowledge webhook
+      reply.status(200).send({ received: true });
+    } catch (error) {
+      fastify.log.error(error, "Error processing VAPI webhook");
+      reply.status(500).send({ error: "Failed to process webhook" });
+    }
+  });
 }
 
 /**
  * Handle end-of-call-report webhook
  */
 async function handleEndOfCallReport(
-    event: VapiWebhookEvent,
-    fastify: FastifyInstance
+  event: VapiWebhookEvent,
+  fastify: FastifyInstance,
 ) {
-    const { call } = event;
+  const { call } = event;
 
-    // Extract call results
-    const result = {
-        callId: call.id,
-        status: call.status,
-        endedReason: call.endedReason,
+  // Extract call results
+  const result = {
+    callId: call.id,
+    status: call.status,
+    endedReason: call.endedReason,
 
-        // Transcript
-        transcript: call.artifact?.transcript || '',
+    // Transcript
+    transcript: call.artifact?.transcript || "",
 
-        // Analysis (structured data)
-        summary: call.analysis?.summary || '',
-        structuredData: call.analysis?.structuredData || {},
-        successEvaluation: call.analysis?.successEvaluation || 'unknown',
+    // Analysis (structured data)
+    summary: call.analysis?.summary || "",
+    structuredData: call.analysis?.structuredData || {},
+    successEvaluation: call.analysis?.successEvaluation || "unknown",
 
-        // Metadata
-        cost: call.costBreakdown?.total || 0,
-        duration: call.durationMinutes || 0,
-        timestamp: event.timestamp || new Date().toISOString(),
-    };
+    // Metadata
+    cost: call.costBreakdown?.total || 0,
+    duration: call.durationMinutes || 0,
+    timestamp: event.timestamp || new Date().toISOString(),
+  };
 
-    fastify.log.info({
-        callId: result.callId,
-        success: result.successEvaluation,
-        duration: result.duration,
-        cost: result.cost,
-    }, 'Processing call completion');
+  fastify.log.info(
+    {
+      callId: result.callId,
+      success: result.successEvaluation,
+      duration: result.duration,
+      cost: result.cost,
+    },
+    "Processing call completion",
+  );
 
-    // Store in database
-    await storeCallResult(result, fastify);
+  // Store in database
+  await storeCallResult(result, fastify);
 
-    // Trigger next workflow step (e.g., select best provider)
-    await triggerNextWorkflowStep(result, fastify);
+  // Trigger next workflow step (e.g., select best provider)
+  await triggerNextWorkflowStep(result, fastify);
 }
 
 /**
  * Store call result in Supabase
  */
 async function storeCallResult(result: any, fastify: FastifyInstance) {
-    const { data, error } = await fastify.supabase
-        .from('interaction_logs')
-        .insert({
-            interaction_type: 'phone_call',
-            payload: {
-                callId: result.callId,
-                transcript: result.transcript,
-                summary: result.summary,
-                structuredData: result.structuredData,
-                cost: result.cost,
-                duration: result.duration,
-            },
-            result: result.structuredData,
-            timestamp: result.timestamp,
-        });
+  const { data, error } = await fastify.supabase
+    .from("interaction_logs")
+    .insert({
+      interaction_type: "phone_call",
+      payload: {
+        callId: result.callId,
+        transcript: result.transcript,
+        summary: result.summary,
+        structuredData: result.structuredData,
+        cost: result.cost,
+        duration: result.duration,
+      },
+      result: result.structuredData,
+      timestamp: result.timestamp,
+    });
 
-    if (error) {
-        fastify.log.error(error, 'Failed to store call result in database');
-        throw error;
-    }
+  if (error) {
+    fastify.log.error(error, "Failed to store call result in database");
+    throw error;
+  }
 
-    fastify.log.info({ callId: result.callId }, 'Call result stored in database');
+  fastify.log.info({ callId: result.callId }, "Call result stored in database");
 }
 
 /**
  * Trigger next workflow step (e.g., select best provider)
  */
 async function triggerNextWorkflowStep(result: any, fastify: FastifyInstance) {
-    // Example: If this was a provider verification call,
-    // trigger the "select best provider" step
+  // Example: If this was a provider verification call,
+  // trigger the "select best provider" step
 
-    // You could:
-    // 1. Publish to a message queue
-    // 2. Update service request status
-    // 3. Trigger another API call
-    // 4. Send notification to user
+  // You could:
+  // 1. Publish to a message queue
+  // 2. Update service request status
+  // 3. Trigger another API call
+  // 4. Send notification to user
 
-    fastify.log.info({
-        callId: result.callId,
-        structuredData: result.structuredData,
-    }, 'Triggering next workflow step');
+  fastify.log.info(
+    {
+      callId: result.callId,
+      structuredData: result.structuredData,
+    },
+    "Triggering next workflow step",
+  );
 
-    // Example: Update service request with provider info
-    const { availability, licensed_and_insured, estimated_rate } = result.structuredData;
+  // Example: Update service request with provider info
+  const { availability, licensed_and_insured, estimated_rate } =
+    result.structuredData;
 
-    if (availability === 'available' && licensed_and_insured === 'yes') {
-        fastify.log.info('Provider is qualified, proceeding to selection');
-        // Trigger provider selection logic...
-    }
+  if (availability === "available" && licensed_and_insured === "yes") {
+    fastify.log.info("Provider is qualified, proceeding to selection");
+    // Trigger provider selection logic...
+  }
 }
 ```
 
@@ -218,34 +229,36 @@ async function triggerNextWorkflowStep(result: any, fastify: FastifyInstance) {
 VAPI can sign webhooks with a secret. Add verification:
 
 ```typescript
-import crypto from 'crypto';
+import crypto from "crypto";
 
 function verifyWebhookSignature(
-    payload: string,
-    signature: string,
-    secret: string
+  payload: string,
+  signature: string,
+  secret: string,
 ): boolean {
-    const expectedSignature = crypto
-        .createHmac('sha256', secret)
-        .update(payload)
-        .digest('hex');
+  const expectedSignature = crypto
+    .createHmac("sha256", secret)
+    .update(payload)
+    .digest("hex");
 
-    return crypto.timingSafeEqual(
-        Buffer.from(signature),
-        Buffer.from(expectedSignature)
-    );
+  return crypto.timingSafeEqual(
+    Buffer.from(signature),
+    Buffer.from(expectedSignature),
+  );
 }
 
 // In webhook handler
-fastify.post('/webhooks/vapi', async (request, reply) => {
-    const signature = request.headers['x-vapi-signature'] as string;
-    const secret = process.env.VAPI_WEBHOOK_SECRET!;
+fastify.post("/webhooks/vapi", async (request, reply) => {
+  const signature = request.headers["x-vapi-signature"] as string;
+  const secret = process.env.VAPI_WEBHOOK_SECRET!;
 
-    if (!verifyWebhookSignature(JSON.stringify(request.body), signature, secret)) {
-        return reply.status(401).send({ error: 'Invalid signature' });
-    }
+  if (
+    !verifyWebhookSignature(JSON.stringify(request.body), signature, secret)
+  ) {
+    return reply.status(401).send({ error: "Invalid signature" });
+  }
 
-    // Process webhook...
+  // Process webhook...
 });
 ```
 
@@ -258,53 +271,50 @@ When using webhooks, you don't need to wait for the call to complete:
 ```typescript
 // apps/api/src/routes/gemini.ts (or similar)
 
-import { VapiClient } from '@vapi-ai/server-sdk';
+import { VapiClient } from "@vapi-ai/server-sdk";
 
 // Initiate call (returns immediately)
-app.post('/api/v1/vapi/initiate-call', async (request, reply) => {
-    const { phoneNumber, serviceType, serviceRequestId } = request.body;
+app.post("/api/v1/vapi/initiate-call", async (request, reply) => {
+  const { phoneNumber, serviceType, serviceRequestId } = request.body;
 
-    const vapi = new VapiClient({ token: process.env.VAPI_API_KEY });
+  const vapi = new VapiClient({ token: process.env.VAPI_API_KEY });
 
-    try {
-        const call = await vapi.calls.create({
-            phoneNumberId: process.env.VAPI_PHONE_NUMBER_ID,
-            customer: { number: phoneNumber },
-            assistant: {
-                name: `Concierge Agent - ${serviceType}`,
-                voice: { provider: "playht", voiceId: "jennifer" },
-                model: {
-                    provider: "google",
-                    model: "gemini-2.5-flash",
-                    messages: [{ role: "system", content: "..." }]
-                },
-                analysisPlan: {
-                    // ... (structured output config from previous example)
-                },
-                endCallFunctionEnabled: true
-            }
-        });
+  try {
+    const call = await vapi.calls.create({
+      phoneNumberId: process.env.VAPI_PHONE_NUMBER_ID,
+      customer: { number: phoneNumber },
+      assistant: {
+        name: `Concierge Agent - ${serviceType}`,
+        voice: { provider: "playht", voiceId: "jennifer" },
+        model: {
+          provider: "google",
+          model: "gemini-2.5-flash",
+          messages: [{ role: "system", content: "..." }],
+        },
+        analysisPlan: {
+          // ... (structured output config from previous example)
+        },
+        endCallFunctionEnabled: true,
+      },
+    });
 
-        // Store call ID for tracking
-        await request.server.supabase
-            .from('interaction_logs')
-            .insert({
-                interaction_type: 'phone_call_initiated',
-                payload: { callId: call.id, phoneNumber, serviceType },
-                service_request_id: serviceRequestId,
-            });
+    // Store call ID for tracking
+    await request.server.supabase.from("interaction_logs").insert({
+      interaction_type: "phone_call_initiated",
+      payload: { callId: call.id, phoneNumber, serviceType },
+      service_request_id: serviceRequestId,
+    });
 
-        // Return immediately (webhook will handle completion)
-        reply.send({
-            success: true,
-            callId: call.id,
-            status: call.status,
-            message: 'Call initiated successfully'
-        });
-
-    } catch (error) {
-        reply.status(500).send({ error: 'Failed to initiate call' });
-    }
+    // Return immediately (webhook will handle completion)
+    reply.send({
+      success: true,
+      callId: call.id,
+      status: call.status,
+      message: "Call initiated successfully",
+    });
+  } catch (error) {
+    reply.status(500).send({ error: "Failed to initiate call" });
+  }
 });
 ```
 
@@ -410,6 +420,7 @@ ALTER TABLE vapi_call_results ENABLE ROW LEVEL SECURITY;
 ## 6. Comparison: Polling vs Webhook
 
 ### Polling (Current Approach)
+
 ```javascript
 // Synchronous, blocks until call completes
 const call = await vapi.calls.create({...});
@@ -427,15 +438,18 @@ processResult(result);
 ```
 
 **Pros:**
+
 - Simple to implement
 - Works in synchronous scripts (Kestra)
 
 **Cons:**
+
 - Wastes resources (repeated API calls)
 - Higher latency (up to 5 seconds)
 - Not scalable for many concurrent calls
 
 ### Webhook (Production Approach)
+
 ```javascript
 // Asynchronous, non-blocking
 const call = await vapi.calls.create({...});
@@ -452,12 +466,14 @@ app.post('/webhooks/vapi', (req) => {
 ```
 
 **Pros:**
+
 - Instant notification (no delay)
 - No wasted API calls
 - Scalable to thousands of concurrent calls
 - Event-driven architecture
 
 **Cons:**
+
 - Requires webhook endpoint setup
 - More complex initial setup
 
@@ -469,6 +485,7 @@ app.post('/webhooks/vapi', (req) => {
 - **For Production**: Migrate to webhook-based architecture
 
 This gives you the best of both worlds:
+
 1. Quick implementation for demo
 2. Clear path to production-ready system
 
@@ -477,17 +494,20 @@ This gives you the best of both worlds:
 ## Summary
 
 **Webhook Flow:**
+
 1. API initiates call → Returns call ID immediately
 2. User can track call status in real-time
 3. VAPI calls webhook when done → Processes result instantly
 4. Database updated → Next workflow step triggered
 
 **Key Files:**
+
 - `/apps/api/src/routes/vapi-webhooks.ts` - Webhook handler
 - `/apps/api/src/routes/vapi.ts` - Call initiation endpoint
 - `/supabase/migrations/...` - Database schema for call results
 
 **Next Steps:**
+
 1. Implement webhook endpoint in Fastify API
 2. Configure VAPI webhook in dashboard
 3. Test with ngrok locally

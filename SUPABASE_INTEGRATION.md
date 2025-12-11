@@ -5,22 +5,26 @@ This document provides an overview of the Supabase integration that has been add
 ## What's Been Added
 
 ### 1. Dependencies
+
 - `@supabase/supabase-js` (v2.86.2) - Supabase JavaScript client
 - `@supabase/ssr` (v0.8.0) - Server-side rendering utilities for Next.js
 
 ### 2. Supabase Client Utilities
 
 #### `/apps/web/lib/supabase/client.ts`
+
 - Browser client for Client Components
 - Handles client-side database operations
 - Supports real-time subscriptions
 
 #### `/apps/web/lib/supabase/server.ts`
+
 - Server client for Server Components and Server Actions
 - Handles authentication via cookies
 - Optimized for server-side rendering
 
 #### `/apps/web/lib/supabase/middleware.ts`
+
 - Middleware helper for session management
 - Automatically refreshes user sessions
 - Can be used to protect routes
@@ -28,13 +32,16 @@ This document provides an overview of the Supabase integration that has been add
 ### 3. Database Schema
 
 #### `/supabase/migrations/20250101000000_initial_schema.sql`
+
 Complete database schema including:
+
 - **users** - User profiles (extends auth.users)
 - **service_requests** - Main service requests table
 - **providers** - Service providers found for requests
 - **interaction_logs** - AI interaction and processing logs
 
 Features:
+
 - Row Level Security (RLS) policies
 - Automatic timestamps with triggers
 - Foreign key relationships
@@ -44,18 +51,22 @@ Features:
 ### 4. TypeScript Types
 
 #### `/apps/web/lib/types/database.ts`
+
 - Complete TypeScript types for database schema
 - Type-safe database operations
 - Auto-generated type helpers
 
 #### `/apps/web/lib/types/index.ts` (updated)
+
 - Exports database types
 - Maintains backward compatibility with localStorage types
 
 ### 5. Data Layer
 
 #### `/apps/web/lib/supabase/queries.ts`
+
 Pre-built query functions:
+
 - `getServiceRequests()` - Fetch all requests with relations
 - `getServiceRequestById()` - Fetch single request
 - `createServiceRequest()` - Create new request
@@ -65,7 +76,9 @@ Pre-built query functions:
 - `getCurrentUser()` - Get authenticated user
 
 #### `/apps/web/lib/actions/service-requests.ts`
+
 Server Actions for mutations:
+
 - `createServiceRequest()` - Create with cache revalidation
 - `updateServiceRequest()` - Update with cache revalidation
 - `deleteServiceRequest()` - Delete request
@@ -78,11 +91,13 @@ Server Actions for mutations:
 ### 6. React Integration
 
 #### `/apps/web/lib/providers/SupabaseProvider.tsx`
+
 - Context provider for Supabase client
 - Authentication state management
 - Real-time user session tracking
 
 #### `/apps/web/lib/hooks/useServiceRequests.ts`
+
 - Custom hook for fetching requests
 - Real-time subscription to changes
 - Automatic state updates
@@ -90,7 +105,9 @@ Server Actions for mutations:
 ### 7. Utilities
 
 #### `/apps/web/lib/utils/data-transform.ts`
+
 Data transformation helpers:
+
 - `transformToDbRequest()` - localStorage to database format
 - `transformFromDbRequest()` - Database to localStorage format
 - Provider and log transformations
@@ -98,13 +115,16 @@ Data transformation helpers:
 ### 8. Configuration
 
 #### `/apps/web/.env.local.example` (updated)
+
 Added environment variables:
+
 ```bash
 NEXT_PUBLIC_SUPABASE_URL=your_supabase_project_url
 NEXT_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key
 ```
 
 #### `/supabase/config.toml`
+
 Local development configuration for Supabase CLI
 
 ## Getting Started
@@ -112,12 +132,14 @@ Local development configuration for Supabase CLI
 ### Step 1: Set Up Supabase Project
 
 **Option A: Cloud (Recommended)**
+
 1. Create account at [supabase.com](https://supabase.com)
 2. Create new project
 3. Get credentials from Project Settings > API
 4. Copy to `/apps/web/.env.local`
 
 **Option B: Local Development**
+
 1. Install Supabase CLI: `npm install -g supabase`
 2. Run: `supabase start`
 3. Copy local credentials to `/apps/web/.env.local`
@@ -125,11 +147,13 @@ Local development configuration for Supabase CLI
 ### Step 2: Run Database Migration
 
 **For Cloud:**
+
 - Go to SQL Editor in Supabase Dashboard
 - Copy contents of `/supabase/migrations/20250101000000_initial_schema.sql`
 - Run in SQL Editor
 
 **For Local:**
+
 ```bash
 supabase db reset
 ```
@@ -140,15 +164,13 @@ Wrap your app with SupabaseProvider for authentication:
 
 ```tsx
 // app/layout.tsx
-import { SupabaseProvider } from '@/lib/providers/SupabaseProvider';
+import { SupabaseProvider } from "@/lib/providers/SupabaseProvider";
 
 export default function RootLayout({ children }) {
   return (
     <html>
       <body>
-        <SupabaseProvider>
-          {children}
-        </SupabaseProvider>
+        <SupabaseProvider>{children}</SupabaseProvider>
       </body>
     </html>
   );
@@ -160,9 +182,9 @@ export default function RootLayout({ children }) {
 ### Client Component with Real-time
 
 ```tsx
-'use client';
+"use client";
 
-import { useServiceRequests } from '@/lib/hooks/useServiceRequests';
+import { useServiceRequests } from "@/lib/hooks/useServiceRequests";
 
 export function RequestsList() {
   const { requests, loading, error } = useServiceRequests();
@@ -172,7 +194,7 @@ export function RequestsList() {
 
   return (
     <div>
-      {requests.map(request => (
+      {requests.map((request) => (
         <div key={request.id}>{request.title}</div>
       ))}
     </div>
@@ -183,18 +205,18 @@ export function RequestsList() {
 ### Server Component
 
 ```tsx
-import { createClient } from '@/lib/supabase/server';
+import { createClient } from "@/lib/supabase/server";
 
 export default async function RequestsPage() {
   const supabase = await createClient();
   const { data: requests } = await supabase
-    .from('service_requests')
-    .select('*')
-    .order('created_at', { ascending: false });
+    .from("service_requests")
+    .select("*")
+    .order("created_at", { ascending: false });
 
   return (
     <div>
-      {requests?.map(request => (
+      {requests?.map((request) => (
         <div key={request.id}>{request.title}</div>
       ))}
     </div>
@@ -205,26 +227,22 @@ export default async function RequestsPage() {
 ### Server Action
 
 ```tsx
-'use client';
+"use client";
 
-import { createServiceRequest } from '@/lib/actions/service-requests';
+import { createServiceRequest } from "@/lib/actions/service-requests";
 
 export function CreateRequestForm() {
   async function handleSubmit(formData: FormData) {
     await createServiceRequest({
-      title: formData.get('title') as string,
-      description: formData.get('description') as string,
-      criteria: formData.get('criteria') as string,
-      type: 'RESEARCH_AND_BOOK',
-      status: 'PENDING',
+      title: formData.get("title") as string,
+      description: formData.get("description") as string,
+      criteria: formData.get("criteria") as string,
+      type: "RESEARCH_AND_BOOK",
+      status: "PENDING",
     });
   }
 
-  return (
-    <form action={handleSubmit}>
-      {/* form fields */}
-    </form>
-  );
+  return <form action={handleSubmit}>{/* form fields */}</form>;
 }
 ```
 

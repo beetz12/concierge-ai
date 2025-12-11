@@ -1,19 +1,19 @@
 // Export database types
-export type { Database, Tables, Enums } from './database';
+export type { Database, Tables, Enums } from "./database";
 
 // Enums for client-side use (kept for backward compatibility)
 export enum RequestStatus {
-  PENDING = 'PENDING',
-  SEARCHING = 'SEARCHING',
-  CALLING = 'CALLING',
-  ANALYZING = 'ANALYZING',
-  COMPLETED = 'COMPLETED',
-  FAILED = 'FAILED',
+  PENDING = "PENDING",
+  SEARCHING = "SEARCHING",
+  CALLING = "CALLING",
+  ANALYZING = "ANALYZING",
+  COMPLETED = "COMPLETED",
+  FAILED = "FAILED",
 }
 
 export enum RequestType {
-  RESEARCH_AND_BOOK = 'RESEARCH_AND_BOOK',
-  DIRECT_TASK = 'DIRECT_TASK',
+  RESEARCH_AND_BOOK = "RESEARCH_AND_BOOK",
+  DIRECT_TASK = "DIRECT_TASK",
 }
 
 // Client-side interfaces (kept for backward compatibility with localStorage)
@@ -23,15 +23,50 @@ export interface Provider {
   phone?: string;
   rating?: number;
   address?: string;
-  source?: 'Google Maps' | 'User Input';
+  source?: "Google Maps" | "User Input";
+  // Call tracking
+  callStatus?: string;
+  callResult?: {
+    availability?: string;
+    estimated_rate?: string;
+    all_criteria_met?: boolean;
+    earliest_availability?: string;
+    disqualified?: boolean;
+    disqualification_reason?: string;
+    call_outcome?: string;
+    notes?: string;
+  };
+  callTranscript?: string;
+  callSummary?: string;
+  callDurationMinutes?: number;
+  calledAt?: string;
+  // Research data
+  reviewCount?: number;
+  distance?: number;
+  distanceText?: string;
+  hoursOfOperation?: string[];
+  isOpenNow?: boolean;
+  googleMapsUri?: string;
+  website?: string;
+  placeId?: string;
 }
 
 export interface InteractionLog {
+  id?: string;
   timestamp: string;
   stepName: string;
   detail: string;
   transcript?: { speaker: string; text: string }[];
-  status: 'success' | 'warning' | 'error' | 'info';
+  status: "success" | "warning" | "error" | "info";
+  providerName?: string;
+  providerId?: string;
+  /** Optional call data from real VAPI calls (when LIVE_CALL_ENABLED=true) */
+  callData?: {
+    callId?: string;
+    duration?: number;
+    transcript?: string;
+    structuredData?: Record<string, unknown>;
+  };
 }
 
 export interface ServiceRequest {

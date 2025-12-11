@@ -12,10 +12,10 @@ Your AI Concierge directly solves a real problem—booking appointments and mana
 
 The multi-step autonomous workflow is creative:
 
-- **Research phase** (web scraping \+ filtering by criteria)  
-- **Interaction phase** (calling/texting providers with AI agents)  
-- **Negotiation phase** (checking rates, availability, credentials)  
-- **Booking phase** (completing appointment scheduling)  
+- **Research phase** (web scraping \+ filtering by criteria)
+- **Interaction phase** (calling/texting providers with AI agents)
+- **Negotiation phase** (checking rates, availability, credentials)
+- **Booking phase** (completing appointment scheduling)
 - **History/audit trail** (tracking decision reasoning)
 
 Compared to typical hackathon projects, this is sophisticated and novel.
@@ -36,11 +36,11 @@ This is where your idea shines—it's a **perfect use case for ALL five sponsor 
 
 You'll learn:
 
-- Agentic orchestration patterns (Kestra)  
-- AI-powered voice/communication APIs  
-- Reinforcement learning fine-tuning (Oumi)  
-- Complex CLI automation (Cline)  
-- Production deployment (Vercel)  
+- Agentic orchestration patterns (Kestra)
+- AI-powered voice/communication APIs
+- Reinforcement learning fine-tuning (Oumi)
+- Complex CLI automation (Cline)
+- Production deployment (Vercel)
 - Code quality at scale (CodeRabbit)
 
 **Learning strength:** 9/10 \- Deep technical growth across stack
@@ -51,9 +51,9 @@ You'll learn:
 
 Building a dashboard showing:
 
-- Active/past requests with real-time status  
-- Agent decision reasoning (research findings, why it chose provider X)  
-- Conversation transcripts (what the AI told plumbers)  
+- Active/past requests with real-time status
+- Agent decision reasoning (research findings, why it chose provider X)
+- Conversation transcripts (what the AI told plumbers)
 - Appointment confirmations with details
 
 **UX strength:** 7/10 \- Depends on dashboard polish, but inherently interesting data to visualize
@@ -76,23 +76,9 @@ Your demo is naturally compelling: "Watch AI call plumbers and book an appointme
 
 ┌─────────────────────────────────────────────────────────────┐
 
-│                   FRONTEND (Vercel)                         │
+│ FRONTEND (Vercel) │
 
-│  React/Next.js Dashboard \+ Request Form UI                  │
-
-└──────────────────────┬──────────────────────────────────────┘
-
-                       │
-
-┌──────────────────────▼──────────────────────────────────────┐
-
-│            BACKEND API (Node.js/Python)                     │
-
-│  \- Request parsing                                          │
-
-│  \- User auth & history management                           │
-
-│  \- Email/SMS delivery                                       │
+│ React/Next.js Dashboard \+ Request Form UI │
 
 └──────────────────────┬──────────────────────────────────────┘
 
@@ -100,60 +86,74 @@ Your demo is naturally compelling: "Watch AI call plumbers and book an appointme
 
 ┌──────────────────────▼──────────────────────────────────────┐
 
-│      KESTRA ORCHESTRATION ENGINE (Award: Wakanda)           │
+│ BACKEND API (Node.js/Python) │
 
-│  ┌─────────────────────────────────────────────────────────┐│
+│ \- Request parsing │
 
-│  │ AI Agent Task 1: Research & Filter Providers           ││
+│ \- User auth & history management │
 
-│  │ \- Web search for plumbers in Greenville, SC            ││
+│ \- Email/SMS delivery │
 
-│  │ \- Summarize ratings, reviews, licensing                ││
+└──────────────────────┬──────────────────────────────────────┘
 
-│  │ \- Filter by user criteria (4.7+ rating, 2-day ETA)     ││
-│  │ - Web search for plumbers in Greenville, SC            ││
+                       │
 
-│  │ - Summarize ratings, reviews, licensing                ││
+┌──────────────────────▼──────────────────────────────────────┐
 
-│  │ - Filter by user criteria (4.7+ rating, 2-day ETA)     ││
+│ KESTRA ORCHESTRATION ENGINE (Award: Wakanda) │
 
-│  │ - AI Agent makes decision: Top 3 candidates            ││
+│ ┌─────────────────────────────────────────────────────────┐│
 
-│  └─────────────────────────────────────────────────────────┘│
+│ │ AI Agent Task 1: Research & Filter Providers ││
 
-│  ┌─────────────────────────────────────────────────────────┐│
+│ │ \- Web search for plumbers in Greenville, SC ││
 
-│  │ AI Agent Task 2: Contact & Negotiate                   ││
+│ │ \- Summarize ratings, reviews, licensing ││
 
-│  │ - Trigger VAPI.ai Voice Call                           ││
+│ │ \- Filter by user criteria (4.7+ rating, 2-day ETA) ││
+│ │ - Web search for plumbers in Greenville, SC ││
 
-│  │ - VAPI connects using Gemini 2.0 Flash                ││
+│ │ - Summarize ratings, reviews, licensing ││
 
-│  │ - Real-time conversation extracts rates/availability   ││
+│ │ - Filter by user criteria (4.7+ rating, 2-day ETA) ││
 
-│  │ - VAPI Webhook -> Analysis Agent decision             ││
+│ │ - AI Agent makes decision: Top 3 candidates ││
 
-│  └─────────────────────────────────────────────────────────┘│
+│ └─────────────────────────────────────────────────────────┘│
 
-│  ┌─────────────────────────────────────────────────────────┐│
+│ ┌─────────────────────────────────────────────────────────┐│
 
-│  │ AI Agent Task 3: Book Appointment                      ││
+│ │ AI Agent Task 2: Contact & Negotiate ││
 
-│  │ \- Call chosen provider                                 ││
+│ │ - Trigger VAPI.ai Voice Call ││
 
-│  │ \- Confirm details, get appointment time               ││
+│ │ - VAPI connects using Gemini 2.0 Flash ││
 
-│  │ \- Send confirmation to user                           ││
+│ │ - Real-time conversation extracts rates/availability ││
 
-│  └─────────────────────────────────────────────────────────┘│
+│ │ - VAPI Webhook -> Analysis Agent decision ││
 
-│  ┌─────────────────────────────────────────────────────────┐│
+│ └─────────────────────────────────────────────────────────┘│
 
-│  │ Task 4: History Logging                               ││
+│ ┌─────────────────────────────────────────────────────────┐│
 
-│  │ \- Store all steps, decisions, transcripts             ││
+│ │ AI Agent Task 3: Book Appointment ││
 
-│  └─────────────────────────────────────────────────────────┘│
+│ │ \- Call chosen provider ││
+
+│ │ \- Confirm details, get appointment time ││
+
+│ │ \- Send confirmation to user ││
+
+│ └─────────────────────────────────────────────────────────┘│
+
+│ ┌─────────────────────────────────────────────────────────┐│
+
+│ │ Task 4: History Logging ││
+
+│ │ \- Store all steps, decisions, transcripts ││
+
+│ └─────────────────────────────────────────────────────────┘│
 
 └──────────────────────┬──────────────────────────────────────┘
 
@@ -183,19 +183,19 @@ Kestra is the nervous system of your system. It orchestrates the multi-step work
 
 **Phase 1: Research Agent (Summarization \+ Decision)**
 
-id: research\_providers
+id: research_providers
 
-namespace: ai\_concierge
+namespace: ai_concierge
 
 triggers:
 
-  \- type: http
+\- type: http
 
     path: /api/search-providers
 
 tasks:
 
-  \- id: research\_agent
+\- id: research_agent
 
     type: io.kestra.plugin.aiagent.AIAgent
 
@@ -209,7 +209,7 @@ tasks:
 
       \- Must be available within \[DAYS\] days
 
-      
+
 
       Use Google Search Grounding to find at least 5 candidates. For each, gather:
 
@@ -219,27 +219,23 @@ tasks:
 
       3\. Years in business
 
-      
+
 
       Then, evaluate and rank the top 3 by your criteria.
 
-    
+
 
     tools:
 
       \- google_search_retrieval: {}
 
-    
-
-  \- id: log\_research
+\- id: log_research
 
     type: io.kestra.plugin.core.log.Log
 
     message: "Research Agent Decision: {{ tasks.research\_agent.outputs.decision }}"
 
-    
-
-  \- id: return\_candidates
+\- id: return_candidates
 
     type: io.kestra.plugin.core.http.Request
 
@@ -284,10 +280,10 @@ The Contact Agent now supports **two execution paths**:
 
 ### API Endpoints
 
-| Endpoint | Method | Description |
-|----------|--------|-------------|
-| `POST /api/v1/providers/call` | POST | Initiate call (auto-routes to Kestra or VAPI) |
-| `GET /api/v1/providers/call/status` | GET | Check system status and active method |
+| Endpoint                            | Method | Description                                   |
+| ----------------------------------- | ------ | --------------------------------------------- |
+| `POST /api/v1/providers/call`       | POST   | Initiate call (auto-routes to Kestra or VAPI) |
+| `GET /api/v1/providers/call/status` | GET    | Check system status and active method         |
 
 ### Kestra Flow (when KESTRA_ENABLED=true)
 
@@ -297,7 +293,7 @@ namespace: ai_concierge
 
 tasks:
 
-  \- id: call_providers
+\- id: call_providers
 
     type: io.kestra.plugin.core.flow.ForEach
 
@@ -323,9 +319,7 @@ tasks:
 
           GEMINI_API_KEY: "{{ secret('GEMINI_API_KEY') }}"
 
-
-
-  \- id: analyze_calls
+\- id: analyze_calls
 
     type: io.kestra.plugin.aiagent.AIAgent
 
@@ -347,9 +341,7 @@ tasks:
 
       Output JSON: {selected: index, reason: "..."}
 
-
-
-  \- id: evaluate\_fit
+\- id: evaluate_fit
 
     type: io.kestra.plugin.core.eval.EvalParameters
 
@@ -371,7 +363,7 @@ namespace: ai_concierge
 
 tasks:
 
-  \- id: create_calendar_event
+\- id: create_calendar_event
 
     type: io.kestra.plugin.scripts.shell.Scripts
 
@@ -387,13 +379,11 @@ tasks:
 
       GOOGLE_SERVICE_ACCOUNT: "{{ secret('GOOGLE_SERVICE_ACCOUNT') }}"
 
-      
+
 
     memory: true
 
-    
-
-  \- id: send\_confirmation
+\- id: send_confirmation
 
     type: io.kestra.plugin.notifications.mail.SendMail
 
@@ -419,21 +409,19 @@ tasks:
 
 **Phase 4: Multi-Agent Coordination**
 
-id: complete\_concierge\_workflow
+id: complete_concierge_workflow
 
-namespace: ai\_concierge
+namespace: ai_concierge
 
 tasks:
 
-  \- id: research\_flow
+\- id: research_flow
 
     type: io.kestra.plugin.core.flow.Subflow
 
     flowId: research\_providers
 
-    
-
-  \- id: parallel\_contact
+\- id: parallel_contact
 
     type: io.kestra.plugin.core.flow.ForEach
 
@@ -453,9 +441,9 @@ tasks:
 
           phone: "{{ item.phone }}"
 
-          
 
-  \- id: select\_best
+
+\- id: select_best
 
     type: io.kestra.plugin.aiagent.AIAgent
 
@@ -467,9 +455,9 @@ tasks:
 
       Explain your reasoning.
 
-      
 
-  \- id: book\_selected
+
+\- id: book_selected
 
     type: io.kestra.plugin.core.flow.Subflow
 
@@ -479,9 +467,9 @@ tasks:
 
       provider\_name: "{{ tasks.select\_best.outputs.selected\_provider }}"
 
-      
 
-  \- id: store\_history
+
+\- id: store_history
 
     type: io.kestra.plugin.core.flow.ExecutionTrigger
 
@@ -489,11 +477,11 @@ tasks:
 
 **Key Kestra Advantages for Your Project:**
 
-- ✅ **Bonus Credit**: AI agents can summarize data AND make decisions based on that data  
-- ✅ **Persistent memory** keeps context across multi-turn agent interactions  
-- ✅ **Tool integration** allows agents to call APIs, execute flows, and interact with external services  
-- ✅ **Multi-agent orchestration** lets multiple agents run in parallel (contacting different providers simultaneously)  
-- ✅ **Error handling & retries** built-in for resilient workflows  
+- ✅ **Bonus Credit**: AI agents can summarize data AND make decisions based on that data
+- ✅ **Persistent memory** keeps context across multi-turn agent interactions
+- ✅ **Tool integration** allows agents to call APIs, execute flows, and interact with external services
+- ✅ **Multi-agent orchestration** lets multiple agents run in parallel (contacting different providers simultaneously)
+- ✅ **Error handling & retries** built-in for resilient workflows
 - ✅ **Execution history** automatically logged (great for your history feature)
 
 ---
@@ -516,47 +504,47 @@ cline init
 
 cline "Create a Next.js app with TypeScript. Build these routes:
 
-  \- POST /api/requests \- submit concierge requests
+\- POST /api/requests \- submit concierge requests
 
-  \- GET /api/requests/:id \- get request status
+\- GET /api/requests/:id \- get request status
 
-  \- GET /api/history \- user's request history
+\- GET /api/history \- user's request history
 
-  Include Supabase integration for persistence"
+Include Supabase integration for persistence"
 
 \# Task 2: Set up Kestra integration
 
-cline "Write a TypeScript client library for Kestra API. 
+cline "Write a TypeScript client library for Kestra API.
 
-  \- Support triggering workflows
+\- Support triggering workflows
 
-  \- Poll execution status
+\- Poll execution status
 
-  \- Retrieve execution outputs
+\- Retrieve execution outputs
 
-  Include type definitions and error handling"
+Include type definitions and error handling"
 
 \# Task 3: Build authentication
 
-cline "Set up Next.js Auth with Supabase. 
+cline "Set up Next.js Auth with Supabase.
 
-  \- Email/password authentication
+\- Email/password authentication
 
-  \- Protected API routes
+\- Protected API routes
 
-  \- User context in React"
+\- User context in React"
 
 \# Task 4: Implement history display
 
 cline "Build a React dashboard showing:
 
-  \- Request history with status badges
+\- Request history with status badges
 
-  \- Detailed view showing research findings, agent decisions
+\- Detailed view showing research findings, agent decisions
 
-  \- Transcripts of provider conversations
+\- Transcripts of provider conversations
 
-  \- Use Shadcn/ui for components"
+\- Use Shadcn/ui for components"
 
 **Phase 2: Integrate Cline Capabilities Into Backend**
 
@@ -568,15 +556,15 @@ import Anthropic from "@anthropic-sdk/sdk";
 
 export class BackendDevelopmentAgent {
 
-  private client: Anthropic;
+private client: Anthropic;
 
-  async generateProviderIntegration(providerName: string) {
+async generateProviderIntegration(providerName: string) {
 
     // Use Claude to generate provider-specific API integration code
 
     // This demonstrates Cline-like autonomous code generation in your app
 
-    
+
 
     const response \= await this.client.messages.create({
 
@@ -598,7 +586,7 @@ export class BackendDevelopmentAgent {
 
           3\. Booking appointments
 
-          
+
 
           Include error handling, type definitions, and unit tests.\`,
 
@@ -614,9 +602,9 @@ export class BackendDevelopmentAgent {
 
     // Commit to git with CI/CD
 
-  }
+}
 
-  async optimizeWorkflow() {
+async optimizeWorkflow() {
 
     // Analyze existing workflows
 
@@ -624,7 +612,7 @@ export class BackendDevelopmentAgent {
 
     // Implement with tests
 
-  }
+}
 
 }
 
@@ -634,47 +622,47 @@ export class BackendDevelopmentAgent {
 
 cline "Add voice transcription for call recordings:
 
-  \- Integrate Deepgram or Whisper API
+\- Integrate Deepgram or Whisper API
 
-  \- Store transcripts in Supabase
+\- Store transcripts in Supabase
 
-  \- Display in history UI
+\- Display in history UI
 
-  \- Add search functionality"
+\- Add search functionality"
 
 cline "Implement email notifications:
 
-  \- Send confirmation when appointment booked
+\- Send confirmation when appointment booked
 
-  \- Send reminders 24 hours before
+\- Send reminders 24 hours before
 
-  \- Use SendGrid or Resend
+\- Use SendGrid or Resend
 
-  \- Template based on provider info"
+\- Template based on provider info"
 
 cline "Build provider manual entry feature:
 
-  \- Form to add provider contact info
+\- Form to add provider contact info
 
-  \- Field for 'what you need help with'
+\- Field for 'what you need help with'
 
-  \- AI agent calls provider to complete task
+\- AI agent calls provider to complete task
 
-  \- Show results to user"
+\- Show results to user"
 
 **Demonstrating Cline in Submission:**
 
-- Show your **Cline CLI session history** as a `.cline_session.log`  
-- Include **Cline-generated code files** with comments showing they were AI-generated  
-- Demonstrate **Cline's autonomous capabilities** in your demo (maybe: "This API route was generated by Cline CLI in under 2 minutes")  
+- Show your **Cline CLI session history** as a `.cline_session.log`
+- Include **Cline-generated code files** with comments showing they were AI-generated
+- Demonstrate **Cline's autonomous capabilities** in your demo (maybe: "This API route was generated by Cline CLI in under 2 minutes")
 - Show **git commits** from Cline improvements
 
 **Key Cline Advantages:**
 
-- ✅ Rapid feature development (massive time-saver for hackathon)  
-- ✅ Shows advanced AI coding practices  
-- ✅ Deep Planning \+ Focus Chain for complex features  
-- ✅ Direct CLI integration can extend your app's capabilities  
+- ✅ Rapid feature development (massive time-saver for hackathon)
+- ✅ Shows advanced AI coding practices
+- ✅ Deep Planning \+ Focus Chain for complex features
+- ✅ Direct CLI integration can extend your app's capabilities
 - ✅ High context window allows full codebase understanding
 
 ---
@@ -691,49 +679,47 @@ Oumi's reinforcement learning fine-tuning will train a specialized model that im
 
 \# Use Oumi's data synthesis to generate training data
 
-oumi synth \--task instruction\_following
+oumi synth \--task instruction_following
 
 \# Generate examples like:
 
 \# {
 
-\#   "instruction": "Find a plumber in Greenville SC, 4.7+ rating, available in 2 days, max $200",
+\# "instruction": "Find a plumber in Greenville SC, 4.7+ rating, available in 2 days, max $200",
 
-\#   "providers": \[...\],
+\# "providers": \[...\],
 
-\#   "best\_match": "Jim's Plumbing",
+\# "best_match": "Jim's Plumbing",
 
-\#   "reasoning": "Best rating, within budget, available same day"
+\# "reasoning": "Best rating, within budget, available same day"
 
 \# }
 
 **Phase 2: Fine-tune a Model for Provider Matching**
 
-\# configs/provider\_matcher/train.yaml
+\# configs/provider_matcher/train.yaml
 
-model\_name\_or\_path: meta-llama/Llama-2-7b
+model_name_or_path: meta-llama/Llama-2-7b
 
-trainer\_type: TRL\_DPO  \# Or TRL\_GRPO for RL
+trainer_type: TRL_DPO \# Or TRL_GRPO for RL
 
-data\_dir: ./data/provider\_matching
+data_dir: ./data/provider_matching
 
-training\_params:
+training_params:
 
-  num\_train\_epochs: 3
+num_train_epochs: 3
 
-  per\_device\_train\_batch\_size: 4
+per_device_train_batch_size: 4
 
-  learning\_rate: 5e-5
+learning_rate: 5e-5
 
-  
+lora_config:
 
-lora\_config:
+r: 16
 
-  r: 16
+lora_alpha: 32
 
-  lora\_alpha: 32
-
-  target\_modules: \["q\_proj", "v\_proj"\]
+target_modules: \["q_proj", "v_proj"\]
 
 **Phase 3: Implement GRPO (Group Relative Policy Optimization)**
 
@@ -741,19 +727,19 @@ lora\_config:
 
 \# Train the model to make better decisions based on actual outcomes
 
-\# configs/provider\_matcher/rl\_train.yaml
+\# configs/provider_matcher/rl_train.yaml
 
-trainer\_type: TRL\_GRPO
+trainer_type: TRL_GRPO
 
 grpo:
 
-  use\_vllm: true
+use_vllm: true
 
-  num\_rollouts: 8
+num_rollouts: 8
 
-  rollout\_function: score\_provider\_match
+rollout_function: score_provider_match
 
-  reward\_functions:
+reward_functions:
 
     \- user\_satisfaction\_score
 
@@ -761,17 +747,15 @@ grpo:
 
     \- appointment\_kept
 
-    
+training_params:
 
-training\_params:
+num_train_epochs: 2
 
-  num\_train\_epochs: 2
+per_device_train_batch_size: 8
 
-  per\_device\_train\_batch\_size: 8
+\# src/ml/reward_functions.py
 
-\# src/ml/reward\_functions.py
-
-def user\_satisfaction\_score(outcome) \-\> float:
+def user_satisfaction_score(outcome) \-\> float:
 
     """
 
@@ -787,17 +771,17 @@ def user\_satisfaction\_score(outcome) \-\> float:
 
     satisfaction \= 0
 
-    
+
 
     if outcome\['provider\_showed\_up'\]:
 
         satisfaction \+= 1.0
 
-    
+
 
     satisfaction \+= outcome\['user\_rating'\] / 5.0  \# 0-1
 
-    
+
 
     if outcome\['final\_price'\] \<= outcome\['quoted\_price'\]:
 
@@ -807,11 +791,11 @@ def user\_satisfaction\_score(outcome) \-\> float:
 
         satisfaction \-= 0.5
 
-    
+
 
     return max(0, min(1, satisfaction))
 
-def provider\_response\_time(outcome) \-\> float:
+def provider_response_time(outcome) \-\> float:
 
     """Reward quick responses from providers"""
 
@@ -837,25 +821,25 @@ import { OumiInferenceEngine } from "@oumi-ai/oumi";
 
 export async function getOptimalProviderMatch(request: ConciergeRequest) {
 
-  const engine \= new OumiInferenceEngine({
+const engine \= new OumiInferenceEngine({
 
     modelName: "provider-matcher-fine-tuned",  // Your Oumi-trained model
 
     engine: "vllm",  // Use vLLM for fast inference
 
-  });
+});
 
-  const candidates \= request.filtered\_candidates;
+const candidates \= request.filtered_candidates;
 
-  const userCriteria \= request.criteria;
+const userCriteria \= request.criteria;
 
-  const response \= await engine.generate({
+const response \= await engine.generate({
 
     prompt: \`
 
       Given these service providers and user criteria:
 
-      
+
 
       Criteria:
 
@@ -867,13 +851,13 @@ export async function getOptimalProviderMatch(request: ConciergeRequest) {
 
       \- Min rating: ${userCriteria.min\_rating}
 
-      
+
 
       Candidates:
 
       ${candidates.map((p) \=\> \`- ${p.name}: $${p.price}, ${p.rating}⭐, available ${p.availability}\`).join("\\n")}
 
-      
+
 
       Which provider is the best match? Explain your reasoning.
 
@@ -881,9 +865,9 @@ export async function getOptimalProviderMatch(request: ConciergeRequest) {
 
     maxTokens: 256,
 
-  });
+});
 
-  return {
+return {
 
     selectedProvider: response.selectedProvider,
 
@@ -893,7 +877,7 @@ export async function getOptimalProviderMatch(request: ConciergeRequest) {
 
     alternativeOptions: response.alternativeOptions,
 
-  };
+};
 
 }
 
@@ -901,7 +885,7 @@ export async function getOptimalProviderMatch(request: ConciergeRequest) {
 
 \# Use Oumi's LLM-as-Judge to evaluate agent quality
 
-def judge\_agent\_decisions(interaction\_history) \-\> float:
+def judge_agent_decisions(interaction_history) \-\> float:
 
     """
 
@@ -921,10 +905,10 @@ def judge\_agent\_decisions(interaction\_history) \-\> float:
 
 **Key Oumi Advantages:**
 
-- ✅ RL fine-tuning improves model over time with real feedback  
-- ✅ Data synthesis generates training data without manual annotation  
-- ✅ LLM-as-Judge evaluates decision quality automatically  
-- ✅ Demonstrates advanced ML practices (not typical for hackathons)  
+- ✅ RL fine-tuning improves model over time with real feedback
+- ✅ Data synthesis generates training data without manual annotation
+- ✅ LLM-as-Judge evaluates decision quality automatically
+- ✅ Demonstrates advanced ML practices (not typical for hackathons)
 - ✅ Shows you understand the full ML lifecycle: training → fine-tuning → deployment
 
 ---
@@ -947,11 +931,11 @@ npm install next-auth supabase @anthropic-sdk/sdk axios
 
 {
 
-  "buildCommand": "npm run build",
+"buildCommand": "npm run build",
 
-  "outputDirectory": ".next",
+"outputDirectory": ".next",
 
-  "env": {
+"env": {
 
     "SUPABASE\_URL": "@supabase-url",
 
@@ -963,7 +947,7 @@ npm install next-auth supabase @anthropic-sdk/sdk axios
 
     "ANTHROPIC\_API\_KEY": "@anthropic-key"
 
-  }
+}
 
 }
 
@@ -977,49 +961,49 @@ app/
 
 ├── dashboard/
 
-│   ├── page.tsx          (Main dashboard \- active requests \+ history)
+│ ├── page.tsx (Main dashboard \- active requests \+ history)
 
-│   ├── components/
+│ ├── components/
 
-│   │   ├── RequestForm.tsx
+│ │ ├── RequestForm.tsx
 
-│   │   ├── RequestStatus.tsx
+│ │ ├── RequestStatus.tsx
 
-│   │   ├── History.tsx
+│ │ ├── History.tsx
 
-│   │   └── ResearchFindingsPanel.tsx
+│ │ └── ResearchFindingsPanel.tsx
 
-│   └── layout.tsx
+│ └── layout.tsx
 
 ├── api/
 
-│   ├── requests/
+│ ├── requests/
 
-│   │   ├── route.ts      (Submit new request → trigger Kestra)
+│ │ ├── route.ts (Submit new request → trigger Kestra)
 
-│   │   └── \[id\]/route.ts (Get request status \+ history)
+│ │ └── \[id\]/route.ts (Get request status \+ history)
 
-│   ├── auth/
+│ ├── auth/
 
-│   │   └── \[...nextauth\]/route.ts
+│ │ └── \[...nextauth\]/route.ts
 
-│   └── providers/
+│ └── providers/
 
-│       ├── search/route.ts
+│ ├── search/route.ts
 
-│       └── match/route.ts
+│ └── match/route.ts
 
 ├── layout.tsx
 
-└── page.tsx              (Landing page / login)
+└── page.tsx (Landing page / login)
 
 **Key Vercel Features:**
 
-- ✅ **Automatic deployments** on git push  
-- ✅ **Environment variables** management  
-- ✅ **Edge functions** for low-latency API responses  
-- ✅ **Real-time updates** with WebSockets  
-- ✅ **Analytics & monitoring** built-in  
+- ✅ **Automatic deployments** on git push
+- ✅ **Environment variables** management
+- ✅ **Edge functions** for low-latency API responses
+- ✅ **Real-time updates** with WebSockets
+- ✅ **Analytics & monitoring** built-in
 - ✅ **Live demo link** to share with judges
 
 **Deployment Checklist:**
@@ -1045,6 +1029,7 @@ SUPABASE_SERVICE_ROLE_KEY=your-service-key
 ```
 
 **Key Benefits:**
+
 - No Docker/Kestra infrastructure required in production
 - Direct VAPI SDK calls with identical assistant configuration
 - Same structured call analysis and database updates
@@ -1062,47 +1047,47 @@ SUPABASE_SERVICE_ROLE_KEY=your-service-key
 
 reviews:
 
-  auto\_review: true
+auto_review: true
 
-  auto\_review\_enabled\_for\_large\_files: true
+auto_review_enabled_for_large_files: true
 
-  review\_status: 'blocking'
+review_status: 'blocking'
 
-  review\_status\_message: "CodeRabbit review required"
+review_status_message: "CodeRabbit review required"
 
 \# Rules for code quality
 
 rules:
 
-  \- type: 'code\_style'
+\- type: 'code_style'
 
     severity: 'warning'
 
-  \- type: 'security'
+\- type: 'security'
 
     severity: 'error'
 
-  \- type: 'documentation'
+\- type: 'documentation'
 
     severity: 'info'
 
 \# Enforce best practices
 
-best\_practices:
+best_practices:
 
-  enforce\_types: true
+enforce_types: true
 
-  require\_tests: true
+require_tests: true
 
-  require\_docs: true
+require_docs: true
 
 \# Documentation requirements
 
 documentation:
 
-  auto\_generate\_docs: true
+auto_generate_docs: true
 
-  require\_readme\_updates: true
+require_readme_updates: true
 
 **Phase 2: PR Workflow with CodeRabbit**
 
@@ -1136,25 +1121,25 @@ git push origin feat/provider-voice-integration
 
 CodeRabbit will:
 
-- ✅ Review code for style, security, performance  
-- ✅ Suggest documentation improvements  
-- ✅ Check test coverage  
-- ✅ Recommend best practices  
+- ✅ Review code for style, security, performance
+- ✅ Suggest documentation improvements
+- ✅ Check test coverage
+- ✅ Recommend best practices
 - ✅ Flag potential bugs
 
 **Phase 3: Showcase CodeRabbit in Demo**
 
-- Show your GitHub repo with **CodeRabbit comments** on PRs  
-- Highlight improvements CodeRabbit suggested  
-- Show you **acted on feedback**  
+- Show your GitHub repo with **CodeRabbit comments** on PRs
+- Highlight improvements CodeRabbit suggested
+- Show you **acted on feedback**
 - Demonstrate modern development practices
 
 **Key CodeRabbit Advantages:**
 
-- ✅ Automated code review (enterprise-grade quality)  
-- ✅ Encourages documentation  
-- ✅ Security scanning  
-- ✅ Learning opportunity (AI feedback on your code)  
+- ✅ Automated code review (enterprise-grade quality)
+- ✅ Encourages documentation
+- ✅ Security scanning
+- ✅ Learning opportunity (AI feedback on your code)
 - ✅ Shows professional development practices
 
 ---
@@ -1167,85 +1152,85 @@ ai-concierge/
 
 ├── frontend/
 
-│   ├── app/
+│ ├── app/
 
-│   ├── components/
+│ ├── components/
 
-│   ├── lib/
+│ ├── lib/
 
-│   └── package.json
+│ └── package.json
 
 ├── backend/
 
-│   ├── src/
+│ ├── src/
 
-│   │   ├── api/
+│ │ ├── api/
 
-│   │   │   ├── kestra.ts          \# Kestra API client
+│ │ │ ├── kestra.ts \# Kestra API client
 
-│   │   │   ├── providers.ts       \# Provider data access
+│ │ │ ├── providers.ts \# Provider data access
 
-│   │   │   └── auth.ts            \# Authentication
+│ │ │ └── auth.ts \# Authentication
 
-│   │   ├── ml/
+│ │ ├── ml/
 
-│   │   │   ├── oumi-client.ts     \# Oumi inference
+│ │ │ ├── oumi-client.ts \# Oumi inference
 
-│   │   │   └── reward-functions.py
+│ │ │ └── reward-functions.py
 
-│   │   ├── cli/
+│ │ ├── cli/
 
-│   │   │   └── cline-agent.ts     \# Cline integration
+│ │ │ └── cline-agent.ts \# Cline integration
 
-│   │   └── utils/
+│ │ └── utils/
 
-│   ├── tests/
+│ ├── tests/
 
-│   └── package.json
+│ └── package.json
 
 ├── kestra/
 
-│   └── flows/
+│ └── flows/
 
-│       ├── research\_providers.yaml
+│ ├── research_providers.yaml
 
-│       ├── contact\_providers.yaml
+│ ├── contact_providers.yaml
 
-│       ├── book\_appointment.yaml
+│ ├── book_appointment.yaml
 
-│       └── complete\_workflow.yaml
+│ └── complete_workflow.yaml
 
 ├── oumi/
 
-│   ├── configs/
+│ ├── configs/
 
-│   │   ├── provider\_matcher/
+│ │ ├── provider_matcher/
 
-│   │   │   ├── train.yaml
+│ │ │ ├── train.yaml
 
-│   │   │   └── rl\_train.yaml
+│ │ │ └── rl_train.yaml
 
-│   │   └── data\_synthesis.yaml
+│ │ └── data_synthesis.yaml
 
-│   └── notebooks/
+│ └── notebooks/
 
-│       └── training\_notebook.ipynb
+│ └── training_notebook.ipynb
 
 ├── scripts/
 
-│   ├── setup-kestra.sh
+│ ├── setup-kestra.sh
 
-│   ├── train-oumi-model.sh
+│ ├── train-oumi-model.sh
 
-│   └── deploy-vercel.sh
+│ └── deploy-vercel.sh
 
 ├── .github/
 
-│   └── workflows/
+│ └── workflows/
 
-│       ├── coderabbit.yml
+│ ├── coderabbit.yml
 
-│       └── tests.yml
+│ └── tests.yml
 
 ├── README.md
 
@@ -1255,13 +1240,13 @@ ai-concierge/
 
 ## 📋 PRIZE ELIGIBILITY CHECKLIST
 
-| Award | Requirement | Your Implementation | Status |
-| :---- | :---- | :---- | :---- |
-| **Infinity Build ($5k)** | Use Cline CLI, build automation tools | CLI for backend code gen \+ auth setup \+ feature scaffolding | ✅ |
-| **Wakanda Data ($4k)** | Kestra AI Agent for summarization \+ decision-making | Research agent summarizes providers \+ selects top 3; booking agent makes decisions | ✅ **BONUS** |
-| **Iron Intelligence ($3k)** | Oumi RL fine-tuning \+ data synthesis/LLM-as-Judge | Fine-tune provider matching model; synthesize training data; judge agent quality | ✅ |
-| **Stormbreaker ($2k)** | Deploy on Vercel (live) | Next.js app deployed to Vercel with live endpoints | ✅ |
-| **Captain Code ($1k)** | CodeRabbit PR reviews, code quality, docs | Enable CodeRabbit, make PRs, show quality improvements | ✅ |
+| Award                       | Requirement                                          | Your Implementation                                                                 | Status       |
+| :-------------------------- | :--------------------------------------------------- | :---------------------------------------------------------------------------------- | :----------- |
+| **Infinity Build ($5k)**    | Use Cline CLI, build automation tools                | CLI for backend code gen \+ auth setup \+ feature scaffolding                       | ✅           |
+| **Wakanda Data ($4k)**      | Kestra AI Agent for summarization \+ decision-making | Research agent summarizes providers \+ selects top 3; booking agent makes decisions | ✅ **BONUS** |
+| **Iron Intelligence ($3k)** | Oumi RL fine-tuning \+ data synthesis/LLM-as-Judge   | Fine-tune provider matching model; synthesize training data; judge agent quality    | ✅           |
+| **Stormbreaker ($2k)**      | Deploy on Vercel (live)                              | Next.js app deployed to Vercel with live endpoints                                  | ✅           |
+| **Captain Code ($1k)**      | CodeRabbit PR reviews, code quality, docs            | Enable CodeRabbit, make PRs, show quality improvements                              | ✅           |
 
 **Total potential earnings: $15,000 if all requirements met**
 
@@ -1269,17 +1254,17 @@ ai-concierge/
 
 ## 🎬 DEMO VIDEO STRUCTURE (2 minutes)
 
-\[0:00-0:15\]   HOOK
+\[0:00-0:15\] HOOK
 
-  "I'm going to submit a plumbing repair request to an AI concierge.
+"I'm going to submit a plumbing repair request to an AI concierge.
 
-   It will research local plumbers, call them on my behalf, 
+It will research local plumbers, call them on my behalf,
 
-   and book the best appointment—all automatically."
+and book the best appointment—all automatically."
 
-\[0:15-0:45\]   LIVE DEMO
+\[0:15-0:45\] LIVE DEMO
 
-  \- Open app, fill request form:
+\- Open app, fill request form:
 
     \* Service: "Leaking toilet"
 
@@ -1289,11 +1274,9 @@ ai-concierge/
 
     \* Quality: 4.7+ rating
 
-  
+\- Submit request
 
-  \- Submit request
-
-  \- Show Kestra workflow executing in real-time:
+\- Show Kestra workflow executing in real-time:
 
     \* "Research Agent" → finding plumbers
 
@@ -1301,9 +1284,9 @@ ai-concierge/
 
     \* "Book Agent" → confirming appointment
 
-\[0:45-1:15\]   RESULTS
+\[0:45-1:15\] RESULTS
 
-  \- Show dashboard:
+\- Show dashboard:
 
     \* Request status: "COMPLETED"
 
@@ -1317,27 +1300,25 @@ ai-concierge/
 
     \* Call transcripts visible
 
-\[1:15-1:45\]   HISTORY & FEATURES
+\[1:15-1:45\] HISTORY & FEATURES
 
-  \- Show history of past requests
+\- Show history of past requests
 
-  \- Show "Direct contact" feature (manual provider number)
+\- Show "Direct contact" feature (manual provider number)
 
-  \- Highlight AI decision reasoning
+\- Highlight AI decision reasoning
 
-\[1:45-2:00\]   CLOSING
+\[1:45-2:00\] CLOSING
 
-  "Built with Cline CLI for rapid development,
+"Built with Cline CLI for rapid development,
 
-   Kestra for agentic orchestration,
+Kestra for agentic orchestration,
 
-   Oumi for intelligent matching,
+Oumi for intelligent matching,
 
-   deployed on Vercel, with CodeRabbit for quality.
+deployed on Vercel, with CodeRabbit for quality.
 
-   
-
-   This solves a real problem: automating tedious service bookings."
+This solves a real problem: automating tedious service bookings."
 
 ---
 
@@ -1345,66 +1326,65 @@ ai-concierge/
 
 **Hour 0-6: Foundation**
 
-- [ ] Cline: Scaffold Next.js \+ API routes \+ Supabase auth  
-- [ ] Set up GitHub repo with CodeRabbit  
+- [ ] Cline: Scaffold Next.js \+ API routes \+ Supabase auth
+- [ ] Set up GitHub repo with CodeRabbit
 - [ ] Deploy empty Next.js app to Vercel
 
 **Hour 6-12: Kestra Integration**
 
-- [ ] Set up Kestra instance (local or cloud)  
-- [ ] Build research\_providers workflow  
-- [ ] Build contact\_providers workflow  
+- [ ] Set up Kestra instance (local or cloud)
+- [ ] Build research_providers workflow
+- [ ] Build contact_providers workflow
 - [ ] Test workflows with dummy data
 
 **Hour 12-18: Frontend \+ Backend**
 
-- [ ] Cline: Build request form component  
-- [ ] Cline: Build API routes to trigger Kestra  
-- [ ] Build dashboard showing request status  
+- [ ] Cline: Build request form component
+- [ ] Cline: Build API routes to trigger Kestra
+- [ ] Build dashboard showing request status
 - [ ] Connect to real Kestra instance
 
 **Hour 18-24: ML (Optional but recommended)**
 
-- [ ] Prepare Oumi training data  
-- [ ] Fine-tune provider matching model (can use pre-trained)  
+- [ ] Prepare Oumi training data
+- [ ] Fine-tune provider matching model (can use pre-trained)
 - [ ] Integrate Oumi inference into provider selection logic
 
 **Hour 24-36: Polish**
 
-- [ ] Make demo video  
-- [ ] Write comprehensive README  
-- [ ] Test all sponsor integrations  
-- [ ] CodeRabbit cleanup \+ best practices  
+- [ ] Make demo video
+- [ ] Write comprehensive README
+- [ ] Test all sponsor integrations
+- [ ] CodeRabbit cleanup \+ best practices
 - [ ] Deploy final version to Vercel
 
 **Hour 36-48: Documentation & Submission**
 
-- [ ] Record demo video  
-- [ ] Final README with setup instructions  
-- [ ] Ensure all sponsor tools visible in code  
+- [ ] Record demo video
+- [ ] Final README with setup instructions
+- [ ] Ensure all sponsor tools visible in code
 - [ ] Submit\!
 
 ---
 
 ## 💡 WHY THIS WINS
 
-1. **Perfect alignment** with all 5 sponsor tools (not forced)  
-2. **Real-world impact** (actually useful service)  
-3. **Technical depth** (multi-agent orchestration, RL, CLI automation)  
-4. **Polished execution** (Vercel deployment, code quality)  
-5. **Impressive demo** (live AI calling \+ booking)  
+1. **Perfect alignment** with all 5 sponsor tools (not forced)
+2. **Real-world impact** (actually useful service)
+3. **Technical depth** (multi-agent orchestration, RL, CLI automation)
+4. **Polished execution** (Vercel deployment, code quality)
+5. **Impressive demo** (live AI calling \+ booking)
 6. **Learning story** (advanced techniques for a hackathon)
 
 ---
 
 Let me know if you want me to:
 
-- 🔹 Detail any specific sponsor integration  
-- 🔹 Create starter code templates for any tier  
-- 🔹 Build out specific Kestra YAML workflows  
-- 🔹 Design the dashboard UI/UX  
-- 🔹 Create the README template  
+- 🔹 Detail any specific sponsor integration
+- 🔹 Create starter code templates for any tier
+- 🔹 Build out specific Kestra YAML workflows
+- 🔹 Design the dashboard UI/UX
+- 🔹 Create the README template
 - 🔹 Help with demo video script
 
 This is a genuinely exceptional hackathon idea. You're thinking like a product founder, not just a coder. 🚀
-

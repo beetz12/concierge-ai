@@ -1,0 +1,94 @@
+id: schedule_service
+namespace: ai_concierge
+description: "Call provider back to schedule an appointment"
+
+inputs:
+  - id: provider_phone
+    type: STRING
+    description: "Provider's phone number in E.164 format (e.g., +12345678901)"
+  - id: provider_name
+    type: STRING
+    defaults: "Service Provider"
+    description: "Provider's business name"
+  - id: service_description
+    type: STRING
+    defaults: "service"
+    description: "Description of the service being booked"
+  - id: preferred_date
+    type: STRING
+    defaults: "this week"
+    description: "Customer's preferred appointment date"
+  - id: preferred_time
+    type: STRING
+    defaults: "morning"
+    description: "Customer's preferred appointment time"
+  - id: customer_name
+    type: STRING
+    defaults: "Customer"
+    description: "Customer's name for the appointment"
+  - id: customer_phone
+    type: STRING
+    defaults: ""
+    description: "Customer's callback phone number"
+  - id: location
+    type: STRING
+    defaults: ""
+    description: "Service location/address"
+
+tasks:
+  - id: validate_inputs
+    type: io.kestra.plugin.core.debug.Return
+    description: "Validate input parameters"
+    format: |
+      Booking Call Job Started
+      =========================================
+      Provider: {{ inputs.provider_name }}
+      Phone: {{ inputs.provider_phone }}
+      Service: {{ inputs.service_description }}
+      Preferred: {{ inputs.preferred_date }} at {{ inputs.preferred_time }}
+      Customer: {{ inputs.customer_name }}
+      Customer Phone: {{ inputs.customer_phone }}
+      Location: {{ inputs.location }}
+      =========================================
+
+  - id: make_booking_call
+    type: io.kestra.plugin.scripts.node.Commands
+    description: "Make VAPI call to schedule appointment"
+    containerImage: node:20-alpine
+    taskRunner:
+      type: io.kestra.plugin.scripts.runner.docker.Docker
+      volumes:
+        - /Users/mohammedhasan/Github/Personal/concierge-ai/kestra/scripts:/kestra
+    beforeCommands:
+      - npm install @vapi-ai/server-sdk
+    commands:
+      - node /kestra/schedule-booking.js "{{ inputs.provider_phone }}" "{{ inputs.provider_name }}" "{{ inputs.service_description }}" "{{ inputs.preferred_date }}" "{{ inputs.preferred_time }}" "{{ inputs.customer_name }}" "{{ inputs.customer_phone }}" "{{ inputs.location }}"
+    env:
+      VAPI_API_KEY: "{{ envs.vapi_api_key }}"
+      VAPI_PHONE_NUMBER_ID: "{{ envs.vapi_phone_number_id }}"
+
+  - id: log_result
+    type: io.kestra.plugin.core.debug.Return
+    description: "Log booking result"
+    format: |
+      Booking Call Job Completed
+      ==========================================
+      Provider: {{ inputs.provider_name }}
+      Phone: {{ inputs.provider_phone }}
+      Service: {{ inputs.service_description }}
+
+      Call completed - check outputs for booking status
+      ==========================================
+
+outputs:
+  - id: provider_name
+    type: STRING
+    value: "{{ inputs.provider_name }}"
+
+  - id: provider_phone
+    type: STRING
+    value: "{{ inputs.provider_phone }}"
+
+  - id: booking_status
+    type: STRING
+    value: "Booking call to {{ inputs.provider_name }} completed"

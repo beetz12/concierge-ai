@@ -44,3 +44,10 @@ supabase/.branches
 
 # playwright
 .playwright-mcp
+
+# claude code
+.claude
+
+# prod_flows
+
+temp.txt

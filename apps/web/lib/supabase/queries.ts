@@ -3,8 +3,8 @@
  * These functions can be used in both Server Components and Server Actions
  */
 
-import { createClient as createServerClient } from './server';
-import type { Database, Tables } from '../types/database';
+import { createClient as createServerClient } from "./server";
+import type { Database, Tables } from "../types/database";
 
 /**
  * Service Requests Queries
@@ -13,16 +13,18 @@ export async function getServiceRequests(userId?: string) {
   const supabase = await createServerClient();
 
   let query = supabase
-    .from('service_requests')
-    .select(`
+    .from("service_requests")
+    .select(
+      `
       *,
-      providers (*),
+      providers!providers_request_id_fkey (*),
       interaction_logs (*)
-    `)
-    .order('created_at', { ascending: false });
+    `,
+    )
+    .order("created_at", { ascending: false });
 
   if (userId) {
-    query = query.eq('user_id', userId);
+    query = query.eq("user_id", userId);
   }
 
   const { data, error } = await query;
@@ -35,13 +37,15 @@ export async function getServiceRequestById(id: string) {
   const supabase = await createServerClient();
 
   const { data, error } = await supabase
-    .from('service_requests')
-    .select(`
+    .from("service_requests")
+    .select(
+      `
       *,
-      providers (*),
+      providers!providers_request_id_fkey (*),
       interaction_logs (*)
-    `)
-    .eq('id', id)
+    `,
+    )
+    .eq("id", id)
     .single();
 
   if (error) throw error;
@@ -49,12 +53,12 @@ export async function getServiceRequestById(id: string) {
 }
 
 export async function createServiceRequest(
-  request: Database['public']['Tables']['service_requests']['Insert']
+  request: Database["public"]["Tables"]["service_requests"]["Insert"],
 ) {
   const supabase = await createServerClient();
 
   const { data, error } = await supabase
-    .from('service_requests')
+    .from("service_requests")
     .insert(request)
     .select()
     .single();
@@ -65,14 +69,14 @@ export async function createServiceRequest(
 
 export async function updateServiceRequest(
   id: string,
-  updates: Database['public']['Tables']['service_requests']['Update']
+  updates: Database["public"]["Tables"]["service_requests"]["Update"],
 ) {
   const supabase = await createServerClient();
 
   const { data, error } = await supabase
-    .from('service_requests')
+    .from("service_requests")
     .update(updates)
-    .eq('id', id)
+    .eq("id", id)
     .select()
     .single();
 
@@ -84,12 +88,12 @@ export async function updateServiceRequest(
  * Providers Queries
  */
 export async function addProvider(
-  provider: Database['public']['Tables']['providers']['Insert']
+  provider: Database["public"]["Tables"]["providers"]["Insert"],
 ) {
   const supabase = await createServerClient();
 
   const { data, error } = await supabase
-    .from('providers')
+    .from("providers")
     .insert(provider)
     .select()
     .single();
@@ -102,10 +106,10 @@ export async function getProvidersByRequestId(requestId: string) {
   const supabase = await createServerClient();
 
   const { data, error } = await supabase
-    .from('providers')
-    .select('*')
-    .eq('request_id', requestId)
-    .order('created_at', { ascending: false });
+    .from("providers")
+    .select("*")
+    .eq("request_id", requestId)
+    .order("created_at", { ascending: false });
 
   if (error) throw error;
   return data;
@@ -115,12 +119,12 @@ export async function getProvidersByRequestId(requestId: string) {
  * Interaction Logs Queries
  */
 export async function addInteractionLog(
-  log: Database['public']['Tables']['interaction_logs']['Insert']
+  log: Database["public"]["Tables"]["interaction_logs"]["Insert"],
 ) {
   const supabase = await createServerClient();
 
   const { data, error } = await supabase
-    .from('interaction_logs')
+    .from("interaction_logs")
     .insert(log)
     .select()
     .single();
@@ -133,10 +137,10 @@ export async function getInteractionLogsByRequestId(requestId: string) {
   const supabase = await createServerClient();
 
   const { data, error } = await supabase
-    .from('interaction_logs')
-    .select('*')
-    .eq('request_id', requestId)
-    .order('timestamp', { ascending: true });
+    .from("interaction_logs")
+    .select("*")
+    .eq("request_id", requestId)
+    .order("timestamp", { ascending: true });
 
   if (error) throw error;
   return data;
@@ -161,9 +165,9 @@ export async function getUserById(id: string) {
   const supabase = await createServerClient();
 
   const { data, error } = await supabase
-    .from('users')
-    .select('*')
-    .eq('id', id)
+    .from("users")
+    .select("*")
+    .eq("id", id)
     .single();
 
   if (error) throw error;

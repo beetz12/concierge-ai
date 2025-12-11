@@ -16,31 +16,31 @@ Successfully implemented the Research Agent fallback system that automatically d
 
 ### Service Layer (`apps/api/src/services/research/`)
 
-| File | Purpose | Lines |
-|------|---------|-------|
-| `types.ts` | Type definitions (ResearchRequest, ResearchResult, Provider, etc.) | ~57 |
-| `kestra-research.client.ts` | Kestra workflow trigger and polling | ~189 |
-| `direct-research.client.ts` | Direct Gemini API with Google Maps grounding | ~242 |
-| `research.service.ts` | Main orchestrator (routes Kestra/Direct) | ~136 |
-| `index.ts` | Service exports | ~17 |
+| File                        | Purpose                                                            | Lines |
+| --------------------------- | ------------------------------------------------------------------ | ----- |
+| `types.ts`                  | Type definitions (ResearchRequest, ResearchResult, Provider, etc.) | ~57   |
+| `kestra-research.client.ts` | Kestra workflow trigger and polling                                | ~189  |
+| `direct-research.client.ts` | Direct Gemini API with Google Maps grounding                       | ~242  |
+| `research.service.ts`       | Main orchestrator (routes Kestra/Direct)                           | ~136  |
+| `index.ts`                  | Service exports                                                    | ~17   |
 
 ### API Routes (`apps/api/src/routes/`)
 
-| File | Purpose |
-|------|---------|
+| File           | Purpose                          |
+| -------------- | -------------------------------- |
 | `workflows.ts` | Workflow orchestration endpoints |
 
 ### Frontend (`apps/web/lib/services/`)
 
-| File | Purpose |
-|------|---------|
+| File                 | Purpose                          |
+| -------------------- | -------------------------------- |
 | `workflowService.ts` | Frontend client for workflow API |
 
 ### Modified Files
 
-| File | Changes |
-|------|---------|
-| `apps/api/src/index.ts` | Already had workflow routes registered |
+| File                        | Changes                                   |
+| --------------------------- | ----------------------------------------- |
+| `apps/api/src/index.ts`     | Already had workflow routes registered    |
 | `apps/web/app/new/page.tsx` | Updated to use workflowService for search |
 
 ---
@@ -52,6 +52,7 @@ Successfully implemented the Research Agent fallback system that automatically d
 Search for providers using Kestra or direct Gemini fallback.
 
 **Request Body:**
+
 ```json
 {
   "service": "plumber",
@@ -63,6 +64,7 @@ Search for providers using Kestra or direct Gemini fallback.
 ```
 
 **Response:**
+
 ```json
 {
   "success": true,
@@ -89,6 +91,7 @@ Search for providers using Kestra or direct Gemini fallback.
 Check workflow system status.
 
 **Response:**
+
 ```json
 {
   "kestraEnabled": true,
@@ -125,6 +128,7 @@ Request → ResearchService
 ## Testing Results
 
 ### Build Status
+
 ```
 ✅ TypeScript compilation: PASSED
 ✅ Web build: PASSED
@@ -134,19 +138,29 @@ Request → ResearchService
 ### Endpoint Tests
 
 **Status Endpoint:**
+
 ```bash
 curl http://localhost:8000/api/v1/workflows/status
 ```
+
 ```json
-{"kestraEnabled":true,"kestraUrl":"http://localhost:8082","kestraHealthy":false,"geminiConfigured":true,"activeResearchMethod":"direct_gemini"}
+{
+  "kestraEnabled": true,
+  "kestraUrl": "http://localhost:8082",
+  "kestraHealthy": false,
+  "geminiConfigured": true,
+  "activeResearchMethod": "direct_gemini"
+}
 ```
 
 **Research Endpoint:**
+
 ```bash
 curl -X POST http://localhost:8000/api/v1/workflows/research \
   -H "Content-Type: application/json" \
   -d '{"service": "plumber", "location": "Greenville, SC"}'
 ```
+
 ```json
 {
   "success": true,
@@ -154,10 +168,13 @@ curl -X POST http://localhost:8000/api/v1/workflows/research \
     "status": "success",
     "method": "direct_gemini",
     "providers": [
-      {"name": "Dipple Plumbing, Electrical, Heating & Air", "source": "gemini_maps"},
-      {"name": "GS Plumbing", "source": "gemini_maps"},
-      {"name": "1-Tom-Plumber", "source": "gemini_maps"},
-      {"name": "Benjamin Franklin Plumbing", "source": "gemini_maps"}
+      {
+        "name": "Dipple Plumbing, Electrical, Heating & Air",
+        "source": "gemini_maps"
+      },
+      { "name": "GS Plumbing", "source": "gemini_maps" },
+      { "name": "1-Tom-Plumber", "source": "gemini_maps" },
+      { "name": "Benjamin Franklin Plumbing", "source": "gemini_maps" }
     ]
   }
 }
@@ -183,6 +200,7 @@ GEMINI_API_KEY=your-key
 ## Production Deployment
 
 ### Railway (No Kestra)
+
 ```bash
 KESTRA_ENABLED=false
 GEMINI_API_KEY=your-prod-key
@@ -191,6 +209,7 @@ GEMINI_API_KEY=your-prod-key
 The system will automatically use direct Gemini API with Google Maps grounding.
 
 ### Local/Staging (With Kestra)
+
 ```bash
 KESTRA_ENABLED=true
 KESTRA_URL=http://localhost:8082
@@ -201,12 +220,12 @@ docker-compose up -d kestra
 
 ## Fallback Behavior
 
-| Scenario | Research Method |
-|----------|-----------------|
-| `KESTRA_ENABLED=false` | Direct Gemini (Maps grounding) |
-| `KESTRA_ENABLED=true`, Kestra healthy | Kestra `research_providers` flow |
-| `KESTRA_ENABLED=true`, Kestra unhealthy | Direct Gemini (fallback) |
-| Both methods fail | Error response with details |
+| Scenario                                | Research Method                  |
+| --------------------------------------- | -------------------------------- |
+| `KESTRA_ENABLED=false`                  | Direct Gemini (Maps grounding)   |
+| `KESTRA_ENABLED=true`, Kestra healthy   | Kestra `research_providers` flow |
+| `KESTRA_ENABLED=true`, Kestra unhealthy | Direct Gemini (fallback)         |
+| Both methods fail                       | Error response with details      |
 
 ---
 
@@ -226,4 +245,5 @@ docker-compose up -d kestra
 **Implementation Status**: Completed
 
 **Change Log**:
+
 - 2025-12-08 - Implementation complete, all tests passing

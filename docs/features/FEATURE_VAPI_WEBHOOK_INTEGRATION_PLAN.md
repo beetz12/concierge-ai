@@ -7,6 +7,7 @@
 **Confidence Level**: 90%
 
 ## Table of Contents
+
 1. [Executive Summary](#executive-summary)
 2. [Problem Statement](#problem-statement)
 3. [Architecture Overview](#architecture-overview)
@@ -25,6 +26,7 @@ Replace VAPI SDK polling (which fails with UUID validation errors) with a webhoo
 **Key Decision**: Use existing Fastify backend for webhook endpoint (NOT create new Express server in script)
 
 **Benefits**:
+
 - Eliminates UUID validation SDK bug
 - Works for both Kestra workflows AND direct API calls
 - Centralized call result storage
@@ -35,7 +37,9 @@ Replace VAPI SDK polling (which fails with UUID validation errors) with a webhoo
 ## Problem Statement
 
 ### Current Issue
+
 The VAPI SDK's `vapi.calls.get(callId)` method fails with:
+
 ```
 "id must be a valid UUID"
 ```
@@ -43,6 +47,7 @@ The VAPI SDK's `vapi.calls.get(callId)` method fails with:
 Despite the call ID being a valid UUID format, the SDK rejects it during polling.
 
 ### Impact
+
 - Cannot retrieve call transcripts and analysis
 - Scripts timeout waiting for results
 - Kestra workflows fail to get call outcomes
@@ -92,20 +97,20 @@ Despite the call ID being a valid UUID format, the SDK rejects it during polling
 
 ### Files to Create
 
-| File | Purpose |
-|------|---------|
-| `apps/api/src/routes/vapi-webhook.ts` | Fastify route for webhook + polling endpoints |
-| `apps/api/src/services/vapi-cache.ts` | In-memory cache service for call results |
-| `kestra/scripts/call-provider-webhook.js` | Modified script that polls our backend |
+| File                                      | Purpose                                       |
+| ----------------------------------------- | --------------------------------------------- |
+| `apps/api/src/routes/vapi-webhook.ts`     | Fastify route for webhook + polling endpoints |
+| `apps/api/src/services/vapi-cache.ts`     | In-memory cache service for call results      |
+| `kestra/scripts/call-provider-webhook.js` | Modified script that polls our backend        |
 
 ### Files to Modify
 
-| File | Changes |
-|------|---------|
-| `apps/api/src/index.ts` | Register vapi-webhook routes |
-| `.env` | Add `VAPI_WEBHOOK_URL` |
-| `apps/api/.env` | Add `VAPI_WEBHOOK_URL` |
-| `docker-compose.yml` | Pass `APP_VAPI_WEBHOOK_URL` to Kestra |
+| File                    | Changes                               |
+| ----------------------- | ------------------------------------- |
+| `apps/api/src/index.ts` | Register vapi-webhook routes          |
+| `.env`                  | Add `VAPI_WEBHOOK_URL`                |
+| `apps/api/.env`         | Add `VAPI_WEBHOOK_URL`                |
+| `docker-compose.yml`    | Pass `APP_VAPI_WEBHOOK_URL` to Kestra |
 
 ---
 
@@ -160,17 +165,20 @@ environment:
 ### 2. Vapi Webhook Routes (`apps/api/src/routes/vapi-webhook.ts`)
 
 **Endpoints**:
+
 - `POST /api/v1/vapi/webhook` - Receive VAPI webhook events
 - `GET /api/v1/vapi/calls/:callId` - Poll for call results
 - `GET /api/v1/vapi/cache/stats` - Debug endpoint (optional)
 
 **Webhook Payload Handling**:
+
 - `end-of-call-report`: Store full results (transcript, analysis, cost)
 - `status-update`: Store intermediate status
 
 ### 3. Modified Call Script (`kestra/scripts/call-provider-webhook.js`)
 
 **Key Changes**:
+
 1. Read `VAPI_WEBHOOK_URL` from environment
 2. Configure `assistant.serverUrl` to point to our backend
 3. Add `serverMessages` array for events to receive
@@ -182,6 +190,7 @@ environment:
 ## Testing Strategy
 
 ### Local Testing
+
 1. Start ngrok: `ngrok http 8000`
 2. Update `.env` with ngrok URL
 3. Start backend: `pnpm --filter api dev`
@@ -190,6 +199,7 @@ environment:
 6. Verify polling returns results
 
 ### Production Testing
+
 1. Deploy backend to Railway
 2. Set production webhook URL
 3. Run test call
@@ -200,6 +210,7 @@ environment:
 ## Deployment
 
 ### Local Development Workflow
+
 ```bash
 # Terminal 1: Start ngrok
 ngrok http 8000
@@ -214,6 +225,7 @@ node call-provider-webhook.js "+1234567890" "plumbing" "..."
 ```
 
 ### Production Deployment
+
 1. Set Railway environment variables:
    - `VAPI_WEBHOOK_URL=https://api-production-8fe4.up.railway.app/api/v1/vapi/webhook`
 2. Deploy backend with new routes
@@ -223,13 +235,13 @@ node call-provider-webhook.js "+1234567890" "plumbing" "..."
 
 ## Benefits Over Current Approach
 
-| Aspect | SDK Polling (Current) | Webhook + Backend (New) |
-|--------|----------------------|------------------------|
-| Reliability | UUID validation errors | No SDK bugs |
-| Scalability | Each script polls VAPI | Single webhook endpoint |
-| Reusability | Kestra-specific | Works for any caller |
-| Data Persistence | Lost if script crashes | Cached 30 min |
-| Debugging | Hard to trace | Logs in backend |
+| Aspect           | SDK Polling (Current)  | Webhook + Backend (New) |
+| ---------------- | ---------------------- | ----------------------- |
+| Reliability      | UUID validation errors | No SDK bugs             |
+| Scalability      | Each script polls VAPI | Single webhook endpoint |
+| Reusability      | Kestra-specific        | Works for any caller    |
+| Data Persistence | Lost if script crashes | Cached 30 min           |
+| Debugging        | Hard to trace          | Logs in backend         |
 
 ---
 
@@ -239,8 +251,10 @@ node call-provider-webhook.js "+1234567890" "plumbing" "..."
 **Review Status**: Approved
 **Implementation Status**: Not Started
 **Related Documents**:
+
 - `/Users/dave/Work/concierge-ai/kestra/scripts/call-provider.js` (current script)
 - `/Users/dave/Work/concierge-ai/apps/api/src/routes/` (existing routes)
 
 **Change Log**:
+
 - 2025-01-08 - Initial creation based on multi-agent analysis

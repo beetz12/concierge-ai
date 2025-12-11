@@ -17,6 +17,7 @@ The API integrates with Supabase using the `@supabase/supabase-js` client librar
 ### 1. Install Dependencies
 
 Dependencies are already installed via pnpm:
+
 ```bash
 pnpm add @supabase/supabase-js fastify-plugin
 ```
@@ -24,17 +25,20 @@ pnpm add @supabase/supabase-js fastify-plugin
 ### 2. Configure Environment Variables
 
 Copy the `.env.example` file to `.env`:
+
 ```bash
 cp .env.example .env
 ```
 
 Update the following variables with your Supabase project credentials:
+
 ```env
 SUPABASE_URL=https://your-project-ref.supabase.co
 SUPABASE_SERVICE_ROLE_KEY=your-service-role-key-here
 ```
 
 **Finding your credentials:**
+
 1. Go to [Supabase Dashboard](https://app.supabase.com)
 2. Select your project
 3. Navigate to Settings > API
@@ -98,13 +102,14 @@ apps/api/src/
 ### Supabase Client (`src/lib/supabase.ts`)
 
 The client is created with:
+
 - **Singleton pattern** - single instance reused across requests
 - **Service role key** - bypasses RLS for backend operations
 - **Type definitions** - Database type for TypeScript support
 - **Auto-refresh disabled** - optimized for backend usage
 
 ```typescript
-import { getSupabaseAdmin, getTypedSupabaseAdmin } from './lib/supabase.js';
+import { getSupabaseAdmin, getTypedSupabaseAdmin } from "./lib/supabase.js";
 
 // Untyped client
 const supabase = getSupabaseAdmin();
@@ -116,6 +121,7 @@ const supabase = getTypedSupabaseAdmin();
 ### Fastify Plugin (`src/plugins/supabase.ts`)
 
 Registers the Supabase client as:
+
 - **Instance decorator** - `fastify.supabase`
 - **Request decorator** - `request.supabase`
 
@@ -159,6 +165,7 @@ export type Database = {
 ```
 
 **Pro tip:** Generate types automatically from your Supabase schema:
+
 ```bash
 npx supabase gen types typescript --project-id your-project-ref > src/types/database.ts
 ```
@@ -168,13 +175,13 @@ npx supabase gen types typescript --project-id your-project-ref > src/types/data
 ### Basic Query in Route Handler
 
 ```typescript
-import { FastifyPluginAsync } from 'fastify';
+import { FastifyPluginAsync } from "fastify";
 
 const myRoutes: FastifyPluginAsync = async (fastify) => {
-  fastify.get('/my-data', async (request, reply) => {
+  fastify.get("/my-data", async (request, reply) => {
     const { data, error } = await request.supabase
-      .from('users')
-      .select('*')
+      .from("users")
+      .select("*")
       .limit(10);
 
     if (error) {
@@ -192,10 +199,8 @@ export default myRoutes;
 
 ```typescript
 const { data, error } = await request.supabase
-  .from('users')
-  .insert([
-    { email: 'user@example.com', name: 'John Doe' }
-  ])
+  .from("users")
+  .insert([{ email: "user@example.com", name: "John Doe" }])
   .select()
   .single();
 ```
@@ -204,9 +209,9 @@ const { data, error } = await request.supabase
 
 ```typescript
 const { data, error } = await request.supabase
-  .from('users')
-  .update({ name: 'Jane Doe' })
-  .eq('id', userId)
+  .from("users")
+  .update({ name: "Jane Doe" })
+  .eq("id", userId)
   .select()
   .single();
 ```
@@ -215,9 +220,9 @@ const { data, error } = await request.supabase
 
 ```typescript
 const { error } = await request.supabase
-  .from('users')
+  .from("users")
   .delete()
-  .eq('id', userId);
+  .eq("id", userId);
 ```
 
 ### Complex Queries
@@ -225,48 +230,50 @@ const { error } = await request.supabase
 ```typescript
 // With filters, ordering, and pagination
 const { data, error, count } = await request.supabase
-  .from('users')
-  .select('*', { count: 'exact' })
-  .ilike('email', '%@example.com')
-  .order('created_at', { ascending: false })
+  .from("users")
+  .select("*", { count: "exact" })
+  .ilike("email", "%@example.com")
+  .order("created_at", { ascending: false })
   .range(0, 9);
 
 // With relationships (joins)
 const { data, error } = await request.supabase
-  .from('users')
-  .select(`
+  .from("users")
+  .select(
+    `
     *,
     posts (
       id,
       title,
       created_at
     )
-  `)
-  .eq('id', userId);
+  `,
+  )
+  .eq("id", userId);
 ```
 
 ### Error Handling
 
 ```typescript
 const { data, error } = await request.supabase
-  .from('users')
-  .select('*')
-  .eq('id', userId)
+  .from("users")
+  .select("*")
+  .eq("id", userId)
   .single();
 
 if (error) {
   // Handle specific error codes
-  if (error.code === 'PGRST116') {
-    return reply.status(404).send({ error: 'Not found' });
+  if (error.code === "PGRST116") {
+    return reply.status(404).send({ error: "Not found" });
   }
 
-  if (error.code === '23505') {
-    return reply.status(409).send({ error: 'Duplicate entry' });
+  if (error.code === "23505") {
+    return reply.status(409).send({ error: "Duplicate entry" });
   }
 
   // Generic error
-  fastify.log.error({ error }, 'Database error');
-  return reply.status(500).send({ error: 'Database error' });
+  fastify.log.error({ error }, "Database error");
+  return reply.status(500).send({ error: "Database error" });
 }
 ```
 
@@ -275,19 +282,25 @@ if (error) {
 The example user routes demonstrate full CRUD operations:
 
 ### GET /api/v1/users
+
 Get all users with pagination
+
 ```bash
 curl http://localhost:8000/api/v1/users?limit=10&offset=0
 ```
 
 ### GET /api/v1/users/:id
+
 Get a single user by ID
+
 ```bash
 curl http://localhost:8000/api/v1/users/123e4567-e89b-12d3-a456-426614174000
 ```
 
 ### POST /api/v1/users
+
 Create a new user
+
 ```bash
 curl -X POST http://localhost:8000/api/v1/users \
   -H "Content-Type: application/json" \
@@ -295,7 +308,9 @@ curl -X POST http://localhost:8000/api/v1/users \
 ```
 
 ### PATCH /api/v1/users/:id
+
 Update a user
+
 ```bash
 curl -X PATCH http://localhost:8000/api/v1/users/123e4567-e89b-12d3-a456-426614174000 \
   -H "Content-Type: application/json" \
@@ -303,7 +318,9 @@ curl -X PATCH http://localhost:8000/api/v1/users/123e4567-e89b-12d3-a456-4266141
 ```
 
 ### DELETE /api/v1/users/:id
+
 Delete a user
+
 ```bash
 curl -X DELETE http://localhost:8000/api/v1/users/123e4567-e89b-12d3-a456-426614174000
 ```
@@ -313,16 +330,19 @@ curl -X DELETE http://localhost:8000/api/v1/users/123e4567-e89b-12d3-a456-426614
 ### Manual Testing
 
 1. Start the server:
+
 ```bash
 pnpm dev
 ```
 
 2. Test the health endpoint:
+
 ```bash
 curl http://localhost:8000/health
 ```
 
 3. Test user endpoints (after setting up database):
+
 ```bash
 # Create a user
 curl -X POST http://localhost:8000/api/v1/users \
@@ -338,18 +358,18 @@ curl http://localhost:8000/api/v1/users
 Add test files using Vitest or Jest (future enhancement):
 
 ```typescript
-import { test } from '@jest/globals';
-import { buildApp } from './app';
+import { test } from "@jest/globals";
+import { buildApp } from "./app";
 
-test('GET /api/v1/users returns users', async () => {
+test("GET /api/v1/users returns users", async () => {
   const app = await buildApp();
   const response = await app.inject({
-    method: 'GET',
-    url: '/api/v1/users'
+    method: "GET",
+    url: "/api/v1/users",
   });
 
   expect(response.statusCode).toBe(200);
-  expect(response.json()).toHaveProperty('data');
+  expect(response.json()).toHaveProperty("data");
 });
 ```
 
@@ -365,29 +385,33 @@ test('GET /api/v1/users returns users', async () => {
 
 ## Common Error Codes
 
-| Code | Meaning | HTTP Status |
-|------|---------|-------------|
-| PGRST116 | No rows found | 404 |
-| 23505 | Unique constraint violation | 409 |
-| 23503 | Foreign key constraint violation | 400 |
-| 42P01 | Table does not exist | 500 |
+| Code     | Meaning                          | HTTP Status |
+| -------- | -------------------------------- | ----------- |
+| PGRST116 | No rows found                    | 404         |
+| 23505    | Unique constraint violation      | 409         |
+| 23503    | Foreign key constraint violation | 400         |
+| 42P01    | Table does not exist             | 500         |
 
 ## Troubleshooting
 
 ### "Missing Supabase environment variables"
+
 - Ensure `.env` file exists with correct variables
 - Check that `SUPABASE_URL` and `SUPABASE_SERVICE_ROLE_KEY` are set
 
 ### "relation 'users' does not exist"
+
 - Create the users table in your Supabase database
 - Check table name matches exactly (case-sensitive)
 
 ### Connection timeout
+
 - Verify your Supabase project is not paused
 - Check network connectivity
 - Verify URL and key are correct
 
 ### Plugin initialization failed
+
 - Check server logs for detailed error messages
 - Verify credentials are correct
 - Test connection directly in Supabase SQL editor

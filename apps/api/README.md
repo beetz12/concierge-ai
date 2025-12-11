@@ -7,6 +7,7 @@ Node.js Fastify backend with Supabase integration.
 ### 1. Install Dependencies
 
 From the project root:
+
 ```bash
 pnpm install
 ```
@@ -19,6 +20,7 @@ cp .env.example .env
 ```
 
 Edit `.env` and add your Supabase credentials:
+
 ```env
 SUPABASE_URL=https://your-project-ref.supabase.co
 SUPABASE_SERVICE_ROLE_KEY=your-service-role-key
@@ -39,7 +41,7 @@ supabase login
 
 # Link to your project (from project root)
 cd /path/to/concierge-ai
-supabase link --project-ref dsxuwpluafxyjwrhepsw
+supabase link --project-ref YOUR_PROJECT_REF
 
 # Push migrations to remote database
 supabase db push
@@ -50,7 +52,7 @@ supabase db reset --linked
 
 #### Option B: Manual SQL Execution
 
-1. Go to [Supabase SQL Editor](https://supabase.com/dashboard/project/dsxuwpluafxyjwrhepsw/sql/new)
+1. Go to [Supabase SQL Editor](https://supabase.com/dashboard/project/_/sql/new)
 2. Copy the contents of `supabase/migrations/20250101000000_initial_schema.sql`
 3. Click **Run**
 
@@ -65,72 +67,101 @@ The API will be available at `http://localhost:8000`
 ## API Endpoints
 
 ### Health Check
+
 ```bash
 curl http://localhost:8000/health
 ```
 
-### Users API
+### Core AI Endpoints
 
-**Get all users:**
-```bash
-curl http://localhost:8000/api/v1/users
-```
+**Provider Research (Gemini + Google Maps grounding):**
 
-**Get user by ID:**
 ```bash
-curl http://localhost:8000/api/v1/users/{uuid}
-```
-
-**Create user:**
-```bash
-curl -X POST http://localhost:8000/api/v1/users \
+curl -X POST http://localhost:8000/api/v1/gemini/search-providers \
   -H "Content-Type: application/json" \
-  -d '{"email":"test@example.com","name":"Test User"}'
+  -d '{"query":"plumber in Greenville SC","criteria":"licensed, 4.5+ rating"}'
 ```
 
-**Update user:**
+**Provider Call (VAPI.ai voice AI):**
+
 ```bash
-curl -X PATCH http://localhost:8000/api/v1/users/{uuid} \
+curl -X POST http://localhost:8000/api/v1/providers/call \
   -H "Content-Type: application/json" \
-  -d '{"name":"Updated Name"}'
+  -d '{"providerName":"ABC Plumbing","providerPhone":"+15551234567","serviceNeeded":"plumbing","userCriteria":"licensed","location":"Greenville SC","urgency":"within_2_days"}'
 ```
 
-**Delete user:**
+**Batch Concurrent Calls:**
+
 ```bash
-curl -X DELETE http://localhost:8000/api/v1/users/{uuid}
+curl -X POST http://localhost:8000/api/v1/providers/batch-call \
+  -H "Content-Type: application/json" \
+  -d '{"providers":[{"name":"ABC Plumbing","phone":"+15551234567"}],"serviceNeeded":"plumbing","maxConcurrent":5}'
 ```
+
+**Direct Task Analysis (Dynamic Prompts):**
+
+```bash
+curl -X POST http://localhost:8000/api/v1/gemini/analyze-direct-task \
+  -H "Content-Type: application/json" \
+  -d '{"taskDescription":"negotiate my cable bill","contactName":"Comcast","contactPhone":"+18005551234"}'
+```
+
+**Call Status:**
+
+```bash
+curl http://localhost:8000/api/v1/providers/call/status
+```
+
+### API Documentation
+
+Full interactive API docs are available at:
+- **Local:** http://localhost:8000/docs
+- **Production:** https://api-production-8fe4.up.railway.app/docs
 
 ## Project Structure
 
 ```
 apps/api/
-├── migrations/           # Database migrations
-├── scripts/             # Utility scripts
 ├── src/
-│   ├── index.ts        # Main server entry point
-│   ├── lib/            # Shared libraries
-│   │   └── supabase.ts # Supabase client factory
-│   ├── plugins/        # Fastify plugins
-│   │   └── supabase.ts # Supabase plugin
-│   └── routes/         # API route handlers
-│       └── users.ts    # User CRUD endpoints
-└── SUPABASE_SETUP.md   # Detailed Supabase guide
+│   ├── index.ts              # Main server entry point
+│   ├── routes/               # API route handlers
+│   │   ├── gemini.ts         # AI research endpoints
+│   │   ├── providers.ts      # Provider calling endpoints
+│   │   ├── vapi-webhook.ts   # VAPI webhook handler
+│   │   └── users.ts          # User CRUD endpoints
+│   ├── services/             # Business logic
+│   │   ├── vapi/             # VAPI calling services
+│   │   │   ├── assistant-config.ts    # VAPI assistant configuration (single source of truth)
+│   │   │   ├── direct-vapi.client.ts  # Direct VAPI SDK integration
+│   │   │   ├── concurrent-call.service.ts  # Batch concurrent calls
+│   │   │   └── call-result.service.ts # Database persistence
+│   │   ├── direct-task/      # Direct task analysis
+│   │   │   ├── analyzer.ts   # Task type classification
+│   │   │   └── prompt-generator.ts  # Dynamic prompt generation
+│   │   ├── research/         # Provider research
+│   │   └── places/           # Google Places integration
+│   ├── lib/                  # Shared libraries
+│   └── plugins/              # Fastify plugins
+└── SUPABASE_SETUP.md         # Detailed Supabase guide
 ```
 
 ## Features
 
-- **Fastify** - High-performance web framework
+- **Fastify 5** - High-performance web framework
 - **Supabase** - PostgreSQL database with real-time capabilities
+- **Google Gemini** - AI-powered research with Google Maps grounding
+- **VAPI.ai** - Automated voice calls to service providers
+- **Kestra** - Workflow orchestration (optional)
 - **TypeScript** - Type-safe development
 - **Zod** - Runtime validation
-- **CORS & Helmet** - Security middleware
-- **Pino** - Structured logging
+- **Swagger** - API documentation at `/docs`
 
 ## Database Migrations
 
 ### Creating New Migrations
 
 Using Supabase CLI (recommended):
+
 ```bash
 # Create a new migration file
 supabase migration new add_appointments_table
@@ -141,6 +172,7 @@ supabase db push
 ```
 
 ### Migration File Naming Convention
+
 ```
 supabase/migrations/
 ├── 20250101000000_initial_schema.sql
@@ -151,6 +183,7 @@ supabase/migrations/
 Format: `YYYYMMDDHHMMSS_description.sql`
 
 ### Useful Commands
+
 ```bash
 # View migration status
 supabase migration list
@@ -168,21 +201,25 @@ supabase db diff
 ## Development
 
 ### Type Checking
+
 ```bash
 pnpm check-types
 ```
 
 ### Linting
+
 ```bash
 pnpm lint
 ```
 
 ### Build
+
 ```bash
 pnpm build
 ```
 
 ### Production
+
 ```bash
 pnpm start
 ```
@@ -195,13 +232,21 @@ pnpm start
 
 ## Environment Variables
 
-| Variable | Description | Required |
-|----------|-------------|----------|
-| `PORT` | Server port | No (default: 8000) |
-| `NODE_ENV` | Environment | No (default: development) |
-| `CORS_ORIGIN` | Allowed CORS origin | No (default: http://localhost:3000) |
-| `SUPABASE_URL` | Supabase project URL | Yes |
-| `SUPABASE_SERVICE_ROLE_KEY` | Supabase service role key | Yes |
+| Variable                    | Description                          | Required |
+| --------------------------- | ------------------------------------ | -------- |
+| `PORT`                      | Server port (default: 8000)          | No       |
+| `NODE_ENV`                  | Environment (default: development)   | No       |
+| `CORS_ORIGIN`               | Allowed CORS origin                  | No       |
+| `SUPABASE_URL`              | Supabase project URL                 | Yes      |
+| `SUPABASE_SERVICE_ROLE_KEY` | Supabase service role key            | Yes      |
+| `GEMINI_API_KEY`            | Google Gemini API key                | Yes      |
+| `VAPI_API_KEY`              | VAPI.ai API key                      | Yes      |
+| `VAPI_PHONE_NUMBER_ID`      | VAPI outbound phone number ID        | Yes      |
+| `VAPI_WEBHOOK_URL`          | Webhook URL for call results         | No       |
+| `VAPI_MAX_CONCURRENT_CALLS` | Max concurrent calls (default: 5)    | No       |
+| `KESTRA_ENABLED`            | Enable Kestra orchestration          | No       |
+| `KESTRA_URL`                | Kestra server URL                    | No       |
+| `BACKEND_URL`               | Backend URL for internal calls       | No       |
 
 ## Security
 
@@ -222,6 +267,7 @@ pnpm start
 ## Support
 
 For issues and questions:
+
 - Check [SUPABASE_SETUP.md](./SUPABASE_SETUP.md) for detailed setup instructions
 - Review [Fastify documentation](https://fastify.dev/)
 - Consult [Supabase documentation](https://supabase.com/docs)

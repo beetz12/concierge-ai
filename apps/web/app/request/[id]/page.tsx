@@ -1,20 +1,40 @@
-'use client';
+"use client";
 
-import React, { useEffect, useRef, useState } from 'react';
-import { useParams } from 'next/navigation';
-import Link from 'next/link';
-import { useAppContext } from '@/lib/providers/AppProvider';
-import StatusBadge from '@/components/StatusBadge';
-import { ArrowLeft, MapPin, User, CheckCircle, AlertTriangle, XCircle, Terminal, Loader2 } from 'lucide-react';
-import { InteractionLog, ServiceRequest, RequestStatus, RequestType } from '@/lib/types';
-import { createClient } from '@/lib/supabase/client';
+import React, { useEffect, useRef, useState, useCallback } from "react";
+import { useParams } from "next/navigation";
+import Link from "next/link";
+import { useAppContext } from "@/lib/providers/AppProvider";
+import StatusBadge from "@/components/StatusBadge";
+import LiveStatus from "@/components/LiveStatus";
+import RecommendedProviders from "@/components/RecommendedProviders";
+import SelectionModal from "@/components/SelectionModal";
+import ProviderCallSection from "@/components/ProviderCallSection";
+import ProviderDetailPanel from "@/components/ProviderDetailPanel";
+import {
+  ArrowLeft,
+  MapPin,
+  User,
+  CheckCircle,
+  AlertTriangle,
+  XCircle,
+  Terminal,
+  Loader2,
+} from "lucide-react";
+import {
+  InteractionLog,
+  ServiceRequest,
+  RequestStatus,
+  RequestType,
+  Provider,
+} from "@/lib/types";
+import { createClient } from "@/lib/supabase/client";
 
 const LogItem: React.FC<{ log: InteractionLog; index: number }> = ({ log }) => {
   const iconMap = {
     success: <CheckCircle className="w-5 h-5 text-emerald-400" />,
     warning: <AlertTriangle className="w-5 h-5 text-amber-400" />,
     error: <XCircle className="w-5 h-5 text-red-400" />,
-    info: <Terminal className="w-5 h-5 text-blue-400" />
+    info: <Terminal className="w-5 h-5 text-blue-400" />,
   };
 
   return (
@@ -35,20 +55,34 @@ const LogItem: React.FC<{ log: InteractionLog; index: number }> = ({ log }) => {
         </div>
         <p className="text-slate-400 mb-3">{log.detail}</p>
 
-        {log.transcript && (
+        {Array.isArray(log.transcript) && log.transcript.length > 0 && (
           <div className="bg-abyss/50 rounded-lg p-4 border border-surface-highlight space-y-3">
-            <p className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Transcript</p>
-            {log.transcript.map((line, idx) => (
-              <div key={idx} className={`flex gap-3 text-sm ${line.speaker === 'AI' ? 'justify-end' : 'justify-start'}`}>
-                <div className={`max-w-[80%] rounded-2xl px-4 py-2 ${line.speaker === 'AI'
-                    ? 'bg-primary-600/20 text-primary-200 border border-primary-500/20 rounded-tr-none'
-                    : 'bg-surface-highlight border border-surface-highlight text-slate-300 rounded-tl-none shadow-sm'
-                  }`}>
-                  <span className="block text-xs opacity-75 mb-1 font-bold">{line.speaker}</span>
-                  {line.text}
+            <p className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">
+              Transcript
+            </p>
+            {log.transcript.map((line, idx) => {
+              const speaker = String(line?.speaker || "Unknown");
+              const text = String(line?.text || "");
+              return (
+                <div
+                  key={idx}
+                  className={`flex gap-3 text-sm ${speaker === "AI" || speaker === "assistant" ? "justify-end" : "justify-start"}`}
+                >
+                  <div
+                    className={`max-w-[80%] rounded-2xl px-4 py-2 ${
+                      speaker === "AI" || speaker === "assistant"
+                        ? "bg-primary-600/20 text-primary-200 border border-primary-500/20 rounded-tr-none"
+                        : "bg-surface-highlight border border-surface-highlight text-slate-300 rounded-tl-none shadow-sm"
+                    }`}
+                  >
+                    <span className="block text-xs opacity-75 mb-1 font-bold">
+                      {speaker}
+                    </span>
+                    {text}
+                  </div>
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         )}
       </div>
@@ -60,57 +94,679 @@ export default function RequestDetails() {
   const params = useParams();
   const id = params.id as string;
   const { requests, addRequest } = useAppContext();
-  const localRequest = requests.find(r => r.id === id);
+  const localRequest = requests.find((r) => r.id === id);
   const [dbRequest, setDbRequest] = useState<ServiceRequest | null>(null);
+  const [realtimeRequest, setRealtimeRequest] = useState<ServiceRequest | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
 
-  // Use local request if available (for real-time updates), otherwise use DB request
-  const request = localRequest || dbRequest;
+  // Component state for new features
+  const [selectedProvider, setSelectedProvider] = useState<{
+    providerId: string;
+    providerName: string;
+    phone: string;
+    earliestAvailability: string;
+  } | null>(null);
+  const [showModal, setShowModal] = useState(false);
+  const [bookingLoading, setBookingLoading] = useState(false);
+  const [recommendations, setRecommendations] = useState<{
+    providers: Array<{
+      providerId: string;
+      providerName: string;
+      phone: string;
+      rating: number;
+      reviewCount?: number;
+      earliestAvailability: string;
+      estimatedRate: string;
+      score: number;
+      reasoning: string;
+      criteriaMatched?: string[];
+    }>;
+    overallRecommendation: string;
+  } | null>(null);
+  const [recommendationsLoading, setRecommendationsLoading] = useState(false);
+  const [recommendationsChecked, setRecommendationsChecked] = useState(false);
+  // Inline feedback states (replacing native alert())
+  const [bookingMessage, setBookingMessage] = useState<{
+    type: "success" | "error";
+    title: string;
+    details: string;
+  } | null>(null);
+  // State for provider detail panel (click on candidate card)
+  const [detailPanelProvider, setDetailPanelProvider] = useState<Provider | null>(null);
+
+  // Use realtime data if available, otherwise local request, otherwise DB request
+  const request = realtimeRequest || localRequest || dbRequest;
+
+  // Helper to check if string is valid UUID format
+  const isValidUuid = (str: string) => {
+    const uuidRegex =
+      /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+    return uuidRegex.test(str);
+  };
+
+  // Check if all provider calls are complete and generate recommendations
+  const checkAndGenerateRecommendations = useCallback(async () => {
+    // Only check once and only for valid UUIDs
+    if (recommendationsChecked || !id || !isValidUuid(id) || !request) {
+      return;
+    }
+
+    try {
+      const supabase = createClient();
+
+      // Fetch all providers for this request with their call results
+      const { data: providers, error } = await supabase
+        .from("providers")
+        .select("*")
+        .eq("request_id", id);
+
+      if (error) {
+        console.error("Error fetching providers:", error);
+        return;
+      }
+
+      if (!providers || providers.length === 0) {
+        console.log("No providers found for request");
+        return;
+      }
+
+      // Check if all INITIATED calls have completed (reached a final status)
+      // In test mode, not all providers are called - only those with test phones
+      // So we check: of the providers that were called, are all finished?
+      const finalStatuses = ["completed", "failed", "error", "timeout", "no_answer", "voicemail", "busy"];
+      const calledProviders = providers.filter((p) => p.call_status);
+      const completedProviders = providers.filter((p) =>
+        p.call_status && finalStatuses.includes(p.call_status)
+      );
+
+      // All initiated calls are done when:
+      // 1. At least one provider was called (calledProviders.length > 0)
+      // 2. All called providers have reached a final status
+      const allInitiatedCallsComplete = calledProviders.length > 0 &&
+        completedProviders.length === calledProviders.length;
+
+      console.log(
+        `Call progress: ${completedProviders.length}/${calledProviders.length} calls completed (${providers.length} total providers)`
+      );
+
+      if (!allInitiatedCallsComplete) {
+        if (calledProviders.length === 0) {
+          console.log("No calls initiated yet, waiting...");
+        } else {
+          console.log(`${calledProviders.length - completedProviders.length} call(s) still in progress, waiting...`);
+        }
+        return;
+      }
+
+      // Mark as checked to prevent duplicate API calls
+      setRecommendationsChecked(true);
+      setRecommendationsLoading(true);
+
+      // Transform database providers to CallResult format for the API
+      const callResults = calledProviders.map((p) => {
+        // Type cast call_result from JSONB
+        const callResultData = p.call_result as any;
+
+        return {
+          status: p.call_status,
+          callId: p.call_id || "",
+          callMethod: p.call_method || "direct_vapi",
+          duration: p.call_duration_minutes || 0,
+          endedReason: callResultData?.endedReason || "",
+          transcript: p.call_transcript || "",
+          analysis: callResultData?.analysis || {
+            summary: p.call_summary || "",
+            structuredData: callResultData?.structuredData || {},
+            successEvaluation: "",
+          },
+          provider: {
+            name: p.name,
+            phone: p.phone || "",
+            service: request.title || "",
+            location: request.location || "",
+          },
+          request: {
+            criteria: request.criteria || "",
+            urgency: "within_2_days",
+          },
+        };
+      });
+
+      console.log("Calling recommendations API with", callResults.length, "results");
+
+      // Call the recommendations API
+      const response = await fetch("/api/v1/providers/recommend", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          callResults,
+          originalCriteria: request.criteria || "",
+          serviceRequestId: id,
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error(`Recommendations API failed: ${response.status}`);
+      }
+
+      const result = await response.json();
+
+      if (result.success && result.data) {
+        const { recommendations: recs, overallRecommendation } = result.data;
+
+        // Transform backend format to frontend format
+        const transformedProviders = recs.map((rec: any) => {
+          // Find the matching provider to get rating, address, and other details
+          const dbProvider = providers.find((p) => p.name === rec.providerName);
+
+          return {
+            providerId: dbProvider?.id || "",
+            providerName: rec.providerName,
+            phone: rec.phone,
+            // Use actual DB values with sensible fallbacks
+            rating: dbProvider?.rating ?? rec.rating ?? undefined,
+            reviewCount: dbProvider?.review_count ?? undefined,
+            address: dbProvider?.address || "",
+            hoursOfOperation: dbProvider?.hours_of_operation,
+            googleMapsUri: dbProvider?.google_maps_uri || "",
+            website: dbProvider?.website || "",
+            earliestAvailability: rec.earliestAvailability || "Not specified",
+            estimatedRate: rec.estimatedRate || "Not specified",
+            score: rec.score,
+            reasoning: rec.reasoning,
+            criteriaMatched: rec.criteriaMatched || [],
+          };
+        });
+
+        setRecommendations({
+          providers: transformedProviders,
+          overallRecommendation,
+        });
+
+        console.log("Recommendations generated:", transformedProviders.length);
+      } else {
+        console.error("Invalid response from recommendations API:", result);
+      }
+    } catch (error) {
+      console.error("Error generating recommendations:", error);
+    } finally {
+      setRecommendationsLoading(false);
+    }
+  }, [id, request, recommendationsChecked]);
 
   // Fetch from database if not in localStorage
   useEffect(() => {
     if (!localRequest && !dbRequest && !loading) {
+      // Only query Supabase if ID is a valid UUID
+      // Direct Task IDs (task-xxx) are localStorage-only and not in the database
+      if (!isValidUuid(id)) {
+        setError("Request not found (session-only request may have expired)");
+        return;
+      }
+
       setLoading(true);
       const supabase = createClient();
 
-      supabase
-        .from('service_requests')
-        .select('*')
-        .eq('id', id)
-        .single()
-        .then(({ data, error: fetchError }) => {
-          if (fetchError) {
-            setError('Request not found');
-          } else if (data) {
-            // Convert DB format to frontend format
-            const converted: ServiceRequest = {
-              id: data.id,
-              type: data.type as RequestType,
-              title: data.title,
-              description: data.description,
-              criteria: data.criteria,
-              location: data.location || undefined,
-              status: data.status as RequestStatus,
-              createdAt: data.created_at,
-              providersFound: [],
-              interactions: [],
-              finalOutcome: data.final_outcome || undefined,
-            };
-            setDbRequest(converted);
-            // Also add to context so it persists during this session
-            addRequest(converted);
-          }
+      // Fetch service request with providers and interaction logs
+      Promise.all([
+        supabase
+          .from("service_requests")
+          .select("*")
+          .eq("id", id)
+          .single(),
+        supabase
+          .from("providers")
+          .select("*")
+          .eq("request_id", id),
+        supabase
+          .from("interaction_logs")
+          .select("*")
+          .eq("request_id", id)
+          .order("timestamp", { ascending: true }),
+      ]).then(([requestResult, providersResult, logsResult]) => {
+        if (requestResult.error) {
+          setError("Request not found");
           setLoading(false);
-        });
+          return;
+        }
+
+        const data = requestResult.data;
+        const providers = providersResult.data || [];
+        const logs = logsResult.data || [];
+
+        // Convert DB format to frontend format
+        const converted: ServiceRequest = {
+          id: data.id,
+          type: data.type as RequestType,
+          title: data.title,
+          description: data.description,
+          criteria: data.criteria,
+          location: data.location || undefined,
+          status: data.status as RequestStatus,
+          createdAt: data.created_at,
+          providersFound: providers.map((p) => ({
+            id: p.id,
+            name: p.name,
+            phone: p.phone || "",
+            rating: p.rating || 0,
+            address: p.address || "",
+            source: p.source || "User Input",
+            // Call tracking (convert null to undefined, validate JSONB types)
+            callStatus: p.call_status || undefined,
+            callResult: (p.call_result && typeof p.call_result === "object" && !Array.isArray(p.call_result))
+              ? (p.call_result as Provider['callResult'])
+              : undefined,
+            callTranscript: p.call_transcript || undefined,
+            callSummary: p.call_summary || undefined,
+            callDurationMinutes: p.call_duration_minutes || undefined,
+            calledAt: p.called_at || undefined,
+            // Research data (convert null to undefined, handle JSONB variations)
+            reviewCount: p.review_count || undefined,
+            distance: p.distance || undefined,
+            distanceText: p.distance_text || undefined,
+            hoursOfOperation: Array.isArray(p.hours_of_operation)
+              ? p.hours_of_operation as string[]
+              : Array.isArray((p.hours_of_operation as any)?.weekdayText)
+                ? (p.hours_of_operation as any).weekdayText
+                : undefined,
+            isOpenNow: p.is_open_now || undefined,
+            googleMapsUri: p.google_maps_uri || undefined,
+            website: p.website || undefined,
+            placeId: p.place_id || undefined,
+          })),
+          interactions: logs.map((log) => ({
+            id: log.id,
+            timestamp: log.timestamp,
+            stepName: log.step_name,
+            detail: log.detail,
+            status: log.status as "success" | "warning" | "error" | "info",
+            transcript: Array.isArray(log.transcript)
+              ? (log.transcript as { speaker: string; text: string }[])
+              : undefined,
+            providerName: (log as any).provider_name || undefined,
+            providerId: (log as any).provider_id || undefined,
+          })),
+          finalOutcome: data.final_outcome || undefined,
+          directContactInfo: (data.direct_contact_info &&
+            typeof data.direct_contact_info === "object" &&
+            !Array.isArray(data.direct_contact_info) &&
+            "name" in data.direct_contact_info &&
+            "phone" in data.direct_contact_info)
+            ? {
+                name: String((data.direct_contact_info as any).name || ""),
+                phone: String((data.direct_contact_info as any).phone || ""),
+              }
+            : undefined,
+        };
+        setDbRequest(converted);
+        // Also add to context so it persists during this session
+        addRequest(converted);
+        setLoading(false);
+      });
     }
   }, [id, localRequest, dbRequest, loading, addRequest]);
 
+  // Real-time subscription for live updates
+  useEffect(() => {
+    if (!id || !isValidUuid(id)) return;
+
+    const supabase = createClient();
+    const channel = supabase
+      .channel(`request-${id}`)
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "service_requests",
+          filter: `id=eq.${id}`,
+        },
+        (payload) => {
+          console.log("Real-time update:", payload);
+          if (payload.eventType === "UPDATE" && payload.new) {
+            // Convert DB format to frontend format
+            const converted: ServiceRequest = {
+              id: payload.new.id,
+              type: payload.new.type as RequestType,
+              title: payload.new.title,
+              description: payload.new.description,
+              criteria: payload.new.criteria,
+              location: payload.new.location || undefined,
+              status: payload.new.status as RequestStatus,
+              createdAt: payload.new.created_at,
+              providersFound: [],
+              interactions: [],
+              finalOutcome: payload.new.final_outcome || undefined,
+            };
+            setRealtimeRequest(converted);
+            // Also update context for consistency
+            addRequest(converted);
+          }
+        }
+      )
+      .on(
+        "postgres_changes",
+        {
+          event: "UPDATE",
+          schema: "public",
+          table: "providers",
+          filter: `request_id=eq.${id}`,
+        },
+        async (payload) => {
+          console.log("Provider update received:", payload);
+
+          // Refetch provider data when call results are saved
+          // This ensures call logs, summary, transcript are available in UI
+          if (payload.new && payload.new.call_status) {
+            const supabase2 = createClient();
+            const { data: providers } = await supabase2
+              .from("providers")
+              .select("*")
+              .eq("request_id", id)
+              .order("created_at", { ascending: false });
+
+            if (providers && providers.length > 0) {
+              setRealtimeRequest((prev) => {
+                if (!prev) return prev;
+                return {
+                  ...prev,
+                  providersFound: providers.map((p) => ({
+                    id: p.id,
+                    name: p.name,
+                    phone: p.phone || "",
+                    rating: p.rating || 0,
+                    address: p.address || "",
+                    source: p.source || "User Input",
+                    // Call tracking fields - essential for call logs tab
+                    callStatus: p.call_status || undefined,
+                    callResult: (p.call_result && typeof p.call_result === "object" && !Array.isArray(p.call_result))
+                      ? (p.call_result as Provider['callResult'])
+                      : undefined,
+                    callTranscript: p.call_transcript || undefined,
+                    callSummary: p.call_summary || undefined,
+                    callDurationMinutes: p.call_duration_minutes || undefined,
+                    calledAt: p.called_at || undefined,
+                    // Research data
+                    reviewCount: p.review_count || undefined,
+                    distance: p.distance || undefined,
+                    distanceText: p.distance_text || undefined,
+                    hoursOfOperation: Array.isArray(p.hours_of_operation)
+                      ? p.hours_of_operation as string[]
+                      : Array.isArray((p.hours_of_operation as any)?.weekdayText)
+                        ? (p.hours_of_operation as any).weekdayText
+                        : undefined,
+                    isOpenNow: p.is_open_now || undefined,
+                    googleMapsUri: p.google_maps_uri || undefined,
+                    website: p.website || undefined,
+                    placeId: p.place_id || undefined,
+                  })),
+                };
+              });
+            }
+
+            // Also trigger recommendations check
+            checkAndGenerateRecommendations();
+          }
+        }
+      )
+      .on(
+        "postgres_changes",
+        {
+          event: "INSERT",
+          schema: "public",
+          table: "interaction_logs",
+          filter: `request_id=eq.${id}`,
+        },
+        (payload) => {
+          console.log("Interaction log added:", payload);
+          // Refetch all data when new interaction log is added
+          if (payload.new) {
+            const supabase2 = createClient();
+            Promise.all([
+              supabase2
+                .from("service_requests")
+                .select("*")
+                .eq("id", id)
+                .single(),
+              supabase2
+                .from("providers")
+                .select("*")
+                .eq("request_id", id),
+              supabase2
+                .from("interaction_logs")
+                .select("*")
+                .eq("request_id", id)
+                .order("timestamp", { ascending: true }),
+            ]).then(([requestResult, providersResult, logsResult]) => {
+              if (requestResult.data) {
+                const data = requestResult.data;
+                const providers = providersResult.data || [];
+                const logs = logsResult.data || [];
+
+                // Combine DB logs with any existing local logs (from real-time updates)
+                // and deduplicate by log ID
+                const existingLogs = realtimeRequest?.interactions || localRequest?.interactions || [];
+                const allLogs = [...existingLogs, ...logs.map((log) => ({
+                  id: log.id,
+                  timestamp: log.timestamp,
+                  stepName: log.step_name,
+                  detail: log.detail,
+                  status: log.status as "success" | "warning" | "error" | "info",
+                  transcript: log.transcript as { speaker: string; text: string }[] | undefined,
+                  providerName: (log as any).provider_name || undefined,
+                  providerId: (log as any).provider_id || undefined,
+                }))];
+
+                // Deduplicate by ID, preferring newer entries (later in the array)
+                const deduplicatedLogs = Array.from(
+                  new Map(allLogs.map(log => [log.id || `${log.timestamp}-${log.stepName}`, log])).values()
+                );
+
+                const converted: ServiceRequest = {
+                  id: data.id,
+                  type: data.type as RequestType,
+                  title: data.title,
+                  description: data.description,
+                  criteria: data.criteria,
+                  location: data.location || undefined,
+                  status: data.status as RequestStatus,
+                  createdAt: data.created_at,
+                  providersFound: providers.map((p) => ({
+                    id: p.id,
+                    name: p.name,
+                    phone: p.phone || "",
+                    rating: p.rating || 0,
+                    address: p.address || "",
+                    source: p.source || "User Input",
+                    // Call tracking (convert null to undefined, validate JSONB types)
+                    callStatus: p.call_status || undefined,
+                    callResult: (p.call_result && typeof p.call_result === "object" && !Array.isArray(p.call_result))
+                      ? (p.call_result as Provider['callResult'])
+                      : undefined,
+                    callTranscript: p.call_transcript || undefined,
+                    callSummary: p.call_summary || undefined,
+                    callDurationMinutes: p.call_duration_minutes || undefined,
+                    calledAt: p.called_at || undefined,
+                    // Research data (convert null to undefined, handle JSONB variations)
+                    reviewCount: p.review_count || undefined,
+                    distance: p.distance || undefined,
+                    distanceText: p.distance_text || undefined,
+                    hoursOfOperation: Array.isArray(p.hours_of_operation)
+                      ? p.hours_of_operation as string[]
+                      : Array.isArray((p.hours_of_operation as any)?.weekdayText)
+                        ? (p.hours_of_operation as any).weekdayText
+                        : undefined,
+                    isOpenNow: p.is_open_now || undefined,
+                    googleMapsUri: p.google_maps_uri || undefined,
+                    website: p.website || undefined,
+                    placeId: p.place_id || undefined,
+                  })),
+                  interactions: deduplicatedLogs,
+                  finalOutcome: data.final_outcome || undefined,
+                  directContactInfo: (data.direct_contact_info &&
+                    typeof data.direct_contact_info === "object" &&
+                    !Array.isArray(data.direct_contact_info) &&
+                    "name" in data.direct_contact_info &&
+                    "phone" in data.direct_contact_info)
+                    ? {
+                        name: String((data.direct_contact_info as any).name || ""),
+                        phone: String((data.direct_contact_info as any).phone || ""),
+                      }
+                    : undefined,
+                };
+                setRealtimeRequest(converted);
+                addRequest(converted);
+              }
+            });
+          }
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [id, addRequest, checkAndGenerateRecommendations]);
+
   useEffect(() => {
     // Auto scroll to bottom when new logs arrive
-    bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
+    bottomRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [request?.interactions.length]);
+
+  // Check for recommendations when status changes to ANALYZING or COMPLETED
+  useEffect(() => {
+    if (
+      request &&
+      (request.status === RequestStatus.ANALYZING ||
+        request.status === RequestStatus.COMPLETED) &&
+      !recommendationsChecked &&
+      !recommendationsLoading
+    ) {
+      console.log(
+        `Request status is ${request.status}, checking for recommendations...`
+      );
+      checkAndGenerateRecommendations();
+    }
+  }, [request?.status, recommendationsChecked, recommendationsLoading, checkAndGenerateRecommendations]);
+
+  // Fallback: Poll for recommendations if subscription doesn't fire
+  // This handles race conditions where JSONB updates don't trigger real-time subscriptions
+  useEffect(() => {
+    if (
+      request?.status === RequestStatus.ANALYZING &&
+      !recommendationsChecked &&
+      !recommendationsLoading
+    ) {
+      const pollTimer = setTimeout(() => {
+        console.log("[Recommendations] Fallback poll triggered after 5s");
+        checkAndGenerateRecommendations();
+      }, 5000);
+      return () => clearTimeout(pollTimer);
+    }
+  }, [request?.status, recommendationsChecked, recommendationsLoading, checkAndGenerateRecommendations]);
+
+  // Handler for provider selection
+  const handleProviderSelect = (provider: {
+    providerId: string;
+    providerName: string;
+    phone: string;
+    rating: number;
+    reviewCount?: number;
+    earliestAvailability: string;
+    estimatedRate: string;
+    score: number;
+    reasoning: string;
+    criteriaMatched?: string[];
+  }) => {
+    setSelectedProvider({
+      providerId: provider.providerId,
+      providerName: provider.providerName,
+      phone: provider.phone,
+      earliestAvailability: provider.earliestAvailability,
+    });
+    setShowModal(true);
+  };
+
+  // Handler for confirming booking
+  const handleConfirmBooking = async () => {
+    if (!selectedProvider || !request) return;
+
+    setBookingLoading(true);
+    try {
+      console.log("Initiating booking call for:", selectedProvider);
+
+      // Call the booking API endpoint
+      const response = await fetch("/api/v1/providers/book", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          providerId: selectedProvider.providerId,
+          providerName: selectedProvider.providerName,
+          providerPhone: selectedProvider.phone,
+          serviceNeeded: request.title,
+          serviceRequestId: id,
+          location: request.location || "",
+          preferredDateTime: selectedProvider.earliestAvailability,
+          additionalNotes: request.criteria,
+        }),
+      });
+
+      const result = await response.json();
+
+      if (!response.ok) {
+        throw new Error(result.error || "Failed to book appointment");
+      }
+
+      console.log("Booking call result:", result);
+
+      // Check if booking was confirmed
+      if (result.data.bookingConfirmed) {
+        // Success - show inline confirmation (no alert())
+        const confirmationDetails = [
+          `Provider: ${selectedProvider.providerName}`,
+          `Date: ${result.data.confirmedDate}`,
+          `Time: ${result.data.confirmedTime}`,
+          result.data.confirmationNumber ? `Confirmation #: ${result.data.confirmationNumber}` : "",
+        ].filter(Boolean).join(" • ");
+
+        setBookingMessage({
+          type: "success",
+          title: "Appointment Confirmed!",
+          details: confirmationDetails,
+        });
+
+        // Close modal
+        setShowModal(false);
+
+        // Real-time subscription will handle updating the UI with the new status
+      } else {
+        // Booking failed - show inline error
+        setBookingMessage({
+          type: "error",
+          title: "Booking Unsuccessful",
+          details: `${result.data.callOutcome || "Unknown reason"}. Next steps: ${result.data.nextSteps || "Please try again later"}`,
+        });
+        setShowModal(false);
+      }
+    } catch (error) {
+      console.error("Error booking provider:", error);
+      // Show inline error (no alert())
+      setBookingMessage({
+        type: "error",
+        title: "Failed to Book Appointment",
+        details: error instanceof Error ? error.message : "Unknown error occurred",
+      });
+      setShowModal(false);
+    } finally {
+      setBookingLoading(false);
+    }
+  };
 
   if (loading) {
     return (
@@ -122,12 +778,19 @@ export default function RequestDetails() {
   }
 
   if (error || !request) {
-    return <div className="text-center p-10 text-slate-400">{error || 'Request not found'}</div>;
+    return (
+      <div className="text-center p-10 text-slate-400">
+        {error || "Request not found"}
+      </div>
+    );
   }
 
   return (
     <div className="max-w-4xl mx-auto pb-10">
-      <Link href="/" className="inline-flex items-center text-slate-500 hover:text-slate-300 mb-6 transition-colors">
+      <Link
+        href="/"
+        className="inline-flex items-center text-slate-500 hover:text-slate-300 mb-6 transition-colors"
+      >
         <ArrowLeft className="w-4 h-4 mr-2" /> Back to Dashboard
       </Link>
 
@@ -137,6 +800,9 @@ export default function RequestDetails() {
           <h1 className="text-2xl font-bold text-slate-100">{request.title}</h1>
           <StatusBadge status={request.status} />
         </div>
+
+        {/* LiveStatus Component */}
+        <LiveStatus status={request.status} />
 
         <p className="text-slate-400 mb-6">{request.description}</p>
 
@@ -148,7 +814,8 @@ export default function RequestDetails() {
             </div>
           )}
           <div className="flex items-center gap-2 text-slate-400">
-            <span className="font-semibold text-slate-300">Criteria:</span> {request.criteria}
+            <span className="font-semibold text-slate-300">Criteria:</span>{" "}
+            {request.criteria}
           </div>
         </div>
 
@@ -158,12 +825,67 @@ export default function RequestDetails() {
               <CheckCircle className="w-5 h-5" />
             </div>
             <div>
-              <h3 className="font-bold text-primary-300">Provider Selected & Booked</h3>
+              <h3 className="font-bold text-primary-300">
+                Provider Selected & Booked
+              </h3>
               <p className="text-primary-400/80 text-sm mt-1">
                 {request.selectedProvider.name} has been secured.
-                {request.selectedProvider.address && ` Located at ${request.selectedProvider.address}.`}
+                {request.selectedProvider.address &&
+                  ` Located at ${request.selectedProvider.address}.`}
               </p>
             </div>
+          </div>
+        )}
+
+        {/* Inline Booking Feedback (replaces native alert()) */}
+        {bookingMessage && (
+          <div
+            className={`mt-6 p-4 rounded-xl flex items-start gap-4 ${
+              bookingMessage.type === "success"
+                ? "bg-emerald-500/10 border border-emerald-500/20"
+                : "bg-red-500/10 border border-red-500/20"
+            }`}
+          >
+            <div
+              className={`rounded-full p-2 ${
+                bookingMessage.type === "success"
+                  ? "bg-emerald-500/20 text-emerald-400"
+                  : "bg-red-500/20 text-red-400"
+              }`}
+            >
+              {bookingMessage.type === "success" ? (
+                <CheckCircle className="w-5 h-5" />
+              ) : (
+                <AlertTriangle className="w-5 h-5" />
+              )}
+            </div>
+            <div className="flex-1">
+              <h3
+                className={`font-bold ${
+                  bookingMessage.type === "success"
+                    ? "text-emerald-300"
+                    : "text-red-300"
+                }`}
+              >
+                {bookingMessage.title}
+              </h3>
+              <p
+                className={`text-sm mt-1 ${
+                  bookingMessage.type === "success"
+                    ? "text-emerald-400/80"
+                    : "text-red-400/80"
+                }`}
+              >
+                {bookingMessage.details}
+              </p>
+            </div>
+            <button
+              onClick={() => setBookingMessage(null)}
+              className="text-slate-500 hover:text-slate-300 transition-colors"
+              aria-label="Dismiss message"
+            >
+              <XCircle className="w-5 h-5" />
+            </button>
           </div>
         )}
       </div>
@@ -171,13 +893,47 @@ export default function RequestDetails() {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         {/* Main Timeline */}
         <div className="lg:col-span-2">
-          <h3 className="text-lg font-bold text-slate-100 mb-4">Activity Log</h3>
+          <h3 className="text-lg font-bold text-slate-100 mb-4">
+            Call Logs
+          </h3>
           <div className="bg-abyss/30 p-6 rounded-2xl border border-surface-highlight min-h-[400px]">
             {request.interactions.length === 0 && (
-              <div className="text-center text-slate-500 py-10">Initializing AI Agent...</div>
+              <div className="text-center py-10">
+                {request.status === RequestStatus.FAILED ? (
+                  <div className="text-red-400">
+                    <svg className="w-12 h-12 mx-auto mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                    </svg>
+                    <p className="font-medium">Call Failed</p>
+                    <p className="text-sm text-slate-500 mt-1 max-w-md mx-auto whitespace-pre-wrap break-words">
+                      {request.finalOutcome || "Unable to complete provider calls. Please try again."}
+                    </p>
+                  </div>
+                ) : request.status === RequestStatus.COMPLETED ? (
+                  <div className="text-slate-500">
+                    <p>No call logs available for this request.</p>
+                  </div>
+                ) : request.status === RequestStatus.PENDING ? (
+                  <div className="text-slate-500">
+                    <p>Waiting to start...</p>
+                  </div>
+                ) : (
+                  <div className="text-slate-500">
+                    <div className="animate-pulse flex justify-center mb-3">
+                      <div className="w-8 h-8 border-2 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
+                    </div>
+                    <p>Initializing AI Agent...</p>
+                  </div>
+                )}
+              </div>
             )}
+            {/* Use ProviderCallSection for call logs with transcripts, LogItem for others */}
             {request.interactions.map((log, i) => (
-              <LogItem key={i} log={log} index={i} />
+              Array.isArray(log.transcript) && log.transcript.length > 0 ? (
+                <ProviderCallSection key={log.id || i} log={log} defaultExpanded={i === 0} />
+              ) : (
+                <LogItem key={log.id || i} log={log} index={i} />
+              )
             ))}
             <div ref={bottomRef} />
           </div>
@@ -191,10 +947,28 @@ export default function RequestDetails() {
                 <User className="w-4 h-4 text-slate-400" /> Candidates
               </h3>
               <div className="space-y-3">
-                {request.providersFound.map(p => (
-                  <div key={p.id} className={`text-sm p-3 rounded-lg border ${request.selectedProvider?.id === p.id ? 'bg-primary-500/10 border-primary-500/30 ring-1 ring-primary-500/30' : 'bg-surface-highlight border-surface-highlight'}`}>
+                {request.providersFound.map((p) => (
+                  <div
+                    key={p.id}
+                    onClick={() => setDetailPanelProvider(p)}
+                    className={`text-sm p-3 rounded-lg border cursor-pointer transition-all hover:border-primary-500/50 hover:shadow-md ${request.selectedProvider?.id === p.id ? "bg-primary-500/10 border-primary-500/30 ring-1 ring-primary-500/30" : "bg-surface-highlight border-surface-highlight"}`}
+                  >
                     <div className="font-medium text-slate-200">{p.name}</div>
-                    <div className="text-slate-500 text-xs mt-1">{p.rating} ★ • {p.source}</div>
+                    <div className="text-slate-500 text-xs mt-1 flex items-center gap-2">
+                      <span>{p.rating ? `${p.rating} ★` : "N/A"}</span>
+                      {p.callStatus && (
+                        <span className={`px-1.5 py-0.5 rounded text-xs ${
+                          p.callStatus === "completed" ? "bg-green-500/20 text-green-400" :
+                          p.callStatus === "failed" ? "bg-red-500/20 text-red-400" :
+                          "bg-yellow-500/20 text-yellow-400"
+                        }`}>
+                          {p.callStatus}
+                        </span>
+                      )}
+                    </div>
+                    {p.distanceText && (
+                      <div className="text-slate-500 text-xs mt-1">{p.distanceText}</div>
+                    )}
                   </div>
                 ))}
               </div>
@@ -207,13 +981,71 @@ export default function RequestDetails() {
                 <User className="w-4 h-4 text-slate-400" /> Target Contact
               </h3>
               <div className="text-sm">
-                <p className="font-medium text-slate-300">{request.directContactInfo.name}</p>
-                <p className="text-slate-500">{request.directContactInfo.phone}</p>
+                <p className="font-medium text-slate-300">
+                  {request.directContactInfo.name}
+                </p>
+                <p className="text-slate-500">
+                  {request.directContactInfo.phone}
+                </p>
               </div>
             </div>
           )}
         </div>
       </div>
+
+      {/* RecommendedProviders Section */}
+      {(request.status === RequestStatus.ANALYZING ||
+        request.status === RequestStatus.COMPLETED) && (
+        <div className="mt-8">
+          {recommendationsLoading ? (
+            <RecommendedProviders
+              providers={[]}
+              overallRecommendation=""
+              onSelect={handleProviderSelect}
+              loading={true}
+            />
+          ) : recommendations ? (
+            <RecommendedProviders
+              providers={recommendations.providers}
+              overallRecommendation={recommendations.overallRecommendation}
+              onSelect={handleProviderSelect}
+            />
+          ) : null}
+        </div>
+      )}
+
+      {/* SelectionModal */}
+      {showModal && selectedProvider && (
+        <SelectionModal
+          provider={selectedProvider}
+          onConfirm={handleConfirmBooking}
+          onCancel={() => setShowModal(false)}
+          loading={bookingLoading}
+        />
+      )}
+
+      {/* Provider Detail Panel - slide out when clicking a candidate card */}
+      {detailPanelProvider && (
+        <ProviderDetailPanel
+          provider={detailPanelProvider}
+          isOpen={!!detailPanelProvider}
+          onClose={() => setDetailPanelProvider(null)}
+          onSelect={(provider) => {
+            // When selecting from detail panel, trigger the booking flow
+            handleProviderSelect({
+              providerId: provider.id,
+              providerName: provider.name,
+              phone: provider.phone || "",
+              rating: provider.rating || 0,
+              earliestAvailability: provider.callResult?.earliest_availability || "",
+              estimatedRate: provider.callResult?.estimated_rate || "",
+              score: 0,
+              reasoning: "",
+            });
+            setDetailPanelProvider(null);
+          }}
+        />
+      )}
     </div>
   );
 }
