@@ -102,7 +102,8 @@ export class DirectVapiClient {
         phoneNumberId: this.phoneNumberId,
         customer: {
           number: request.providerPhone,
-          name: request.providerName,
+          // VAPI limits customer.name to 40 characters
+          name: request.providerName.slice(0, 40),
         },
         assistant: assistantConfig,
       };

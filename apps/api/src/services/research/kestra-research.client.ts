@@ -66,13 +66,20 @@ export class KestraResearchClient {
   }
 
   /**
-   * Build request headers with auth for cloud mode
+   * Build request headers with auth for cloud mode (Bearer) or local mode (Basic)
    */
   private buildHeaders(isFormData: boolean = false): Record<string, string> {
     const headers: Record<string, string> = {};
 
     if (this.apiToken) {
+      // Cloud mode: Bearer token
       headers["Authorization"] = `Bearer ${this.apiToken}`;
+    } else if (!this.isCloudMode && process.env.KESTRA_LOCAL_USERNAME) {
+      // Local mode: Basic auth (if credentials provided)
+      const username = process.env.KESTRA_LOCAL_USERNAME;
+      const password = process.env.KESTRA_LOCAL_PASSWORD || "";
+      const credentials = Buffer.from(`${username}:${password}`).toString("base64");
+      headers["Authorization"] = `Basic ${credentials}`;
     }
 
     if (!isFormData) {
@@ -143,13 +150,8 @@ export class KestraResearchClient {
         { error, service: request.service },
         "Kestra research flow failed",
       );
-
-      return {
-        status: "error",
-        method: "kestra",
-        providers: [],
-        error: error instanceof Error ? error.message : "Unknown error",
-      };
+      // Throw to surface error when KESTRA_ENABLED=true - let ResearchService handle
+      throw error;
     }
   }
 

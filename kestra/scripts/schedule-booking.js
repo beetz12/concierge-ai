@@ -51,12 +51,26 @@ let createBookingAssistantConfig;
 
 async function loadBookingConfig() {
     try {
+        // Try local scripts folder first (for Kestra Cloud)
+        try {
+            const configModule = await import('./booking-assistant-config.js');
+            createBookingAssistantConfig = configModule.createBookingAssistantConfig;
+            console.log("[Config] Loaded from scripts folder (Kestra Cloud)");
+            return;
+        } catch (localError) {
+            console.log("[Config] Local import failed, trying monorepo path...");
+        }
+
+        // Fallback: Load from monorepo (for local development)
         const configModule = await import('../../apps/api/dist/services/vapi/booking-assistant-config.js');
         createBookingAssistantConfig = configModule.createBookingAssistantConfig;
-        console.log("[Config] Loaded booking assistant configuration from TypeScript source");
+        console.log("[Config] Loaded from monorepo (local development)");
+
     } catch (error) {
         console.error("[Config] Failed to load booking configuration:", error.message);
-        console.error("[Config] Make sure the API has been built: pnpm --filter api build");
+        console.error("[Config] Make sure:");
+        console.error("  - Local: Run 'pnpm --filter api build'");
+        console.error("  - Cloud: Copy booking-assistant-config.js to scripts folder");
         process.exit(1);
     }
 }
@@ -82,15 +96,18 @@ async function main() {
 
         // Step 1: Create booking assistant configuration
         console.log("\n[Step 1/3] Creating booking assistant configuration...");
+        // Map script args to BookingRequest interface expected by createBookingAssistantConfig
+        // Interface expects: providerName, providerPhone, serviceNeeded, clientName, clientPhone, location, preferredDateTime
         const bookingRequest = {
             providerPhone: PROVIDER_PHONE,
             providerName: PROVIDER_NAME,
-            serviceDescription: SERVICE_DESCRIPTION,
-            preferredDate: PREFERRED_DATE,
-            preferredTime: PREFERRED_TIME,
-            customerName: CUSTOMER_NAME,
-            customerPhone: CUSTOMER_PHONE,
-            location: LOCATION
+            serviceNeeded: SERVICE_DESCRIPTION,  // maps serviceDescription -> serviceNeeded
+            clientName: CUSTOMER_NAME,           // maps customerName -> clientName
+            clientPhone: CUSTOMER_PHONE,         // maps customerPhone -> clientPhone
+            location: LOCATION,
+            preferredDateTime: PREFERRED_DATE && PREFERRED_TIME
+                ? `${PREFERRED_DATE} at ${PREFERRED_TIME}`
+                : PREFERRED_DATE || PREFERRED_TIME || "as soon as possible"  // combine date/time
         };
         const assistantConfig = createBookingAssistantConfig(bookingRequest);
         console.log("[Config] Using booking configuration from TypeScript source");

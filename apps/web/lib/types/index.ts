@@ -86,4 +86,6 @@ export interface ServiceRequest {
     name: string;
     phone: string;
   };
+  preferredContact?: "phone" | "text";
+  userPhone?: string;
 }

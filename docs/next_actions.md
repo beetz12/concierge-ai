@@ -1,4 +1,15 @@
 *tasks*:
+1. fix frontend display issue - do not wait for the calls to end wihch will time out, and just use polling to check the status of the call.
+2. make sure we have twilio webhook handler to handle user responses to the recommendations. (in progress)
+3. make sure that we willnotify user by text using twilio or by calling them using vapi.ai (in progress)
+4. test latest kestra cloud integration
+5. deploy latest workflows / scripts to kestra cloud
+6. create provider workflow
+7. test entire workflow - research, call, analyze, update user, book, notify user and make sure we have proper UI display at each step
+
+
+
+
 
 ketra cloud integration
 fix ui display

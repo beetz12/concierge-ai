@@ -66,13 +66,20 @@ export class KestraClient {
   }
 
   /**
-   * Build request headers with auth for cloud mode
+   * Build request headers with auth for cloud mode (Bearer) or local mode (Basic)
    */
   private buildHeaders(isFormData: boolean = false): Record<string, string> {
     const headers: Record<string, string> = {};
 
     if (this.apiToken) {
+      // Cloud mode: Bearer token
       headers["Authorization"] = `Bearer ${this.apiToken}`;
+    } else if (!this.isCloudMode && process.env.KESTRA_LOCAL_USERNAME) {
+      // Local mode: Basic auth (if credentials provided)
+      const username = process.env.KESTRA_LOCAL_USERNAME;
+      const password = process.env.KESTRA_LOCAL_PASSWORD || "";
+      const credentials = Buffer.from(`${username}:${password}`).toString("base64");
+      headers["Authorization"] = `Basic ${credentials}`;
     }
 
     if (!isFormData) {
@@ -153,8 +160,8 @@ export class KestraClient {
         { error, provider: request.providerName },
         "Kestra flow failed",
       );
-
-      return this.createErrorResult(error, request, "kestra");
+      // Throw to surface error when KESTRA_ENABLED=true - don't mask as CallResult
+      throw error;
     }
   }
 
@@ -349,22 +356,8 @@ export class KestraClient {
         { error, providerCount: requests.length },
         "Kestra batch flow failed",
       );
-
-      // Return error results for all providers
-      const errorResults = requests.map((request) =>
-        this.createErrorResult(error, request, "kestra")
-      );
-
-      return {
-        results: errorResults,
-        stats: {
-          total: requests.length,
-          successful: 0,
-          failed: requests.length,
-          timedOut: 0,
-          durationMs: 0,
-        },
-      };
+      // Throw to surface error when KESTRA_ENABLED=true - don't mask as batch result
+      throw error;
     }
   }
 
@@ -650,6 +643,94 @@ export class KestraClient {
       };
     } catch (error) {
       this.logger.error({ error }, "Kestra schedule_service flow failed");
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : "Unknown error",
+      };
+    }
+  }
+
+  /**
+   * Trigger the recommend_providers flow to analyze call results and recommend top 3
+   */
+  async triggerRecommendProvidersFlow(request: {
+    callResults: any[];
+    originalCriteria: string;
+    serviceRequestId: string;
+    scoringWeights?: {
+      availabilityUrgency: number;
+      rateCompetitiveness: number;
+      allCriteriaMet: number;
+      callQuality: number;
+      professionalism: number;
+    };
+  }): Promise<{
+    success: boolean;
+    executionId?: string;
+    recommendations?: any;
+    error?: string;
+  }> {
+    this.logger.info(
+      {
+        serviceRequestId: request.serviceRequestId,
+        callResultsCount: request.callResults.length,
+        flowId: "recommend_providers",
+      },
+      "Triggering Kestra recommend_providers flow",
+    );
+
+    try {
+      const inputs = {
+        call_results: JSON.stringify(request.callResults),
+        original_criteria: request.originalCriteria || "",
+        service_request_id: request.serviceRequestId,
+        scoring_weights: JSON.stringify(request.scoringWeights || {
+          availabilityUrgency: 0.30,
+          rateCompetitiveness: 0.20,
+          allCriteriaMet: 0.25,
+          callQuality: 0.15,
+          professionalism: 0.10,
+        }),
+      };
+
+      const response = await axios.post(
+        `${this.baseUrl}/api/v1/executions/${this.namespace}/recommend_providers`,
+        inputs,
+        {
+          headers: { "Content-Type": "application/json" },
+        },
+      );
+
+      this.logger.info(
+        {
+          executionId: response.data.id,
+          namespace: this.namespace,
+          flowId: "recommend_providers",
+        },
+        "Kestra recommend_providers execution triggered",
+      );
+
+      // Poll for completion (60 seconds timeout for AI analysis)
+      const finalState = await this.pollExecutionWithTimeout(response.data.id, 60000);
+
+      // Parse recommendations from the workflow output
+      let recommendations;
+      if (finalState.outputs?.recommendations_json) {
+        try {
+          recommendations = JSON.parse(finalState.outputs.recommendations_json as string);
+        } catch (parseError) {
+          this.logger.warn({ parseError }, "Failed to parse recommendations JSON from Kestra output");
+        }
+      }
+
+      return {
+        success: finalState.state === "SUCCESS",
+        executionId: response.data.id,
+        recommendations,
+        error: finalState.state !== "SUCCESS" ? `Execution ${finalState.state.toLowerCase()}` : undefined,
+      };
+    } catch (error) {
+      this.logger.error({ error }, "Kestra recommend_providers flow failed");
       return {
         success: false,
         error: error instanceof Error ? error.message : "Unknown error",

@@ -4,7 +4,7 @@ import React, { useState } from "react";
 import { useRouter } from "next/navigation";
 import { useAppContext } from "@/lib/providers/AppProvider";
 import { RequestStatus, RequestType, ServiceRequest } from "@/lib/types";
-import { Search, MapPin, AlertCircle, Sparkles, User } from "lucide-react";
+import { Search, MapPin, AlertCircle, Sparkles, User, Phone, MessageSquare, PhoneCall } from "lucide-react";
 import {
   simulateCall,
   analyzeResearchPrompt,
@@ -15,6 +15,7 @@ import {
   normalizePhoneNumber,
   isValidE164Phone,
 } from "@/lib/services/providerCallingService";
+import { usePhoneValidation } from "@/lib/hooks/usePhoneValidation";
 
 // Environment toggle for live VAPI calls vs simulated calls
 const LIVE_CALL_ENABLED =
@@ -56,17 +57,22 @@ export default function NewRequest() {
     criteria: "",
     urgency: "within_2_days" as "immediate" | "within_24_hours" | "within_2_days" | "flexible",
     minRating: 4.5,
+    preferredContact: "text" as "phone" | "text",
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showCriteriaInput, setShowCriteriaInput] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
+
+  // Phone validation for user's contact number
+  const userPhoneValidation = usePhoneValidation();
 
   // Form validation - all required fields must be filled
   const isFormValid =
     formData.clientName.trim() !== "" &&
     formData.title.trim() !== "" &&
     formData.location.trim() !== "" &&
-    formData.description.trim() !== "";
+    formData.description.trim() !== "" &&
+    userPhoneValidation.isValid;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -81,6 +87,10 @@ export default function NewRequest() {
         location: formData.location,
         criteria: formData.criteria,
         status: "SEARCHING",
+        direct_contact_info: {
+          preferred_contact: formData.preferredContact,
+          user_phone: userPhoneValidation.normalized,
+        },
       });
 
       const newRequest: ServiceRequest = {
@@ -612,6 +622,62 @@ export default function NewRequest() {
               setFormData({ ...formData, description: e.target.value })
             }
           />
+        </div>
+
+        {/* Preferred Contact Method */}
+        <div className="space-y-4">
+          <label className="block text-sm font-medium text-slate-300">
+            How should we notify you of recommendations?
+          </label>
+          <div className="flex gap-6">
+            <label className="flex items-center gap-2 cursor-pointer group">
+              <input
+                type="radio"
+                name="preferredContact"
+                value="text"
+                checked={formData.preferredContact === "text"}
+                onChange={(e) => setFormData({...formData, preferredContact: e.target.value as "phone" | "text"})}
+                className="w-4 h-4 text-primary-600 border-slate-600 focus:ring-primary-500 bg-abyss"
+              />
+              <MessageSquare className="w-4 h-4 text-slate-400 group-hover:text-primary-400 transition-colors" />
+              <span className="text-slate-200 group-hover:text-slate-100 transition-colors">Text Message (SMS)</span>
+            </label>
+            <label className="flex items-center gap-2 cursor-pointer group">
+              <input
+                type="radio"
+                name="preferredContact"
+                value="phone"
+                checked={formData.preferredContact === "phone"}
+                onChange={(e) => setFormData({...formData, preferredContact: e.target.value as "phone" | "text"})}
+                className="w-4 h-4 text-primary-600 border-slate-600 focus:ring-primary-500 bg-abyss"
+              />
+              <PhoneCall className="w-4 h-4 text-slate-400 group-hover:text-primary-400 transition-colors" />
+              <span className="text-slate-200 group-hover:text-slate-100 transition-colors">Phone Call</span>
+            </label>
+          </div>
+
+          {/* Phone Number Input */}
+          <div className="relative">
+            <Phone className={`absolute left-3 top-3.5 w-5 h-5 ${userPhoneValidation.error && userPhoneValidation.isTouched ? 'text-red-400' : 'text-slate-500'}`} />
+            <input
+              type="tel"
+              placeholder="Your phone number for notifications"
+              value={userPhoneValidation.value}
+              onChange={userPhoneValidation.onChange}
+              onBlur={userPhoneValidation.onBlur}
+              className={`w-full pl-10 pr-4 py-3 rounded-xl border ${
+                userPhoneValidation.error && userPhoneValidation.isTouched
+                  ? 'border-red-500 focus:border-red-500 focus:ring-red-500/20'
+                  : 'border-surface-highlight focus:border-primary-500 focus:ring-primary-500/20'
+              } focus:ring-2 outline-none transition-all bg-abyss text-slate-100 placeholder-slate-600`}
+            />
+            {userPhoneValidation.error && userPhoneValidation.isTouched && (
+              <p className="text-red-400 text-sm mt-1">{userPhoneValidation.error}</p>
+            )}
+            {userPhoneValidation.isValid && userPhoneValidation.normalized && (
+              <p className="text-emerald-400 text-sm mt-1">Valid: {userPhoneValidation.normalized}</p>
+            )}
+          </div>
         </div>
 
         <div>

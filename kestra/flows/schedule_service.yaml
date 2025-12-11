@@ -57,12 +57,14 @@ tasks:
     containerImage: node:20-alpine
     taskRunner:
       type: io.kestra.plugin.scripts.runner.docker.Docker
-      volumes:
-        - /Users/mohammedhasan/Github/Personal/concierge-ai/kestra/scripts:/kestra
+    namespaceFiles:
+      enabled: true
+      include:
+        - scripts/**/*
     beforeCommands:
       - npm install @vapi-ai/server-sdk
     commands:
-      - node /kestra/schedule-booking.js "{{ inputs.provider_phone }}" "{{ inputs.provider_name }}" "{{ inputs.service_description }}" "{{ inputs.preferred_date }}" "{{ inputs.preferred_time }}" "{{ inputs.customer_name }}" "{{ inputs.customer_phone }}" "{{ inputs.location }}"
+      - node scripts/schedule-booking.js "{{ inputs.provider_phone }}" "{{ inputs.provider_name }}" "{{ inputs.service_description }}" "{{ inputs.preferred_date }}" "{{ inputs.preferred_time }}" "{{ inputs.customer_name }}" "{{ inputs.customer_phone }}" "{{ inputs.location }}"
     env:
       VAPI_API_KEY: "{{ envs.vapi_api_key }}"
       VAPI_PHONE_NUMBER_ID: "{{ envs.vapi_phone_number_id }}"

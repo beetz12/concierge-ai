@@ -37,12 +37,14 @@ tasks:
     containerImage: node:20-alpine
     taskRunner:
       type: io.kestra.plugin.scripts.runner.docker.Docker
-      volumes:
-        - /Users/mohammedhasan/Github/Personal/concierge-ai/kestra/scripts:/kestra
+    namespaceFiles:
+      enabled: true
+      include:
+        - scripts/**/*
     beforeCommands:
       - npm install twilio
     commands:
-      - node /kestra/send-notification.js "{{ inputs.user_phone }}" "{{ inputs.user_name }}" "{{ inputs.request_url }}" '{{ inputs.providers | json }}'
+      - node scripts/send-notification.js "{{ inputs.user_phone }}" "{{ inputs.user_name }}" "{{ inputs.request_url }}" '{{ inputs.providers | json }}'
     env:
       TWILIO_ACCOUNT_SID: "{{ envs.twilio_account_sid }}"
       TWILIO_AUTH_TOKEN: "{{ envs.twilio_auth_token }}"

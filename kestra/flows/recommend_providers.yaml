@@ -1,0 +1,131 @@
+id: recommend_providers
+namespace: ai_concierge
+description: "Analyze call results and recommend top 3 providers using Gemini AI"
+
+inputs:
+  - id: call_results
+    type: JSON
+    description: "Array of call results from provider calls"
+  - id: original_criteria
+    type: STRING
+    defaults: ""
+    description: "Original user criteria/requirements"
+  - id: service_request_id
+    type: STRING
+    description: "ID of the service request"
+  - id: scoring_weights
+    type: JSON
+    defaults: |
+      {
+        "availabilityUrgency": 0.30,
+        "rateCompetitiveness": 0.20,
+        "allCriteriaMet": 0.25,
+        "callQuality": 0.15,
+        "professionalism": 0.10
+      }
+    description: "Weights for scoring criteria (must sum to 1.0)"
+
+tasks:
+  - id: validate_inputs
+    type: io.kestra.plugin.core.debug.Return
+    description: "Validate input parameters"
+    format: |
+      Provider Recommendation Job Started
+      =========================================
+      Service Request ID: {{ inputs.service_request_id }}
+      Call Results Count: {{ inputs.call_results | length }}
+      Original Criteria: {{ inputs.original_criteria }}
+      =========================================
+
+  - id: analyze_and_recommend
+    type: io.kestra.plugin.ai.agent.AIAgent
+    description: "Use Gemini AI to analyze call results and recommend top 3 providers"
+    provider:
+      type: io.kestra.plugin.ai.provider.GoogleGemini
+      apiKey: "{{ envs.gemini_api_key }}"
+      modelName: gemini-2.5-flash
+    prompt: |
+      You are an expert service provider analyst. Your job is to analyze phone call results and recommend the TOP 3 providers based on multiple factors.
+
+      SCORING WEIGHTS:
+      {{ inputs.scoring_weights }}
+
+      EVALUATION GUIDELINES:
+      - Availability: Immediate > 24hrs > 2 days > Flexible. Providers available sooner score higher.
+      - Rate: Consider competitiveness, clarity, and reasonableness. Lower/reasonable rates score higher.
+      - Criteria: Providers meeting ALL client requirements score highest.
+      - Call Quality: Assess how informative and helpful the conversation was. Positive, informative calls score higher.
+      - Professionalism: Evaluate courtesy, clarity, and responsiveness.
+
+      ORIGINAL CLIENT CRITERIA:
+      {{ inputs.original_criteria }}
+
+      CALL RESULTS TO ANALYZE:
+      {{ inputs.call_results | json }}
+
+      FILTERING RULES:
+      1. EXCLUDE providers where disqualified = true
+      2. EXCLUDE providers where availability = "unavailable"
+      3. EXCLUDE providers with status = "error", "timeout", "voicemail", or "no_answer"
+      4. Only include providers with successful, informative calls
+
+      SCORING:
+      For each qualified provider, calculate a weighted score (0-100) based on:
+      - Availability/Urgency (30%): How soon can they start?
+      - Rate Competitiveness (20%): Are rates reasonable and clear?
+      - All Criteria Met (25%): Did they meet all stated requirements?
+      - Call Quality (15%): Was the conversation informative?
+      - Professionalism (10%): Were they courteous and clear?
+
+      Return EXACTLY this JSON structure (no markdown, just raw JSON):
+      {
+        "recommendations": [
+          {
+            "providerName": "Provider Name",
+            "phone": "+1234567890",
+            "score": 95,
+            "reasoning": "Detailed explanation of why this provider scored well",
+            "criteriaMatched": ["criterion1", "criterion2"],
+            "earliestAvailability": "Tomorrow at 2pm",
+            "estimatedRate": "$150/hr",
+            "callQualityScore": 90,
+            "professionalismScore": 95
+          }
+        ],
+        "overallRecommendation": "Provider X is the best choice because...",
+        "analysisNotes": "Additional insights about the analysis",
+        "stats": {
+          "totalCalls": 5,
+          "qualifiedProviders": 3,
+          "disqualifiedProviders": 1,
+          "failedCalls": 1
+        }
+      }
+
+      Return AT MOST 3 recommendations, sorted by score (highest first).
+      If no providers qualify, return an empty recommendations array with explanatory notes.
+
+  - id: log_result
+    type: io.kestra.plugin.core.debug.Return
+    description: "Log recommendation result"
+    format: |
+      Provider Recommendation Job Completed
+      ==========================================
+      Service Request ID: {{ inputs.service_request_id }}
+
+      AI Analysis Output:
+      {{ outputs.analyze_and_recommend.textOutput }}
+      ==========================================
+
+outputs:
+  - id: recommendations_json
+    type: STRING
+    value: "{{ outputs.analyze_and_recommend.textOutput }}"
+
+  - id: service_request_id
+    type: STRING
+    value: "{{ inputs.service_request_id }}"
+
+  - id: status
+    type: STRING
+    value: "completed"
