@@ -238,3 +238,80 @@ export async function getCallingSystemStatus(): Promise<{
     };
   }
 }
+
+/**
+ * Recommendation from AI analysis
+ */
+export interface ProviderRecommendation {
+  providerId: string;
+  providerName: string;
+  phone: string;
+  rating?: number;
+  reviewCount?: number;
+  earliestAvailability: string;
+  estimatedRate: string;
+  score: number;
+  reasoning: string;
+  criteriaMatched?: string[];
+  callQualityScore?: number;
+  professionalismScore?: number;
+}
+
+/**
+ * Response from recommend API
+ */
+export interface RecommendationsResponse {
+  recommendations: ProviderRecommendation[];
+  overallRecommendation: string;
+  analysisNotes?: string;
+  stats: {
+    totalCalls: number;
+    qualifiedProviders: number;
+    disqualifiedProviders: number;
+    failedCalls: number;
+  };
+}
+
+/**
+ * Get AI recommendations for top 3 providers based on call results
+ */
+export async function getProviderRecommendations(request: {
+  callResults: Array<{
+    status: string;
+    callId?: string;
+    duration?: number;
+    transcript?: string;
+    analysis?: {
+      summary?: string;
+      structuredData?: Record<string, unknown>;
+    };
+    provider?: {
+      name: string;
+      phone?: string;
+    };
+  }>;
+  originalCriteria: string;
+  serviceRequestId: string;
+}): Promise<RecommendationsResponse | null> {
+  try {
+    const response = await fetch(`${API_BASE}/recommend`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(request),
+    });
+
+    if (!response.ok) {
+      const error = await response.json().catch(() => ({}));
+      console.error("Recommend API error:", error);
+      return null;
+    }
+
+    const result = await response.json();
+    return result.data || result;
+  } catch (error) {
+    console.error("Failed to get recommendations:", error);
+    return null;
+  }
+}

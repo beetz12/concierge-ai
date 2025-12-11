@@ -16,6 +16,7 @@ import {
   callResponseToInteractionLog,
   normalizePhoneNumber,
   isValidE164Phone,
+  getProviderRecommendations,
 } from "@/lib/services/providerCallingService";
 
 // Environment toggle for live VAPI calls vs simulated calls
@@ -30,6 +31,7 @@ import {
   updateServiceRequest,
   addProviders,
 } from "@/lib/actions/service-requests";
+import { notifyUser } from "@/lib/services/bookingService";
 
 export default function NewRequest() {
   const router = useRouter();
@@ -37,6 +39,7 @@ export default function NewRequest() {
 
   const [formData, setFormData] = useState({
     clientName: "",
+    clientPhone: "",
     title: "",
     description: "",
     location: "",
@@ -194,7 +197,8 @@ export default function NewRequest() {
 
       // 2. Call Loop - Uses real VAPI when LIVE_CALL_ENABLED=true
       await updateStatus("CALLING");
-      const callLogs = [];
+      const callLogs: any[] = [];
+      const callResults: any[] = []; // Store full call results for recommend API
 
       console.log(
         `[Concierge] Starting calls to ${providers.length} providers (LIVE_CALL_ENABLED=${LIVE_CALL_ENABLED}, ADMIN_TEST_MODE=${isAdminTestMode})`,
@@ -228,6 +232,7 @@ export default function NewRequest() {
 
       for (const [providerIndex, provider] of providers.entries()) {
         let log;
+        let callResponse = null;
 
         if (LIVE_CALL_ENABLED) {
           // Real VAPI calls - requires valid phone number
@@ -263,7 +268,7 @@ export default function NewRequest() {
               );
 
               // Make real VAPI call
-              const response = await callProviderLive({
+              callResponse = await callProviderLive({
                 providerName: provider.name,
                 providerPhone: phoneToCall,
                 serviceNeeded: data.title,
@@ -281,8 +286,21 @@ export default function NewRequest() {
                 } : undefined,
               });
 
+              // Store full call result for recommend API
+              if (callResponse.success && callResponse.data) {
+                callResults.push({
+                  ...callResponse.data,
+                  provider: {
+                    id: provider.id,
+                    name: provider.name,
+                    phone: phoneToCall,
+                    rating: provider.rating,
+                  },
+                });
+              }
+
               // Convert response to InteractionLog format
-              log = callResponseToInteractionLog(provider.name, response);
+              log = callResponseToInteractionLog(provider.name, callResponse);
 
               console.log(
                 `[Concierge] Call to ${provider.name} completed: ${log.status}`,
@@ -315,28 +333,112 @@ export default function NewRequest() {
         await new Promise((r) => setTimeout(r, LIVE_CALL_ENABLED ? 2000 : 1000));
       }
 
-      // 3. Analyze
+      // 3. Analyze - Use recommend API for live calls, fallback to selectBestProvider for simulated
       await updateStatus("ANALYZING");
-      const analysis = await selectBestProvider(
-        data.title,
-        callLogs,
-        providers,
-      );
+
+      let recommendations = null;
+      let analysis = null;
+
+      // If we have call results from live VAPI calls, use the recommend API
+      if (LIVE_CALL_ENABLED && callResults.length > 0) {
+        console.log(`[Concierge] Getting AI recommendations for ${callResults.length} call results`);
+        recommendations = await getProviderRecommendations({
+          callResults,
+          originalCriteria: data.criteria,
+          serviceRequestId: reqId,
+        });
+
+        if (recommendations && recommendations.recommendations.length > 0) {
+          // Store recommendations in localStorage for request page to read
+          localStorage.setItem(`recommendations-${reqId}`, JSON.stringify({
+            providers: recommendations.recommendations.map(rec => ({
+              providerId: rec.providerId || providers.find(p => p.name === rec.providerName)?.id || "",
+              providerName: rec.providerName,
+              phone: rec.phone,
+              rating: rec.rating,
+              reviewCount: rec.reviewCount,
+              earliestAvailability: rec.earliestAvailability,
+              estimatedRate: rec.estimatedRate,
+              score: rec.score,
+              reasoning: rec.reasoning,
+              criteriaMatched: rec.criteriaMatched,
+            })),
+            overallRecommendation: recommendations.overallRecommendation,
+          }));
+          console.log(`[Concierge] Stored ${recommendations.recommendations.length} recommendations`);
+
+          // Create analysis object for compatibility
+          const topRec = recommendations.recommendations[0];
+          analysis = {
+            selectedId: topRec?.providerId || providers.find(p => p.name === topRec?.providerName)?.id || null,
+            reasoning: recommendations.overallRecommendation,
+          };
+        }
+      }
+
+      // Fallback to selectBestProvider if no recommendations
+      if (!analysis) {
+        analysis = await selectBestProvider(
+          data.title,
+          callLogs,
+          providers,
+        );
+      }
 
       const finalLogs = [
         ...callLogs,
         {
           timestamp: new Date().toISOString(),
-          stepName: "Analysis & Selection",
-          detail: analysis.reasoning,
-          status: analysis.selectedId ? "success" : "warning",
+          stepName: "Analysis & Recommendations",
+          detail: recommendations
+            ? `Found ${recommendations.recommendations.length} qualified providers. ${recommendations.overallRecommendation}`
+            : analysis.reasoning,
+          status: (recommendations?.recommendations.length || analysis.selectedId) ? "success" : "warning",
         } as any,
       ];
 
       updateRequest(reqId, { interactions: [searchLog, ...finalLogs] });
 
-      if (analysis.selectedId) {
-        // 4. Mark best provider selected (user will be notified via SMS/VAPI later)
+      // If we have recommendations, mark as completed and let user select
+      if (recommendations && recommendations.recommendations.length > 0) {
+        const outcome = `Found ${recommendations.recommendations.length} recommended providers. Please select your preferred provider to proceed with booking.`;
+        updateRequest(reqId, {
+          status: RequestStatus.COMPLETED,
+          interactions: [searchLog, ...finalLogs],
+          finalOutcome: outcome,
+        });
+        await updateServiceRequest(reqId, {
+          status: "COMPLETED",
+          final_outcome: outcome,
+        });
+
+        // Send SMS notification with top 3 providers
+        if (data.clientPhone) {
+          const userPhone = normalizePhoneNumber(data.clientPhone);
+          if (isValidE164Phone(userPhone)) {
+            console.log(`[Concierge] Sending SMS notification to ${userPhone}`);
+            const topProviders = recommendations.recommendations.slice(0, 3).map(rec => ({
+              name: rec.providerName,
+              earliestAvailability: rec.earliestAvailability || "Contact for availability",
+            }));
+
+            const notifyResult = await notifyUser({
+              userPhone,
+              userName: data.clientName,
+              requestUrl: `${window.location.origin}/request/${reqId}`,
+              serviceRequestId: reqId,
+              providers: topProviders,
+            });
+
+            if (notifyResult.success) {
+              console.log(`[Concierge] SMS notification sent successfully`);
+            } else {
+              console.warn(`[Concierge] SMS notification failed: ${notifyResult.error}`);
+            }
+          }
+        }
+      } else if (analysis.selectedId) {
+        // Fallback: auto-select best provider (old behavior)
         const provider = providers.find((p) => p.id === analysis.selectedId);
         if (provider) {
           updateRequest(reqId, { selectedProvider: provider });
@@ -346,7 +448,6 @@ export default function NewRequest() {
             interactions: [searchLog, ...finalLogs],
             finalOutcome: outcome,
           });
-          // Update DB with final status and outcome
           await updateServiceRequest(reqId, {
             status: "COMPLETED",
             final_outcome: outcome,
@@ -394,23 +495,37 @@ export default function NewRequest() {
         onSubmit={handleSubmit}
         className="bg-surface p-8 rounded-2xl border border-surface-highlight shadow-xl space-y-6"
       >
-        <div>
-          <label className="block text-sm font-semibold text-slate-300 mb-2">
-            Your Name
-          </label>
-          <div className="relative">
-            <User className="absolute left-3 top-3.5 w-5 h-5 text-slate-500" />
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <label className="block text-sm font-semibold text-slate-300 mb-2">
+              Your Name
+            </label>
+            <div className="relative">
+              <User className="absolute left-3 top-3.5 w-5 h-5 text-slate-500" />
+              <input
+                type="text"
+                required
+                placeholder="e.g. John Smith"
+                className="w-full pl-10 pr-4 py-3 rounded-xl border border-surface-highlight focus:border-primary-500 focus:ring-2 focus:ring-primary-500/20 outline-none transition-all bg-abyss text-slate-100 placeholder-slate-600"
+                value={formData.clientName}
+                onChange={(e) => setFormData({ ...formData, clientName: e.target.value })}
+              />
+            </div>
+          </div>
+          <div>
+            <label className="block text-sm font-semibold text-slate-300 mb-2">
+              Your Phone (for notifications)
+            </label>
             <input
-              type="text"
-              required
-              placeholder="e.g. John Smith"
-              className="w-full pl-10 pr-4 py-3 rounded-xl border border-surface-highlight focus:border-primary-500 focus:ring-2 focus:ring-primary-500/20 outline-none transition-all bg-abyss text-slate-100 placeholder-slate-600"
-              value={formData.clientName}
-              onChange={(e) => setFormData({ ...formData, clientName: e.target.value })}
+              type="tel"
+              placeholder="e.g. (555) 123-4567"
+              className="w-full px-4 py-3 rounded-xl border border-surface-highlight focus:border-primary-500 focus:ring-2 focus:ring-primary-500/20 outline-none transition-all bg-abyss text-slate-100 placeholder-slate-600"
+              value={formData.clientPhone}
+              onChange={(e) => setFormData({ ...formData, clientPhone: e.target.value })}
             />
           </div>
-          <p className="text-xs text-slate-500 mt-1">The AI will introduce itself as your personal assistant</p>
         </div>
+        <p className="text-xs text-slate-500 -mt-4">The AI will introduce itself as your personal assistant. Phone is optional for SMS updates.</p>
 
         <div>
           <label className="block text-sm font-semibold text-slate-300 mb-2">
