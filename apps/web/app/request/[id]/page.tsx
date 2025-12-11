@@ -26,6 +26,7 @@ import {
   RequestStatus,
   RequestType,
   Provider,
+  safeRequestStatus,
 } from "@/lib/types";
 import { createClient } from "@/lib/supabase/client";
 import { notifyUser, scheduleBooking } from "@/lib/services/bookingService";
@@ -49,12 +50,12 @@ const LogItem: React.FC<{ log: InteractionLog; index: number }> = ({ log }) => {
 
       <div className="bg-surface rounded-xl border border-surface-highlight shadow-sm p-5 hover:border-primary-500/30 transition-shadow">
         <div className="flex justify-between items-start mb-2">
-          <h4 className="font-bold text-slate-200">{log.stepName}</h4>
+          <h4 className="font-bold text-slate-200">{log.stepName || "Unknown Step"}</h4>
           <span className="text-xs text-slate-500 font-mono">
-            {new Date(log.timestamp).toLocaleTimeString()}
+            {log.timestamp ? new Date(log.timestamp).toLocaleTimeString() : "Unknown time"}
           </span>
         </div>
-        <p className="text-slate-400 mb-3">{log.detail}</p>
+        <p className="text-slate-400 mb-3">{log.detail || "No details available"}</p>
 
         {Array.isArray(log.transcript) && log.transcript.length > 0 && (
           <div className="bg-abyss/50 rounded-lg p-4 border border-surface-highlight space-y-3">
@@ -403,7 +404,7 @@ export default function RequestDetails() {
           description: data.description,
           criteria: data.criteria,
           location: data.location || undefined,
-          status: data.status as RequestStatus,
+          status: safeRequestStatus(data.status),
           createdAt: data.created_at,
           providersFound: providers.map((p) => ({
             id: p.id,
@@ -495,7 +496,7 @@ export default function RequestDetails() {
               description: payload.new.description,
               criteria: payload.new.criteria,
               location: payload.new.location || undefined,
-              status: payload.new.status as RequestStatus,
+              status: safeRequestStatus(payload.new.status),
               createdAt: payload.new.created_at,
               providersFound: [],
               interactions: [],
@@ -853,7 +854,7 @@ export default function RequestDetails() {
       {/* Header Card */}
       <div className="bg-surface rounded-2xl border border-surface-highlight shadow-xl p-6 mb-8">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-4">
-          <h1 className="text-2xl font-bold text-slate-100">{request.title}</h1>
+          <h1 className="text-2xl font-bold text-slate-100">{request.title || "Untitled Request"}</h1>
           <StatusBadge status={request.status} />
         </div>
 
@@ -861,11 +862,11 @@ export default function RequestDetails() {
         <LiveStatus
           status={request.status}
           callProgress={callProgress}
-          providersFound={request.providersFound.length}
-          interactions={request.interactions}
+          providersFound={request.providersFound?.length || 0}
+          interactions={request.interactions || []}
         />
 
-        <p className="text-slate-400 mb-6">{request.description}</p>
+        <p className="text-slate-400 mb-6">{request.description || "No description"}</p>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 text-sm">
           {request.location && (
@@ -876,7 +877,7 @@ export default function RequestDetails() {
           )}
           <div className="flex items-center gap-2 text-slate-400">
             <span className="font-semibold text-slate-300">Criteria:</span>{" "}
-            {request.criteria}
+            {request.criteria || "None specified"}
           </div>
         </div>
 
@@ -890,7 +891,7 @@ export default function RequestDetails() {
                 Provider Selected & Booked
               </h3>
               <p className="text-primary-400/80 text-sm mt-1">
-                {request.selectedProvider.name} has been secured.
+                {request.selectedProvider.name || "Provider"} has been secured.
                 {request.selectedProvider.address &&
                   ` Located at ${request.selectedProvider.address}.`}
               </p>
@@ -958,7 +959,7 @@ export default function RequestDetails() {
             Call Logs
           </h3>
           <div className="bg-abyss/30 p-6 rounded-2xl border border-surface-highlight min-h-[400px]">
-            {request.interactions.length === 0 && (
+            {(!request.interactions || request.interactions.length === 0) && (
               <div className="text-center py-10">
                 {request.status === RequestStatus.FAILED ? (
                   <div className="text-red-400">
@@ -989,7 +990,7 @@ export default function RequestDetails() {
               </div>
             )}
             {/* Use ProviderCallSection for call logs with transcripts, LogItem for others */}
-            {request.interactions.map((log, i) => (
+            {(request.interactions || []).map((log, i) => (
               Array.isArray(log.transcript) && log.transcript.length > 0 ? (
                 <ProviderCallSection key={log.id || i} log={log} defaultExpanded={i === 0} />
               ) : (
@@ -1002,7 +1003,7 @@ export default function RequestDetails() {
 
         {/* Sidebar Info */}
         <div className="space-y-6">
-          {request.providersFound.length > 0 && (
+          {request.providersFound && request.providersFound.length > 0 && (
             <div className="bg-surface rounded-xl border border-surface-highlight shadow-sm p-5">
               <h3 className="font-bold text-slate-200 mb-3 flex items-center gap-2">
                 <User className="w-4 h-4 text-slate-400" /> Candidates
@@ -1014,7 +1015,7 @@ export default function RequestDetails() {
                     onClick={() => setDetailPanelProvider(p)}
                     className={`text-sm p-3 rounded-lg border cursor-pointer transition-all hover:border-primary-500/50 hover:shadow-md ${request.selectedProvider?.id === p.id ? "bg-primary-500/10 border-primary-500/30 ring-1 ring-primary-500/30" : "bg-surface-highlight border-surface-highlight"}`}
                   >
-                    <div className="font-medium text-slate-200">{p.name}</div>
+                    <div className="font-medium text-slate-200">{p.name || "Unknown Provider"}</div>
                     <div className="text-slate-500 text-xs mt-1 flex items-center gap-2">
                       <span>{p.rating ? `${p.rating} ★` : "N/A"}</span>
                       {p.callStatus && (
@@ -1043,10 +1044,10 @@ export default function RequestDetails() {
               </h3>
               <div className="text-sm">
                 <p className="font-medium text-slate-300">
-                  {request.directContactInfo.name}
+                  {request.directContactInfo.name || "Unknown"}
                 </p>
                 <p className="text-slate-500">
-                  {request.directContactInfo.phone}
+                  {request.directContactInfo.phone || "No phone"}
                 </p>
               </div>
             </div>

@@ -9,6 +9,7 @@ import {
   Search,
   PhoneOutgoing,
   BrainCircuit,
+  Calendar,
 } from "lucide-react";
 
 interface Props {
@@ -40,6 +41,12 @@ const StatusBadge: React.FC<Props> = ({ status, size = "md" }) => {
       color: "bg-purple-500/20 text-purple-300 border-purple-500/30",
       icon: BrainCircuit,
       label: "Analyzing",
+      animate: true,
+    },
+    [RequestStatus.BOOKING]: {
+      color: "bg-amber-500/20 text-amber-300 border-amber-500/30",
+      icon: Calendar,
+      label: "Booking Appointment",
       animate: true,
     },
     [RequestStatus.COMPLETED]: {

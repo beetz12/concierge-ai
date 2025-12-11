@@ -178,12 +178,18 @@ export type Database = {
           final_outcome: string | null
           id: string
           location: string | null
+          notification_method: string | null
+          notification_sent_at: string | null
+          preferred_contact: string | null
           selected_provider_id: string | null
+          sms_message_sid: string | null
           status: Database["public"]["Enums"]["request_status"]
           title: string
           type: Database["public"]["Enums"]["request_type"]
           updated_at: string
           user_id: string | null
+          user_phone: string | null
+          user_selection: number | null
         }
         Insert: {
           created_at?: string
@@ -193,12 +199,18 @@ export type Database = {
           final_outcome?: string | null
           id?: string
           location?: string | null
+          notification_method?: string | null
+          notification_sent_at?: string | null
+          preferred_contact?: string | null
           selected_provider_id?: string | null
+          sms_message_sid?: string | null
           status?: Database["public"]["Enums"]["request_status"]
           title: string
           type: Database["public"]["Enums"]["request_type"]
           updated_at?: string
           user_id?: string | null
+          user_phone?: string | null
+          user_selection?: number | null
         }
         Update: {
           created_at?: string
@@ -208,12 +220,18 @@ export type Database = {
           final_outcome?: string | null
           id?: string
           location?: string | null
+          notification_method?: string | null
+          notification_sent_at?: string | null
+          preferred_contact?: string | null
           selected_provider_id?: string | null
+          sms_message_sid?: string | null
           status?: Database["public"]["Enums"]["request_status"]
           title?: string
           type?: Database["public"]["Enums"]["request_type"]
           updated_at?: string
           user_id?: string | null
+          user_phone?: string | null
+          user_selection?: number | null
         }
         Relationships: [
           {
@@ -268,6 +286,7 @@ export type Database = {
         | "SEARCHING"
         | "CALLING"
         | "ANALYZING"
+        | "BOOKING"
         | "COMPLETED"
         | "FAILED"
       request_type: "RESEARCH_AND_BOOK" | "DIRECT_TASK"
@@ -910,6 +929,7 @@ export const Constants = {
         "SEARCHING",
         "CALLING",
         "ANALYZING",
+        "BOOKING",
         "COMPLETED",
         "FAILED",
       ],

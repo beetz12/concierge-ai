@@ -56,7 +56,9 @@ const LiveStatus: React.FC<LiveStatusProps> = ({
   interactions = [],
 }) => {
   const getStatusConfig = () => {
-    switch (status.toLowerCase()) {
+    // Null safety: ensure status is a string before calling toLowerCase
+    const safeStatus = (status || "").toLowerCase();
+    switch (safeStatus) {
       case "searching":
         return {
           icon: Search,
@@ -119,15 +121,18 @@ const LiveStatus: React.FC<LiveStatusProps> = ({
   const config = getStatusConfig();
   const Icon = config.icon;
 
+  // Null safety: use safe status for all comparisons
+  const safeStatus = (status || "").toLowerCase();
+
   // SEARCHING status - show detailed search steps
-  if (status.toLowerCase() === "searching") {
-    // Determine search progress from interactions
+  if (safeStatus === "searching") {
+    // Determine search progress from interactions (with null safety)
     const hasStartedSearch = interactions.some((i) =>
-      i.stepName.includes("Research") || i.detail.includes("Found")
+      (i.stepName || "").includes("Research") || (i.detail || "").includes("Found")
     );
     const hasFoundProviders = providersFound > 0;
     const hasFilteredProviders = hasFoundProviders && interactions.some((i) =>
-      i.detail.includes("providers using")
+      (i.detail || "").includes("providers using")
     );
 
     const searchSteps: SearchStep[] = [
@@ -238,7 +243,7 @@ const LiveStatus: React.FC<LiveStatusProps> = ({
   }
 
   // CALLING status - show concurrent call progress
-  if (status.toLowerCase() === "calling" && callProgress) {
+  if (safeStatus === "calling" && callProgress) {
     const hasQueuedCalls = callProgress.queued > 0;
     const hasActiveCalls = callProgress.inProgress > 0;
     const hasCompletedCalls = callProgress.completed > 0;
@@ -375,9 +380,9 @@ const LiveStatus: React.FC<LiveStatusProps> = ({
   }
 
   // ANALYZING status - show AI analysis steps
-  if (status.toLowerCase() === "analyzing") {
+  if (safeStatus === "analyzing") {
     const hasCompletedCalls = interactions.some((i) =>
-      i.stepName.includes("Calling") && i.status === "success"
+      (i.stepName || "").includes("Calling") && i.status === "success"
     );
     const isGeneratingRecs = interactions.length > 0;
 
@@ -495,7 +500,7 @@ const LiveStatus: React.FC<LiveStatusProps> = ({
         </div>
       </div>
 
-      {status.toLowerCase() === "calling" && progress && (
+      {safeStatus === "calling" && progress && (
         <div className="mt-3">
           <div className="flex justify-between text-xs text-slate-500 mb-1">
             <span>
