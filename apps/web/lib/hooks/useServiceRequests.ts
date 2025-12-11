@@ -30,7 +30,7 @@ export function useServiceRequests(userId?: string) {
           .select(
             `
             *,
-            providers (*),
+            providers!providers_request_id_fkey (*),
             interaction_logs (*)
           `,
           )

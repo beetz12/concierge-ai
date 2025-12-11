@@ -24,14 +24,42 @@ export interface Provider {
   rating?: number;
   address?: string;
   source?: "Google Maps" | "User Input";
+  // Call tracking
+  callStatus?: string;
+  callResult?: {
+    availability?: string;
+    estimated_rate?: string;
+    all_criteria_met?: boolean;
+    earliest_availability?: string;
+    disqualified?: boolean;
+    disqualification_reason?: string;
+    call_outcome?: string;
+    notes?: string;
+  };
+  callTranscript?: string;
+  callSummary?: string;
+  callDurationMinutes?: number;
+  calledAt?: string;
+  // Research data
+  reviewCount?: number;
+  distance?: number;
+  distanceText?: string;
+  hoursOfOperation?: string[];
+  isOpenNow?: boolean;
+  googleMapsUri?: string;
+  website?: string;
+  placeId?: string;
 }
 
 export interface InteractionLog {
+  id?: string;
   timestamp: string;
   stepName: string;
   detail: string;
   transcript?: { speaker: string; text: string }[];
   status: "success" | "warning" | "error" | "info";
+  providerName?: string;
+  providerId?: string;
   /** Optional call data from real VAPI calls (when LIVE_CALL_ENABLED=true) */
   callData?: {
     callId?: string;

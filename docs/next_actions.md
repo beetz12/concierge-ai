@@ -3,6 +3,9 @@
 ketra cloud integration
 fix ui display
 
+store call history in the db
+
+
 
 
 0. update existing research feature to select 10 providers, capturing distance, location, phone, hours of operation, and rating that meet the user's criteria. 

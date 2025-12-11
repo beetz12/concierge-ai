@@ -1,17 +1,18 @@
-"use client";
-
 import React from "react";
 import Link from "next/link";
 import StatusBadge from "@/components/StatusBadge";
 import { Calendar, MapPin } from "lucide-react";
-import { useAppContext } from "@/lib/providers/AppProvider";
+import { getServiceRequests } from "@/lib/supabase/queries";
+import type { RequestStatus } from "@/lib/types";
 
-export default function RequestHistory() {
-  const { requests } = useAppContext();
+export default async function RequestHistory() {
+  // Query database directly
+  const requests = await getServiceRequests();
 
-  // Sort by newest first
-  const sorted = [...requests].sort(
-    (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
+  // Sort by created_at (newest first) - already sorted by query but ensuring consistency
+  const sorted = [...(requests || [])].sort(
+    (a, b) =>
+      new Date(b.created_at).getTime() - new Date(a.created_at).getTime(),
   );
 
   return (
@@ -27,56 +28,69 @@ export default function RequestHistory() {
           </div>
         ) : (
           <div className="divide-y divide-surface-highlight">
-            {sorted.map((req) => (
-              <div
-                key={req.id}
-                className="p-6 hover:bg-surface-hover transition-colors"
-              >
-                <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-                  <div className="flex-1">
-                    <div className="flex items-center gap-3 mb-2">
-                      <StatusBadge status={req.status} size="sm" />
-                      <span className="text-xs text-slate-400 flex items-center gap-1">
-                        <Calendar className="w-3 h-3" />
-                        {new Date(req.createdAt).toLocaleDateString()}
-                      </span>
-                    </div>
-                    <Link href={`/request/${req.id}`} className="group">
-                      <h3 className="text-lg font-bold text-slate-100 group-hover:text-primary-400 transition-colors mb-1">
-                        {req.title}
-                      </h3>
-                    </Link>
-                    <p className="text-slate-400 text-sm mb-2">
-                      {req.description}
-                    </p>
-                    {req.location && (
-                      <div className="flex items-center gap-1 text-xs text-slate-500">
-                        <MapPin className="w-3 h-3" /> {req.location}
-                      </div>
-                    )}
-                  </div>
+            {sorted.map((req) => {
+              // Find the selected provider from the providers array
+              const providers = Array.isArray(req.providers)
+                ? req.providers
+                : [];
+              const selectedProvider = req.selected_provider_id
+                ? providers.find((p) => p.id === req.selected_provider_id)
+                : null;
 
-                  <div className="flex items-center gap-4">
-                    {req.selectedProvider && (
-                      <div className="hidden md:block text-right">
-                        <span className="text-xs font-bold text-slate-500 uppercase tracking-wider block">
-                          Booked With
-                        </span>
-                        <span className="text-sm font-medium text-primary-400">
-                          {req.selectedProvider.name}
+              return (
+                <div
+                  key={req.id}
+                  className="p-6 hover:bg-surface-hover transition-colors"
+                >
+                  <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                    <div className="flex-1">
+                      <div className="flex items-center gap-3 mb-2">
+                        <StatusBadge
+                          status={req.status as RequestStatus}
+                          size="sm"
+                        />
+                        <span className="text-xs text-slate-400 flex items-center gap-1">
+                          <Calendar className="w-3 h-3" />
+                          {new Date(req.created_at).toLocaleDateString()}
                         </span>
                       </div>
-                    )}
-                    <Link
-                      href={`/request/${req.id}`}
-                      className="px-4 py-2 bg-surface-highlight text-slate-300 text-sm font-medium rounded-lg hover:bg-slate-700/50 hover:text-white transition-colors border border-surface-highlight hover:border-slate-600"
-                    >
-                      View Log
-                    </Link>
+                      <Link href={`/request/${req.id}`} className="group">
+                        <h3 className="text-lg font-bold text-slate-100 group-hover:text-primary-400 transition-colors mb-1">
+                          {req.title}
+                        </h3>
+                      </Link>
+                      <p className="text-slate-400 text-sm mb-2">
+                        {req.description}
+                      </p>
+                      {req.location && (
+                        <div className="flex items-center gap-1 text-xs text-slate-500">
+                          <MapPin className="w-3 h-3" /> {req.location}
+                        </div>
+                      )}
+                    </div>
+
+                    <div className="flex items-center gap-4">
+                      {selectedProvider && (
+                        <div className="hidden md:block text-right">
+                          <span className="text-xs font-bold text-slate-500 uppercase tracking-wider block">
+                            Booked With
+                          </span>
+                          <span className="text-sm font-medium text-primary-400">
+                            {selectedProvider.name}
+                          </span>
+                        </div>
+                      )}
+                      <Link
+                        href={`/request/${req.id}`}
+                        className="px-4 py-2 bg-surface-highlight text-slate-300 text-sm font-medium rounded-lg hover:bg-slate-700/50 hover:text-white transition-colors border border-surface-highlight hover:border-slate-600"
+                      >
+                        View Log
+                      </Link>
+                    </div>
                   </div>
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         )}
       </div>

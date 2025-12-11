@@ -70,7 +70,7 @@ export class CallResultService {
       // Create interaction log if serviceRequestId is provided AND is a valid UUID
       // Direct Tasks use non-UUID IDs (task-xxx) which are localStorage-only
       if (request.serviceRequestId && isValidUuid(request.serviceRequestId)) {
-        await this.createInteractionLog(request.serviceRequestId, result);
+        await this.createInteractionLog(request.serviceRequestId, result, request);
       } else if (request.serviceRequestId) {
         this.logger.info(
           { serviceRequestId: request.serviceRequestId },
@@ -138,12 +138,33 @@ export class CallResultService {
 
   /**
    * Create interaction log for the call
+   * Prevents duplicates by checking if log already exists for this call
    */
   private async createInteractionLog(
     serviceRequestId: string,
     result: CallResult,
+    request: CallRequest,
   ): Promise<void> {
     if (!this.supabase) return;
+
+    // Deduplication: Check if interaction log already exists for this call
+    // This prevents duplicates when both direct call path and webhook call saveCallResult
+    if (result.callId) {
+      const { data: existing } = await this.supabase
+        .from("interaction_logs")
+        .select("id")
+        .eq("request_id", serviceRequestId)
+        .ilike("detail", `%${result.callId}%`)
+        .limit(1);
+
+      if (existing && existing.length > 0) {
+        this.logger.debug(
+          { callId: result.callId, serviceRequestId },
+          "Interaction log already exists for this call, skipping duplicate"
+        );
+        return;
+      }
+    }
 
     // Parse transcript into structured format if possible
     let transcriptData = null;
@@ -169,15 +190,32 @@ export class CallResultService {
       }
     }
 
-    const { error } = await this.supabase.from("interaction_logs").insert({
+    // Build insert object with required fields
+    // Include callId in detail for deduplication tracking
+    const summaryWithCallId = result.callId
+      ? `${result.analysis.summary || `Call to ${result.provider.name}: ${result.status}`} [Call ID: ${result.callId}]`
+      : result.analysis.summary || `Call to ${result.provider.name}: ${result.status}`;
+
+    // Map call status to interaction log status
+    let logStatus: "success" | "warning" | "error" = "warning";
+    if (result.status === "completed") {
+      logStatus = "success";
+    } else if (result.status === "error") {
+      logStatus = "error";
+    }
+    // no_answer, voicemail stay as "warning"
+
+    const insertData = {
       request_id: serviceRequestId,
-      step_name: "provider_call",
-      status: result.status === "completed" ? "success" : "warning",
-      detail:
-        result.analysis.summary ||
-        `Call to ${result.provider.name}: ${result.status}`,
+      step_name: `Call to ${result.provider.name}`,
+      status: logStatus,
+      detail: summaryWithCallId,
       transcript: transcriptData,
-    });
+    };
+
+    const { error } = await this.supabase
+      .from("interaction_logs")
+      .insert(insertData);
 
     if (error) {
       this.logger.error(

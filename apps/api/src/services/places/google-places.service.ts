@@ -124,6 +124,14 @@ export class GooglePlacesService {
         },
       });
 
+      // DEBUG: Log raw API response to see if ratings are being returned
+      if (response.data.places && response.data.places.length > 0) {
+        const sample = response.data.places.slice(0, 3);
+        console.log("DEBUG Places API raw response (first 3):", JSON.stringify(sample, null, 2));
+        const ratingsFound = response.data.places.filter((p: any) => p.rating !== undefined).length;
+        console.log(`DEBUG Ratings found: ${ratingsFound}/${response.data.places.length} places have ratings`);
+      }
+
       const places: PlaceSearchResult[] = (response.data.places || []).map(
         (place: any) => ({
           placeId: place.id,

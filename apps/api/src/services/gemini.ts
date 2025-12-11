@@ -12,7 +12,7 @@ export interface Provider {
   address?: string;
   distance?: number;
   distanceText?: string;
-  hoursOfOperation?: string;
+  hoursOfOperation?: string | string[];
   isOpenNow?: boolean;
   googleMapsUri?: string;
   reason?: string;
@@ -179,13 +179,12 @@ export const searchProviders = async (
           });
 
           // Get enriched providers and limit to maxResults
-          // Map back to gemini.ts Provider format (convert hoursOfOperation array to string)
+          // Keep hoursOfOperation as array for proper JSONB storage
           let topProviders: Provider[] = enrichmentResult.providers.slice(0, maxResults).map(p => ({
             ...p,
             source: p.source as Provider["source"],
-            hoursOfOperation: Array.isArray(p.hoursOfOperation)
-              ? p.hoursOfOperation.join(', ')
-              : p.hoursOfOperation,
+            // Preserve array format - database stores as JSONB array
+            hoursOfOperation: p.hoursOfOperation,
           }));
 
           console.log(`Enrichment stats:`, enrichmentResult.stats);

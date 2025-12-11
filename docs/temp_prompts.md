@@ -1,3 +1,7 @@
+ok after I select the provider, the hours of operation doesn't show up at all. 2. also I'm still seeing duplicate calls in the accordion. 3. The collapsible component title is still "provider_call" instead of the actual business name. Even though we're using our test phone number, it should still use the name of the provider it would have called. 
+4. I'm not seeing the Address of the provider in the details page / component. 5. The call logs of the provider in the tab are not showing. 5. The average rating is showing as 4.5 for all of the providers, even though it has a different average rating on Google Maps. 
+please Use your specialized multi-agent team to analyze the root cause in parallel with up to 3 agents with 90% confidence and implement the best practice solution. If you get this right on the first try, I will tip you $200. ultrathink
+
 ok currently I'm working on @docs/hackathon.md. See @docs/3_DAY_HACKATHON_PLAN.md for context. Curerntly when I initiate a new request on the /new page the agent is quite dumb and doesn't understand the context provided by the user. For example, I'm passing this payload: {
     "providerName": "Dentistry of Uptown Charlotte",
     "providerPhone": "+13106992541",
@@ -105,10 +109,10 @@ I just built @about.md but the UI doesn't look very good. The white background i
 
 # analyze and come up with plan
 Please analyze these issues  
-using your  multi-agent team with up to 3 agentsand come up with a unified plan with 90% confidence and wait for further instructions. My mortgage payment depends on this and If you get this right on the first try, I will tip you $200. ultrathink  
+using your  multi-agent team with up to 3 agents and come up with a unified plan with 90% confidence and wait for further instructions. My mortgage payment depends on this and If you get this right on the first try, I will tip you $200. ultrathink  
 
 # update architecture update docs
-Ok perfect. Please update our @docs/architecture.md and all relevant
+Ok perfect. Please update our @docs/architecture.md README.md and all relevant
   docs if needed to reflect this new architecture shift. please Use your
   specialized multi-agent team to analyze in parallel with up to 3 agents
   with 90% confidence and implement it. If you get this right on the first
