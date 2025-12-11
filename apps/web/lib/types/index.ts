@@ -7,6 +7,7 @@ export enum RequestStatus {
   SEARCHING = "SEARCHING",
   CALLING = "CALLING",
   ANALYZING = "ANALYZING",
+  BOOKING = "BOOKING",
   COMPLETED = "COMPLETED",
   FAILED = "FAILED",
 }
@@ -88,4 +89,30 @@ export interface ServiceRequest {
   };
   preferredContact?: "phone" | "text";
   userPhone?: string;
+}
+
+/**
+ * Safely converts a database status value to a RequestStatus enum.
+ * Falls back to PENDING if the value is null, undefined, or invalid.
+ *
+ * @param status - The status value from the database
+ * @returns A valid RequestStatus enum value
+ */
+export function safeRequestStatus(status: unknown): RequestStatus {
+  if (typeof status !== "string" || !status) {
+    console.warn(
+      `[safeRequestStatus] Invalid status value: ${status}, defaulting to PENDING`
+    );
+    return RequestStatus.PENDING;
+  }
+
+  const upperStatus = status.toUpperCase();
+  if (upperStatus in RequestStatus) {
+    return RequestStatus[upperStatus as keyof typeof RequestStatus];
+  }
+
+  console.warn(
+    `[safeRequestStatus] Unknown status value: ${status}, defaulting to PENDING`
+  );
+  return RequestStatus.PENDING;
 }

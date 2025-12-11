@@ -231,18 +231,18 @@ export default function Dashboard() {
                 <div className="flex items-center justify-between">
                   <div className="flex items-start gap-4">
                     <div className="w-10 h-10 rounded-full bg-surface-highlight flex items-center justify-center text-primary-300 font-bold shrink-0 border border-surface-highlight">
-                      {(req.title || "??").substring(0, 2).toUpperCase()}
+                      {((req.title || "??").substring(0, 2) || "??").toUpperCase()}
                     </div>
                     <div>
                       <h3 className="font-semibold text-slate-100">
                         {req.title || "Untitled Request"}
                       </h3>
                       <p className="text-slate-500 text-sm line-clamp-1">
-                        {req.description}
+                        {req.description || "No description"}
                       </p>
                       <div className="mt-1 flex items-center gap-2 text-xs text-slate-400">
                         <span>
-                          {new Date(req.createdAt).toLocaleDateString()}
+                          {req.createdAt ? new Date(req.createdAt).toLocaleDateString() : "Unknown date"}
                         </span>
                         <span>•</span>
                         <span>{req.location || "Direct Task"}</span>

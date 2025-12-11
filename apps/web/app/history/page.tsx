@@ -85,11 +85,11 @@ export default async function RequestHistory() {
                       </div>
                       <Link href={`/request/${req.id}`} className="group">
                         <h3 className="text-lg font-bold text-slate-100 group-hover:text-primary-400 transition-colors mb-1">
-                          {req.title}
+                          {req.title || "Untitled Request"}
                         </h3>
                       </Link>
                       <p className="text-slate-400 text-sm mb-2">
-                        {req.description}
+                        {req.description || "No description"}
                       </p>
                       {req.location && (
                         <div className="flex items-center gap-1 text-xs text-slate-500">

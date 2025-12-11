@@ -3,6 +3,7 @@
  */
 
 import type { ServiceRequest, Provider, InteractionLog } from "../types";
+import { safeRequestStatus } from "../types";
 import type { Database } from "../types/database";
 
 type DbServiceRequest = Database["public"]["Tables"]["service_requests"]["Row"];
@@ -22,7 +23,7 @@ export function transformToDbRequest(
     description: request.description,
     criteria: request.criteria,
     location: request.location || null,
-    status: request.status,
+    status: request.status as Database["public"]["Enums"]["request_status"],
     created_at: request.createdAt,
     final_outcome: request.finalOutcome || null,
     direct_contact_info: request.directContactInfo
@@ -84,7 +85,7 @@ export function transformFromDbRequest(
     description: dbRequest.description,
     criteria: dbRequest.criteria,
     location: dbRequest.location || undefined,
-    status: dbRequest.status as ServiceRequest["status"],
+    status: safeRequestStatus(dbRequest.status),
     createdAt: dbRequest.created_at,
     providersFound: dbRequest.providers
       ? dbRequest.providers.map(transformFromDbProvider)
