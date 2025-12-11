@@ -6,6 +6,7 @@
 import { FastifyInstance } from "fastify";
 import { z } from "zod";
 import { KestraClient } from "../services/vapi/kestra.client.js";
+import { createClient as createSupabaseClient } from "@supabase/supabase-js";
 
 // Zod schema for booking request
 const scheduleBookingSchema = z.object({
@@ -139,15 +140,199 @@ export default async function bookingRoutes(fastify: FastifyInstance) {
         const kestraEnabled = process.env.KESTRA_ENABLED === "true";
         const kestraHealthy = kestraEnabled && (await kestraClient.healthCheck());
 
+        // STRICT MODE: If Kestra explicitly enabled but unhealthy, throw error
+        if (kestraEnabled && !kestraHealthy) {
+          request.log.error({}, "Kestra enabled but unavailable for booking - not falling back");
+          throw new Error("Kestra explicitly enabled (KESTRA_ENABLED=true) but unavailable. Fix Kestra or disable it.");
+        }
+
         if (!kestraHealthy) {
-          // Kestra not available - return error
-          fastify.log.error(
+          // Kestra not available - use direct VAPI fallback
+          fastify.log.info(
             { kestraEnabled, kestraHealthy },
-            "Kestra not available for booking calls"
+            "Kestra not available for booking calls, using direct VAPI fallback"
           );
-          return reply.status(503).send({
-            success: false,
-            error: "Booking service unavailable. Please try again later.",
+
+          // Check if VAPI is configured
+          if (!process.env.VAPI_API_KEY || !process.env.VAPI_PHONE_NUMBER_ID) {
+            return reply.status(503).send({
+              success: false,
+              error: "Neither Kestra nor VAPI configured. Booking service unavailable.",
+            });
+          }
+
+          // Import booking config and VAPI client
+          const { createBookingAssistantConfig } = await import(
+            "../services/vapi/booking-assistant-config.js"
+          );
+          const { VapiClient } = await import("@vapi-ai/server-sdk");
+          const vapi = new VapiClient({ token: process.env.VAPI_API_KEY });
+
+          // Create booking assistant configuration
+          const bookingConfig = createBookingAssistantConfig({
+            providerName: validated.providerName,
+            providerPhone: validated.providerPhone,
+            serviceNeeded: validated.serviceDescription || "service",
+            clientName: validated.customerName,
+            clientPhone: validated.customerPhone,
+            location: validated.location || "",
+            preferredDateTime: validated.preferredDate && validated.preferredTime
+              ? `${validated.preferredDate} at ${validated.preferredTime}`
+              : validated.preferredDate || validated.preferredTime || "as soon as possible",
+            serviceRequestId: validated.serviceRequestId,
+            providerId: validated.providerId,
+          });
+
+          // Build call parameters
+          const callParams: any = {
+            phoneNumberId: process.env.VAPI_PHONE_NUMBER_ID,
+            customer: {
+              number: validated.providerPhone,
+              name: validated.providerName,
+            },
+            assistant: bookingConfig,
+          };
+
+          fastify.log.info(
+            { provider: validated.providerName, phone: validated.providerPhone },
+            "Creating booking call via direct VAPI"
+          );
+
+          // Create the call
+          const callResponse = await vapi.calls.create(callParams);
+
+          // Extract call from response
+          let call: any;
+          if (Array.isArray(callResponse)) {
+            call = callResponse[0];
+          } else if ((callResponse as any).id) {
+            call = callResponse;
+          } else if ((callResponse as any).data?.id) {
+            call = (callResponse as any).data;
+          } else {
+            throw new Error("Unexpected response format from VAPI calls.create");
+          }
+
+          fastify.log.info(
+            { callId: call.id, status: call.status },
+            "Booking call created, waiting for completion"
+          );
+
+          // Poll for completion
+          const maxAttempts = 60;
+          let attempts = 0;
+          let completedCall: any = null;
+
+          while (attempts < maxAttempts) {
+            const callData = await vapi.calls.get({ id: call.id });
+
+            let currentCall: any;
+            if (Array.isArray(callData)) {
+              currentCall = callData[0];
+            } else if ((callData as any).id) {
+              currentCall = callData;
+            } else if ((callData as any).data?.id) {
+              currentCall = (callData as any).data;
+            } else {
+              throw new Error("Unexpected response format from VAPI calls.get");
+            }
+
+            if (!["queued", "ringing", "in-progress"].includes(currentCall.status)) {
+              completedCall = currentCall;
+              break;
+            }
+
+            await new Promise((resolve) => setTimeout(resolve, 5000));
+            attempts++;
+          }
+
+          if (!completedCall) {
+            throw new Error(`Booking call ${call.id} timed out after ${maxAttempts * 5} seconds`);
+          }
+
+          // Extract structured data from call result
+          const analysis = completedCall.analysis || {};
+          const structuredData = analysis.structuredData || {};
+          const bookingConfirmed = structuredData.booking_confirmed || false;
+
+          // Extract transcript
+          const transcript = completedCall.artifact?.transcript || "";
+          const transcriptStr =
+            typeof transcript === "string" ? transcript : JSON.stringify(transcript);
+
+          // Update database with booking result
+          const supabase = createSupabaseClient(
+            process.env.SUPABASE_URL!,
+            process.env.SUPABASE_SERVICE_ROLE_KEY!
+          );
+
+          // Update provider record with booking details
+          const { error: updateProviderError } = await supabase
+            .from("providers")
+            .update({
+              booking_confirmed: bookingConfirmed,
+              booking_date: structuredData.confirmed_date,
+              booking_time: structuredData.confirmed_time,
+              confirmation_number: structuredData.confirmation_number,
+              last_call_at: new Date().toISOString(),
+              call_transcript: transcriptStr,
+            })
+            .eq("id", validated.providerId);
+
+          if (updateProviderError) {
+            fastify.log.error(
+              { error: updateProviderError },
+              "Failed to update provider record"
+            );
+          }
+
+          // If booking confirmed, update service request
+          if (bookingConfirmed) {
+            const { error: updateRequestError } = await supabase
+              .from("service_requests")
+              .update({
+                selected_provider_id: validated.providerId,
+                status: "COMPLETED",
+                final_outcome: `Appointment confirmed with ${validated.providerName} for ${structuredData.confirmed_date || "TBD"} at ${structuredData.confirmed_time || "TBD"}`,
+              })
+              .eq("id", validated.serviceRequestId);
+
+            if (updateRequestError) {
+              fastify.log.error(
+                { error: updateRequestError },
+                "Failed to update service request"
+              );
+            }
+
+            // Create interaction log
+            await supabase.from("interaction_logs").insert({
+              request_id: validated.serviceRequestId,
+              step_name: "Booking Confirmed",
+              detail: `Successfully booked appointment with ${validated.providerName}. Confirmation: ${structuredData.confirmation_number || "N/A"}`,
+              status: "success",
+            });
+          } else {
+            // Booking failed - log it
+            await supabase.from("interaction_logs").insert({
+              request_id: validated.serviceRequestId,
+              step_name: "Booking Failed",
+              detail: `Failed to confirm booking with ${validated.providerName}. Outcome: ${structuredData.call_outcome || "unknown"}`,
+              status: "warning",
+            });
+          }
+
+          return reply.send({
+            success: true,
+            data: {
+              bookingInitiated: true,
+              bookingConfirmed,
+              executionId: completedCall.id,
+              bookingStatus: bookingConfirmed ? "confirmed" : structuredData.call_outcome || "call_completed",
+              method: "direct_vapi",
+              confirmedDate: structuredData.confirmed_date || "",
+              confirmedTime: structuredData.confirmed_time || "",
+              confirmationNumber: structuredData.confirmation_number || "",
+            },
           });
         }
 
@@ -181,10 +366,51 @@ export default async function bookingRoutes(fastify: FastifyInstance) {
           });
         }
 
-        // TODO: Update service_request and provider records in database
-        // - Set service_request.status to 'booking' or 'completed'
-        // - Set service_request.selected_provider_id
-        // - Update provider.call_status
+        // Update database to reflect booking in progress
+        const supabase = createSupabaseClient(
+          process.env.SUPABASE_URL!,
+          process.env.SUPABASE_SERVICE_ROLE_KEY!
+        );
+
+        // Update service request status to BOOKING
+        const { error: updateRequestError } = await supabase
+          .from("service_requests")
+          .update({
+            status: "BOOKING",
+            selected_provider_id: validated.providerId,
+          })
+          .eq("id", validated.serviceRequestId);
+
+        if (updateRequestError) {
+          fastify.log.error(
+            { error: updateRequestError },
+            "Failed to update service request status"
+          );
+        }
+
+        // Update provider call status
+        const { error: updateProviderError } = await supabase
+          .from("providers")
+          .update({
+            call_status: "booking_in_progress",
+            last_call_at: new Date().toISOString(),
+          })
+          .eq("id", validated.providerId);
+
+        if (updateProviderError) {
+          fastify.log.error(
+            { error: updateProviderError },
+            "Failed to update provider call status"
+          );
+        }
+
+        // Create interaction log for booking attempt
+        await supabase.from("interaction_logs").insert({
+          request_id: validated.serviceRequestId,
+          step_name: "Booking Call Started",
+          detail: `Initiated booking call to ${validated.providerName} via Kestra. Execution ID: ${result.executionId}`,
+          status: "in_progress",
+        });
 
         return reply.send({
           success: true,

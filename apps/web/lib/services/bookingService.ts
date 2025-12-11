@@ -15,6 +15,9 @@ export interface NotifyUserRequest {
   userName?: string;
   requestUrl?: string;
   serviceRequestId: string;
+  preferredContact?: "phone" | "text";
+  serviceNeeded?: string;
+  location?: string;
   providers: Array<{
     name: string;
     earliestAvailability: string;

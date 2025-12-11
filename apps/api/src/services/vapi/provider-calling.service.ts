@@ -105,11 +105,13 @@ export class ProviderCallingService {
     const isHealthy = await this.kestraClient.healthCheck();
 
     if (!isHealthy) {
-      this.logger.warn(
+      // STRICT MODE: If Kestra explicitly enabled but unhealthy, throw error
+      // This ensures infrastructure issues are surfaced, not masked by fallback
+      this.logger.error(
         {},
-        "Kestra health check failed, falling back to direct VAPI",
+        "Kestra health check failed with KESTRA_ENABLED=true - not falling back",
       );
-      return false;
+      throw new Error("Kestra explicitly enabled (KESTRA_ENABLED=true) but health check failed. Fix Kestra or set KESTRA_ENABLED=false to use direct VAPI.");
     }
 
     this.logger.debug({}, "Kestra available, will use Kestra flow");

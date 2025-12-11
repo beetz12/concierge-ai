@@ -62,9 +62,21 @@ export class ResearchService {
         "Research failed, attempting fallback",
       );
 
+      // Check if Kestra is explicitly enabled - if so, don't fall back
+      const kestraEnabled = process.env.KESTRA_ENABLED === "true";
+      const wasUsingKestra = await this.shouldUseKestra();
+
+      if (kestraEnabled && wasUsingKestra) {
+        this.logger.error(
+          { error },
+          "Kestra failed with KESTRA_ENABLED=true - not falling back to preserve error visibility",
+        );
+        throw error;
+      }
+
       // If primary method fails, try the other one
       try {
-        const useKestra = await this.shouldUseKestra();
+        const useKestra = wasUsingKestra;  // Reuse the check we already did
         if (useKestra) {
           this.logger.warn({}, "Kestra failed, falling back to Direct Gemini");
           result = await this.directClient.research(request);

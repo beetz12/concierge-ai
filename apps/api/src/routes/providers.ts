@@ -8,6 +8,7 @@ import { z } from "zod";
 import {
   ProviderCallingService,
   ConcurrentCallService,
+  KestraClient,
 } from "../services/vapi/index.js";
 import { RecommendationService } from "../services/recommendations/recommend.service.js";
 
@@ -92,6 +93,7 @@ export default async function providerRoutes(fastify: FastifyInstance) {
   const callingService = new ProviderCallingService(fastify.log);
   const concurrentCallService = new ConcurrentCallService(fastify.log);
   const recommendationService = new RecommendationService();
+  const kestraClient = new KestraClient(fastify.log);
 
   /**
    * POST /api/v1/providers/call
@@ -614,7 +616,44 @@ export default async function providerRoutes(fastify: FastifyInstance) {
         // Validate request body with Zod
         const validated = recommendationSchema.parse(request.body);
 
-        // Generate recommendations
+        // Check if Kestra is enabled (primary path for hackathon)
+        const kestraEnabled = process.env.KESTRA_ENABLED === "true";
+        const kestraHealthy = kestraEnabled && (await kestraClient.healthCheck());
+
+        request.log.info(
+          { kestraEnabled, kestraHealthy },
+          "Recommendation routing decision"
+        );
+
+        if (kestraHealthy) {
+          // Use Kestra workflow (primary path)
+          request.log.info("Using Kestra recommend_providers workflow");
+
+          const kestraResult = await kestraClient.triggerRecommendProvidersFlow({
+            callResults: validated.callResults,
+            originalCriteria: validated.originalCriteria,
+            serviceRequestId: validated.serviceRequestId,
+          });
+
+          if (!kestraResult.success) {
+            request.log.warn(
+              { error: kestraResult.error },
+              "Kestra recommendation failed, falling back to direct Gemini"
+            );
+            // Fall through to direct Gemini
+          } else {
+            return reply.send({
+              success: true,
+              data: kestraResult.recommendations,
+              method: "kestra",
+              executionId: kestraResult.executionId,
+            });
+          }
+        }
+
+        // Fallback: Direct Gemini API call
+        request.log.info("Using direct Gemini API for recommendations");
+
         const recommendations = await recommendationService.generateRecommendations(
           validated
         );
@@ -622,6 +661,7 @@ export default async function providerRoutes(fastify: FastifyInstance) {
         return reply.send({
           success: true,
           data: recommendations,
+          method: "direct_gemini",
         });
       } catch (error: unknown) {
         request.log.error({ error }, "Provider recommendation failed");

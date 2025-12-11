@@ -28,6 +28,7 @@ import {
   Provider,
 } from "@/lib/types";
 import { createClient } from "@/lib/supabase/client";
+import { notifyUser, scheduleBooking } from "@/lib/services/bookingService";
 
 const LogItem: React.FC<{ log: InteractionLog; index: number }> = ({ log }) => {
   const iconMap = {
@@ -135,6 +136,8 @@ export default function RequestDetails() {
   } | null>(null);
   // State for provider detail panel (click on candidate card)
   const [detailPanelProvider, setDetailPanelProvider] = useState<Provider | null>(null);
+  // Track if user notification was sent
+  const [notificationSent, setNotificationSent] = useState(false);
 
   // Use realtime data if available, otherwise local request, otherwise DB request
   const request = realtimeRequest || localRequest || dbRequest;
@@ -288,6 +291,32 @@ export default function RequestDetails() {
         });
 
         console.log("Recommendations generated:", transformedProviders.length);
+
+        // Send notification to user if we have their phone number
+        if (request.userPhone && transformedProviders.length > 0 && !notificationSent) {
+          console.log("Sending notification to user:", request.userPhone);
+
+          const notifyResult = await notifyUser({
+            userPhone: request.userPhone,
+            userName: request.directContactInfo?.name,
+            serviceRequestId: id,
+            preferredContact: request.preferredContact || "text",
+            serviceNeeded: request.title,
+            location: request.location,
+            requestUrl: `${window.location.origin}/request/${id}`,
+            providers: transformedProviders.slice(0, 3).map((p: { providerName: string; earliestAvailability: string }) => ({
+              name: p.providerName,
+              earliestAvailability: p.earliestAvailability || "Contact for availability",
+            })),
+          });
+
+          if (notifyResult.success) {
+            console.log("User notification sent successfully:", notifyResult.data?.method);
+            setNotificationSent(true);
+          } else {
+            console.error("Failed to send user notification:", notifyResult.error);
+          }
+        }
       } else {
         console.error("Invalid response from recommendations API:", result);
       }
@@ -296,7 +325,7 @@ export default function RequestDetails() {
     } finally {
       setRecommendationsLoading(false);
     }
-  }, [id, request, recommendationsChecked]);
+  }, [id, request, recommendationsChecked, notificationSent]);
 
   // Fetch from database if not in localStorage
   useEffect(() => {
@@ -401,6 +430,8 @@ export default function RequestDetails() {
                 phone: String((data.direct_contact_info as any).phone || ""),
               }
             : undefined,
+          userPhone: (data as any).user_phone || undefined,
+          preferredContact: (data as any).preferred_contact as "phone" | "text" | undefined,
         };
         setDbRequest(converted);
         // Also add to context so it persists during this session
@@ -699,58 +730,55 @@ export default function RequestDetails() {
     try {
       console.log("Initiating booking call for:", selectedProvider);
 
-      // Call the booking API endpoint
-      const response = await fetch("/api/v1/providers/book", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          providerId: selectedProvider.providerId,
-          providerName: selectedProvider.providerName,
-          providerPhone: selectedProvider.phone,
-          serviceNeeded: request.title,
-          serviceRequestId: id,
-          location: request.location || "",
-          preferredDateTime: selectedProvider.earliestAvailability,
-          additionalNotes: request.criteria,
-        }),
+      // Use scheduleBooking from bookingService (uses Kestra when KESTRA_ENABLED=true)
+      const result = await scheduleBooking({
+        serviceRequestId: id,
+        providerId: selectedProvider.providerId,
+        providerPhone: selectedProvider.phone,
+        providerName: selectedProvider.providerName,
+        serviceDescription: request.title,
+        preferredDate: selectedProvider.earliestAvailability,
+        customerName: request.directContactInfo?.name,
+        customerPhone: request.userPhone,
+        location: request.location,
       });
-
-      const result = await response.json();
-
-      if (!response.ok) {
-        throw new Error(result.error || "Failed to book appointment");
-      }
 
       console.log("Booking call result:", result);
 
-      // Check if booking was confirmed
-      if (result.data.bookingConfirmed) {
-        // Success - show inline confirmation (no alert())
-        const confirmationDetails = [
-          `Provider: ${selectedProvider.providerName}`,
-          `Date: ${result.data.confirmedDate}`,
-          `Time: ${result.data.confirmedTime}`,
-          result.data.confirmationNumber ? `Confirmation #: ${result.data.confirmationNumber}` : "",
-        ].filter(Boolean).join(" • ");
+      if (!result.success) {
+        throw new Error(result.error || "Failed to book appointment");
+      }
 
+      // Check booking status from response
+      const bookingStatus = result.data?.bookingStatus || "unknown";
+      const bookingInitiated = result.data?.bookingInitiated;
+
+      if (bookingInitiated && bookingStatus === "confirmed") {
+        // Success - show inline confirmation
         setBookingMessage({
           type: "success",
           title: "Appointment Confirmed!",
-          details: confirmationDetails,
+          details: `Provider: ${selectedProvider.providerName} • Method: ${result.data?.method || "direct"}`,
         });
 
         // Close modal
         setShowModal(false);
 
         // Real-time subscription will handle updating the UI with the new status
+      } else if (bookingInitiated) {
+        // Booking call made but not confirmed yet
+        setBookingMessage({
+          type: "success",
+          title: "Booking Call Initiated",
+          details: `Status: ${bookingStatus}. The provider will contact you to confirm.`,
+        });
+        setShowModal(false);
       } else {
-        // Booking failed - show inline error
+        // Booking failed
         setBookingMessage({
           type: "error",
           title: "Booking Unsuccessful",
-          details: `${result.data.callOutcome || "Unknown reason"}. Next steps: ${result.data.nextSteps || "Please try again later"}`,
+          details: `Status: ${bookingStatus}. Please try again or contact the provider directly.`,
         });
         setShowModal(false);
       }

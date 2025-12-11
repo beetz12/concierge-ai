@@ -11,6 +11,7 @@ import workflowRoutes from "./routes/workflows.js";
 import providerRoutes from "./routes/providers.js";
 import vapiWebhookRoutes from "./routes/vapi-webhook.js";
 import notificationRoutes from "./routes/notifications.js";
+import twilioWebhookRoutes from "./routes/twilio-webhook.js";
 import bookingRoutes from "./routes/bookings.js";
 
 const server = Fastify({
@@ -70,7 +71,8 @@ await server.register(swagger, {
         name: "vapi",
         description: "VAPI webhook callbacks and call result retrieval",
       },
-      { name: "notifications", description: "User notification operations (SMS via Twilio)" },
+      { name: "notifications", description: "User notification operations (SMS/Phone via Twilio/VAPI)" },
+      { name: "twilio", description: "Twilio webhook handlers for inbound SMS" },
       { name: "bookings", description: "Appointment scheduling operations" },
     ],
   },
@@ -141,6 +143,7 @@ server.get(
         providers: "/api/v1/providers",
         vapi: "/api/v1/vapi",
         notifications: "/api/v1/notifications",
+        twilio: "/api/v1/twilio",
         bookings: "/api/v1/bookings",
         docs: "/docs",
       },
@@ -165,6 +168,9 @@ await server.register(vapiWebhookRoutes, { prefix: "/api/v1/vapi" });
 
 // Register Notification routes
 await server.register(notificationRoutes, { prefix: "/api/v1/notifications" });
+
+// Register Twilio Webhook routes
+await server.register(twilioWebhookRoutes, { prefix: "/api/v1/twilio" });
 
 // Register Booking routes
 await server.register(bookingRoutes, { prefix: "/api/v1/bookings" });
