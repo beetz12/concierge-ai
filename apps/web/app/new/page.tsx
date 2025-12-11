@@ -60,6 +60,14 @@ export default function NewRequest() {
     minRating: 4.5,
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [showCriteriaInput, setShowCriteriaInput] = useState(false);
+
+  // Form validation - all required fields must be filled
+  const isFormValid =
+    formData.clientName.trim() !== "" &&
+    formData.title.trim() !== "" &&
+    formData.location.trim() !== "" &&
+    formData.description.trim() !== "";
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -550,31 +558,54 @@ export default function NewRequest() {
         </div>
 
         <div>
-          <label className="block text-sm font-semibold text-slate-300 mb-2">
-            Specific Criteria (Important)
-          </label>
-          <div className="bg-blue-500/10 border border-blue-500/20 p-4 rounded-xl mb-3 flex items-start gap-3 text-sm text-blue-300">
-            <AlertCircle className="w-5 h-5 shrink-0 text-blue-400" />
-            <p>
-              The AI will use these criteria when interviewing providers. Be
-              specific about rating, availability, or price.
-            </p>
+          <div className="flex items-center justify-between mb-2">
+            <label className="text-sm font-semibold text-slate-300">
+              Additional Criteria
+            </label>
+            <button
+              type="button"
+              onClick={() => setShowCriteriaInput(!showCriteriaInput)}
+              className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
+                showCriteriaInput ? "bg-primary-600" : "bg-slate-700"
+              }`}
+              role="switch"
+              aria-checked={showCriteriaInput}
+            >
+              <span
+                className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                  showCriteriaInput ? "translate-x-6" : "translate-x-1"
+                }`}
+              />
+            </button>
           </div>
-          <input
-            type="text"
-            required
-            placeholder="e.g. licensed, accepts new patients, background check required"
-            className="w-full px-4 py-3 rounded-xl border border-surface-highlight focus:border-primary-500 focus:ring-2 focus:ring-primary-500/20 outline-none transition-all bg-abyss text-slate-100 placeholder-slate-600"
-            value={formData.criteria}
-            onChange={(e) =>
-              setFormData({ ...formData, criteria: e.target.value })
-            }
-          />
+          <p className="text-xs text-slate-500 mb-3">
+            Add specific requirements for the AI to ask providers about (e.g., licensing, availability, pricing)
+          </p>
+          {showCriteriaInput && (
+            <>
+              <div className="bg-blue-500/10 border border-blue-500/20 p-4 rounded-xl mb-3 flex items-start gap-3 text-sm text-blue-300">
+                <AlertCircle className="w-5 h-5 shrink-0 text-blue-400" />
+                <p>
+                  The AI will use these criteria when interviewing providers. Be
+                  specific about availability, pricing, or qualifications.
+                </p>
+              </div>
+              <input
+                type="text"
+                placeholder="e.g. licensed, accepts new patients, background check required"
+                className="w-full px-4 py-3 rounded-xl border border-surface-highlight focus:border-primary-500 focus:ring-2 focus:ring-primary-500/20 outline-none transition-all bg-abyss text-slate-100 placeholder-slate-600"
+                value={formData.criteria}
+                onChange={(e) =>
+                  setFormData({ ...formData, criteria: e.target.value })
+                }
+              />
+            </>
+          )}
         </div>
 
         <button
           type="submit"
-          disabled={isSubmitting}
+          disabled={isSubmitting || !isFormValid}
           className="w-full py-4 bg-primary-600 hover:bg-primary-500 text-white font-bold rounded-xl shadow-lg shadow-primary-500/20 transition-all transform active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
         >
           {isSubmitting ? (

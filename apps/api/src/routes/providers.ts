@@ -25,7 +25,7 @@ const callProviderSchema = z.object({
     .string()
     .regex(/^\+1\d{10}$/, "Phone must be E.164 format (+1XXXXXXXXXX)"),
   serviceNeeded: z.string().min(1, "Service type is required"),
-  userCriteria: z.string().min(1, "User criteria is required"),
+  userCriteria: z.string().default(""), // Optional - empty string allowed
   problemDescription: z.string().optional(),
   clientName: z.string().optional(),
   location: z.string().min(1, "Location is required"),
@@ -51,7 +51,7 @@ const batchCallSchema = z.object({
     }),
   ),
   serviceNeeded: z.string().min(1, "Service type is required"),
-  userCriteria: z.string().min(1, "User criteria is required"),
+  userCriteria: z.string().default(""), // Optional - empty string allowed
   location: z.string().min(1, "Location is required"),
   urgency: z
     .enum(["immediate", "within_24_hours", "within_2_days", "flexible"])
@@ -63,7 +63,7 @@ const batchCallSchema = z.object({
 // Recommendation schema for analyzing call results
 const recommendationSchema = z.object({
   callResults: z.array(z.any()), // CallResult[] from vapi/types.ts
-  originalCriteria: z.string().min(1, "Original criteria is required"),
+  originalCriteria: z.string().default(""), // Optional - empty string allowed
   serviceRequestId: z.string().min(1, "Service request ID is required"),
 });
 

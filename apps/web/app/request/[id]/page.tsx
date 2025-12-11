@@ -632,6 +632,22 @@ export default function RequestDetails() {
     }
   }, [request?.status, recommendationsChecked, recommendationsLoading, checkAndGenerateRecommendations]);
 
+  // Fallback: Poll for recommendations if subscription doesn't fire
+  // This handles race conditions where JSONB updates don't trigger real-time subscriptions
+  useEffect(() => {
+    if (
+      request?.status === RequestStatus.ANALYZING &&
+      !recommendationsChecked &&
+      !recommendationsLoading
+    ) {
+      const pollTimer = setTimeout(() => {
+        console.log("[Recommendations] Fallback poll triggered after 5s");
+        checkAndGenerateRecommendations();
+      }, 5000);
+      return () => clearTimeout(pollTimer);
+    }
+  }, [request?.status, recommendationsChecked, recommendationsLoading, checkAndGenerateRecommendations]);
+
   // Handler for provider selection
   const handleProviderSelect = (provider: {
     providerId: string;
