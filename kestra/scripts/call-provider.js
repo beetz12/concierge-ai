@@ -58,12 +58,26 @@ let createAssistantConfig;
 // Dynamic import for ESM module from CommonJS context
 async function loadAssistantConfig() {
     try {
+        // Try local scripts folder first (for Kestra Cloud)
+        try {
+            const configModule = await import('./assistant-config.js');
+            createAssistantConfig = configModule.createAssistantConfig;
+            console.log("[Config] Loaded from scripts folder (Kestra Cloud)");
+            return;
+        } catch (localError) {
+            console.log("[Config] Local import failed, trying monorepo path...");
+        }
+
+        // Fallback: Load from monorepo (for local development)
         const configModule = await import('../../apps/api/dist/services/vapi/assistant-config.js');
         createAssistantConfig = configModule.createAssistantConfig;
-        console.log("[Config] Loaded shared assistant configuration from TypeScript source");
+        console.log("[Config] Loaded from monorepo (local development)");
+
     } catch (error) {
         console.error("[Config] Failed to load assistant configuration:", error.message);
-        console.error("[Config] Make sure the API has been built: pnpm --filter api build");
+        console.error("[Config] Make sure:");
+        console.error("  - Local: Run 'pnpm --filter api build'");
+        console.error("  - Cloud: Copy assistant-config.js to scripts folder");
         process.exit(1);
     }
 }

@@ -7,12 +7,10 @@ import { RequestStatus, RequestType, ServiceRequest } from "@/lib/types";
 import { Search, MapPin, AlertCircle, Sparkles, User } from "lucide-react";
 import {
   simulateCall,
-  selectBestProvider,
   analyzeResearchPrompt,
 } from "@/lib/services/geminiService";
 import { searchProviders as searchProvidersWorkflow } from "@/lib/services/workflowService";
 import {
-  callProviderLive,
   callResponseToInteractionLog,
   normalizePhoneNumber,
   isValidE164Phone,
@@ -263,166 +261,219 @@ export default function NewRequest() {
         console.error('[Concierge] Failed to generate prompts, using defaults:', error);
       }
 
-      for (const [providerIndex, provider] of providersToCall.entries()) {
-        let log;
+      if (LIVE_CALL_ENABLED) {
+        // BATCH CALLING: Call all providers concurrently via batch endpoint
+        // Build provider list with phone numbers (applying test mode substitution)
+        const batchProviders: Array<{
+          name: string;
+          phone: string;
+          id: string;
+          originalPhone?: string;
+        }> = [];
 
-        if (LIVE_CALL_ENABLED) {
-          // Real VAPI calls - requires valid phone number
+        for (const [providerIndex, provider] of providersToCall.entries()) {
           if (!provider.phone) {
             console.warn(`[Concierge] Skipping ${provider.name}: no phone number`);
-            log = {
+            callLogs.push({
               timestamp: new Date().toISOString(),
               stepName: `Calling ${provider.name}`,
               detail: `Skipped: No phone number available`,
               status: "warning" as const,
-            };
-          } else {
-            // Normalize phone to E.164 format
-            // In admin test mode, use test phone at same index (1:1 mapping)
-            // Note: providerIndex is guaranteed to be within ADMIN_TEST_PHONES bounds
-            // because we sliced providersToCall to ADMIN_TEST_PHONES.length
-            const phoneToCall = isAdminTestMode
-              ? normalizePhoneNumber(ADMIN_TEST_PHONES[providerIndex]!)
-              : normalizePhoneNumber(provider.phone);
+            });
+            continue;
+          }
 
-            if (!isValidE164Phone(phoneToCall)) {
-              console.warn(
-                `[Concierge] Skipping ${provider.name}: invalid phone ${isAdminTestMode ? ADMIN_TEST_PHONES[providerIndex] : provider.phone} -> ${phoneToCall}`,
-              );
-              log = {
-                timestamp: new Date().toISOString(),
-                stepName: `Calling ${provider.name}`,
-                detail: `Skipped: Invalid phone number format`,
-                status: "warning" as const,
-              };
-            } else {
-              const testModeLabel = isAdminTestMode ? " (TEST MODE)" : "";
-              console.log(
-                `[Concierge] Calling ${provider.name} at ${phoneToCall} via VAPI...${testModeLabel}`,
-              );
+          // Normalize phone to E.164 format
+          // In admin test mode, use test phone at same index (1:1 mapping)
+          const phoneToCall = isAdminTestMode
+            ? normalizePhoneNumber(ADMIN_TEST_PHONES[providerIndex]!)
+            : normalizePhoneNumber(provider.phone);
 
-              // Make real VAPI call
-              const response = await callProviderLive({
-                providerName: provider.name,
-                providerPhone: phoneToCall,
-                serviceNeeded: data.title,
-                problemDescription: data.description,
-                userCriteria: data.criteria,
-                location: data.location,
-                clientName: data.clientName,
-                urgency: data.urgency,
-                serviceRequestId: reqId,
-                providerId: provider.id,
-                customPrompt: researchPrompt ? {
+          if (!isValidE164Phone(phoneToCall)) {
+            console.warn(
+              `[Concierge] Skipping ${provider.name}: invalid phone ${isAdminTestMode ? ADMIN_TEST_PHONES[providerIndex] : provider.phone} -> ${phoneToCall}`,
+            );
+            callLogs.push({
+              timestamp: new Date().toISOString(),
+              stepName: `Calling ${provider.name}`,
+              detail: `Skipped: Invalid phone number format`,
+              status: "warning" as const,
+            });
+            continue;
+          }
+
+          batchProviders.push({
+            name: provider.name,
+            phone: phoneToCall,
+            id: provider.id,
+            originalPhone: provider.phone,
+          });
+        }
+
+        // Update UI with any skipped providers before starting batch call
+        if (callLogs.length > 0) {
+          updateRequest(reqId, {
+            interactions: [searchLog, ...callLogs],
+          });
+        }
+
+        // Make batch call if we have valid providers
+        if (batchProviders.length > 0) {
+          const testModeLabel = isAdminTestMode ? " (TEST MODE)" : "";
+          console.log(
+            `[Concierge] Starting BATCH call to ${batchProviders.length} providers via /api/v1/providers/batch-call...${testModeLabel}`,
+          );
+          console.log(
+            `[Concierge] Providers: ${batchProviders.map(p => `${p.name} @ ${p.phone}`).join(", ")}`,
+          );
+
+          // FIRE-AND-FORGET: Start batch call without waiting for completion
+          // Real-time subscriptions in request/[id]/page.tsx will update UI as calls complete
+          const batchRequestBody = {
+            providers: batchProviders.map((p) => ({
+              name: p.name,
+              phone: p.phone,
+              id: p.id,
+            })),
+            serviceNeeded: data.title,
+            userCriteria: data.criteria,
+            problemDescription: data.description,
+            clientName: data.clientName,
+            location: data.location,
+            urgency: data.urgency,
+            serviceRequestId: reqId,
+            maxConcurrent: 5,
+            customPrompt: researchPrompt
+              ? {
                   systemPrompt: researchPrompt.systemPrompt,
                   firstMessage: researchPrompt.firstMessage,
-                  closingScript: "Thank you so much for your time. Have a wonderful day!"
-                } : undefined,
-              });
+                  closingScript: "Thank you so much for your time. Have a wonderful day!",
+                }
+              : undefined,
+          };
 
-              // Convert response to InteractionLog format
-              log = callResponseToInteractionLog(provider.name, response);
+          // Fire the batch call - don't await, let it run in background
+          fetch("/api/v1/providers/batch-call", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(batchRequestBody),
+          })
+            .then(async (response) => {
+              if (!response.ok) {
+                const errorText = await response.text();
+                console.error(`[Concierge] Batch call returned error: ${response.status} - ${errorText}`);
+              } else {
+                const result = await response.json();
+                console.log(`[Concierge] Batch call completed successfully. Stats:`, result.data?.stats);
+              }
+            })
+            .catch((error) => {
+              // Only log to console - don't update UI since real-time handles that
+              console.error("[Concierge] Batch call network error (calls may still be running):", error);
+            });
 
-              console.log(
-                `[Concierge] Call to ${provider.name} completed: ${log.status}`,
-              );
-            }
-          }
-        } else {
-          // Simulated calls via Gemini (existing behavior)
-          log = await simulateCall(
+          // Add immediate feedback log - calls are now in progress
+          const inProgressLog = {
+            timestamp: new Date().toISOString(),
+            stepName: "Calling Providers",
+            detail: `Initiated ${batchProviders.length} concurrent call${batchProviders.length > 1 ? 's' : ''}. Results will appear below as each call completes via real-time updates.`,
+            status: "info" as const,
+          };
+          callLogs.push(inProgressLog);
+          console.log(`[Concierge] Batch call initiated for ${batchProviders.length} providers - UI will update via real-time subscriptions`);
+        }
+
+        // Update UI with all call results
+        updateRequest(reqId, {
+          interactions: [searchLog, ...callLogs],
+        });
+      } else {
+        // Simulated calls via Gemini (existing behavior) - sequential
+        for (const provider of providersToCall) {
+          const log = await simulateCall(
             provider.name,
             `${data.description}. Criteria: ${data.criteria}`,
             false,
           );
+          callLogs.push(log);
+          updateRequest(reqId, {
+            interactions: [searchLog, ...callLogs],
+          });
+          await new Promise((r) => setTimeout(r, 1000));
+        }
+      }
+
+      // Log skipped providers in test mode (if any were skipped due to test phone limits)
+      if (isAdminTestMode && providers.length > ADMIN_TEST_PHONES.length) {
+        const skippedProviders = providers.slice(ADMIN_TEST_PHONES.length);
+        console.log(
+          `[Concierge] TEST MODE: Skipped ${skippedProviders.length} provider(s) due to test phone limit (${ADMIN_TEST_PHONES.length} test phones available)`
+        );
+
+        // Create info logs for each skipped provider
+        for (const skipped of skippedProviders) {
+          const skipLog = {
+            timestamp: new Date().toISOString(),
+            stepName: `Skipped ${skipped.name}`,
+            detail: `Provider not called due to test mode limit (${ADMIN_TEST_PHONES.length} test phone${ADMIN_TEST_PHONES.length === 1 ? '' : 's'} available)`,
+            status: "info" as const,
+          };
+          callLogs.push(skipLog);
+          console.log(
+            `[Concierge] - ${skipped.name} (Rating: ${skipped.rating || 'N/A'}) - Skipped`
+          );
         }
 
-        callLogs.push(log);
+        // Update UI with skip logs
         updateRequest(reqId, {
           interactions: [searchLog, ...callLogs],
         });
-
-        // Small delay between calls
-        await new Promise((r) => setTimeout(r, LIVE_CALL_ENABLED ? 2000 : 1000));
       }
 
-      // Check if ALL calls failed - if so, mark as FAILED early
-      const errorCalls = callLogs.filter((log) => log.status === "error");
-      const successCalls = callLogs.filter((log) => log.status === "success");
+      // With fire-and-forget batch calling, we don't wait for call results here
+      // The request/[id]/page.tsx handles call completion via real-time subscriptions
+      // and triggers recommendations when all calls are done
 
-      if (callLogs.length > 0 && errorCalls.length === callLogs.length) {
-        // ALL calls failed with errors
-        const outcome = `All ${errorCalls.length} provider call(s) failed. Please check your configuration and try again.`;
-        updateRequest(reqId, {
-          status: RequestStatus.FAILED,
-          interactions: [searchLog, ...callLogs],
-          finalOutcome: outcome,
-        });
-        await updateServiceRequest(reqId, {
-          status: "FAILED",
-          final_outcome: outcome,
-        });
-        return; // Exit early - don't proceed to analysis
-      }
-
-      if (callLogs.length > 0 && successCalls.length === 0) {
-        // No successful calls (all were skipped/warning/error)
-        const outcome = `No successful calls completed. ${errorCalls.length} error(s), ${callLogs.length - errorCalls.length} skipped.`;
-        updateRequest(reqId, {
-          status: RequestStatus.FAILED,
-          interactions: [searchLog, ...callLogs],
-          finalOutcome: outcome,
-        });
-        await updateServiceRequest(reqId, {
-          status: "FAILED",
-          final_outcome: outcome,
-        });
-        return; // Exit early
-      }
-
-      // 3. Analyze
-      await updateStatus("ANALYZING");
-      const analysis = await selectBestProvider(
-        data.title,
-        callLogs,
-        providers,
+      // Only check for immediate validation errors (skipped providers, invalid phones)
+      const immediateErrors = callLogs.filter((log) =>
+        log.status === "error" && !log.stepName.includes("Calling")
       );
 
-      const finalLogs = [
-        ...callLogs,
-        {
-          timestamp: new Date().toISOString(),
-          stepName: "Analysis & Selection",
-          detail: analysis.reasoning,
-          status: analysis.selectedId ? "success" : "warning",
-        } as any,
-      ];
+      if (immediateErrors.length > 0 && callLogs.length === immediateErrors.length) {
+        // All logs are errors (e.g., all providers had invalid phones)
+        const outcome = `Could not initiate any calls:\n${immediateErrors.map(e => `- ${e.detail}`).join('\n')}`;
+        console.log(`[Concierge] Request failed - no valid providers to call`);
 
-      updateRequest(reqId, { interactions: [searchLog, ...finalLogs] });
-
-      if (analysis.selectedId) {
-        // 4. Mark best provider selected (user will be notified via SMS/VAPI later)
-        const provider = providers.find((p) => p.id === analysis.selectedId);
-        if (provider) {
-          updateRequest(reqId, { selectedProvider: provider });
-          const outcome = `Selected ${provider.name}. ${analysis.reasoning}`;
-          updateRequest(reqId, {
-            status: RequestStatus.COMPLETED,
-            interactions: [searchLog, ...finalLogs],
-            finalOutcome: outcome,
-          });
-          // Update DB with final status and outcome
-          await updateServiceRequest(reqId, {
-            status: "COMPLETED",
-            final_outcome: outcome,
-          });
-        }
-      } else {
-        const outcome =
-          "Could not find a suitable provider matching all criteria.";
-        await updateStatus("FAILED", { finalOutcome: outcome });
-        await updateServiceRequest(reqId, { final_outcome: outcome });
+        updateRequest(reqId, {
+          status: RequestStatus.FAILED,
+          interactions: [searchLog, ...callLogs],
+          finalOutcome: outcome,
+        });
+        await updateServiceRequest(reqId, {
+          status: "FAILED",
+          final_outcome: outcome,
+        });
+        return;
       }
+
+      // Calls are now running in background
+      // Transition to ANALYZING - real-time subscriptions will update as calls complete
+      console.log(`[Concierge] Calls initiated, transitioning to ANALYZING. Real-time will handle results.`);
+
+      // 3. Transition to ANALYZING - recommendations will be generated
+      // when all calls complete (handled by real-time in request/[id]/page.tsx)
+      await updateStatus("ANALYZING");
+
+      // Update interactions with current logs
+      updateRequest(reqId, {
+        interactions: [searchLog, ...callLogs],
+      });
+
+      console.log(`[Concierge] Request ${reqId} now in ANALYZING state. Waiting for calls to complete via real-time.`);
+      // The request/[id]/page.tsx checkAndGenerateRecommendations() will:
+      // 1. Detect when all initiated calls have completed
+      // 2. Call the /api/v1/providers/recommend endpoint
+      // 3. Update the UI with recommendations
     } catch (e) {
       console.error(e);
       const outcome =

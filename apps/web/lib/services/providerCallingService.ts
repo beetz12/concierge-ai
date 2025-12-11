@@ -108,6 +108,15 @@ export function isValidE164Phone(phone: string): boolean {
 }
 
 /**
+ * Masks a phone number for privacy-safe logging
+ * @example "+12345678901" -> "***8901"
+ */
+function maskPhoneNumber(phone: string): string {
+  if (!phone || phone.length < 4) return "****";
+  return `***${phone.slice(-4)}`;
+}
+
+/**
  * Makes a real phone call to a service provider via VAPI.
  *
  * The backend handles routing:
@@ -119,6 +128,19 @@ export function isValidE164Phone(phone: string): boolean {
 export async function callProviderLive(
   request: CallProviderRequest
 ): Promise<CallProviderResponse> {
+  const timestamp = new Date().toISOString();
+
+  // Log call initiation
+  console.log("[ProviderCalling] Initiating call:", {
+    provider: request.providerName,
+    phone: maskPhoneNumber(request.providerPhone),
+    serviceNeeded: request.serviceNeeded,
+    urgency: request.urgency,
+    location: request.location,
+    hasCustomPrompt: !!request.customPrompt,
+    timestamp,
+  });
+
   try {
     const response = await fetch(`${API_BASE}/call`, {
       method: "POST",
@@ -133,20 +155,59 @@ export async function callProviderLive(
       const errorData = await response
         .json()
         .catch(() => ({ error: `API error: ${response.status}` }));
+
+      const errorDetails = {
+        provider: request.providerName,
+        phone: maskPhoneNumber(request.providerPhone),
+        error: errorData.error || `API error: ${response.status}`,
+        statusCode: response.status,
+        statusText: response.statusText,
+        timestamp: new Date().toISOString(),
+      };
+
+      console.error("[ProviderCalling] Call failed:", errorDetails);
+
       return {
         success: false,
-        error: errorData.error || `API error: ${response.status}`,
+        error: errorData.error || `API error: ${response.status} ${response.statusText}`,
       };
     }
 
     const result = await response.json();
+
+    // Log successful response
+    console.log("[ProviderCalling] Call response received:", {
+      provider: request.providerName,
+      phone: maskPhoneNumber(request.providerPhone),
+      success: result.success,
+      status: result.data?.status,
+      callId: result.data?.callId,
+      duration: result.data?.duration,
+      endedReason: result.data?.endedReason,
+      hasTranscript: !!result.data?.transcript,
+      hasAnalysis: !!result.data?.analysis,
+      timestamp: new Date().toISOString(),
+    });
+
     return result;
   } catch (error) {
     const errorMessage =
       error instanceof Error ? error.message : "Unknown error occurred";
+
+    const errorDetails = {
+      provider: request.providerName,
+      phone: maskPhoneNumber(request.providerPhone),
+      error: errorMessage,
+      errorType: error instanceof Error ? error.constructor.name : typeof error,
+      stack: error instanceof Error ? error.stack : undefined,
+      timestamp: new Date().toISOString(),
+    };
+
+    console.error("[ProviderCalling] Call exception:", errorDetails);
+
     return {
       success: false,
-      error: errorMessage,
+      error: `Failed to call provider: ${errorMessage}`,
     };
   }
 }

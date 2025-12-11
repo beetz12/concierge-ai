@@ -48,16 +48,20 @@ const batchCallSchema = z.object({
       phone: z
         .string()
         .regex(/^\+1\d{10}$/, "Phone must be E.164 format (+1XXXXXXXXXX)"),
+      id: z.string().optional(), // Provider ID for database linking
     }),
   ),
   serviceNeeded: z.string().min(1, "Service type is required"),
   userCriteria: z.string().default(""), // Optional - empty string allowed
+  problemDescription: z.string().optional(), // Detailed problem description
+  clientName: z.string().optional(), // Client's name for personalized greeting
   location: z.string().min(1, "Location is required"),
   urgency: z
     .enum(["immediate", "within_24_hours", "within_2_days", "flexible"])
     .default("within_2_days"),
   serviceRequestId: z.string().optional(),
   maxConcurrent: z.number().int().min(1).max(10).optional(),
+  customPrompt: generatedPromptSchema.optional(), // Gemini-generated dynamic prompt
 });
 
 // Recommendation schema for analyzing call results
@@ -460,11 +464,15 @@ export default async function providerRoutes(fastify: FastifyInstance) {
         const requests = validated.providers.map((provider) => ({
           providerName: provider.name,
           providerPhone: provider.phone,
+          providerId: provider.id,
           serviceNeeded: validated.serviceNeeded,
           userCriteria: validated.userCriteria,
+          problemDescription: validated.problemDescription,
+          clientName: validated.clientName,
           location: validated.location,
           urgency: validated.urgency,
           serviceRequestId: validated.serviceRequestId,
+          customPrompt: validated.customPrompt,
         }));
 
         // Initiate batch calls using ProviderCallingService
