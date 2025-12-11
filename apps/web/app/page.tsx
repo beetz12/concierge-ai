@@ -36,7 +36,10 @@ const StatCard: React.FC<{
 );
 
 const HeroSection: React.FC = () => (
-  <div className="relative overflow-hidden rounded-3xl border border-surface-highlight shadow-2xl mb-8">
+  <section
+    className="relative overflow-hidden rounded-3xl border border-surface-highlight shadow-2xl mb-8"
+    aria-labelledby="hero-title"
+  >
     {/* Gradient Background */}
     <div className="absolute inset-0 bg-gradient-to-br from-teal-900/40 via-purple-900/40 to-slate-900/40" />
     <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,_var(--tw-gradient-stops))] from-teal-500/20 via-transparent to-transparent" />
@@ -51,7 +54,10 @@ const HeroSection: React.FC = () => (
           </span>
         </div>
 
-        <h1 className="text-5xl lg:text-6xl font-bold text-slate-100 mb-6 bg-clip-text text-transparent bg-gradient-to-r from-teal-300 via-purple-300 to-teal-300">
+        <h1
+          id="hero-title"
+          className="text-5xl lg:text-6xl font-bold text-slate-100 mb-6 bg-clip-text text-transparent bg-gradient-to-r from-teal-300 via-purple-300 to-teal-300"
+        >
           Your AI Concierge Finds & Books Service Providers
         </h1>
 
@@ -133,7 +139,7 @@ const HeroSection: React.FC = () => (
         </div>
       </div>
     </div>
-  </div>
+  </section>
 );
 
 export default function Dashboard() {

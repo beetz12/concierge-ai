@@ -517,6 +517,24 @@ export default function NewRequest() {
         </p>
       </div>
 
+      {/* Test Mode Banner - Shows when admin test phones are configured */}
+      {isAdminTestMode && (
+        <div className="bg-amber-500/10 border border-amber-500/30 rounded-xl p-4 mb-6" role="alert">
+          <div className="flex items-center gap-3">
+            <div className="w-2 h-2 bg-amber-400 rounded-full animate-pulse" aria-hidden="true" />
+            <div>
+              <p className="text-amber-300 font-semibold text-sm">
+                Test Mode Active
+              </p>
+              <p className="text-amber-200/70 text-xs mt-0.5">
+                Calls will be made to {ADMIN_TEST_PHONES.length} test phone{ADMIN_TEST_PHONES.length !== 1 ? 's' : ''} instead of real providers.
+                {ADMIN_TEST_PHONES.length < 5 && ` Only ${ADMIN_TEST_PHONES.length} provider${ADMIN_TEST_PHONES.length !== 1 ? 's' : ''} will be called.`}
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
+
       <form
         onSubmit={handleSubmit}
         className="bg-surface p-8 rounded-2xl border border-surface-highlight shadow-xl space-y-6"
