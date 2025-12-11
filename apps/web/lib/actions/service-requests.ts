@@ -1,18 +1,21 @@
-'use server';
+"use server";
 
 /**
  * Server Actions for managing service requests
  * These functions can be called directly from Client Components
  */
 
-import { revalidatePath } from 'next/cache';
-import { createClient } from '../supabase/server';
-import type { Database } from '../types/database';
+import { revalidatePath } from "next/cache";
+import { createClient } from "../supabase/server";
+import type { Database } from "../types/database";
 
-type ServiceRequestInsert = Database['public']['Tables']['service_requests']['Insert'];
-type ServiceRequestUpdate = Database['public']['Tables']['service_requests']['Update'];
-type ProviderInsert = Database['public']['Tables']['providers']['Insert'];
-type InteractionLogInsert = Database['public']['Tables']['interaction_logs']['Insert'];
+type ServiceRequestInsert =
+  Database["public"]["Tables"]["service_requests"]["Insert"];
+type ServiceRequestUpdate =
+  Database["public"]["Tables"]["service_requests"]["Update"];
+type ProviderInsert = Database["public"]["Tables"]["providers"]["Insert"];
+type InteractionLogInsert =
+  Database["public"]["Tables"]["interaction_logs"]["Insert"];
 
 /**
  * Create a new service request
@@ -21,7 +24,7 @@ export async function createServiceRequest(data: ServiceRequestInsert) {
   const supabase = await createClient();
 
   const { data: request, error } = await supabase
-    .from('service_requests')
+    .from("service_requests")
     .insert(data)
     .select()
     .single();
@@ -30,20 +33,23 @@ export async function createServiceRequest(data: ServiceRequestInsert) {
     throw new Error(`Failed to create service request: ${error.message}`);
   }
 
-  revalidatePath('/requests');
+  revalidatePath("/requests");
   return request;
 }
 
 /**
  * Update an existing service request
  */
-export async function updateServiceRequest(id: string, updates: ServiceRequestUpdate) {
+export async function updateServiceRequest(
+  id: string,
+  updates: ServiceRequestUpdate,
+) {
   const supabase = await createClient();
 
   const { data: request, error } = await supabase
-    .from('service_requests')
+    .from("service_requests")
     .update(updates)
-    .eq('id', id)
+    .eq("id", id)
     .select()
     .single();
 
@@ -51,7 +57,7 @@ export async function updateServiceRequest(id: string, updates: ServiceRequestUp
     throw new Error(`Failed to update service request: ${error.message}`);
   }
 
-  revalidatePath('/requests');
+  revalidatePath("/requests");
   revalidatePath(`/requests/${id}`);
   return request;
 }
@@ -63,15 +69,15 @@ export async function deleteServiceRequest(id: string) {
   const supabase = await createClient();
 
   const { error } = await supabase
-    .from('service_requests')
+    .from("service_requests")
     .delete()
-    .eq('id', id);
+    .eq("id", id);
 
   if (error) {
     throw new Error(`Failed to delete service request: ${error.message}`);
   }
 
-  revalidatePath('/requests');
+  revalidatePath("/requests");
 }
 
 /**
@@ -81,7 +87,7 @@ export async function addProvider(data: ProviderInsert) {
   const supabase = await createClient();
 
   const { data: provider, error } = await supabase
-    .from('providers')
+    .from("providers")
     .insert(data)
     .select()
     .single();
@@ -90,7 +96,7 @@ export async function addProvider(data: ProviderInsert) {
     throw new Error(`Failed to add provider: ${error.message}`);
   }
 
-  revalidatePath('/requests');
+  revalidatePath("/requests");
   revalidatePath(`/requests/${data.request_id}`);
   return provider;
 }
@@ -102,7 +108,7 @@ export async function addProviders(providers: ProviderInsert[]) {
   const supabase = await createClient();
 
   const { data, error } = await supabase
-    .from('providers')
+    .from("providers")
     .insert(providers)
     .select();
 
@@ -112,7 +118,7 @@ export async function addProviders(providers: ProviderInsert[]) {
 
   const firstProvider = providers[0];
   if (firstProvider) {
-    revalidatePath('/requests');
+    revalidatePath("/requests");
     revalidatePath(`/requests/${firstProvider.request_id}`);
   }
 
@@ -126,7 +132,7 @@ export async function addInteractionLog(data: InteractionLogInsert) {
   const supabase = await createClient();
 
   const { data: log, error } = await supabase
-    .from('interaction_logs')
+    .from("interaction_logs")
     .insert(data)
     .select()
     .single();
@@ -135,7 +141,7 @@ export async function addInteractionLog(data: InteractionLogInsert) {
     throw new Error(`Failed to add interaction log: ${error.message}`);
   }
 
-  revalidatePath('/requests');
+  revalidatePath("/requests");
   revalidatePath(`/requests/${data.request_id}`);
   return log;
 }
@@ -147,7 +153,7 @@ export async function addInteractionLogs(logs: InteractionLogInsert[]) {
   const supabase = await createClient();
 
   const { data, error } = await supabase
-    .from('interaction_logs')
+    .from("interaction_logs")
     .insert(logs)
     .select();
 
@@ -157,7 +163,7 @@ export async function addInteractionLogs(logs: InteractionLogInsert[]) {
 
   const firstLog = logs[0];
   if (firstLog) {
-    revalidatePath('/requests');
+    revalidatePath("/requests");
     revalidatePath(`/requests/${firstLog.request_id}`);
   }
 
@@ -169,7 +175,7 @@ export async function addInteractionLogs(logs: InteractionLogInsert[]) {
  */
 export async function updateRequestStatus(
   id: string,
-  status: Database['public']['Enums']['request_status']
+  status: Database["public"]["Enums"]["request_status"],
 ) {
   return updateServiceRequest(id, { status });
 }
@@ -187,6 +193,6 @@ export async function selectProvider(requestId: string, providerId: string) {
 export async function setFinalOutcome(requestId: string, outcome: string) {
   return updateServiceRequest(requestId, {
     final_outcome: outcome,
-    status: 'COMPLETED',
+    status: "COMPLETED",
   });
 }

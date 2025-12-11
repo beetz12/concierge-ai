@@ -24,6 +24,7 @@ All 4 Gemini AI endpoints have been verified and are functioning correctly:
 **Purpose:** Search for service providers using Google Maps grounding via Gemini AI
 
 **Request Schema:**
+
 ```typescript
 {
   query: string;          // Required: Service type (e.g., "plumber")
@@ -36,6 +37,7 @@ All 4 Gemini AI endpoints have been verified and are functioning correctly:
 ```
 
 **Response:**
+
 ```typescript
 {
   providers: Provider[];  // Array of found providers
@@ -44,11 +46,13 @@ All 4 Gemini AI endpoints have been verified and are functioning correctly:
 ```
 
 **Test Result:** ✅ PASS
+
 - Successfully found 3 plumbers in Greenville, SC
 - Google Maps grounding integration working
 - Response includes provider names, addresses, ratings
 
 **Example Response:**
+
 ```json
 {
   "providers": [
@@ -77,15 +81,17 @@ All 4 Gemini AI endpoints have been verified and are functioning correctly:
 **Purpose:** Simulate a phone call conversation between AI receptionist and service provider
 
 **Request Schema:**
+
 ```typescript
 {
-  providerName: string;   // Required: Name of the provider to call
-  userCriteria: string;   // Required: User needs/requirements
-  isDirect: boolean;      // Default: false (vetting vs direct call)
+  providerName: string; // Required: Name of the provider to call
+  userCriteria: string; // Required: User needs/requirements
+  isDirect: boolean; // Default: false (vetting vs direct call)
 }
 ```
 
 **Response:**
+
 ```typescript
 {
   timestamp: string;
@@ -100,11 +106,13 @@ All 4 Gemini AI endpoints have been verified and are functioning correctly:
 ```
 
 **Test Result:** ✅ PASS
+
 - Successfully generated realistic conversation transcript
 - Proper outcome detection (positive/negative/neutral)
 - Detailed summary of findings (availability, pricing, etc.)
 
 **Example Response:**
+
 ```json
 {
   "timestamp": "2025-12-08T03:47:08.050Z",
@@ -132,6 +140,7 @@ All 4 Gemini AI endpoints have been verified and are functioning correctly:
 **Purpose:** Analyze call interactions and select the best provider using AI reasoning
 
 **Request Schema:**
+
 ```typescript
 {
   requestTitle: string;      // Required: Description of request
@@ -154,19 +163,22 @@ All 4 Gemini AI endpoints have been verified and are functioning correctly:
 ```
 
 **Response:**
+
 ```typescript
 {
-  selectedId: string | null;  // ID of selected provider
-  reasoning: string;          // AI explanation for selection
+  selectedId: string | null; // ID of selected provider
+  reasoning: string; // AI explanation for selection
 }
 ```
 
 **Test Result:** ✅ PASS
+
 - Successfully analyzed multiple provider interactions
 - Provided clear reasoning for selection
 - Correctly identified best provider based on availability
 
 **Example Response:**
+
 ```json
 {
   "selectedId": "prov-1",
@@ -181,29 +193,33 @@ All 4 Gemini AI endpoints have been verified and are functioning correctly:
 **Purpose:** Schedule an appointment with selected provider (simulated)
 
 **Request Schema:**
+
 ```typescript
 {
-  providerName: string;  // Required: Name of provider
-  details: string;       // Required: Appointment details
+  providerName: string; // Required: Name of provider
+  details: string; // Required: Appointment details
 }
 ```
 
 **Response:**
+
 ```typescript
 {
   timestamp: string;
   stepName: string;
-  detail: string;        // Confirmation message
-  status: 'success' | 'warning' | 'error' | 'info';
+  detail: string; // Confirmation message
+  status: "success" | "warning" | "error" | "info";
 }
 ```
 
 **Test Result:** ✅ PASS
+
 - Successfully simulated appointment booking
 - Proper 1.5-second delay to simulate real interaction
 - Returns success confirmation
 
 **Example Response:**
+
 ```json
 {
   "timestamp": "2025-12-08T03:47:28.047Z",
@@ -218,12 +234,15 @@ All 4 Gemini AI endpoints have been verified and are functioning correctly:
 ## Validation & Error Handling
 
 ### ✅ Input Validation
+
 All endpoints use Zod schemas for request validation:
+
 - Required fields are enforced
 - Type checking is performed
 - Meaningful error messages are returned
 
 **Example Validation Error:**
+
 ```json
 {
   "error": "Validation Error",
@@ -240,6 +259,7 @@ All endpoints use Zod schemas for request validation:
 ```
 
 ### ✅ Error Handling
+
 - Zod validation errors return 400 status
 - Service errors return 500 status with error message
 - Errors are properly logged via Fastify logger
@@ -250,12 +270,14 @@ All endpoints use Zod schemas for request validation:
 ## Implementation Quality
 
 ### Code Organization
+
 - ✅ Routes properly separated in `/src/routes/gemini.ts`
 - ✅ Business logic in `/src/services/gemini.ts`
 - ✅ TypeScript interfaces exported and reusable
 - ✅ Zod schemas for runtime validation
 
 ### Service Layer (`/src/services/gemini.ts`)
+
 - ✅ Properly configured GoogleGenAI client
 - ✅ Environment variable validation (GEMINI_API_KEY)
 - ✅ Google Maps grounding integration
@@ -265,6 +287,7 @@ All endpoints use Zod schemas for request validation:
 - ✅ Realistic conversation generation
 
 ### Route Registration
+
 - ✅ Routes registered in `/src/index.ts`
 - ✅ Proper prefix: `/api/v1/gemini`
 - ✅ CORS and security headers configured
@@ -275,11 +298,13 @@ All endpoints use Zod schemas for request validation:
 ## Configuration
 
 ### Environment Variables
+
 - ✅ `GEMINI_API_KEY` - Configured and validated
 - ✅ `PORT` - API server port (default: 8000)
 - ✅ `CORS_ORIGIN` - CORS configuration
 
 ### Dependencies
+
 - ✅ `@google/genai` v1.30.0 - Gemini AI SDK
 - ✅ `fastify` v5.2.1 - Web framework
 - ✅ `zod` v3.24.2 - Schema validation
@@ -290,33 +315,34 @@ All endpoints use Zod schemas for request validation:
 ## Testing Recommendations
 
 ### Unit Tests
+
 Create tests for service functions:
+
 - `searchProviders()` - Mock Gemini API responses
 - `simulateCall()` - Verify conversation generation
 - `selectBestProvider()` - Test selection logic
 - `scheduleAppointment()` - Verify timing and response
 
 ### Integration Tests
+
 - End-to-end workflow tests
 - Error handling scenarios
 - Validation edge cases
 - Rate limiting behavior
 
 ### Example Test Suite
-```typescript
-import { describe, it, expect } from 'vitest';
-import { searchProviders } from './services/gemini';
 
-describe('Gemini Service', () => {
-  it('should search providers successfully', async () => {
-    const result = await searchProviders(
-      'plumber',
-      'Greenville, SC'
-    );
+```typescript
+import { describe, it, expect } from "vitest";
+import { searchProviders } from "./services/gemini";
+
+describe("Gemini Service", () => {
+  it("should search providers successfully", async () => {
+    const result = await searchProviders("plumber", "Greenville, SC");
 
     expect(result.providers).toBeDefined();
     expect(result.providers.length).toBeGreaterThan(0);
-    expect(result.logs.status).toBe('success');
+    expect(result.logs.status).toBe("success");
   });
 });
 ```
@@ -337,12 +363,14 @@ Based on manual testing:
 ## Security Considerations
 
 ### ✅ Implemented
+
 - Input validation via Zod
 - CORS configuration
 - Helmet security headers
 - Environment variable protection
 
 ### 📝 Recommendations
+
 1. Implement rate limiting per endpoint
 2. Add API key authentication for production
 3. Sanitize user inputs for prompt injection
@@ -356,6 +384,7 @@ Based on manual testing:
 **Overall Status: ✅ PRODUCTION READY**
 
 All 4 Gemini endpoints are:
+
 - ✅ Properly implemented
 - ✅ Correctly registered
 - ✅ Fully functional
@@ -370,12 +399,14 @@ All 4 Gemini endpoints are:
 ## Quick Start
 
 ### Running the API
+
 ```bash
 cd /Users/dave/Work/concierge-ai/apps/api
 npm run dev
 ```
 
 ### Testing Endpoints
+
 ```bash
 # Health check
 curl http://localhost:8000/health

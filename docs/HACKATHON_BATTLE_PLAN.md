@@ -28,11 +28,11 @@
 
 Based on parallel analysis of the codebase, hackathon rules, and strategic positioning:
 
-| Category | Current State | Gap to Victory |
-|----------|---------------|----------------|
-| **Core App** | 60% complete | Persistence + real-time missing |
+| Category            | Current State     | Gap to Victory                   |
+| ------------------- | ----------------- | -------------------------------- |
+| **Core App**        | 60% complete      | Persistence + real-time missing  |
 | **Prize Readiness** | 1/5 (Vercel easy) | Need Kestra + Cline integrations |
-| **Demo Readiness** | 40% | Need polish + stability |
+| **Demo Readiness**  | 40%               | Need polish + stability          |
 
 ---
 
@@ -40,13 +40,13 @@ Based on parallel analysis of the codebase, hackathon rules, and strategic posit
 
 ### Recommended Strategy (90% Confidence Path to $12,000)
 
-| Prize | Value | Difficulty | Recommendation |
-|-------|-------|------------|----------------|
-| **Infinity Build** (Cline) | $5,000 | Medium | ✅ TARGET |
-| **Wakanda Data** (Kestra) | $4,000 | Medium-High | ✅ TARGET |
-| **Stormbreaker** (Vercel) | $2,000 | Low | ✅ TARGET |
-| **Captain Code** (CodeRabbit) | $1,000 | Very Low | ✅ BONUS |
-| **Iron Intelligence** (Oumi) | $3,000 | Very High | ❌ SKIP |
+| Prize                         | Value  | Difficulty  | Recommendation |
+| ----------------------------- | ------ | ----------- | -------------- |
+| **Infinity Build** (Cline)    | $5,000 | Medium      | ✅ TARGET      |
+| **Wakanda Data** (Kestra)     | $4,000 | Medium-High | ✅ TARGET      |
+| **Stormbreaker** (Vercel)     | $2,000 | Low         | ✅ TARGET      |
+| **Captain Code** (CodeRabbit) | $1,000 | Very Low    | ✅ BONUS       |
+| **Iron Intelligence** (Oumi)  | $3,000 | Very High   | ❌ SKIP        |
 
 **Total Target: $12,000** (vs risking all $15k and failing)
 
@@ -107,12 +107,12 @@ supabase/
 
 ## Team Allocation Strategy
 
-| Team Member | Focus Area | Sponsor Tools |
-|-------------|------------|---------------|
-| **Senior Dev** | Kestra + Cline + Architecture | Wakanda + Infinity |
-| **Junior 1** | Frontend UI/UX | Stormbreaker |
-| **Junior 2** | Backend API + DB | Wakanda support |
-| **Junior 3** | DevOps + QA | CodeRabbit + Vercel |
+| Team Member    | Focus Area                    | Sponsor Tools       |
+| -------------- | ----------------------------- | ------------------- |
+| **Senior Dev** | Kestra + Cline + Architecture | Wakanda + Infinity  |
+| **Junior 1**   | Frontend UI/UX                | Stormbreaker        |
+| **Junior 2**   | Backend API + DB              | Wakanda support     |
+| **Junior 3**   | DevOps + QA                   | CodeRabbit + Vercel |
 
 ---
 
@@ -122,14 +122,14 @@ supabase/
 
 **Difficulty: Low | Owner: Junior 3**
 
-| Task | Priority | Time | Status | Details |
-|------|----------|------|--------|---------|
-| CodeRabbit setup | P0 | 30 min | TODO | Install GitHub app, add `.coderabbit.yaml` |
-| Vercel project creation | P0 | 1 hr | TODO | Connect repo, configure monorepo settings |
-| Environment variables | P0 | 30 min | TODO | Set Supabase + Gemini keys in Vercel |
-| Vercel deployment | P0 | 1 hr | TODO | Initial deploy, verify API rewrites |
-| Production Supabase | P1 | 1 hr | TODO | Switch from local to hosted instance |
-| GitHub Actions CI | P2 | 2 hrs | TODO | Lint + type-check on PR |
+| Task                    | Priority | Time   | Status | Details                                    |
+| ----------------------- | -------- | ------ | ------ | ------------------------------------------ |
+| CodeRabbit setup        | P0       | 30 min | TODO   | Install GitHub app, add `.coderabbit.yaml` |
+| Vercel project creation | P0       | 1 hr   | TODO   | Connect repo, configure monorepo settings  |
+| Environment variables   | P0       | 30 min | TODO   | Set Supabase + Gemini keys in Vercel       |
+| Vercel deployment       | P0       | 1 hr   | TODO   | Initial deploy, verify API rewrites        |
+| Production Supabase     | P1       | 1 hr   | TODO   | Switch from local to hosted instance       |
+| GitHub Actions CI       | P2       | 2 hrs  | TODO   | Lint + type-check on PR                    |
 
 **Deliverable**: Live URL + CodeRabbit reviewing PRs
 
@@ -139,15 +139,15 @@ supabase/
 
 **Difficulty: Low-Medium | Owner: Junior 1**
 
-| Task | Priority | Time | Status | Details |
-|------|----------|------|--------|---------|
-| Loading states | P0 | 2 hrs | TODO | Add spinners/skeletons during API calls |
-| Error handling UI | P0 | 2 hrs | TODO | Toast notifications, error boundaries |
-| Real-time progress | P1 | 3 hrs | TODO | WebSocket/SSE for workflow status |
-| Conversation animations | P1 | 3 hrs | TODO | Animated chat bubbles for transcripts |
-| Mobile responsiveness | P1 | 2 hrs | TODO | Test/fix sidebar, forms on mobile |
-| Provider comparison | P2 | 3 hrs | TODO | Side-by-side provider cards |
-| Dark mode toggle | P3 | 1 hr | TODO | Optional light theme |
+| Task                    | Priority | Time  | Status | Details                                 |
+| ----------------------- | -------- | ----- | ------ | --------------------------------------- |
+| Loading states          | P0       | 2 hrs | TODO   | Add spinners/skeletons during API calls |
+| Error handling UI       | P0       | 2 hrs | TODO   | Toast notifications, error boundaries   |
+| Real-time progress      | P1       | 3 hrs | TODO   | WebSocket/SSE for workflow status       |
+| Conversation animations | P1       | 3 hrs | TODO   | Animated chat bubbles for transcripts   |
+| Mobile responsiveness   | P1       | 2 hrs | TODO   | Test/fix sidebar, forms on mobile       |
+| Provider comparison     | P2       | 3 hrs | TODO   | Side-by-side provider cards             |
+| Dark mode toggle        | P3       | 1 hr  | TODO   | Optional light theme                    |
 
 **Deliverable**: Polished, responsive UI with real-time feedback
 
@@ -157,15 +157,15 @@ supabase/
 
 **Difficulty: Medium | Owner: Junior 2**
 
-| Task | Priority | Time | Status | Details |
-|------|----------|------|--------|---------|
-| Wire Supabase reads | P0 | 3 hrs | TODO | History page loads from DB |
-| Wire Supabase writes | P0 | 3 hrs | TODO | Save requests/providers/logs |
-| Request CRUD endpoints | P0 | 3 hrs | TODO | `GET/POST /api/v1/requests` |
-| Interaction log endpoints | P1 | 2 hrs | TODO | `GET /api/v1/requests/:id/logs` |
-| Real-time subscriptions | P1 | 2 hrs | TODO | Supabase Realtime for logs |
-| Batch processing | P2 | 3 hrs | TODO | Process multiple requests |
-| Error logging | P2 | 2 hrs | TODO | Structured error tracking |
+| Task                      | Priority | Time  | Status | Details                         |
+| ------------------------- | -------- | ----- | ------ | ------------------------------- |
+| Wire Supabase reads       | P0       | 3 hrs | TODO   | History page loads from DB      |
+| Wire Supabase writes      | P0       | 3 hrs | TODO   | Save requests/providers/logs    |
+| Request CRUD endpoints    | P0       | 3 hrs | TODO   | `GET/POST /api/v1/requests`     |
+| Interaction log endpoints | P1       | 2 hrs | TODO   | `GET /api/v1/requests/:id/logs` |
+| Real-time subscriptions   | P1       | 2 hrs | TODO   | Supabase Realtime for logs      |
+| Batch processing          | P2       | 3 hrs | TODO   | Process multiple requests       |
+| Error logging             | P2       | 2 hrs | TODO   | Structured error tracking       |
 
 **Deliverable**: Full persistence layer, data survives refresh
 
@@ -175,24 +175,24 @@ supabase/
 
 **Difficulty: High | Owner: Senior Dev**
 
-| Task | Priority | Time | Status | Details |
-|------|----------|------|--------|---------|
-| Task | Priority | Time | Status | Details |
-|------|----------|------|--------|---------|
-| Kestra Docker setup | P0 | 2 hrs | TODO | `docker-compose.yml` with Kestra |
-| Task | Priority | Time | Status | Details |
-|------|----------|------|--------|---------|
-| Kestra Docker setup | P0 | 2 hrs | TODO | `docker-compose.yml` with Kestra |
-| Research Agent flow | P0 | 3 hrs | TODO | Gemini Search Grounding for provider search |
-| VAPI.ai Setup | P0 | 1 hr | TODO | Account setup, buy phone number, API keys |
-| VAPI Assistant Config | P0 | 2 hrs | TODO | Configure System Prompt, Voice, and Gemini 2.5 integration |
-| Contact Agent (VAPI Trigger) | P0 | 2 hrs | TODO | Kestra Shell Script -> `call-provider.js` to initiate calls |
-| VAPI Webhook Handler | P0 | 2 hrs | TODO | `POST /api/webhooks/vapi` to capture transcripts |
-| Analysis Agent | P0 | 2 hrs | TODO | Summarize VAPI transcripts + select best provider |
-| Booking Agent | P1 | 2 hrs | TODO | Google Calendar API integration |
-| API trigger endpoint | P0 | 2 hrs | TODO | `POST /api/v1/workflows/trigger` |
-| Webhook callbacks | P1 | 2 hrs | TODO | Kestra → API status updates |
-| Decision summary UI | P1 | 2 hrs | TODO | Show AI reasoning to user |
+| Task                         | Priority   | Time   | Status   | Details                                                     |
+| ---------------------------- | ---------- | ------ | -------- | ----------------------------------------------------------- |
+| Task                         | Priority   | Time   | Status   | Details                                                     |
+| ------                       | ---------- | ------ | -------- | ---------                                                   |
+| Kestra Docker setup          | P0         | 2 hrs  | TODO     | `docker-compose.yml` with Kestra                            |
+| Task                         | Priority   | Time   | Status   | Details                                                     |
+| ------                       | ---------- | ------ | -------- | ---------                                                   |
+| Kestra Docker setup          | P0         | 2 hrs  | TODO     | `docker-compose.yml` with Kestra                            |
+| Research Agent flow          | P0         | 3 hrs  | TODO     | Gemini Search Grounding for provider search                 |
+| VAPI.ai Setup                | P0         | 1 hr   | TODO     | Account setup, buy phone number, API keys                   |
+| VAPI Assistant Config        | P0         | 2 hrs  | TODO     | Configure System Prompt, Voice, and Gemini 2.5 integration  |
+| Contact Agent (VAPI Trigger) | P0         | 2 hrs  | TODO     | Kestra Shell Script -> `call-provider.js` to initiate calls |
+| VAPI Webhook Handler         | P0         | 2 hrs  | TODO     | `POST /api/webhooks/vapi` to capture transcripts            |
+| Analysis Agent               | P0         | 2 hrs  | TODO     | Summarize VAPI transcripts + select best provider           |
+| Booking Agent                | P1         | 2 hrs  | TODO     | Google Calendar API integration                             |
+| API trigger endpoint         | P0         | 2 hrs  | TODO     | `POST /api/v1/workflows/trigger`                            |
+| Webhook callbacks            | P1         | 2 hrs  | TODO     | Kestra → API status updates                                 |
+| Decision summary UI          | P1         | 2 hrs  | TODO     | Show AI reasoning to user                                   |
 
 **Deliverable**: Server-side orchestration with VAPI.ai handling real voice calls interacting with Gemini.
 
@@ -221,15 +221,15 @@ supabase/
 
 **Difficulty: High | Owner: Senior Dev**
 
-| Task | Priority | Time | Status | Details |
-|------|----------|------|--------|---------|
-| CLI package setup | P0 | 1 hr | TODO | `/packages/cli` with commander.js |
-| `generate route` command | P0 | 3 hrs | TODO | AI-assisted API route scaffolding |
-| `test-flow` command | P1 | 3 hrs | TODO | Test Kestra workflows locally |
-| `migrate` command | P1 | 2 hrs | TODO | Run Supabase migrations |
-| `deploy` command | P2 | 2 hrs | TODO | Trigger Vercel deployment |
-| `.clinerules` file | P0 | 1 hr | TODO | Project-specific AI context |
-| CLI documentation | P1 | 1 hr | TODO | Usage examples in README |
+| Task                     | Priority | Time  | Status | Details                           |
+| ------------------------ | -------- | ----- | ------ | --------------------------------- |
+| CLI package setup        | P0       | 1 hr  | TODO   | `/packages/cli` with commander.js |
+| `generate route` command | P0       | 3 hrs | TODO   | AI-assisted API route scaffolding |
+| `test-flow` command      | P1       | 3 hrs | TODO   | Test Kestra workflows locally     |
+| `migrate` command        | P1       | 2 hrs | TODO   | Run Supabase migrations           |
+| `deploy` command         | P2       | 2 hrs | TODO   | Trigger Vercel deployment         |
+| `.clinerules` file       | P0       | 1 hr  | TODO   | Project-specific AI context       |
+| CLI documentation        | P1       | 1 hr  | TODO   | Usage examples in README          |
 
 **Deliverable**: Working CLI that demonstrates automation capabilities
 
@@ -261,14 +261,14 @@ packages/cli/
 
 **Difficulty: Medium | Owner: All Team**
 
-| Task | Priority | Time | Status | Details |
-|------|----------|------|--------|---------|
-| Demo data seeding | P0 | 2 hrs | TODO | Pre-populated realistic requests |
-| 2-minute video script | P0 | 1 hr | TODO | Hook → Demo → Features → Close |
-| Video recording | P0 | 2 hrs | TODO | Screen record with voiceover |
-| README overhaul | P0 | 2 hrs | TODO | Setup, screenshots, prize mapping |
-| Architecture diagram | P1 | 1 hr | TODO | Visual system design |
-| Demo backup plan | P1 | 1 hr | TODO | Offline/fallback if live fails |
+| Task                  | Priority | Time  | Status | Details                           |
+| --------------------- | -------- | ----- | ------ | --------------------------------- |
+| Demo data seeding     | P0       | 2 hrs | TODO   | Pre-populated realistic requests  |
+| 2-minute video script | P0       | 1 hr  | TODO   | Hook → Demo → Features → Close    |
+| Video recording       | P0       | 2 hrs | TODO   | Screen record with voiceover      |
+| README overhaul       | P0       | 2 hrs | TODO   | Setup, screenshots, prize mapping |
+| Architecture diagram  | P1       | 1 hr  | TODO   | Visual system design              |
+| Demo backup plan      | P1       | 1 hr  | TODO   | Offline/fallback if live fails    |
 
 **Deliverable**: Compelling video + comprehensive documentation
 
@@ -316,29 +316,32 @@ All:     Bug fixes, demo data, video recording
 
 ## Risk Mitigation
 
-| Risk | Probability | Mitigation |
-|------|-------------|------------|
-| Kestra too complex | Medium | Fallback: Keep client-side flow, show YAML as "planned" |
-| Vercel API routing | Low | Use `rewrites` or deploy API separately |
-| Time overrun | Medium | Feature freeze Day 5, polish only after |
-| Demo crashes | Medium | Pre-record video, seed demo data |
-| Junior blockers | High | Daily standups, pair programming sessions |
+| Risk               | Probability | Mitigation                                              |
+| ------------------ | ----------- | ------------------------------------------------------- |
+| Kestra too complex | Medium      | Fallback: Keep client-side flow, show YAML as "planned" |
+| Vercel API routing | Low         | Use `rewrites` or deploy API separately                 |
+| Time overrun       | Medium      | Feature freeze Day 5, polish only after                 |
+| Demo crashes       | Medium      | Pre-record video, seed demo data                        |
+| Junior blockers    | High        | Daily standups, pair programming sessions               |
 
 ### Fallback Strategies
 
 **If Kestra integration fails (Day 4):**
+
 - Fallback: Build custom data aggregation with Gemini
 - Use existing `interaction_logs` table to generate summaries
 - Create manual insights dashboard
 - Still showcase data-driven decision making
 
 **If Cline CLI is too complex (Day 2):**
+
 - Fallback: Create simpler Node.js scripts
 - Focus on automation value, not tool complexity
 - Document why automation matters
 - Show manual process vs automated comparison
 
 **If time runs short (Day 7):**
+
 - Priority tiers for cutting:
   - KEEP: All 3 prize integrations, core flow, Vercel deploy
   - CUT: Voice input, advanced animations, SMS/email
@@ -381,29 +384,29 @@ Solving real-world scheduling problems with AI agents."
 
 ### New Files to Create
 
-| Path | Purpose |
-|------|---------|
-| `/.coderabbit.yaml` | CodeRabbit config |
-| `/.clinerules` | Cline project context |
-| `/docker-compose.yml` | Kestra + services |
-| `/kestra/flows/concierge-flow.yaml` | Main workflow |
+| Path                                | Purpose                 |
+| ----------------------------------- | ----------------------- |
+| `/.coderabbit.yaml`                 | CodeRabbit config       |
+| `/.clinerules`                      | Cline project context   |
+| `/docker-compose.yml`               | Kestra + services       |
+| `/kestra/flows/concierge-flow.yaml` | Main workflow           |
 | `/kestra/flows/research-agent.yaml` | Research agent workflow |
-| `/kestra/flows/contact-agent.yaml` | Contact agent workflow |
-| `/kestra/flows/booking-agent.yaml` | Booking agent workflow |
-| `/packages/cli/` | CLI package directory |
-| `/apps/web/vercel.json` | Deployment config |
-| `/apps/api/src/routes/workflows.ts` | Workflow API |
+| `/kestra/flows/contact-agent.yaml`  | Contact agent workflow  |
+| `/kestra/flows/booking-agent.yaml`  | Booking agent workflow  |
+| `/packages/cli/`                    | CLI package directory   |
+| `/apps/web/vercel.json`             | Deployment config       |
+| `/apps/api/src/routes/workflows.ts` | Workflow API            |
 
 ### Files to Modify
 
-| Path | Changes |
-|------|---------|
-| `/apps/web/app/new/page.tsx` | Trigger workflow instead of client process |
-| `/apps/web/lib/providers/AppProvider.tsx` | Add Supabase real-time |
-| `/apps/api/src/index.ts` | Register new routes |
-| `/supabase/migrations/` | Any schema updates |
-| `/README.md` | Prize documentation |
-| `/package.json` | Add CLI workspace |
+| Path                                      | Changes                                    |
+| ----------------------------------------- | ------------------------------------------ |
+| `/apps/web/app/new/page.tsx`              | Trigger workflow instead of client process |
+| `/apps/web/lib/providers/AppProvider.tsx` | Add Supabase real-time                     |
+| `/apps/api/src/index.ts`                  | Register new routes                        |
+| `/supabase/migrations/`                   | Any schema updates                         |
+| `/README.md`                              | Prize documentation                        |
+| `/package.json`                           | Add CLI workspace                          |
 
 ---
 
@@ -440,26 +443,31 @@ Solving real-world scheduling problems with AI agents."
 ### First 2 Hours Action Items
 
 **Senior Dev:**
+
 1. Review Kestra documentation: https://kestra.io/docs
 2. Set up `docker-compose.yml` with Kestra
 3. Create first workflow YAML
 
 **Junior 1:**
+
 1. Create loading state components
 2. Add react-hot-toast for notifications
 3. Test current UI on mobile
 
 **Junior 2:**
+
 1. Review Supabase schema
 2. Create `POST /api/v1/requests` endpoint
 3. Wire history page to read from DB
 
 **Junior 3:**
+
 1. Install CodeRabbit GitHub app
 2. Create Vercel project
 3. Create first PR to test CodeRabbit
 
 **Team Standup (30 min):**
+
 - Confirm prize targets
 - Assign Day 1 tasks
 - Set up Discord/Slack channel
@@ -473,9 +481,11 @@ Solving real-world scheduling problems with AI agents."
 **Review Status**: Pending
 **Implementation Status**: Not Started
 **Related Documents**:
+
 - [About Document](./about.md)
 - [AI Concierge Gameplan](./AI%20Concierge%20Gameplan.md)
 - [Hackathon Rules](./hackathon.md)
 
 **Change Log**:
+
 - 2025-12-07 - Initial creation based on multi-agent analysis

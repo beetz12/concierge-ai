@@ -6,14 +6,25 @@
     "dev": "turbo run dev",
     "lint": "turbo run lint",
     "format": "prettier --write \"**/*.{ts,tsx,md}\"",
-    "check-types": "turbo run check-types"
+    "check-types": "turbo run check-types",
+    "prepare": "husky",
+    "cline:security": "./scripts/cline/security-review.sh --staged",
+    "cline:review": "./scripts/cline/code-review.sh --staged",
+    "cline:workflow": "./scripts/cline/workflow-guardian.sh --all",
+    "cline:adapter": "./scripts/cline/generate-adapter.sh",
+    "cline:test": "./scripts/cline/generate-tests.sh",
+    "cline:docs": "./scripts/cline/update-docs.sh --all",
+    "cline:setup": "./scripts/setup-husky.sh",
+    "migrate:workflow": "node kestra/scripts/migrate-envs-to-secrets.js",
+    "migrate:workflow:dry": "node kestra/scripts/migrate-envs-to-secrets.js --dry-run"
   },
   "devDependencies": {
+    "husky": "^9.0.11",
     "prettier": "^3.6.2",
     "turbo": "^2.6.3",
     "typescript": "5.9.2"
   },
-  "packageManager": "pnpm@9.0.0",
+  "packageManager": "pnpm@10.0.0",
   "engines": {
     "node": ">=18"
   }

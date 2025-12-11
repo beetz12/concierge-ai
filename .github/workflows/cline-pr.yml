@@ -1,0 +1,400 @@
+name: Cline PR Review
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+    branches:
+      - main
+
+  # Allow manual trigger
+  workflow_dispatch:
+    inputs:
+      pr_number:
+        description: 'PR number to review'
+        required: false
+
+permissions:
+  contents: read
+  pull-requests: write
+  issues: write
+
+jobs:
+  cline-review:
+    name: Cline Code Review
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          ref: ${{ github.event.pull_request.head.ref }}
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'pnpm'
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v3
+        with:
+          version: 9.0.0
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Install Cline CLI
+        id: cline-install
+        run: |
+          npm install -g cline || echo "::warning::Cline CLI installation failed"
+          if command -v cline &> /dev/null; then
+            echo "installed=true" >> $GITHUB_OUTPUT
+            cline --version 2>/dev/null || echo "Cline installed (version unknown)"
+          else
+            echo "installed=false" >> $GITHUB_OUTPUT
+            echo "::warning::Cline CLI not available - AI review will be skipped"
+          fi
+        env:
+          CLINE_API_KEY: ${{ secrets.CLINE_API_KEY }}
+
+      - name: Get changed files
+        id: changed-files
+        uses: tj-actions/changed-files@v44
+        with:
+          files: |
+            **/*.ts
+            **/*.tsx
+            **/*.js
+            **/*.jsx
+
+      - name: Run Cline review
+        id: cline-review
+        if: steps.cline-install.outputs.installed == 'true' && steps.changed-files.outputs.any_changed == 'true'
+        continue-on-error: true
+        run: |
+          echo "## Cline Analysis Results" > cline-results.md
+          echo "" >> cline-results.md
+
+          # Review changed files
+          for file in ${{ steps.changed-files.outputs.all_changed_files }}; do
+            echo "Reviewing: $file"
+
+            cline review "$file" \
+              --context "AI Concierge: Next.js 16 + Fastify 5 + Supabase" \
+              --rules "TypeScript strict mode, Zod validation, proper error handling, Supabase RLS" \
+              --format markdown \
+              >> cline-results.md || true
+
+            echo "" >> cline-results.md
+          done
+
+          # Check if critical issues found
+          if grep -q "CRITICAL" cline-results.md || grep -q "ERROR" cline-results.md; then
+            echo "critical_issues=true" >> $GITHUB_OUTPUT
+          else
+            echo "critical_issues=false" >> $GITHUB_OUTPUT
+          fi
+        env:
+          CLINE_API_KEY: ${{ secrets.CLINE_API_KEY }}
+
+      - name: Post review comment
+        if: steps.changed-files.outputs.any_changed == 'true'
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const fs = require('fs');
+            let results = '';
+
+            // Check if Cline was installed and ran successfully
+            if ('${{ steps.cline-install.outputs.installed }}' === 'true') {
+              try {
+                if (fs.existsSync('cline-results.md')) {
+                  results = fs.readFileSync('cline-results.md', 'utf8');
+                  if (!results || results.trim() === '' || results.trim() === '## Cline Analysis Results') {
+                    results = 'No issues found by Cline AI review.';
+                  }
+                } else {
+                  results = 'Cline review completed but no results file generated.';
+                }
+              } catch (error) {
+                results = `Error reading Cline results: ${error.message}`;
+              }
+            } else {
+              results = '⚠️ Cline CLI was not available for this review. Please check workflow logs for details.';
+            }
+
+            const comment = `## 🤖 Cline AI Review
+
+            ${results}
+
+            ---
+
+            *Powered by [Cline CLI](https://cline.ai) | [Rerun workflow](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }})*
+            `;
+
+            // Post comment on PR
+            await github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: comment
+            });
+
+      - name: Block merge if critical issues
+        if: steps.cline-review.outputs.critical_issues == 'true'
+        run: |
+          echo "❌ Critical issues found - merge should be blocked"
+          exit 1
+
+      - name: Upload results artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: cline-review-results
+          path: cline-results.md
+          retention-days: 30
+
+  cline-generate-tests:
+    name: Generate Tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    needs: cline-review
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.ref }}
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'pnpm'
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v3
+        with:
+          version: 9.0.0
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Install Cline CLI
+        id: cline-install
+        run: |
+          npm install -g cline || echo "::warning::Cline CLI installation failed"
+          if command -v cline &> /dev/null; then
+            echo "installed=true" >> $GITHUB_OUTPUT
+            cline --version 2>/dev/null || echo "Cline installed (version unknown)"
+          else
+            echo "installed=false" >> $GITHUB_OUTPUT
+            echo "::warning::Cline CLI not available - test generation will be skipped"
+          fi
+        env:
+          CLINE_API_KEY: ${{ secrets.CLINE_API_KEY }}
+
+      - name: Get changed files
+        id: changed-files
+        uses: tj-actions/changed-files@v44
+        with:
+          files: |
+            **/*.ts
+            **/*.tsx
+
+      - name: Generate tests
+        if: steps.cline-install.outputs.installed == 'true' && steps.changed-files.outputs.any_changed == 'true'
+        continue-on-error: true
+        run: |
+          ./scripts/cline/generate-tests.sh --files ${{ steps.changed-files.outputs.all_changed_files }}
+        env:
+          CLINE_API_KEY: ${{ secrets.CLINE_API_KEY }}
+          CLINE_ENABLED: true
+
+      - name: Commit generated tests
+        if: steps.changed-files.outputs.any_changed == 'true'
+        run: |
+          git config --local user.email "github-actions[bot]@users.noreply.github.com"
+          git config --local user.name "github-actions[bot]"
+
+          git add -A
+          if git diff --staged --quiet; then
+            echo "No tests generated"
+          else
+            git commit -m "test: auto-generate tests with Cline CLI
+
+            Generated by GitHub Actions
+            [skip-cline]"
+            git push
+          fi
+
+  cline-update-docs:
+    name: Update Documentation
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    needs: cline-review
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.ref }}
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'pnpm'
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v3
+        with:
+          version: 9.0.0
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Install Cline CLI
+        id: cline-install
+        run: |
+          npm install -g cline || echo "::warning::Cline CLI installation failed"
+          if command -v cline &> /dev/null; then
+            echo "installed=true" >> $GITHUB_OUTPUT
+            cline --version 2>/dev/null || echo "Cline installed (version unknown)"
+          else
+            echo "installed=false" >> $GITHUB_OUTPUT
+            echo "::warning::Cline CLI not available - documentation update will be skipped"
+          fi
+        env:
+          CLINE_API_KEY: ${{ secrets.CLINE_API_KEY }}
+
+      - name: Update documentation
+        if: steps.cline-install.outputs.installed == 'true'
+        continue-on-error: true
+        run: |
+          ./scripts/cline/update-docs.sh --all
+        env:
+          CLINE_API_KEY: ${{ secrets.CLINE_API_KEY }}
+          CLINE_ENABLED: true
+
+      - name: Commit updated docs
+        run: |
+          git config --local user.email "github-actions[bot]@users.noreply.github.com"
+          git config --local user.name "github-actions[bot]"
+
+          git add docs/
+          if git diff --staged --quiet; then
+            echo "No documentation changes"
+          else
+            git commit -m "docs: auto-update with Cline CLI
+
+            Generated by GitHub Actions
+            [skip-cline]"
+            git push
+          fi
+
+  security-scan:
+    name: Security Scan
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'pnpm'
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v3
+        with:
+          version: 9.0.0
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Install Cline CLI
+        id: cline-install
+        run: |
+          npm install -g cline || echo "::warning::Cline CLI installation failed"
+          if command -v cline &> /dev/null; then
+            echo "installed=true" >> $GITHUB_OUTPUT
+            cline --version 2>/dev/null || echo "Cline installed (version unknown)"
+          else
+            echo "installed=false" >> $GITHUB_OUTPUT
+            echo "::warning::Cline CLI not available - security scan will be skipped"
+          fi
+        env:
+          CLINE_API_KEY: ${{ secrets.CLINE_API_KEY }}
+
+      - name: Run security scan
+        id: security-scan
+        if: steps.cline-install.outputs.installed == 'true'
+        run: |
+          ./scripts/cline/security-scan.sh --quick
+        env:
+          CLINE_API_KEY: ${{ secrets.CLINE_API_KEY }}
+          CLINE_ENABLED: true
+        continue-on-error: true
+
+      - name: Upload security report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: security-scan-report
+          path: security-reports/
+          retention-days: 90
+
+      - name: Post security summary
+        if: always()
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const fs = require('fs');
+            let content = '';
+
+            // Check if Cline was installed and ran successfully
+            if ('${{ steps.cline-install.outputs.installed }}' === 'true') {
+              try {
+                if (fs.existsSync('security-reports')) {
+                  const reports = fs.readdirSync('security-reports');
+                  if (reports.length > 0) {
+                    const latestReport = reports.sort().reverse()[0];
+                    content = fs.readFileSync(`security-reports/${latestReport}`, 'utf8');
+                  } else {
+                    content = 'Security scan completed but no reports were generated.';
+                  }
+                } else {
+                  content = 'Security scan completed but no reports directory found.';
+                }
+              } catch (error) {
+                content = `Error reading security reports: ${error.message}`;
+              }
+            } else {
+              content = '⚠️ Cline CLI was not available for security scanning. Please check workflow logs for details.';
+            }
+
+            const comment = `## 🔒 Security Scan Results
+
+            ${content}
+
+            ---
+
+            *Full report available in workflow artifacts*
+            `;
+
+            await github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: comment
+            });

@@ -2,19 +2,19 @@
  * Utility functions to transform data between localStorage format and Supabase database format
  */
 
-import type { ServiceRequest, Provider, InteractionLog } from '../types';
-import type { Database } from '../types/database';
+import type { ServiceRequest, Provider, InteractionLog } from "../types";
+import type { Database } from "../types/database";
 
-type DbServiceRequest = Database['public']['Tables']['service_requests']['Row'];
-type DbProvider = Database['public']['Tables']['providers']['Row'];
-type DbInteractionLog = Database['public']['Tables']['interaction_logs']['Row'];
+type DbServiceRequest = Database["public"]["Tables"]["service_requests"]["Row"];
+type DbProvider = Database["public"]["Tables"]["providers"]["Row"];
+type DbInteractionLog = Database["public"]["Tables"]["interaction_logs"]["Row"];
 
 /**
  * Transform localStorage ServiceRequest to database format
  */
 export function transformToDbRequest(
-  request: ServiceRequest
-): Database['public']['Tables']['service_requests']['Insert'] {
+  request: ServiceRequest,
+): Database["public"]["Tables"]["service_requests"]["Insert"] {
   return {
     id: request.id,
     type: request.type,
@@ -36,8 +36,8 @@ export function transformToDbRequest(
  */
 export function transformToDbProvider(
   provider: Provider,
-  requestId: string
-): Database['public']['Tables']['providers']['Insert'] {
+  requestId: string,
+): Database["public"]["Tables"]["providers"]["Insert"] {
   return {
     id: provider.id,
     request_id: requestId,
@@ -54,14 +54,16 @@ export function transformToDbProvider(
  */
 export function transformToDbLog(
   log: InteractionLog,
-  requestId: string
-): Database['public']['Tables']['interaction_logs']['Insert'] {
+  requestId: string,
+): Database["public"]["Tables"]["interaction_logs"]["Insert"] {
   return {
     request_id: requestId,
     timestamp: log.timestamp,
     step_name: log.stepName,
     detail: log.detail,
-    transcript: log.transcript ? JSON.parse(JSON.stringify(log.transcript)) : null,
+    transcript: log.transcript
+      ? JSON.parse(JSON.stringify(log.transcript))
+      : null,
     status: log.status,
   };
 }
@@ -73,16 +75,16 @@ export function transformFromDbRequest(
   dbRequest: DbServiceRequest & {
     providers?: DbProvider[];
     interaction_logs?: DbInteractionLog[];
-  }
+  },
 ): ServiceRequest {
   return {
     id: dbRequest.id,
-    type: dbRequest.type as ServiceRequest['type'],
+    type: dbRequest.type as ServiceRequest["type"],
     title: dbRequest.title,
     description: dbRequest.description,
     criteria: dbRequest.criteria,
     location: dbRequest.location || undefined,
-    status: dbRequest.status as ServiceRequest['status'],
+    status: dbRequest.status as ServiceRequest["status"],
     createdAt: dbRequest.created_at,
     providersFound: dbRequest.providers
       ? dbRequest.providers.map(transformFromDbProvider)

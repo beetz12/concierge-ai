@@ -24,6 +24,7 @@ $20,000+ in prizes
 Compete for cash rewards, exclusive swag, Google Summer of Code mentorship, and job interview opportunities. Three Infinity Stone awards await the best projects.
 
 # rules
+
 Eligibility and Participation
 Age Requirement
 Participants must be 16 years of age or older.
@@ -103,7 +104,6 @@ A mandatory 2-minute demo showcasing the project.
 Deployment
 Optional for most tracks but earns extra credit.
 Deployment is mandatory when competing for prizes that require Vercel.
-
 
 # judging criteria
 

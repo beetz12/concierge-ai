@@ -4,10 +4,14 @@
  * Automatically routes between Kestra and Direct VAPI based on availability
  */
 
-import { KestraClient } from './kestra.client.js';
-import { DirectVapiClient } from './direct-vapi.client.js';
-import { CallResultService } from './call-result.service.js';
-import type { CallRequest, CallResult } from './types.js';
+import { KestraClient } from "./kestra.client.js";
+import { DirectVapiClient } from "./direct-vapi.client.js";
+import { CallResultService } from "./call-result.service.js";
+import {
+  ConcurrentCallService,
+  type BatchCallResult,
+} from "./concurrent-call.service.js";
+import type { CallRequest, CallResult } from "./types.js";
 
 interface Logger {
   info: (obj: Record<string, unknown>, msg?: string) => void;
@@ -34,40 +38,52 @@ export class ProviderCallingService {
   async callProvider(request: CallRequest): Promise<CallResult> {
     const useKestra = await this.shouldUseKestra();
 
-    this.logger.info({
-      method: useKestra ? 'kestra' : 'direct_vapi',
-      provider: request.providerName,
-      phone: request.providerPhone,
-      service: request.serviceNeeded,
-      location: request.location
-    }, 'Initiating provider call');
+    this.logger.info(
+      {
+        method: useKestra ? "kestra" : "direct_vapi",
+        provider: request.providerName,
+        phone: request.providerPhone,
+        service: request.serviceNeeded,
+        location: request.location,
+      },
+      "Initiating provider call",
+    );
 
     let result: CallResult;
 
     try {
       if (useKestra) {
-        result = await this.kestraClient.triggerContactFlow(request);
+        // For single provider, triggerContactFlow returns CallResult
+        result = await this.kestraClient.triggerContactFlow(request) as CallResult;
       } else {
         result = await this.directVapiClient.initiateCall(request);
       }
 
       // Save results to database
+      // Database unique constraint on call_id handles deduplication atomically
+      // Safe to call even if webhook already saved - ON CONFLICT DO NOTHING
       await this.callResultService.saveCallResult(result, request);
 
-      this.logger.info({
-        callId: result.callId,
-        status: result.status,
-        method: result.callMethod,
-        duration: result.duration
-      }, 'Provider call completed');
+      this.logger.info(
+        {
+          callId: result.callId,
+          status: result.status,
+          method: result.callMethod,
+          duration: result.duration,
+        },
+        "Provider call completed",
+      );
 
       return result;
     } catch (error) {
-      this.logger.error({
-        error,
-        provider: request.providerName,
-        method: useKestra ? 'kestra' : 'direct_vapi'
-      }, 'Provider call failed');
+      this.logger.error(
+        {
+          error,
+          provider: request.providerName,
+          method: useKestra ? "kestra" : "direct_vapi",
+        },
+        "Provider call failed",
+      );
 
       throw error;
     }
@@ -78,10 +94,10 @@ export class ProviderCallingService {
    * Checks environment variable and performs health check if needed
    */
   private async shouldUseKestra(): Promise<boolean> {
-    const kestraEnabled = process.env.KESTRA_ENABLED === 'true';
+    const kestraEnabled = process.env.KESTRA_ENABLED === "true";
 
     if (!kestraEnabled) {
-      this.logger.info({}, 'Kestra disabled via env var, using direct VAPI');
+      this.logger.info({}, "Kestra disabled via env var, using direct VAPI");
       return false;
     }
 
@@ -89,12 +105,121 @@ export class ProviderCallingService {
     const isHealthy = await this.kestraClient.healthCheck();
 
     if (!isHealthy) {
-      this.logger.warn({}, 'Kestra health check failed, falling back to direct VAPI');
+      this.logger.warn(
+        {},
+        "Kestra health check failed, falling back to direct VAPI",
+      );
       return false;
     }
 
-    this.logger.debug({}, 'Kestra available, will use Kestra flow');
+    this.logger.debug({}, "Kestra available, will use Kestra flow");
     return true;
+  }
+
+  /**
+   * Call multiple providers concurrently
+   * Makes a SINGLE routing decision at the start (Kestra vs Direct VAPI)
+   * All requests in the batch are processed using the same method
+   */
+  async callProvidersBatch(
+    requests: CallRequest[],
+    options?: { maxConcurrent?: number },
+  ): Promise<BatchCallResult> {
+    // Validate input
+    if (requests.length === 0) {
+      throw new Error("No requests provided for batch calling");
+    }
+
+    // Single routing decision for entire batch
+    const useKestra = await this.shouldUseKestra();
+
+    this.logger.info(
+      {
+        method: useKestra ? "kestra" : "direct_vapi",
+        providerCount: requests.length,
+        maxConcurrent: options?.maxConcurrent,
+      },
+      "Initiating batch provider calls (single routing decision)",
+    );
+
+    try {
+      if (useKestra) {
+        // Use Kestra's batch flow - returns ConcurrentCallResult, needs transformation
+        const kestraResult = await this.kestraClient.triggerContactFlow(requests, options);
+
+        // Transform ConcurrentCallResult to BatchCallResult format
+        // ConcurrentCallResult has stats: { total, successful, failed, timedOut, durationMs }
+        // BatchCallResult needs: { total, completed, failed, timeout, noAnswer, voicemail, duration, averageCallDuration }
+        const concurrentResult = kestraResult as { results: CallResult[]; stats: { total: number; successful: number; failed: number; timedOut: number; durationMs: number } };
+        const totalCallDuration = concurrentResult.results.reduce((sum, r) => sum + r.duration, 0);
+
+        const batchResult: BatchCallResult = {
+          success: concurrentResult.stats.failed < concurrentResult.stats.total,
+          results: concurrentResult.results,
+          stats: {
+            total: concurrentResult.stats.total,
+            completed: concurrentResult.stats.successful,
+            failed: concurrentResult.stats.failed,
+            timeout: concurrentResult.stats.timedOut,
+            noAnswer: concurrentResult.results.filter(r => r.status === "no_answer").length,
+            voicemail: concurrentResult.results.filter(r => r.status === "voicemail").length,
+            duration: concurrentResult.stats.durationMs,
+            averageCallDuration: concurrentResult.results.length > 0 ? totalCallDuration / concurrentResult.results.length : 0,
+          },
+          errors: [],
+        };
+
+        this.logger.info(
+          { stats: batchResult.stats, method: "kestra" },
+          "Batch provider calls completed via Kestra",
+        );
+
+        return batchResult;
+      }
+
+      // Use Direct VAPI batch processing via callProvidersBatch()
+      const concurrentService = new ConcurrentCallService(this.logger);
+
+      // Extract common parameters from first request
+      // Note: All requests in a batch should have the same service details
+      const firstRequest = requests[0]!;
+
+      const batchResult = await concurrentService.callProvidersBatch({
+        providers: requests.map(req => ({
+          name: req.providerName,
+          phone: req.providerPhone,
+          id: req.providerId, // Pass through provider ID for database linking
+        })),
+        serviceNeeded: firstRequest.serviceNeeded,
+        userCriteria: firstRequest.userCriteria,
+        problemDescription: firstRequest.problemDescription, // Pass through problem description
+        clientName: firstRequest.clientName, // Pass through client name
+        location: firstRequest.location,
+        urgency: firstRequest.urgency,
+        serviceRequestId: firstRequest.serviceRequestId,
+        maxConcurrent: options?.maxConcurrent,
+        customPrompt: firstRequest.customPrompt, // Pass through custom prompt
+      });
+
+      this.logger.info(
+        { stats: batchResult.stats, method: "direct_vapi" },
+        "Batch provider calls completed via Direct VAPI",
+      );
+
+      // Return BatchCallResult directly - matches OpenAPI schema
+      return batchResult;
+    } catch (error) {
+      this.logger.error(
+        {
+          error,
+          providerCount: requests.length,
+          method: useKestra ? "kestra" : "direct_vapi",
+        },
+        "Batch provider calls failed",
+      );
+
+      throw error;
+    }
   }
 
   /**
@@ -102,9 +227,11 @@ export class ProviderCallingService {
    * Returns information about which method is active
    */
   async getSystemStatus(): Promise<SystemStatus> {
-    const kestraEnabled = process.env.KESTRA_ENABLED === 'true';
-    const kestraUrl = process.env.KESTRA_URL || 'not configured';
-    const vapiConfigured = !!(process.env.VAPI_API_KEY && process.env.VAPI_PHONE_NUMBER_ID);
+    const kestraEnabled = process.env.KESTRA_ENABLED === "true";
+    const kestraUrl = process.env.KESTRA_URL || "not configured";
+    const vapiConfigured = !!(
+      process.env.VAPI_API_KEY && process.env.VAPI_PHONE_NUMBER_ID
+    );
 
     let kestraHealthy = false;
     if (kestraEnabled) {
@@ -117,7 +244,7 @@ export class ProviderCallingService {
       kestraHealthy,
       vapiConfigured,
       fallbackAvailable: vapiConfigured,
-      activeMethod: kestraEnabled && kestraHealthy ? 'kestra' : 'direct_vapi'
+      activeMethod: kestraEnabled && kestraHealthy ? "kestra" : "direct_vapi",
     };
   }
 }
@@ -128,5 +255,5 @@ export interface SystemStatus {
   kestraHealthy: boolean;
   vapiConfigured: boolean;
   fallbackAvailable: boolean;
-  activeMethod: 'kestra' | 'direct_vapi';
+  activeMethod: "kestra" | "direct_vapi";
 }

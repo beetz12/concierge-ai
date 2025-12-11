@@ -9,6 +9,7 @@
 ---
 
 ## Table of Contents
+
 1. [Executive Summary](#executive-summary)
 2. [Architecture Overview](#architecture-overview)
 3. [File Structure](#file-structure)
@@ -29,6 +30,7 @@
 **Problem**: Kestra orchestration is not available in Railway production environment. The current `contact_agent.yaml` flow works locally but needs an alternative path for production.
 
 **Solution**: Create a service layer abstraction that:
+
 1. Detects Kestra availability via environment variable + health check
 2. Routes to Kestra when available
 3. Falls back to direct VAPI SDK calls when Kestra is unavailable
@@ -131,20 +133,20 @@ VAPI_WEBHOOK_URL=https://your-api.com/api/v1/webhooks/vapi
 
 export interface CallRequest {
   providerName: string;
-  providerPhone: string;        // E.164 format: +1XXXXXXXXXX
+  providerPhone: string; // E.164 format: +1XXXXXXXXXX
   serviceNeeded: string;
   userCriteria: string;
   location: string;
-  urgency: 'immediate' | 'within_24_hours' | 'within_2_days' | 'flexible';
-  serviceRequestId?: string;    // For DB linking
-  providerId?: string;          // For DB linking
+  urgency: "immediate" | "within_24_hours" | "within_2_days" | "flexible";
+  serviceRequestId?: string; // For DB linking
+  providerId?: string; // For DB linking
 }
 
 export interface CallResult {
-  status: 'completed' | 'timeout' | 'error' | 'no_answer' | 'voicemail';
+  status: "completed" | "timeout" | "error" | "no_answer" | "voicemail";
   callId: string;
-  callMethod: 'kestra' | 'direct_vapi';
-  duration: number;             // minutes
+  callMethod: "kestra" | "direct_vapi";
+  duration: number; // minutes
   endedReason: string;
   transcript: string;
   analysis: {
@@ -167,20 +169,20 @@ export interface CallResult {
 }
 
 export interface StructuredCallData {
-  availability: 'available' | 'unavailable' | 'callback_requested' | 'unclear';
+  availability: "available" | "unavailable" | "callback_requested" | "unclear";
   estimated_rate: string;
   single_person_found: boolean;
   technician_name?: string;
   all_criteria_met: boolean;
   criteria_details?: Record<string, boolean>;
-  call_outcome: 'positive' | 'negative' | 'neutral' | 'no_answer' | 'voicemail';
+  call_outcome: "positive" | "negative" | "neutral" | "no_answer" | "voicemail";
   recommended: boolean;
   notes?: string;
 }
 
 export interface KestraExecutionStatus {
   id: string;
-  state: 'CREATED' | 'RUNNING' | 'SUCCESS' | 'FAILED' | 'KILLED';
+  state: "CREATED" | "RUNNING" | "SUCCESS" | "FAILED" | "KILLED";
   outputs?: Record<string, any>;
 }
 ```
@@ -188,10 +190,10 @@ export interface KestraExecutionStatus {
 ### Provider Calling Service (provider-calling.service.ts)
 
 ```typescript
-import { KestraClient } from './kestra.client';
-import { DirectVapiClient } from './direct-vapi.client';
-import { CallResultService } from './call-result.service';
-import { CallRequest, CallResult } from './types';
+import { KestraClient } from "./kestra.client";
+import { DirectVapiClient } from "./direct-vapi.client";
+import { CallResultService } from "./call-result.service";
+import { CallRequest, CallResult } from "./types";
 
 export class ProviderCallingService {
   private kestraClient: KestraClient;
@@ -207,11 +209,14 @@ export class ProviderCallingService {
   async callProvider(request: CallRequest): Promise<CallResult> {
     const useKestra = await this.shouldUseKestra();
 
-    this.logger.info({
-      method: useKestra ? 'kestra' : 'direct_vapi',
-      provider: request.providerName,
-      phone: request.providerPhone
-    }, 'Initiating provider call');
+    this.logger.info(
+      {
+        method: useKestra ? "kestra" : "direct_vapi",
+        provider: request.providerName,
+        phone: request.providerPhone,
+      },
+      "Initiating provider call",
+    );
 
     let result: CallResult;
 
@@ -228,10 +233,10 @@ export class ProviderCallingService {
   }
 
   private async shouldUseKestra(): Promise<boolean> {
-    const kestraEnabled = process.env.KESTRA_ENABLED === 'true';
+    const kestraEnabled = process.env.KESTRA_ENABLED === "true";
 
     if (!kestraEnabled) {
-      this.logger.info('Kestra disabled via env var, using direct VAPI');
+      this.logger.info("Kestra disabled via env var, using direct VAPI");
       return false;
     }
 
@@ -239,7 +244,9 @@ export class ProviderCallingService {
     const isHealthy = await this.kestraClient.healthCheck();
 
     if (!isHealthy) {
-      this.logger.warn('Kestra health check failed, falling back to direct VAPI');
+      this.logger.warn(
+        "Kestra health check failed, falling back to direct VAPI",
+      );
       return false;
     }
 
@@ -251,28 +258,30 @@ export class ProviderCallingService {
 ### Kestra Client (kestra.client.ts)
 
 ```typescript
-import axios from 'axios';
-import { CallRequest, CallResult, KestraExecutionStatus } from './types';
+import axios from "axios";
+import { CallRequest, CallResult, KestraExecutionStatus } from "./types";
 
 export class KestraClient {
   private baseUrl: string;
   private namespace: string;
-  private flowId = 'contact_providers';
+  private flowId = "contact_providers";
 
   constructor(private logger: any) {
-    this.baseUrl = process.env.KESTRA_URL || 'http://localhost:8082';
-    this.namespace = process.env.KESTRA_NAMESPACE || 'ai_concierge';
+    this.baseUrl = process.env.KESTRA_URL || "http://localhost:8082";
+    this.namespace = process.env.KESTRA_NAMESPACE || "ai_concierge";
   }
 
   async healthCheck(): Promise<boolean> {
     try {
-      const timeout = parseInt(process.env.KESTRA_HEALTH_CHECK_TIMEOUT || '3000');
+      const timeout = parseInt(
+        process.env.KESTRA_HEALTH_CHECK_TIMEOUT || "3000",
+      );
       const response = await axios.get(`${this.baseUrl}/api/v1/health`, {
-        timeout
+        timeout,
       });
       return response.status === 200;
     } catch (error) {
-      this.logger.error({ error }, 'Kestra health check failed');
+      this.logger.error({ error }, "Kestra health check failed");
       return false;
     }
   }
@@ -288,74 +297,96 @@ export class KestraClient {
     return this.parseExecutionResult(finalState, request);
   }
 
-  private async triggerExecution(request: CallRequest): Promise<{ id: string }> {
+  private async triggerExecution(
+    request: CallRequest,
+  ): Promise<{ id: string }> {
     const inputs = {
       provider_name: request.providerName,
       provider_phone: request.providerPhone,
       service_needed: request.serviceNeeded,
       user_criteria: request.userCriteria,
       location: request.location,
-      urgency: request.urgency
+      urgency: request.urgency,
     };
 
     const response = await axios.post(
       `${this.baseUrl}/api/v1/executions/${this.namespace}/${this.flowId}`,
       inputs,
-      { headers: { 'Content-Type': 'application/json' } }
+      { headers: { "Content-Type": "application/json" } },
     );
 
-    this.logger.info({ executionId: response.data.id }, 'Kestra execution triggered');
+    this.logger.info(
+      { executionId: response.data.id },
+      "Kestra execution triggered",
+    );
     return { id: response.data.id };
   }
 
-  private async pollExecution(executionId: string): Promise<KestraExecutionStatus> {
-    const maxAttempts = 72;  // 6 minutes (72 * 5 seconds)
+  private async pollExecution(
+    executionId: string,
+  ): Promise<KestraExecutionStatus> {
+    const maxAttempts = 72; // 6 minutes (72 * 5 seconds)
     let attempts = 0;
 
     while (attempts < maxAttempts) {
       const status = await this.getExecutionStatus(executionId);
 
-      if (['SUCCESS', 'FAILED', 'KILLED'].includes(status.state)) {
+      if (["SUCCESS", "FAILED", "KILLED"].includes(status.state)) {
         return status;
       }
 
-      await new Promise(r => setTimeout(r, 5000));
+      await new Promise((r) => setTimeout(r, 5000));
       attempts++;
     }
 
     throw new Error(`Kestra execution ${executionId} timed out`);
   }
 
-  private async getExecutionStatus(executionId: string): Promise<KestraExecutionStatus> {
+  private async getExecutionStatus(
+    executionId: string,
+  ): Promise<KestraExecutionStatus> {
     const response = await axios.get(
-      `${this.baseUrl}/api/v1/executions/${executionId}`
+      `${this.baseUrl}/api/v1/executions/${executionId}`,
     );
     return response.data;
   }
 
-  private parseExecutionResult(state: KestraExecutionStatus, request: CallRequest): CallResult {
+  private parseExecutionResult(
+    state: KestraExecutionStatus,
+    request: CallRequest,
+  ): CallResult {
     const rawOutput = state.outputs?.call_result;
 
     if (!rawOutput) {
       return {
-        status: 'error',
+        status: "error",
         callId: state.id,
-        callMethod: 'kestra',
+        callMethod: "kestra",
         duration: 0,
-        endedReason: 'no_output',
-        transcript: '',
-        analysis: { summary: '', structuredData: {} as any, successEvaluation: '' },
-        provider: { name: request.providerName, phone: request.providerPhone, service: request.serviceNeeded, location: request.location },
+        endedReason: "no_output",
+        transcript: "",
+        analysis: {
+          summary: "",
+          structuredData: {} as any,
+          successEvaluation: "",
+        },
+        provider: {
+          name: request.providerName,
+          phone: request.providerPhone,
+          service: request.serviceNeeded,
+          location: request.location,
+        },
         request: { criteria: request.userCriteria, urgency: request.urgency },
-        error: 'No output from Kestra execution'
+        error: "No output from Kestra execution",
       };
     }
 
-    const parsed = typeof rawOutput === 'string' ? JSON.parse(rawOutput) : rawOutput;
+    const parsed =
+      typeof rawOutput === "string" ? JSON.parse(rawOutput) : rawOutput;
 
     return {
       ...parsed,
-      callMethod: 'kestra'
+      callMethod: "kestra",
     };
   }
 }
@@ -364,9 +395,9 @@ export class KestraClient {
 ### Direct VAPI Client (direct-vapi.client.ts)
 
 ```typescript
-import { VapiClient } from '@vapi-ai/server-sdk';
-import { CallRequest, CallResult, StructuredCallData } from './types';
-import { createAssistantConfig } from './assistant-config';
+import { VapiClient } from "@vapi-ai/server-sdk";
+import { CallRequest, CallResult, StructuredCallData } from "./types";
+import { createAssistantConfig } from "./assistant-config";
 
 export class DirectVapiClient {
   private client: VapiClient;
@@ -377,7 +408,7 @@ export class DirectVapiClient {
     this.phoneNumberId = process.env.VAPI_PHONE_NUMBER_ID!;
 
     if (!apiKey || !this.phoneNumberId) {
-      throw new Error('VAPI_API_KEY and VAPI_PHONE_NUMBER_ID required');
+      throw new Error("VAPI_API_KEY and VAPI_PHONE_NUMBER_ID required");
     }
 
     this.client = new VapiClient({ token: apiKey });
@@ -386,22 +417,28 @@ export class DirectVapiClient {
   async initiateCall(request: CallRequest): Promise<CallResult> {
     const assistantConfig = createAssistantConfig(request);
 
-    this.logger.info({
-      provider: request.providerName,
-      phone: request.providerPhone
-    }, 'Initiating direct VAPI call');
+    this.logger.info(
+      {
+        provider: request.providerName,
+        phone: request.providerPhone,
+      },
+      "Initiating direct VAPI call",
+    );
 
     // Create the call
     const call = await this.client.calls.create({
       phoneNumberId: this.phoneNumberId,
       customer: {
         number: request.providerPhone,
-        name: request.providerName
+        name: request.providerName,
       },
-      assistant: assistantConfig
+      assistant: assistantConfig,
     });
 
-    this.logger.info({ callId: call.id, status: call.status }, 'VAPI call created');
+    this.logger.info(
+      { callId: call.id, status: call.status },
+      "VAPI call created",
+    );
 
     // Poll for completion
     const completedCall = await this.pollCallCompletion(call.id);
@@ -410,57 +447,68 @@ export class DirectVapiClient {
   }
 
   private async pollCallCompletion(callId: string): Promise<any> {
-    const maxAttempts = 60;  // 5 minutes
+    const maxAttempts = 60; // 5 minutes
     let attempts = 0;
 
     while (attempts < maxAttempts) {
       const call = await this.client.calls.get(callId);
 
-      this.logger.debug({
-        callId,
-        status: call.status,
-        attempt: attempts + 1
-      }, 'Polling call status');
+      this.logger.debug(
+        {
+          callId,
+          status: call.status,
+          attempt: attempts + 1,
+        },
+        "Polling call status",
+      );
 
-      if (!['queued', 'ringing', 'in-progress'].includes(call.status)) {
+      if (!["queued", "ringing", "in-progress"].includes(call.status)) {
         return call;
       }
 
-      await new Promise(r => setTimeout(r, 5000));
+      await new Promise((r) => setTimeout(r, 5000));
       attempts++;
     }
 
-    throw new Error(`Call ${callId} timed out after ${maxAttempts * 5} seconds`);
+    throw new Error(
+      `Call ${callId} timed out after ${maxAttempts * 5} seconds`,
+    );
   }
 
   private formatCallResult(call: any, request: CallRequest): CallResult {
-    const status = call.status === 'ended' ? 'completed' :
-                   call.endedReason?.includes('no_answer') ? 'no_answer' :
-                   call.endedReason?.includes('voicemail') ? 'voicemail' : 'error';
+    const status =
+      call.status === "ended"
+        ? "completed"
+        : call.endedReason?.includes("no_answer")
+          ? "no_answer"
+          : call.endedReason?.includes("voicemail")
+            ? "voicemail"
+            : "error";
 
     return {
       status,
       callId: call.id,
-      callMethod: 'direct_vapi',
+      callMethod: "direct_vapi",
       duration: call.durationMinutes || 0,
-      endedReason: call.endedReason || 'unknown',
-      transcript: call.artifact?.transcript || call.transcript || '',
+      endedReason: call.endedReason || "unknown",
+      transcript: call.artifact?.transcript || call.transcript || "",
       analysis: {
-        summary: call.analysis?.summary || '',
-        structuredData: call.analysis?.structuredData || {} as StructuredCallData,
-        successEvaluation: call.analysis?.successEvaluation || ''
+        summary: call.analysis?.summary || "",
+        structuredData:
+          call.analysis?.structuredData || ({} as StructuredCallData),
+        successEvaluation: call.analysis?.successEvaluation || "",
       },
       provider: {
         name: request.providerName,
         phone: request.providerPhone,
         service: request.serviceNeeded,
-        location: request.location
+        location: request.location,
       },
       request: {
         criteria: request.userCriteria,
-        urgency: request.urgency
+        urgency: request.urgency,
       },
-      cost: call.costBreakdown?.total
+      cost: call.costBreakdown?.total,
     };
   }
 }
@@ -469,13 +517,13 @@ export class DirectVapiClient {
 ### Assistant Configuration (assistant-config.ts)
 
 ```typescript
-import { CallRequest } from './types';
+import { CallRequest } from "./types";
 
 /**
  * Creates VAPI assistant configuration - mirrors kestra/scripts/call-provider.js
  */
 export function createAssistantConfig(request: CallRequest) {
-  const urgencyText = request.urgency.replace(/_/g, ' ');
+  const urgencyText = request.urgency.replace(/_/g, " ");
 
   const systemPrompt = `You are a warm, friendly AI Concierge making a real phone call to ${request.providerName}.
 You are calling on behalf of a client in ${request.location} who needs ${request.serviceNeeded} services.
@@ -535,80 +583,113 @@ Be warm, genuine, and conversational - like a helpful friend.`;
       provider: "11labs",
       voiceId: "21m00Tcm4TlvDq8ikWAM",
       stability: 0.5,
-      similarityBoost: 0.75
+      similarityBoost: 0.75,
     },
 
     model: {
       provider: "google",
       model: "gemini-2.0-flash-exp",
-      messages: [{ role: "system", content: systemPrompt }]
+      messages: [{ role: "system", content: systemPrompt }],
     },
 
     transcriber: {
       provider: "deepgram",
-      language: "en"
+      language: "en",
     },
 
     firstMessage: `Hi there! This is the AI Concierge calling on behalf of a client in ${request.location} who needs ${request.serviceNeeded} help. Do you have just a quick moment?`,
 
     endCallFunctionEnabled: true,
 
-    tools: [{
-      type: "endCall",
-      async: false,
-      messages: [{
-        type: "request-start",
-        content: "Thank you for your time. Have a great day!"
-      }]
-    }],
+    tools: [
+      {
+        type: "endCall",
+        async: false,
+        messages: [
+          {
+            type: "request-start",
+            content: "Thank you for your time. Have a great day!",
+          },
+        ],
+      },
+    ],
 
     analysisPlan: {
       summaryPlan: {
         enabled: true,
-        messages: [{
-          role: "system",
-          content: "Summarize: Was ONE person found with ALL required qualities? What are their rates and availability?"
-        }]
+        messages: [
+          {
+            role: "system",
+            content:
+              "Summarize: Was ONE person found with ALL required qualities? What are their rates and availability?",
+          },
+        ],
       },
       structuredDataPlan: {
         enabled: true,
         schema: {
           type: "object",
           properties: {
-            availability: { type: "string", enum: ["available", "unavailable", "callback_requested", "unclear"] },
+            availability: {
+              type: "string",
+              enum: [
+                "available",
+                "unavailable",
+                "callback_requested",
+                "unclear",
+              ],
+            },
             estimated_rate: { type: "string" },
             single_person_found: { type: "boolean" },
             technician_name: { type: "string" },
             all_criteria_met: { type: "boolean" },
             criteria_details: { type: "object" },
-            call_outcome: { type: "string", enum: ["positive", "negative", "neutral", "no_answer", "voicemail"] },
+            call_outcome: {
+              type: "string",
+              enum: [
+                "positive",
+                "negative",
+                "neutral",
+                "no_answer",
+                "voicemail",
+              ],
+            },
             recommended: { type: "boolean" },
-            notes: { type: "string" }
+            notes: { type: "string" },
           },
-          required: ["availability", "single_person_found", "all_criteria_met", "call_outcome"]
+          required: [
+            "availability",
+            "single_person_found",
+            "all_criteria_met",
+            "call_outcome",
+          ],
         },
-        messages: [{
-          role: "system",
-          content: `Analyze this call. The client needed ONE SINGLE PERSON with ALL these qualities:
+        messages: [
+          {
+            role: "system",
+            content: `Analyze this call. The client needed ONE SINGLE PERSON with ALL these qualities:
 ${request.userCriteria}
 
-Key question: Did we find ONE person who has ALL requirements? Not different people for different requirements.`
-        }]
+Key question: Did we find ONE person who has ALL requirements? Not different people for different requirements.`,
+          },
+        ],
       },
       successEvaluationPlan: {
         enabled: true,
         rubric: "Checklist",
-        messages: [{
-          role: "system",
-          content: `Evaluate:
+        messages: [
+          {
+            role: "system",
+            content: `Evaluate:
 1. Did we confirm availability?
 2. Did we get rates?
 3. Did we ask ONLY about the explicit criteria (not invented questions)?
 4. Did we track ONE person for ALL requirements (not different people)?
-5. Did we properly end the call?`
-        }]
-      }
-    }
+5. Did we properly end the call?`,
+          },
+        ],
+      },
+    },
   };
 }
 ```
@@ -616,8 +697,8 @@ Key question: Did we find ONE person who has ALL requirements? Not different peo
 ### Call Result Service (call-result.service.ts)
 
 ```typescript
-import { createClient } from '@supabase/supabase-js';
-import { CallRequest, CallResult } from './types';
+import { createClient } from "@supabase/supabase-js";
+import { CallRequest, CallResult } from "./types";
 
 export class CallResultService {
   private supabase;
@@ -627,16 +708,19 @@ export class CallResultService {
     const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
     if (!supabaseUrl || !supabaseKey) {
-      this.logger.warn('Supabase not configured, DB updates will be skipped');
+      this.logger.warn("Supabase not configured, DB updates will be skipped");
       this.supabase = null;
     } else {
       this.supabase = createClient(supabaseUrl, supabaseKey);
     }
   }
 
-  async saveCallResult(result: CallResult, request: CallRequest): Promise<void> {
+  async saveCallResult(
+    result: CallResult,
+    request: CallRequest,
+  ): Promise<void> {
     if (!this.supabase) {
-      this.logger.info('Skipping DB update - Supabase not configured');
+      this.logger.info("Skipping DB update - Supabase not configured");
       return;
     }
 
@@ -651,16 +735,25 @@ export class CallResultService {
         await this.createInteractionLog(request.serviceRequestId, result);
       }
 
-      this.logger.info({ callId: result.callId }, 'Call result saved to database');
+      this.logger.info(
+        { callId: result.callId },
+        "Call result saved to database",
+      );
     } catch (error) {
-      this.logger.error({ error, callId: result.callId }, 'Failed to save call result');
+      this.logger.error(
+        { error, callId: result.callId },
+        "Failed to save call result",
+      );
       // Don't throw - we don't want DB failures to break the call flow
     }
   }
 
-  private async updateProvider(providerId: string, result: CallResult): Promise<void> {
+  private async updateProvider(
+    providerId: string,
+    result: CallResult,
+  ): Promise<void> {
     const { error } = await this.supabase
-      .from('providers')
+      .from("providers")
       .update({
         call_status: result.status,
         call_result: result.analysis.structuredData,
@@ -670,27 +763,31 @@ export class CallResultService {
         call_cost: result.cost,
         call_method: result.callMethod,
         call_id: result.callId,
-        called_at: new Date().toISOString()
+        called_at: new Date().toISOString(),
       })
-      .eq('id', providerId);
+      .eq("id", providerId);
 
     if (error) throw error;
   }
 
-  private async createInteractionLog(serviceRequestId: string, result: CallResult): Promise<void> {
-    const { error } = await this.supabase
-      .from('interaction_logs')
-      .insert({
-        service_request_id: serviceRequestId,
-        step_name: 'provider_call',
-        status: result.status === 'completed' ? 'success' : 'warning',
-        detail: result.analysis.summary || `Call to ${result.provider.name}: ${result.status}`,
-        transcript: result.transcript ?
-          result.transcript.split('\n').map(line => {
-            const [role, ...text] = line.split(': ');
-            return { speaker: role, text: text.join(': ') };
-          }) : null
-      });
+  private async createInteractionLog(
+    serviceRequestId: string,
+    result: CallResult,
+  ): Promise<void> {
+    const { error } = await this.supabase.from("interaction_logs").insert({
+      service_request_id: serviceRequestId,
+      step_name: "provider_call",
+      status: result.status === "completed" ? "success" : "warning",
+      detail:
+        result.analysis.summary ||
+        `Call to ${result.provider.name}: ${result.status}`,
+      transcript: result.transcript
+        ? result.transcript.split("\n").map((line) => {
+            const [role, ...text] = line.split(": ");
+            return { speaker: role, text: text.join(": ") };
+          })
+        : null,
+    });
 
     if (error) throw error;
   }
@@ -704,90 +801,122 @@ export class CallResultService {
 ### Provider Routes (providers.ts)
 
 ```typescript
-import { FastifyInstance } from 'fastify';
-import { z } from 'zod';
-import { ProviderCallingService } from '../services/vapi/provider-calling.service';
+import { FastifyInstance } from "fastify";
+import { z } from "zod";
+import { ProviderCallingService } from "../services/vapi/provider-calling.service";
 
 const callProviderSchema = z.object({
   providerName: z.string().min(1),
-  providerPhone: z.string().regex(/^\+1\d{10}$/, 'Phone must be E.164 format (+1XXXXXXXXXX)'),
+  providerPhone: z
+    .string()
+    .regex(/^\+1\d{10}$/, "Phone must be E.164 format (+1XXXXXXXXXX)"),
   serviceNeeded: z.string().min(1),
   userCriteria: z.string().min(1),
   location: z.string().min(1),
-  urgency: z.enum(['immediate', 'within_24_hours', 'within_2_days', 'flexible']),
+  urgency: z.enum([
+    "immediate",
+    "within_24_hours",
+    "within_2_days",
+    "flexible",
+  ]),
   serviceRequestId: z.string().uuid().optional(),
-  providerId: z.string().uuid().optional()
+  providerId: z.string().uuid().optional(),
 });
 
 export default async function providerRoutes(fastify: FastifyInstance) {
   const callingService = new ProviderCallingService(fastify.log);
 
   // POST /api/v1/providers/call - Initiate a provider call
-  fastify.post('/call', {
-    schema: {
-      tags: ['providers'],
-      description: 'Initiate a phone call to a service provider',
-      body: {
-        type: 'object',
-        required: ['providerName', 'providerPhone', 'serviceNeeded', 'userCriteria', 'location', 'urgency'],
-        properties: {
-          providerName: { type: 'string' },
-          providerPhone: { type: 'string' },
-          serviceNeeded: { type: 'string' },
-          userCriteria: { type: 'string' },
-          location: { type: 'string' },
-          urgency: { type: 'string', enum: ['immediate', 'within_24_hours', 'within_2_days', 'flexible'] },
-          serviceRequestId: { type: 'string' },
-          providerId: { type: 'string' }
+  fastify.post(
+    "/call",
+    {
+      schema: {
+        tags: ["providers"],
+        description: "Initiate a phone call to a service provider",
+        body: {
+          type: "object",
+          required: [
+            "providerName",
+            "providerPhone",
+            "serviceNeeded",
+            "userCriteria",
+            "location",
+            "urgency",
+          ],
+          properties: {
+            providerName: { type: "string" },
+            providerPhone: { type: "string" },
+            serviceNeeded: { type: "string" },
+            userCriteria: { type: "string" },
+            location: { type: "string" },
+            urgency: {
+              type: "string",
+              enum: [
+                "immediate",
+                "within_24_hours",
+                "within_2_days",
+                "flexible",
+              ],
+            },
+            serviceRequestId: { type: "string" },
+            providerId: { type: "string" },
+          },
+        },
+      },
+    },
+    async (request, reply) => {
+      try {
+        const validated = callProviderSchema.parse(request.body);
+        const result = await callingService.callProvider(validated);
+
+        return reply.send({
+          success: true,
+          data: result,
+        });
+      } catch (error: any) {
+        request.log.error({ error }, "Provider call failed");
+
+        if (error.name === "ZodError") {
+          return reply.status(400).send({
+            success: false,
+            error: "Validation error",
+            details: error.errors,
+          });
         }
-      }
-    }
-  }, async (request, reply) => {
-    try {
-      const validated = callProviderSchema.parse(request.body);
-      const result = await callingService.callProvider(validated);
 
-      return reply.send({
-        success: true,
-        data: result
-      });
-    } catch (error: any) {
-      request.log.error({ error }, 'Provider call failed');
-
-      if (error.name === 'ZodError') {
-        return reply.status(400).send({
+        return reply.status(500).send({
           success: false,
-          error: 'Validation error',
-          details: error.errors
+          error: error.message,
         });
       }
-
-      return reply.status(500).send({
-        success: false,
-        error: error.message
-      });
-    }
-  });
+    },
+  );
 
   // GET /api/v1/providers/call/status - Check system status
-  fastify.get('/call/status', {
-    schema: {
-      tags: ['providers'],
-      description: 'Check provider calling system status'
-    }
-  }, async (request, reply) => {
-    const kestraEnabled = process.env.KESTRA_ENABLED === 'true';
-    const kestraUrl = process.env.KESTRA_URL || 'not configured';
-    const vapiConfigured = !!(process.env.VAPI_API_KEY && process.env.VAPI_PHONE_NUMBER_ID);
+  fastify.get(
+    "/call/status",
+    {
+      schema: {
+        tags: ["providers"],
+        description: "Check provider calling system status",
+      },
+    },
+    async (request, reply) => {
+      const kestraEnabled = process.env.KESTRA_ENABLED === "true";
+      const kestraUrl = process.env.KESTRA_URL || "not configured";
+      const vapiConfigured = !!(
+        process.env.VAPI_API_KEY && process.env.VAPI_PHONE_NUMBER_ID
+      );
 
-    return reply.send({
-      kestraEnabled,
-      kestraUrl: kestraEnabled ? kestraUrl : null,
-      vapiConfigured,
-      fallbackAvailable: vapiConfigured,
-      activeMethod: kestraEnabled ? 'kestra (with fallback)' : 'direct_vapi'
-    });
-  });
+      return reply.send({
+        kestraEnabled,
+        kestraUrl: kestraEnabled ? kestraUrl : null,
+        vapiConfigured,
+        fallbackAvailable: vapiConfigured,
+        activeMethod: kestraEnabled ? "kestra (with fallback)" : "direct_vapi",
+      });
+    },
+  );
 }
 ```
 
@@ -819,28 +948,29 @@ CREATE INDEX IF NOT EXISTS idx_providers_call_status ON providers(call_status);
 
 ## Implementation Steps
 
-| # | Task | Files | Est. Lines |
-|---|------|-------|------------|
-| 1 | Add env vars to `.env.example` and `.env` | `apps/api/.env.example` | 10 |
-| 2 | Install `@vapi-ai/server-sdk` in API | `apps/api/package.json` | 1 |
-| 3 | Create types file | `apps/api/src/services/vapi/types.ts` | ~60 |
-| 4 | Create assistant config | `apps/api/src/services/vapi/assistant-config.ts` | ~150 |
-| 5 | Create Direct VAPI client | `apps/api/src/services/vapi/direct-vapi.client.ts` | ~120 |
-| 6 | Create Kestra client | `apps/api/src/services/vapi/kestra.client.ts` | ~130 |
-| 7 | Create Call Result service | `apps/api/src/services/vapi/call-result.service.ts` | ~80 |
-| 8 | Create Provider Calling service | `apps/api/src/services/vapi/provider-calling.service.ts` | ~60 |
-| 9 | Create service exports | `apps/api/src/services/vapi/index.ts` | 10 |
-| 10 | Create provider routes | `apps/api/src/routes/providers.ts` | ~100 |
-| 11 | Register routes in index | `apps/api/src/index.ts` | 3 |
-| 12 | Add DB migration (optional) | `supabase/migrations/` | 15 |
-| 13 | Test with Kestra disabled | - | - |
-| 14 | Test with Kestra enabled | - | - |
+| #   | Task                                      | Files                                                    | Est. Lines |
+| --- | ----------------------------------------- | -------------------------------------------------------- | ---------- |
+| 1   | Add env vars to `.env.example` and `.env` | `apps/api/.env.example`                                  | 10         |
+| 2   | Install `@vapi-ai/server-sdk` in API      | `apps/api/package.json`                                  | 1          |
+| 3   | Create types file                         | `apps/api/src/services/vapi/types.ts`                    | ~60        |
+| 4   | Create assistant config                   | `apps/api/src/services/vapi/assistant-config.ts`         | ~150       |
+| 5   | Create Direct VAPI client                 | `apps/api/src/services/vapi/direct-vapi.client.ts`       | ~120       |
+| 6   | Create Kestra client                      | `apps/api/src/services/vapi/kestra.client.ts`            | ~130       |
+| 7   | Create Call Result service                | `apps/api/src/services/vapi/call-result.service.ts`      | ~80        |
+| 8   | Create Provider Calling service           | `apps/api/src/services/vapi/provider-calling.service.ts` | ~60        |
+| 9   | Create service exports                    | `apps/api/src/services/vapi/index.ts`                    | 10         |
+| 10  | Create provider routes                    | `apps/api/src/routes/providers.ts`                       | ~100       |
+| 11  | Register routes in index                  | `apps/api/src/index.ts`                                  | 3          |
+| 12  | Add DB migration (optional)               | `supabase/migrations/`                                   | 15         |
+| 13  | Test with Kestra disabled                 | -                                                        | -          |
+| 14  | Test with Kestra enabled                  | -                                                        | -          |
 
 ---
 
 ## Testing Strategy
 
 ### Test 1: Direct VAPI (Kestra Disabled)
+
 ```bash
 # Set in .env
 KESTRA_ENABLED=false
@@ -859,6 +989,7 @@ curl -X POST http://localhost:8000/api/v1/providers/call \
 ```
 
 ### Test 2: Kestra Path (Kestra Enabled)
+
 ```bash
 # Set in .env
 KESTRA_ENABLED=true
@@ -871,6 +1002,7 @@ docker-compose up -d kestra
 ```
 
 ### Test 3: Automatic Fallback
+
 ```bash
 # Set in .env
 KESTRA_ENABLED=true
@@ -887,6 +1019,7 @@ docker-compose stop kestra
 ## Production Deployment
 
 ### Railway (Production - No Kestra)
+
 ```bash
 # Railway environment variables
 KESTRA_ENABLED=false
@@ -895,6 +1028,7 @@ VAPI_PHONE_NUMBER_ID=your-prod-phone-id
 ```
 
 ### Local/Staging (With Kestra)
+
 ```bash
 # docker-compose + .env
 KESTRA_ENABLED=true
@@ -905,14 +1039,14 @@ KESTRA_URL=http://localhost:8082
 
 ## Key Decisions
 
-| Decision | Rationale |
-|----------|-----------|
-| **Polling over Webhooks** | Matches existing Kestra script behavior; simpler for MVP; webhooks can be added later |
-| **Environment-based detection** | `KESTRA_ENABLED=false` in Railway means no Kestra health checks needed |
-| **Health check with timeout** | 3-second timeout ensures fast fallback if Kestra is slow/unresponsive |
-| **Identical assistant config** | Direct VAPI uses exact same prompts/settings as Kestra script |
-| **Unified CallResult type** | Both paths produce identical output format for consistent downstream handling |
-| **Service layer abstraction** | Frontend doesn't need to know which method was used |
+| Decision                        | Rationale                                                                             |
+| ------------------------------- | ------------------------------------------------------------------------------------- |
+| **Polling over Webhooks**       | Matches existing Kestra script behavior; simpler for MVP; webhooks can be added later |
+| **Environment-based detection** | `KESTRA_ENABLED=false` in Railway means no Kestra health checks needed                |
+| **Health check with timeout**   | 3-second timeout ensures fast fallback if Kestra is slow/unresponsive                 |
+| **Identical assistant config**  | Direct VAPI uses exact same prompts/settings as Kestra script                         |
+| **Unified CallResult type**     | Both paths produce identical output format for consistent downstream handling         |
+| **Service layer abstraction**   | Frontend doesn't need to know which method was used                                   |
 
 ---
 
@@ -922,9 +1056,11 @@ KESTRA_URL=http://localhost:8082
 **Review Status**: Approved
 **Implementation Status**: Not Started
 **Related Documents**:
+
 - `/kestra/flows/contact_agent.yaml` - Kestra flow definition
 - `/kestra/scripts/call-provider.js` - VAPI call script
 - `/apps/api/src/routes/workflows.ts` - Existing workflow routes
 
 **Change Log**:
+
 - 2025-12-08 - Initial creation

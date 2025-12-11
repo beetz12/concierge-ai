@@ -1,9 +1,15 @@
-'use client';
+"use client";
 
-import React, { createContext, useContext, useEffect, useState, ReactNode } from 'react';
-import { createClient } from '../supabase/client';
-import type { SupabaseClient, User } from '@supabase/supabase-js';
-import type { Database } from '../types/database';
+import React, {
+  createContext,
+  useContext,
+  useEffect,
+  useState,
+  ReactNode,
+} from "react";
+import { createClient } from "../supabase/client";
+import type { SupabaseClient, User } from "@supabase/supabase-js";
+import type { Database } from "../types/database";
 
 interface SupabaseContextType {
   supabase: SupabaseClient<Database>;
@@ -11,12 +17,14 @@ interface SupabaseContextType {
   loading: boolean;
 }
 
-const SupabaseContext = createContext<SupabaseContextType | undefined>(undefined);
+const SupabaseContext = createContext<SupabaseContextType | undefined>(
+  undefined,
+);
 
 export const useSupabase = () => {
   const context = useContext(SupabaseContext);
   if (!context) {
-    throw new Error('useSupabase must be used within SupabaseProvider');
+    throw new Error("useSupabase must be used within SupabaseProvider");
   }
   return context;
 };

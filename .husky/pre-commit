@@ -1,0 +1,108 @@
+#!/bin/bash
+# ══════════════════════════════════════════════════════════════════════════════
+# Cline CLI Pre-Commit Hook (Race-Condition Safe)
+#
+# Uses stash-based isolation to prevent blob corruption from:
+# - IDE file watchers
+# - Cline CLI file modifications
+# - Formatters/linters that modify files
+#
+# 2025 Best Practice: Isolate staged changes before running checks
+# ══════════════════════════════════════════════════════════════════════════════
+
+# DISABLED - Cline CLI pre-commit checks
+exit 0
+
+# Quick bypass options
+if [ "$CLINE_ENABLED" = "false" ] || [ "$CLINE_YOLO" = "true" ]; then
+    [ "$CLINE_YOLO" = "true" ] && echo "⚡ YOLO mode - skipping checks"
+    exit 0
+fi
+
+echo ""
+echo "🤖 Running Cline CLI pre-commit checks..."
+echo ""
+
+PROJECT_ROOT="$(git rev-parse --show-toplevel)"
+
+# ══════════════════════════════════════════════════════════════════════════════
+# STASH UNSTAGED CHANGES (prevents race conditions)
+# ══════════════════════════════════════════════════════════════════════════════
+# This isolates only staged changes, preventing file watchers or other processes
+# from corrupting the git index during the commit
+
+STASH_NAME="pre-commit-$(date +%s)"
+HAS_UNSTAGED=false
+
+# Check if there are unstaged changes (including untracked files)
+if ! git diff --quiet || [ -n "$(git ls-files --others --exclude-standard)" ]; then
+    HAS_UNSTAGED=true
+    # Stash unstaged changes and untracked files, keeping staged changes
+    git stash push --keep-index --include-untracked -m "$STASH_NAME" >/dev/null 2>&1
+fi
+
+# Cleanup function to restore stashed changes
+cleanup() {
+    if [ "$HAS_UNSTAGED" = "true" ]; then
+        git stash pop >/dev/null 2>&1 || true
+    fi
+}
+
+# Ensure cleanup runs on exit (success or failure)
+trap cleanup EXIT
+
+# ══════════════════════════════════════════════════════════════════════════════
+# STEP 1: Security Review
+# ══════════════════════════════════════════════════════════════════════════════
+echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+echo "🔒 Step 1/2: Security Review"
+echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+
+if [ -x "$PROJECT_ROOT/scripts/cline/security-review.sh" ]; then
+    if ! "$PROJECT_ROOT/scripts/cline/security-review.sh" --staged; then
+        echo ""
+        echo "❌ Security review failed! Please fix the issues above."
+        echo "   To bypass: CLINE_YOLO=true git commit -m 'message'"
+        exit 1
+    fi
+else
+    echo "⚠️  Security review script not found, skipping..."
+fi
+
+echo ""
+
+# ══════════════════════════════════════════════════════════════════════════════
+# STEP 2: Workflow Guardian (Kestra YAML only)
+# ══════════════════════════════════════════════════════════════════════════════
+echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+echo "🛡️  Step 2/2: Workflow Guardian (Kestra)"
+echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+
+# Check for staged Kestra files (excluding deleted)
+STAGED_KESTRA=$(git diff --cached --name-only --diff-filter=ACMR | grep -E 'kestra/flows/.*\.(yaml|yml)$' || true)
+
+if [ -n "$STAGED_KESTRA" ]; then
+    if [ -x "$PROJECT_ROOT/scripts/cline/workflow-guardian.sh" ]; then
+        for flow in $STAGED_KESTRA; do
+            echo "Validating: $flow"
+            if ! "$PROJECT_ROOT/scripts/cline/workflow-guardian.sh" "$PROJECT_ROOT/$flow"; then
+                echo ""
+                echo "❌ Workflow validation failed!"
+                echo "   To bypass: CLINE_YOLO=true git commit -m 'message'"
+                exit 1
+            fi
+        done
+    else
+        echo "⚠️  Workflow guardian not found, skipping..."
+    fi
+else
+    echo "✅ No Kestra workflows staged, skipping..."
+fi
+
+echo ""
+echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+echo "✅ All Cline pre-commit checks passed!"
+echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+echo ""
+
+exit 0

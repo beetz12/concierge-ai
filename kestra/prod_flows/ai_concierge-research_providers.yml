@@ -1,0 +1,48 @@
+id: research_providers
+namespace: ai_concierge
+
+inputs:
+  - id: service
+    type: STRING
+    defaults: "plumber"
+  - id: location
+    type: STRING
+    defaults: "Greenville, SC"
+  - id: days_needed
+    type: INT
+    defaults: 2
+  - id: min_rating
+    type: FLOAT
+    defaults: 4.5
+
+tasks:
+  - id: research_metrics
+    type: io.kestra.plugin.ai.agent.AIAgent
+    provider:
+      type: io.kestra.plugin.ai.provider.GoogleGemini
+      apiKey: "{{ secret('gemini_api_key') }}"
+      modelName: gemini-2.5-flash
+    prompt: |
+      I need to find {{ inputs.service }} providers in {{ inputs.location }} that meet these criteria:
+      - Minimum rating: {{ inputs.min_rating }}
+      - Must appear to be available or have 24/7 service (urgent need within {{ inputs.days_needed }} days)
+
+      Use Google Search Grounding to find at least 5 candidates. For each, gather:
+      1. Company name
+      2. Phone number (CRITICAL)
+      3. Current ratings and review count
+      4. Years in business or "Founded" date if available
+
+      Then, evaluate the list and return the TOP 3 candidates that are most likely to answer the phone and do a good job.
+
+      Output strictly a JSON object with a 'candidates' key containing an array of objects:
+      {
+        "candidates": [
+          { "name": "Name", "phone": "Phone", "rating": 4.8, "reason": "Why selected" }
+        ]
+      }
+
+outputs:
+  - id: json
+    type: STRING
+    value: "{{ outputs.research_metrics.textOutput }}"
