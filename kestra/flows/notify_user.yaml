@@ -1,0 +1,74 @@
+id: notify_user
+namespace: ai_concierge
+description: "Send SMS notification to user with top 3 provider recommendations"
+
+inputs:
+  - id: user_phone
+    type: STRING
+    description: "User's phone number in E.164 format (e.g., +12345678901)"
+  - id: user_name
+    type: STRING
+    defaults: "Customer"
+    description: "User's name for personalization"
+  - id: request_url
+    type: STRING
+    defaults: ""
+    description: "URL to view full request details"
+  - id: providers
+    type: JSON
+    description: "Array of top 3 recommended providers: [{name, earliestAvailability}]"
+
+tasks:
+  - id: validate_inputs
+    type: io.kestra.plugin.core.debug.Return
+    description: "Validate input parameters"
+    format: |
+      SMS Notification Job Started
+      =========================================
+      User: {{ inputs.user_name }}
+      Phone: {{ inputs.user_phone }}
+      Request URL: {{ inputs.request_url }}
+      Providers: {{ inputs.providers | length }}
+      =========================================
+
+  - id: send_sms
+    type: io.kestra.plugin.scripts.node.Commands
+    description: "Send SMS notification via Twilio"
+    containerImage: node:20-alpine
+    taskRunner:
+      type: io.kestra.plugin.scripts.runner.docker.Docker
+      volumes:
+        - /Users/mohammedhasan/Github/Personal/concierge-ai/kestra/scripts:/kestra
+    beforeCommands:
+      - npm install twilio
+    commands:
+      - node /kestra/send-notification.js "{{ inputs.user_phone }}" "{{ inputs.user_name }}" "{{ inputs.request_url }}" '{{ inputs.providers | json }}'
+    env:
+      TWILIO_ACCOUNT_SID: "{{ envs.twilio_account_sid }}"
+      TWILIO_AUTH_TOKEN: "{{ envs.twilio_auth_token }}"
+      TWILIO_PHONE_NUMBER: "{{ envs.twilio_phone_number }}"
+
+  - id: log_result
+    type: io.kestra.plugin.core.debug.Return
+    description: "Log notification result"
+    format: |
+      SMS Notification Job Completed
+      ==========================================
+      User: {{ inputs.user_name }}
+      Phone: {{ inputs.user_phone }}
+
+      Notification sent successfully!
+      ==========================================
+
+outputs:
+  - id: user_phone
+    type: STRING
+    value: "{{ inputs.user_phone }}"
+
+  - id: user_name
+    type: STRING
+    value: "{{ inputs.user_name }}"
+
+  - id: notification_status
+    type: STRING
+    value: "SMS notification sent to {{ inputs.user_name }} at {{ inputs.user_phone }}"

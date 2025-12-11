@@ -70,26 +70,26 @@ User Submits Request
         │
         ▼
 ┌───────────────────┐
-│  AI RECOMMENDS    │ ← Gemini scoring + API (✅ DONE)
+│  AI RECOMMENDS    │ ← ✅ DONE: recommend_providers API
 │  Top 3 providers  │
 └───────────────────┘
         │
         ▼
 ┌───────────────────┐
-│  USER SELECTS     │ ← UI components (✅ DONE)
+│  USER SELECTS     │ ← ✅ DONE: UI components
 │  Choose provider  │
 └───────────────────┘
         │
         ▼
 ┌───────────────────┐
-│  AI BOOKS         │ ← 🟡 booking-assistant-config.ts ready
-│  Calls back       │
+│  AI BOOKS         │ ← ✅ Kestra flow ready, 🟡 needs UI trigger
+│  Calls back       │   (schedule_service.yaml)
 └───────────────────┘
         │
         ▼
 ┌───────────────────┐
-│  CONFIRMATION     │ ← 🔴 NEEDS: notify_user API (Hasan)
-│  SMS/Web notify   │
+│  CONFIRMATION     │ ← ✅ Kestra flow ready, 🟡 needs UI trigger
+│  SMS/Web notify   │   (notify_user.yaml)
 └───────────────────┘
 ```
 
@@ -226,15 +226,31 @@ Browser → Next.js (:3000) → /api/* rewrites → Fastify (:8000) → Services
 - `call_duration_minutes`, `call_cost`, `call_method`, `call_id`, `called_at`
 - `review_count`, `distance`, `hours_of_operation`, `is_open_now`, `place_id`
 
-### Kestra Workflows (2 Complete, 3 In Progress/Pending)
+### Kestra Workflows (4 of 5 Complete) ⬆️ Updated Dec 10
 
-| Workflow | File | Status | Owner |
-|----------|------|--------|-------|
-| `research_providers` | `research_agent.yaml` | ✅ DONE (120 lines) | - |
-| `contact_providers` | `contact_providers.yaml` | ✅ DONE (95 lines) | - |
-| `recommend_providers` | `recommend_providers.yaml` | 🟡 IN PROGRESS | Ajay |
-| `notify_user` | `notify_user.yaml` | 🔴 TODO | Hasan |
-| `schedule_service` | - | 🟡 Backend API ready | David |
+| Workflow | File | Status |
+|----------|------|--------|
+| `research_providers` | `research_agent.yaml` | ✅ Done |
+| `contact_providers` | `contact_providers.yaml` | ✅ Done |
+| `notify_user` | `notify_user.yaml` | ✅ Done (SMS via Twilio) |
+| `schedule_service` | `schedule_service.yaml` | ✅ Done (VAPI booking call) |
+| `recommend_providers` | - | Not needed (using direct API) |
+
+**New Kestra Files (Dec 10, 2025):**
+- `kestra/flows/notify_user.yaml` - Sends SMS notification with top 3 providers
+- `kestra/flows/schedule_service.yaml` - Makes VAPI call to book appointment
+- `kestra/scripts/send-notification.js` - Twilio SMS script
+- `kestra/scripts/schedule-booking.js` - VAPI booking script
+- `apps/api/src/services/vapi/booking-assistant-config.ts` - Booking-focused VAPI assistant
+
+**Kestra Secrets Required:**
+| Secret | Description |
+|--------|-------------|
+| `twilio_account_sid` | Twilio Account SID |
+| `twilio_auth_token` | Twilio Auth Token |
+| `twilio_phone_number` | Twilio outbound phone number |
+| `vapi_api_key` | VAPI API key (existing) |
+| `vapi_phone_number_id` | VAPI phone number ID (existing) |
 
 **Note:** `contact_agent.yaml` and `booking_agent.yaml` were removed in commit 4f5d13c (functionality consolidated into direct API paths).
 
@@ -275,11 +291,15 @@ Browser → Next.js (:3000) → /api/* rewrites → Fastify (:8000) → Services
 
 | ID | Feature | Description | Owner | Status |
 |----|---------|-------------|-------|--------|
-| I1 | notify_user API | SMS (Twilio) or call (VAPI) to notify user | Hasan | 🔴 TODO |
-| I2 | schedule_service API | Call provider back to book appointment | David | 🟡 booking-assistant-config.ts ready |
+| I1 | notify_user | SMS (Twilio) notification to user | Hasan | 🟡 Kestra flow done, needs UI trigger |
+| I2 | schedule_service | Call provider back to book appointment | Hasan | 🟡 Kestra flow done, needs UI trigger |
 | I3 | show_confirmation API | Send confirmation, update database | Hasan | 🔴 TODO |
 | I4 | Kestra Cloud Deployment | Deploy all workflows to Kestra Cloud | David | 🟡 IN PROGRESS |
 | I5 | Business Hours Check | Skip calling providers currently closed | Ajay | 🔴 TODO |
+
+**Implementation Summary (Dec 10, 2025 - Evening):**
+- **I1**: Created `notify_user.yaml` Kestra flow + `send-notification.js` Twilio script
+- **I2**: Created `schedule_service.yaml` Kestra flow + `schedule-booking.js` VAPI script + `booking-assistant-config.ts`
 
 ### Nice to Have
 
@@ -303,7 +323,7 @@ apps/api/src/
 │   └── vapi-webhook.ts           # ✅ EXISTS: Webhook handler (complete)
 ├── services/
 │   ├── vapi/
-│   │   ├── assistant-config.ts   # ✅ DONE: Voicemail detection in all 3 configs
+│   │   ├── assistant-config.ts   # 🔴 Voicemail detection NOT WORKING
 │   │   ├── booking-assistant-config.ts # ✅ DONE: Booking workflow (295 lines)
 │   │   ├── direct-vapi.client.ts # ✅ EXISTS: Hybrid webhook + polling (~450 lines)
 │   │   ├── concurrent-call.service.ts # ✅ EXISTS: Batch concurrent calls
@@ -345,11 +365,17 @@ apps/web/
 
 ```
 kestra/flows/
-├── research_agent.yaml               # ✅ DONE (120 lines, Google Gemini grounding)
-├── contact_providers.yaml            # ✅ DONE (95 lines, concurrent calling with EachParallel)
-├── recommend_providers.yaml          # 🟡 IN PROGRESS (Ajay) - API wrapper
-├── notify_user.yaml                  # 🔴 CREATE (Hasan) - SMS via Twilio
-└── schedule_service.yaml             # 🟡 Backend API ready, Kestra wrapper optional
+├── research_agent.yaml               # ✅ Done - Provider research
+├── contact_providers.yaml            # ✅ Done - Provider calling
+├── notify_user.yaml                  # ✅ Done - SMS notification (Twilio)
+└── schedule_service.yaml             # ✅ Done - Booking call (VAPI)
+
+kestra/scripts/
+├── call-provider.js                  # ✅ Done - VAPI screening call
+├── call-provider-webhook.js          # ✅ Done - Webhook-based calling
+├── send-notification.js              # ✅ Done - Twilio SMS script
+├── schedule-booking.js               # ✅ Done - VAPI booking script
+└── package.json                      # Updated with twilio dependency
 ```
 
 **Note:** `contact_agent.yaml` and `booking_agent.yaml` were consolidated into direct API paths (commit 4f5d13c).
@@ -946,18 +972,24 @@ Need to upload our 3 working workflows to Kestra Cloud.
 
 ---
 
-#### TICKET: F-M1-3 - Create Missing Workflows
+#### TICKET: F-M1-3 - Create Missing Workflows ✅ PARTIALLY DONE
 **Priority:** P1 Important | **Effort:** 1 hour | **Dependencies:** F-M1-2
 
 **Problem:**
 3 workflows need to be created for full orchestration.
 
 **Acceptance Criteria:**
-- [ ] `recommend_providers.yaml` - Calls recommend API, returns top 3
-- [ ] `notify_user.yaml` - Sends SMS notification via Twilio
-- [ ] `schedule_service.yaml` - Calls schedule API to book
+- [x] `notify_user.yaml` - Sends SMS notification via Twilio ✅ DONE
+- [x] `schedule_service.yaml` - Calls VAPI to book appointment ✅ DONE
+- [ ] `recommend_providers.yaml` - Not needed (using direct API endpoint)
 
-**Note:** These can be simple HTTP call wrappers to existing APIs, or can contain full logic in Kestra tasks.
+**Completed Dec 10, 2025:**
+- Created `notify_user.yaml` with inline Twilio SMS via Node.js script
+- Created `schedule_service.yaml` with inline VAPI booking call via Node.js script
+- Created supporting scripts: `send-notification.js`, `schedule-booking.js`
+- Created `booking-assistant-config.ts` for booking-focused VAPI assistant
+
+**Remaining:** Wire UI to trigger these Kestra flows
 
 ---
 
@@ -1205,6 +1237,13 @@ pnpm build
 
 ---
 
-**Last Updated:** December 10, 2025 (End of day standup)
+**Last Updated:** December 10, 2025 (Evening - post merge)
 **Team:** David (Lead), Ajay, Hasan
-**Plan Status:** 75% Complete - Core flow working, UX polished. **Blockers:** C1 voicemail auto-disconnect not working, notifications pending
+**Plan Status:** 80% Complete - Core flow working, UX polished, Twilio/Kestra notifications ready. **Blockers:** C1 voicemail auto-disconnect not working
+
+**Recent Updates (Dec 10, 2025 - Hasan's Twilio Integration):**
+- Added `notify_user.yaml` Kestra flow for SMS notifications (Twilio)
+- Added `schedule_service.yaml` Kestra flow for booking calls (VAPI)
+- Added `booking-assistant-config.ts` for booking-focused VAPI assistant
+- Added `send-notification.js` and `schedule-booking.js` Kestra scripts
+- Updated Kestra scripts `package.json` with twilio dependency

@@ -10,6 +10,8 @@ import geminiRoutes from "./routes/gemini.js";
 import workflowRoutes from "./routes/workflows.js";
 import providerRoutes from "./routes/providers.js";
 import vapiWebhookRoutes from "./routes/vapi-webhook.js";
+import notificationRoutes from "./routes/notifications.js";
+import bookingRoutes from "./routes/bookings.js";
 
 const server = Fastify({
   logger: {
@@ -68,6 +70,8 @@ await server.register(swagger, {
         name: "vapi",
         description: "VAPI webhook callbacks and call result retrieval",
       },
+      { name: "notifications", description: "User notification operations (SMS via Twilio)" },
+      { name: "bookings", description: "Appointment scheduling operations" },
     ],
   },
 });
@@ -136,6 +140,8 @@ server.get(
         workflows: "/api/v1/workflows",
         providers: "/api/v1/providers",
         vapi: "/api/v1/vapi",
+        notifications: "/api/v1/notifications",
+        bookings: "/api/v1/bookings",
         docs: "/docs",
       },
     };
@@ -156,6 +162,12 @@ await server.register(providerRoutes, { prefix: "/api/v1/providers" });
 
 // Register VAPI Webhook routes
 await server.register(vapiWebhookRoutes, { prefix: "/api/v1/vapi" });
+
+// Register Notification routes
+await server.register(notificationRoutes, { prefix: "/api/v1/notifications" });
+
+// Register Booking routes
+await server.register(bookingRoutes, { prefix: "/api/v1/bookings" });
 
 // Start server with port fallback
 const start = async () => {
