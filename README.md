@@ -12,6 +12,7 @@ This project was built for a hackathon using these sponsor technologies:
 | **VAPI.ai** | Voice AI | Makes automated phone calls to verify provider availability/rates |
 | **Google Gemini** | LLM | Powers research (Maps grounding), analysis, and dynamic prompt generation |
 | **Vercel** | Deployment | Hosts the production web application |
+| **CodeRabbit** | AI Code Review | Automated PR reviews for code quality, security, and best practices |
 
 ## Live Deployment
 
@@ -177,6 +178,45 @@ VAPI_API_KEY=your_vapi_api_key
 VAPI_PHONE_NUMBER_ID=your_vapi_phone_number_id
 VAPI_WEBHOOK_URL=https://your-domain.com/api/v1/vapi/webhook  # For call results
 ```
+
+## CodeRabbit AI Code Review
+
+This project uses [CodeRabbit](https://coderabbit.ai) for automated AI-powered code reviews on pull requests.
+
+### What CodeRabbit Provides
+
+- **Automated PR Reviews**: Every pull request receives AI-powered code analysis
+- **Security Scanning**: Detects potential vulnerabilities via gitleaks integration
+- **Code Quality**: Identifies improvements for maintainability and best practices
+- **Framework-Specific Guidance**: Custom rules for Next.js, Fastify, and Supabase patterns
+
+### Configuration
+
+The `.coderabbit.yaml` file defines comprehensive review rules:
+
+```yaml
+# Framework-specific path instructions
+path_instructions:
+  - path: "apps/web/app/**/*.tsx"    # Next.js App Router rules
+  - path: "apps/api/src/**/*.ts"     # Fastify backend rules
+  - path: "supabase/migrations/**"   # PostgreSQL/RLS rules
+
+# Tools enabled
+tools:
+  eslint: true
+  gitleaks: true      # Prevent secret leaks
+  markdownlint: true
+  shellcheck: true
+```
+
+### PR Review Examples
+
+See CodeRabbit in action on our pull requests:
+- Code quality suggestions and security recommendations
+- Framework-specific best practice guidance
+- Automated detection of common issues
+
+> **Hackathon Note**: CodeRabbit helps maintain code quality across our 3-person team during rapid development, catching issues before they reach production.
 
 ## Getting Started
 
