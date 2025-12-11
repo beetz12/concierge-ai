@@ -208,16 +208,16 @@ Next.js rewrites ────────────► Backend (Fastify :8000)
 | `apps/api/src/services/direct-task/analyzer.ts` | Classifies task type |
 | `apps/api/src/services/direct-task/prompt-generator.ts` | Generates custom prompts |
 
-### ✅ Frontend Pages (98% Complete) ⬆️ Updated Dec 10
+### ✅ Frontend Pages (99% Complete) ⬆️ Updated Dec 10
 
 **What Works:**
 | Page | Route | Status |
 |------|-------|--------|
 | Dashboard | `/` | ✅ Stats cards, recent activity |
-| New Request | `/new` | ✅ Full research & book form |
-| Direct Task | `/direct` | ✅ Single call task form |
-| Request Detail | `/request/[id]` | ✅ Timeline, transcripts, providers sidebar, **real-time updates**, **top 3 recommendations**, **selection flow** |
-| History | `/history` | ✅ All past requests |
+| New Request | `/new` | ✅ Full research & book form, **error handling** |
+| Direct Task | `/direct` | ✅ Single call task form, **phone validation**, **error states** |
+| Request Detail | `/request/[id]` | ✅ Timeline, transcripts, providers sidebar, **real-time updates**, **top 3 recommendations**, **selection flow**, **inline booking feedback** |
+| History | `/history` | ✅ All past requests, **error handling**, **call status badges**, **final outcomes** |
 
 **New Components (Dec 10, 2025):**
 | Component | File | Purpose |
@@ -225,6 +225,14 @@ Next.js rewrites ────────────► Backend (Fastify :8000)
 | LiveStatus | `components/LiveStatus.tsx` | ✅ Real-time status animations |
 | RecommendedProviders | `components/RecommendedProviders.tsx` | ✅ Top 3 provider cards with scoring |
 | SelectionModal | `components/SelectionModal.tsx` | ✅ Booking confirmation dialog |
+
+**UX Improvements (Dec 10, 2025):**
+- Replaced native `alert()` with inline booking feedback
+- Added error state to /new page form submission
+- Fixed transcript speaker alignment (AI vs user)
+- Added error handling to history page
+- Added final outcome display to history cards
+- Added call status badges to history cards
 
 **What's Missing:**
 - Confirmation display after booking (API call TODO)
@@ -1619,9 +1627,12 @@ git push origin main   # Triggers Vercel + Railway deploy
 
 **Last Updated:** December 10, 2025 (Verified by multi-agent codebase analysis)
 **Team:** David (Lead), Ajay, Hasan
-**Plan Status:** ~70% Complete
+**Plan Status:** ~80% Complete
 - ✅ Core flow working (research → call → recommend → select)
+- ✅ UX improvements complete (6 P0 fixes: error handling, inline feedback, history enhancements)
 - 🟡 Direct task transcript display in progress (David)
 - 🟡 Kestra Cloud deployment in progress (David)
 - 🟡 recommend_providers.yaml in progress (Ajay)
 - 🔴 Notifications service pending (Hasan)
+- 🔴 Loading skeletons pending
+- 🔴 Provider phone numbers in results pending

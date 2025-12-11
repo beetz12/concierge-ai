@@ -90,17 +90,34 @@ const LiveStatus: React.FC<LiveStatusProps> = ({
 
   return (
     <div
-      className={`flex items-center gap-3 px-4 py-3 rounded-xl border ${config.bgColor} ${config.borderColor} ${config.animated ? "animate-fadeIn" : ""}`}
+      className={`px-4 py-3 rounded-xl border ${config.bgColor} ${config.borderColor} ${config.animated ? "animate-fadeIn" : ""}`}
     >
-      <Icon
-        className={`w-5 h-5 ${config.color} ${config.animated ? "animate-pulse" : ""}`}
-      />
-      <div className="flex-1">
-        <p className={`text-sm font-medium ${config.color}`}>{config.label}</p>
-        {currentStep && currentStep !== config.label && (
-          <p className="text-xs text-slate-400 mt-1">{currentStep}</p>
-        )}
+      <div className="flex items-center gap-3">
+        <Icon
+          className={`w-5 h-5 ${config.color} ${config.animated ? "animate-pulse" : ""}`}
+        />
+        <div className="flex-1">
+          <p className={`text-sm font-medium ${config.color}`}>{config.label}</p>
+          {currentStep && currentStep !== config.label && (
+            <p className="text-xs text-slate-400 mt-1">{currentStep}</p>
+          )}
+        </div>
       </div>
+
+      {status.toLowerCase() === "calling" && progress && (
+        <div className="mt-3">
+          <div className="flex justify-between text-xs text-slate-500 mb-1">
+            <span>{progress.current} of {progress.total} calls</span>
+            <span>{Math.round((progress.current / progress.total) * 100)}%</span>
+          </div>
+          <div className="h-2 bg-slate-700 rounded-full overflow-hidden">
+            <div
+              className="h-full bg-amber-500 transition-all duration-500"
+              style={{ width: `${(progress.current / progress.total) * 100}%` }}
+            />
+          </div>
+        </div>
+      )}
     </div>
   );
 };

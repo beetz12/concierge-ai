@@ -9,7 +9,8 @@ import {
   RequestType,
   ServiceRequest,
 } from "@/lib/types";
-import { Phone, User, MessageSquare, PhoneCall } from "lucide-react";
+import { Phone, User, MessageSquare, PhoneCall, AlertCircle } from "lucide-react";
+import { usePhoneValidation } from "@/lib/hooks/usePhoneValidation";
 import {
   simulateCall,
   analyzeDirectTask,
@@ -54,10 +55,19 @@ export default function DirectTask() {
   const [formData, setFormData] = useState({
     clientName: "",
     name: "",
-    phone: "",
     task: "",
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // Phone validation with real-time feedback
+  const phoneValidation = usePhoneValidation();
+
+  // Form validity check - all fields required and phone must be valid
+  const isFormValid =
+    formData.clientName.trim() !== "" &&
+    formData.name.trim() !== "" &&
+    formData.task.trim() !== "" &&
+    phoneValidation.isValid;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -83,14 +93,14 @@ export default function DirectTask() {
         createdAt: dbRequest.created_at,
         providersFound: [],
         interactions: [],
-        directContactInfo: { name: formData.name, phone: formData.phone },
+        directContactInfo: { name: formData.name, phone: phoneValidation.normalized || phoneValidation.value },
       };
 
       addRequest(newRequest);
       router.push(`/request/${newRequest.id}`);
 
-      // Run Direct Process
-      runDirectTask(newRequest.id, formData, newRequest);
+      // Run Direct Process (pass normalized phone from validation)
+      runDirectTask(newRequest.id, formData, phoneValidation.normalized, newRequest);
     } catch (error) {
       console.error("Failed to create request:", error);
       setIsSubmitting(false);
@@ -100,6 +110,7 @@ export default function DirectTask() {
   const runDirectTask = async (
     reqId: string,
     data: typeof formData,
+    phone: string,
     request: ServiceRequest,
   ) => {
     try {
@@ -108,18 +119,19 @@ export default function DirectTask() {
       if (LIVE_CALL_ENABLED) {
         // Real VAPI calls - requires valid phone number
         // In admin test mode, override with the test number
+        // Phone is already normalized and validated by usePhoneValidation hook
         const phoneToCall = isAdminTestMode
           ? normalizePhoneNumber(ADMIN_TEST_NUMBER!)
-          : normalizePhoneNumber(data.phone);
+          : phone;
 
         if (!isValidE164Phone(phoneToCall)) {
           console.warn(
-            `[Direct] Invalid phone number: ${isAdminTestMode ? ADMIN_TEST_NUMBER : data.phone} -> ${phoneToCall}`,
+            `[Direct] Invalid phone number: ${phoneToCall}`,
           );
           log = {
             timestamp: new Date().toISOString(),
             stepName: `Calling ${data.name}`,
-            detail: `Invalid phone number format: ${data.phone}`,
+            detail: `Invalid phone number format: ${phoneToCall}`,
             status: "error" as const,
           };
         } else {
@@ -288,18 +300,32 @@ export default function DirectTask() {
               Phone Number
             </label>
             <div className="relative">
-              <Phone className="absolute left-3 top-3.5 w-5 h-5 text-slate-500" />
+              <Phone className={`absolute left-3 top-3.5 w-5 h-5 ${phoneValidation.error ? "text-red-400" : "text-slate-500"}`} />
               <input
                 type="tel"
                 required
                 placeholder="(555) 123-4567"
-                className="w-full pl-10 pr-4 py-3 rounded-xl border border-surface-highlight focus:border-primary-500 focus:ring-2 focus:ring-primary-500/20 outline-none transition-all bg-abyss text-slate-100 placeholder-slate-600"
-                value={formData.phone}
-                onChange={(e) =>
-                  setFormData({ ...formData, phone: e.target.value })
-                }
+                className={`w-full pl-10 pr-4 py-3 rounded-xl border outline-none transition-all bg-abyss text-slate-100 placeholder-slate-600 ${
+                  phoneValidation.error
+                    ? "border-red-500 focus:border-red-500 focus:ring-2 focus:ring-red-500/20"
+                    : "border-surface-highlight focus:border-primary-500 focus:ring-2 focus:ring-primary-500/20"
+                }`}
+                value={phoneValidation.value}
+                onChange={phoneValidation.onChange}
+                onBlur={phoneValidation.onBlur}
               />
             </div>
+            {phoneValidation.error && (
+              <p className="text-xs text-red-400 mt-1.5 flex items-center gap-1">
+                <AlertCircle className="w-3.5 h-3.5" />
+                {phoneValidation.error}
+              </p>
+            )}
+            {!phoneValidation.error && phoneValidation.value && phoneValidation.isValid && (
+              <p className="text-xs text-emerald-400 mt-1.5">
+                Valid: {phoneValidation.normalized}
+              </p>
+            )}
           </div>
         </div>
 
@@ -324,8 +350,8 @@ export default function DirectTask() {
 
         <button
           type="submit"
-          disabled={isSubmitting}
-          className="w-full py-4 bg-primary-600 hover:bg-primary-500 text-white font-bold rounded-xl shadow-lg shadow-primary-500/20 transition-all transform active:scale-95 disabled:opacity-50 flex items-center justify-center gap-2"
+          disabled={isSubmitting || !isFormValid}
+          className="w-full py-4 bg-primary-600 hover:bg-primary-500 text-white font-bold rounded-xl shadow-lg shadow-primary-500/20 transition-all transform active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
         >
           {isSubmitting ? "Initiating Call..." : "Execute Task"}
         </button>
