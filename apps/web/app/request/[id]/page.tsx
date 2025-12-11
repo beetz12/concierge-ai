@@ -858,7 +858,12 @@ export default function RequestDetails() {
         </div>
 
         {/* LiveStatus Component */}
-        <LiveStatus status={request.status} callProgress={callProgress} />
+        <LiveStatus
+          status={request.status}
+          callProgress={callProgress}
+          providersFound={request.providersFound.length}
+          interactions={request.interactions}
+        />
 
         <p className="text-slate-400 mb-6">{request.description}</p>
 

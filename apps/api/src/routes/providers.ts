@@ -527,7 +527,81 @@ export default async function providerRoutes(fastify: FastifyInstance) {
         tags: ["providers"],
         summary: "Start provider calls asynchronously",
         description: "Returns immediately with execution ID. Monitor progress via real-time subscriptions or polling endpoint.",
-        body: batchCallSchema,
+        body: {
+          type: "object",
+          required: ["providers", "serviceNeeded", "location"],
+          properties: {
+            providers: {
+              type: "array",
+              description: "Array of providers to call",
+              items: {
+                type: "object",
+                required: ["name", "phone"],
+                properties: {
+                  name: {
+                    type: "string",
+                    description: "Name of the service provider",
+                  },
+                  phone: {
+                    type: "string",
+                    description: "Phone number in E.164 format (+1XXXXXXXXXX)",
+                    pattern: "^\\+1\\d{10}$",
+                  },
+                  id: {
+                    type: "string",
+                    description: "Provider ID for database linking",
+                  },
+                },
+              },
+            },
+            serviceNeeded: {
+              type: "string",
+              description: "Type of service needed (e.g., plumbing, electrical)",
+            },
+            userCriteria: {
+              type: "string",
+              description: "User requirements and criteria for the service",
+              default: "",
+            },
+            problemDescription: {
+              type: "string",
+              description: "Detailed problem description",
+            },
+            clientName: {
+              type: "string",
+              description: "Client's name for personalized greeting",
+            },
+            location: {
+              type: "string",
+              description: "Service location (city, state)",
+            },
+            urgency: {
+              type: "string",
+              enum: ["immediate", "within_24_hours", "within_2_days", "flexible"],
+              default: "within_2_days",
+              description: "How urgent is the service needed",
+            },
+            serviceRequestId: {
+              type: "string",
+              description: "Optional: Link to service_requests table",
+            },
+            maxConcurrent: {
+              type: "integer",
+              minimum: 1,
+              maximum: 10,
+              description: "Maximum concurrent calls (default: 5)",
+            },
+            customPrompt: {
+              type: "object",
+              description: "Optional: Gemini-generated dynamic prompt",
+              properties: {
+                systemPrompt: { type: "string" },
+                firstMessage: { type: "string" },
+                closingScript: { type: "string" },
+              },
+            },
+          },
+        },
         response: {
           202: {
             type: "object",
