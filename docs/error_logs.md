@@ -1,1022 +1,281 @@
-      "statusCode": 404
-    }
-    responseTime: 0.29854100942611694
-[12:30:08 UTC] INFO: incoming request
-    reqId: "req-2n"
+🚀 API server running at http://localhost:8000
+[19:32:01 UTC] INFO: ✓ Supabase database connection verified
+[19:32:01 UTC] INFO: ✓ Supabase plugin initialized successfully
+[19:32:01 UTC] INFO: Google Places API available
+    service: "google_places"
+[19:32:01 UTC] INFO: Webhook URL configured - using hybrid mode
+    webhookUrl: "https://2ce8048103bc.ngrok-free.app/api/v1/vapi/webhook"
+[19:32:01 UTC] INFO: Webhook URL configured - using hybrid mode
+    webhookUrl: "https://2ce8048103bc.ngrok-free.app/api/v1/vapi/webhook"
+[19:32:01 UTC] INFO: WebhookCacheService initialized
+    ttl: 30
+[19:32:01 UTC] INFO: VAPI API client initialized for background enrichment
+[19:32:01 UTC] INFO: CallResultService initialized for DB persistence
+[19:32:01 UTC] INFO: Server listening at http://127.0.0.1:8000
+[19:32:01 UTC] INFO: Server listening at http://192.168.68.63:8000
+Enrichment: 10 with placeId, 0 without
+Enriching 10 providers...
+Enriching 10 providers in batches of 5...
+[19:36:06 UTC] INFO: incoming request
+    reqId: "req-1"
     req: {
-      "method": "GET",
-      "url": "/api/v1/vapi/calls/019b083a-b5e3-7eef-87d6-7fec7f2c0b97",
+      "method": "POST",
+      "url": "/api/v1/workflows/research",
       "host": "localhost:8000",
       "remoteAddress": "127.0.0.1",
-      "remotePort": 61348
+      "remotePort": 52985
     }
-[12:30:08 UTC] WARN: Call result not found in cache
-    callId: "019b083a-b5e3-7eef-87d6-7fec7f2c0b97"
-[12:30:08 UTC] INFO: request completed
-    reqId: "req-2n"
+[19:36:06 UTC] INFO: Starting provider research
+    service: "auto mechanic"
+    location: "greenville sc"
+    serviceRequestId: "ed435943-66c9-4888-8265-283a7e63c5a2"
+[19:36:06 UTC] INFO: Using Direct Gemini for research
+    method: "direct_gemini"
+[19:36:06 UTC] INFO: Starting provider research
+    service: "auto mechanic"
+    location: "greenville sc"
+    hasPlacesAPI: true
+[19:36:06 UTC] INFO: Searching with Places API
+    service: "auto mechanic"
+    location: "greenville sc"
+    minRating: 4.5
+[19:36:07 UTC] INFO: Places API search completed
+    totalFound: 20
+[19:36:07 UTC] INFO: Places API results filtered and sorted
+    totalFound: 20
+    afterFilters: 18
+    returned: 10
+Successfully enriched 10 providers
+Phone filter: 10 with phone, 0 without
+Enrichment complete: {
+  totalInput: 10,
+  enrichedCount: 10,
+  withPhoneCount: 10,
+  skippedNoPlaceId: 0,
+  durationMs: 642
+}
+[19:36:08 UTC] INFO: request completed
+    reqId: "req-1"
+    res: {
+      "statusCode": 200
+    }
+    responseTime: 1456.5108340084553
+[19:36:08 UTC] INFO: incoming request
+    reqId: "req-2"
+    req: {
+      "method": "POST",
+      "url": "/api/v1/gemini/analyze-research-prompt",
+      "host": "localhost:8000",
+      "remoteAddress": "127.0.0.1",
+      "remotePort": 53004
+    }
+[19:36:12 UTC] INFO: request completed
+    reqId: "req-2"
+    res: {
+      "statusCode": 200
+    }
+    responseTime: 3651.07166698575
+[19:36:14 UTC] INFO: incoming request
+    reqId: "req-3"
+    req: {
+      "method": "POST",
+      "url": "/api/v1/gemini/select-best-provider",
+      "host": "localhost:8000",
+      "remoteAddress": "127.0.0.1",
+      "remotePort": 53059
+    }
+[19:36:16 UTC] INFO: request completed
+    reqId: "req-3"
+    res: {
+      "statusCode": 200
+    }
+    responseTime: 1475.5855419933796
+[19:46:40 UTC] INFO: incoming request
+    reqId: "req-4"
+    req: {
+      "method": "GET",
+      "url": "/health",
+      "host": "localhost:8000",
+      "remoteAddress": "127.0.0.1",
+      "remotePort": 56818
+    }
+[19:46:40 UTC] INFO: request completed
+    reqId: "req-4"
+    res: {
+      "statusCode": 200
+    }
+    responseTime: 1.1865839958190918
+[19:46:42 UTC] INFO: incoming request
+    reqId: "req-5"
+    req: {
+      "method": "GET",
+      "url": "/health",
+      "host": "localhost:8000",
+      "remoteAddress": "127.0.0.1",
+      "remotePort": 56837
+    }
+[19:46:42 UTC] INFO: request completed
+    reqId: "req-5"
+    res: {
+      "statusCode": 200
+    }
+    responseTime: 0.4079580008983612
+[19:46:53 UTC] INFO: incoming request
+    reqId: "req-6"
+    req: {
+      "method": "GET",
+      "url": "/api/v1/vapi/webhook",
+      "host": "2ce8048103bc.ngrok-free.app",
+      "remoteAddress": "127.0.0.1",
+      "remotePort": 56905
+    }
+[19:46:53 UTC] INFO: Route GET:/api/v1/vapi/webhook not found
+    reqId: "req-6"
+[19:46:53 UTC] INFO: request completed
+    reqId: "req-6"
     res: {
       "statusCode": 404
     }
-    responseTime: 1.0112920105457306
-[12:30:10 UTC] INFO: incoming request
-    reqId: "req-2o"
+    responseTime: 0.41987499594688416
+[19:46:55 UTC] INFO: incoming request
+    reqId: "req-7"
     req: {
       "method": "GET",
-      "url": "/api/v1/vapi/calls/019b083a-b5e3-7eef-87d6-7fec7f2c0b97",
-      "host": "localhost:8000",
+      "url": "/api/v1/vapi/webhook",
+      "host": "2ce8048103bc.ngrok-free.app",
       "remoteAddress": "127.0.0.1",
-      "remotePort": 61348
+      "remotePort": 56919
     }
-[12:30:10 UTC] WARN: Call result not found in cache
-    callId: "019b083a-b5e3-7eef-87d6-7fec7f2c0b97"
-[12:30:10 UTC] INFO: request completed
-    reqId: "req-2o"
+[19:46:55 UTC] INFO: Route GET:/api/v1/vapi/webhook not found
+    reqId: "req-7"
+[19:46:55 UTC] INFO: request completed
+    reqId: "req-7"
     res: {
       "statusCode": 404
     }
-    responseTime: 0.8795420229434967
-[12:30:12 UTC] INFO: incoming request
-    reqId: "req-2p"
+    responseTime: 0.2749580144882202
+[19:47:20 UTC] INFO: incoming request
+    reqId: "req-8"
     req: {
-      "method": "GET",
-      "url": "/api/v1/vapi/calls/019b083a-b5e3-7eef-87d6-7fec7f2c0b97",
+      "method": "POST",
+      "url": "/api/v1/workflows/research",
       "host": "localhost:8000",
       "remoteAddress": "127.0.0.1",
-      "remotePort": 61348
+      "remotePort": 57052
     }
-[12:30:12 UTC] WARN: Call result not found in cache
-    callId: "019b083a-b5e3-7eef-87d6-7fec7f2c0b97"
-[12:30:12 UTC] INFO: request completed
-    reqId: "req-2p"
+[19:47:20 UTC] INFO: Starting provider research
+    service: "plumber"
+    location: "Greenville SC"
+[19:47:20 UTC] INFO: Using Direct Gemini for research
+    method: "direct_gemini"
+[19:47:20 UTC] INFO: Starting provider research
+    service: "plumber"
+    location: "Greenville SC"
+    hasPlacesAPI: true
+[19:47:20 UTC] INFO: Searching with Places API
+    service: "plumber"
+    location: "Greenville SC"
+    minRating: 4.5
+Enrichment: 10 with placeId, 0 without
+Enriching 10 providers...
+Enriching 10 providers in batches of 5...
+[19:47:21 UTC] INFO: Places API search completed
+    totalFound: 20
+[19:47:21 UTC] INFO: Places API results filtered and sorted
+    totalFound: 20
+    afterFilters: 19
+    returned: 10
+Successfully enriched 10 providers
+Phone filter: 10 with phone, 0 without
+Enrichment complete: {
+  totalInput: 10,
+  enrichedCount: 10,
+  withPhoneCount: 10,
+  skippedNoPlaceId: 0,
+  durationMs: 626
+}
+[19:47:21 UTC] INFO: request completed
+    reqId: "req-8"
     res: {
-      "statusCode": 404
+      "statusCode": 200
     }
-    responseTime: 0.19916701316833496
-[12:30:14 UTC] INFO: incoming request
-    reqId: "req-2q"
+    responseTime: 1361.167250007391
+[19:56:46 UTC] INFO: incoming request
+    reqId: "req-9"
     req: {
-      "method": "GET",
-      "url": "/api/v1/vapi/calls/019b083a-b5e3-7eef-87d6-7fec7f2c0b97",
+      "method": "POST",
+      "url": "/api/v1/workflows/research",
       "host": "localhost:8000",
       "remoteAddress": "127.0.0.1",
-      "remotePort": 61348
+      "remotePort": 60227
     }
-[12:30:14 UTC] WARN: Call result not found in cache
-    callId: "019b083a-b5e3-7eef-87d6-7fec7f2c0b97"
-[12:30:14 UTC] INFO: request completed
-    reqId: "req-2q"
+[19:56:46 UTC] INFO: Starting provider research
+    service: "car mechanic"
+    location: "columbia sc"
+    serviceRequestId: "5e1f9e4e-fa15-4326-8f09-ce4b1888adbd"
+[19:56:46 UTC] INFO: Using Direct Gemini for research
+    method: "direct_gemini"
+[19:56:46 UTC] INFO: Starting provider research
+    service: "car mechanic"
+    location: "columbia sc"
+    hasPlacesAPI: true
+[19:56:46 UTC] INFO: Searching with Places API
+    service: "car mechanic"
+    location: "columbia sc"
+    minRating: 4.5
+[19:56:47 UTC] INFO: Places API search completed
+    totalFound: 20
+[19:56:47 UTC] INFO: Places API results filtered and sorted
+    totalFound: 20
+    afterFilters: 0
+    returned: 0
+[19:56:47 UTC] WARN: Places API returned no results, falling back to Maps grounding
+    request: {
+      "service": "car mechanic",
+      "location": "columbia sc",
+      "daysNeeded": 2,
+      "minRating": 4.5,
+      "maxDistance": 25,
+      "requirePhone": true,
+      "maxResults": 10,
+      "minEnrichedResults": 3,
+      "serviceRequestId": "5e1f9e4e-fa15-4326-8f09-ce4b1888adbd"
+    }
+Enrichment: 0 with placeId, 10 without
+No providers with placeId to enrich
+[19:57:02 UTC] INFO: request completed
+    reqId: "req-9"
     res: {
-      "statusCode": 404
+      "statusCode": 200
     }
-    responseTime: 0.8862920105457306
-[12:30:16 UTC] INFO: incoming request
-    reqId: "req-2r"
+    responseTime: 15891.272916018963
+[19:57:03 UTC] INFO: incoming request
+    reqId: "req-a"
     req: {
-      "method": "GET",
-      "url": "/api/v1/vapi/calls/019b083a-b5e3-7eef-87d6-7fec7f2c0b97",
+      "method": "POST",
+      "url": "/api/v1/gemini/analyze-research-prompt",
       "host": "localhost:8000",
       "remoteAddress": "127.0.0.1",
-      "remotePort": 61348
+      "remotePort": 60344
     }
-[12:30:16 UTC] WARN: Call result not found in cache
-    callId: "019b083a-b5e3-7eef-87d6-7fec7f2c0b97"
-[12:30:16 UTC] INFO: request completed
-    reqId: "req-2r"
+[19:57:07 UTC] INFO: request completed
+    reqId: "req-a"
     res: {
-      "statusCode": 404
+      "statusCode": 200
     }
-    responseTime: 0.3505840003490448
-[12:30:18 UTC] INFO: incoming request
-    reqId: "req-2s"
+    responseTime: 3915.5630829930305
+[19:57:11 UTC] INFO: incoming request
+    reqId: "req-b"
     req: {
-      "method": "GET",
-      "url": "/api/v1/vapi/calls/019b083a-b5e3-7eef-87d6-7fec7f2c0b97",
+      "method": "POST",
+      "url": "/api/v1/gemini/select-best-provider",
       "host": "localhost:8000",
       "remoteAddress": "127.0.0.1",
-      "remotePort": 61348
+      "remotePort": 60386
     }
-[12:30:18 UTC] WARN: Call result not found in cache
-    callId: "019b083a-b5e3-7eef-87d6-7fec7f2c0b97"
-[12:30:18 UTC] INFO: request completed
-    reqId: "req-2s"
+[19:57:14 UTC] INFO: request completed
+    reqId: "req-b"
     res: {
-      "statusCode": 404
+      "statusCode": 200
     }
-    responseTime: 0.49504202604293823
-[12:30:20 UTC] INFO: incoming request
-    reqId: "req-2t"
-    req: {
-      "method": "GET",
-      "url": "/api/v1/vapi/calls/019b083a-b5e3-7eef-87d6-7fec7f2c0b97",
-      "host": "localhost:8000",
-      "remoteAddress": "127.0.0.1",
-      "remotePort": 61348
-    }
-[12:30:20 UTC] WARN: Call result not found in cache
-    callId: "019b083a-b5e3-7eef-87d6-7fec7f2c0b97"
-[12:30:20 UTC] INFO: request completed
-    reqId: "req-2t"
-    res: {
-      "statusCode": 404
-    }
-    responseTime: 0.17791599035263062
-[12:30:22 UTC] INFO: incoming request
-    reqId: "req-2u"
-    req: {
-      "method": "GET",
-      "url": "/api/v1/vapi/calls/019b083a-b5e3-7eef-87d6-7fec7f2c0b97",
-      "host": "localhost:8000",
-      "remoteAddress": "127.0.0.1",
-      "remotePort": 61348
-    }
-[12:30:22 UTC] WARN: Call result not found in cache
-    callId: "019b083a-b5e3-7eef-87d6-7fec7f2c0b97"
-[12:30:22 UTC] INFO: request completed
-    reqId: "req-2u"
-    res: {
-      "statusCode": 404
-    }
-    responseTime: 0.6031250059604645
-[12:30:24 UTC] INFO: incoming request
-    reqId: "req-2v"
-    req: {
-      "method": "GET",
-      "url": "/api/v1/vapi/calls/019b083a-b5e3-7eef-87d6-7fec7f2c0b97",
-      "host": "localhost:8000",
-      "remoteAddress": "127.0.0.1",
-      "remotePort": 61348
-    }
-[12:30:24 UTC] WARN: Call result not found in cache
-    callId: "019b083a-b5e3-7eef-87d6-7fec7f2c0b97"
-[12:30:24 UTC] INFO: request completed
-    reqId: "req-2v"
-    res: {
-      "statusCode": 404
-    }
-    responseTime: 1.0030829906463623
-[12:30:26 UTC] INFO: incoming request
-    reqId: "req-2w"
-    req: {
-      "method": "GET",
-      "url": "/api/v1/vapi/calls/019b083a-b5e3-7eef-87d6-7fec7f2c0b97",
-      "host": "localhost:8000",
-      "remoteAddress": "127.0.0.1",
-      "remotePort": 61348
-    }
-[12:30:26 UTC] WARN: Call result not found in cache
-    callId: "019b083a-b5e3-7eef-87d6-7fec7f2c0b97"
-[12:30:26 UTC] INFO: request completed
-    reqId: "req-2w"
-    res: {
-      "statusCode": 404
-    }
-    responseTime: 0.18037500977516174
-[12:30:28 UTC] INFO: incoming request
-    reqId: "req-2x"
-    req: {
-      "method": "GET",
-      "url": "/api/v1/vapi/calls/019b083a-b5e3-7eef-87d6-7fec7f2c0b97",
-      "host": "localhost:8000",
-      "remoteAddress": "127.0.0.1",
-      "remotePort": 61348
-    }
-[12:30:28 UTC] WARN: Call result not found in cache
-    callId: "019b083a-b5e3-7eef-87d6-7fec7f2c0b97"
-[12:30:28 UTC] INFO: request completed
-    reqId: "req-2x"
-    res: {
-      "statusCode": 404
-    }
-    responseTime: 0.6196669936180115
-[12:30:30 UTC] INFO: incoming request
-    reqId: "req-2y"
-    req: {
-      "method": "GET",
-      "url": "/api/v1/vapi/calls/019b083a-b5e3-7eef-87d6-7fec7f2c0b97",
-      "host": "localhost:8000",
-      "remoteAddress": "127.0.0.1",
-      "remotePort": 61348
-    }
-[12:30:30 UTC] WARN: Call result not found in cache
-    callId: "019b083a-b5e3-7eef-87d6-7fec7f2c0b97"
-[12:30:30 UTC] INFO: request completed
-    reqId: "req-2y"
-    res: {
-      "statusCode": 404
-    }
-    responseTime: 0.5598750114440918
-[12:30:32 UTC] INFO: incoming request
-    reqId: "req-2z"
-    req: {
-      "method": "GET",
-      "url": "/api/v1/vapi/calls/019b083a-b5e3-7eef-87d6-7fec7f2c0b97",
-      "host": "localhost:8000",
-      "remoteAddress": "127.0.0.1",
-      "remotePort": 61348
-    }
-[12:30:32 UTC] WARN: Call result not found in cache
-    callId: "019b083a-b5e3-7eef-87d6-7fec7f2c0b97"
-[12:30:32 UTC] INFO: request completed
-    reqId: "req-2z"
-    res: {
-      "statusCode": 404
-    }
-    responseTime: 0.4675830006599426
-[12:30:34 UTC] INFO: incoming request
-    reqId: "req-30"
-    req: {
-      "method": "GET",
-      "url": "/api/v1/vapi/calls/019b083a-b5e3-7eef-87d6-7fec7f2c0b97",
-      "host": "localhost:8000",
-      "remoteAddress": "127.0.0.1",
-      "remotePort": 61348
-    }
-[12:30:34 UTC] WARN: Call result not found in cache
-    callId: "019b083a-b5e3-7eef-87d6-7fec7f2c0b97"
-[12:30:34 UTC] INFO: request completed
-    reqId: "req-30"
-    res: {
-      "statusCode": 404
-    }
-    responseTime: 0.25220900774002075
-[12:30:36 UTC] INFO: incoming request
-    reqId: "req-31"
-    req: {
-      "method": "GET",
-      "url": "/api/v1/vapi/calls/019b083a-b5e3-7eef-87d6-7fec7f2c0b97",
-      "host": "localhost:8000",
-      "remoteAddress": "127.0.0.1",
-      "remotePort": 61348
-    }
-[12:30:36 UTC] WARN: Call result not found in cache
-    callId: "019b083a-b5e3-7eef-87d6-7fec7f2c0b97"
-[12:30:36 UTC] INFO: request completed
-    reqId: "req-31"
-    res: {
-      "statusCode": 404
-    }
-    responseTime: 0.23762500286102295
-[12:30:38 UTC] INFO: incoming request
-    reqId: "req-32"
-    req: {
-      "method": "GET",
-      "url": "/api/v1/vapi/calls/019b083a-b5e3-7eef-87d6-7fec7f2c0b97",
-      "host": "localhost:8000",
-      "remoteAddress": "127.0.0.1",
-      "remotePort": 61348
-    }
-[12:30:38 UTC] WARN: Call result not found in cache
-    callId: "019b083a-b5e3-7eef-87d6-7fec7f2c0b97"
-[12:30:38 UTC] INFO: request completed
-    reqId: "req-32"
-    res: {
-      "statusCode": 404
-    }
-    responseTime: 0.46641698479652405
-[12:30:40 UTC] INFO: incoming request
-    reqId: "req-33"
-    req: {
-      "method": "GET",
-      "url": "/api/v1/vapi/calls/019b083a-b5e3-7eef-87d6-7fec7f2c0b97",
-      "host": "localhost:8000",
-      "remoteAddress": "127.0.0.1",
-      "remotePort": 61348
-    }
-[12:30:40 UTC] WARN: Call result not found in cache
-    callId: "019b083a-b5e3-7eef-87d6-7fec7f2c0b97"
-[12:30:40 UTC] INFO: request completed
-    reqId: "req-33"
-    res: {
-      "statusCode": 404
-    }
-    responseTime: 0.41441601514816284
-[12:30:42 UTC] INFO: incoming request
-    reqId: "req-34"
-    req: {
-      "method": "GET",
-      "url": "/api/v1/vapi/calls/019b083a-b5e3-7eef-87d6-7fec7f2c0b97",
-      "host": "localhost:8000",
-      "remoteAddress": "127.0.0.1",
-      "remotePort": 61348
-    }
-[12:30:42 UTC] WARN: Call result not found in cache
-    callId: "019b083a-b5e3-7eef-87d6-7fec7f2c0b97"
-[12:30:42 UTC] INFO: request completed
-    reqId: "req-34"
-    res: {
-      "statusCode": 404
-    }
-    responseTime: 0.18045800924301147
-[12:30:44 UTC] INFO: incoming request
-    reqId: "req-35"
-    req: {
-      "method": "GET",
-      "url": "/api/v1/vapi/calls/019b083a-b5e3-7eef-87d6-7fec7f2c0b97",
-      "host": "localhost:8000",
-      "remoteAddress": "127.0.0.1",
-      "remotePort": 61348
-    }
-[12:30:44 UTC] WARN: Call result not found in cache
-    callId: "019b083a-b5e3-7eef-87d6-7fec7f2c0b97"
-[12:30:44 UTC] INFO: request completed
-    reqId: "req-35"
-    res: {
-      "statusCode": 404
-    }
-    responseTime: 0.295833021402359
-[12:30:46 UTC] INFO: incoming request
-    reqId: "req-36"
-    req: {
-      "method": "GET",
-      "url": "/api/v1/vapi/calls/019b083a-b5e3-7eef-87d6-7fec7f2c0b97",
-      "host": "localhost:8000",
-      "remoteAddress": "127.0.0.1",
-      "remotePort": 61348
-    }
-[12:30:46 UTC] WARN: Call result not found in cache
-    callId: "019b083a-b5e3-7eef-87d6-7fec7f2c0b97"
-[12:30:46 UTC] INFO: request completed
-    reqId: "req-36"
-    res: {
-      "statusCode": 404
-    }
-    responseTime: 0.21366700530052185
-[12:30:48 UTC] INFO: incoming request
-    reqId: "req-37"
-    req: {
-      "method": "GET",
-      "url": "/api/v1/vapi/calls/019b083a-b5e3-7eef-87d6-7fec7f2c0b97",
-      "host": "localhost:8000",
-      "remoteAddress": "127.0.0.1",
-      "remotePort": 61348
-    }
-[12:30:48 UTC] WARN: Call result not found in cache
-    callId: "019b083a-b5e3-7eef-87d6-7fec7f2c0b97"
-[12:30:48 UTC] INFO: request completed
-    reqId: "req-37"
-    res: {
-      "statusCode": 404
-    }
-    responseTime: 0.4541250169277191
-[12:30:50 UTC] INFO: incoming request
-    reqId: "req-38"
-    req: {
-      "method": "GET",
-      "url": "/api/v1/vapi/calls/019b083a-b5e3-7eef-87d6-7fec7f2c0b97",
-      "host": "localhost:8000",
-      "remoteAddress": "127.0.0.1",
-      "remotePort": 61348
-    }
-[12:30:50 UTC] WARN: Call result not found in cache
-    callId: "019b083a-b5e3-7eef-87d6-7fec7f2c0b97"
-[12:30:50 UTC] INFO: request completed
-    reqId: "req-38"
-    res: {
-      "statusCode": 404
-    }
-    responseTime: 0.7285000085830688
-[12:30:52 UTC] INFO: incoming request
-    reqId: "req-39"
-    req: {
-      "method": "GET",
-      "url": "/api/v1/vapi/calls/019b083a-b5e3-7eef-87d6-7fec7f2c0b97",
-      "host": "localhost:8000",
-      "remoteAddress": "127.0.0.1",
-      "remotePort": 61348
-    }
-[12:30:52 UTC] WARN: Call result not found in cache
-    callId: "019b083a-b5e3-7eef-87d6-7fec7f2c0b97"
-[12:30:52 UTC] INFO: request completed
-    reqId: "req-39"
-    res: {
-      "statusCode": 404
-    }
-    responseTime: 0.27204200625419617
-[12:30:54 UTC] INFO: incoming request
-    reqId: "req-3a"
-    req: {
-      "method": "GET",
-      "url": "/api/v1/vapi/calls/019b083a-b5e3-7eef-87d6-7fec7f2c0b97",
-      "host": "localhost:8000",
-      "remoteAddress": "127.0.0.1",
-      "remotePort": 61348
-    }
-[12:30:54 UTC] WARN: Call result not found in cache
-    callId: "019b083a-b5e3-7eef-87d6-7fec7f2c0b97"
-[12:30:54 UTC] INFO: request completed
-    reqId: "req-3a"
-    res: {
-      "statusCode": 404
-    }
-    responseTime: 0.27116701006889343
-[12:30:56 UTC] INFO: incoming request
-    reqId: "req-3b"
-    req: {
-      "method": "GET",
-      "url": "/api/v1/vapi/calls/019b083a-b5e3-7eef-87d6-7fec7f2c0b97",
-      "host": "localhost:8000",
-      "remoteAddress": "127.0.0.1",
-      "remotePort": 61348
-    }
-[12:30:56 UTC] WARN: Call result not found in cache
-    callId: "019b083a-b5e3-7eef-87d6-7fec7f2c0b97"
-[12:30:56 UTC] INFO: request completed
-    reqId: "req-3b"
-    res: {
-      "statusCode": 404
-    }
-    responseTime: 1.2505419850349426
-[12:30:58 UTC] INFO: incoming request
-    reqId: "req-3c"
-    req: {
-      "method": "GET",
-      "url": "/api/v1/vapi/calls/019b083a-b5e3-7eef-87d6-7fec7f2c0b97",
-      "host": "localhost:8000",
-      "remoteAddress": "127.0.0.1",
-      "remotePort": 61348
-    }
-[12:30:58 UTC] WARN: Call result not found in cache
-    callId: "019b083a-b5e3-7eef-87d6-7fec7f2c0b97"
-[12:30:58 UTC] INFO: request completed
-    reqId: "req-3c"
-    res: {
-      "statusCode": 404
-    }
-    responseTime: 0.7727920114994049
-[12:31:00 UTC] INFO: incoming request
-    reqId: "req-3d"
-    req: {
-      "method": "GET",
-      "url": "/api/v1/vapi/calls/019b083a-b5e3-7eef-87d6-7fec7f2c0b97",
-      "host": "localhost:8000",
-      "remoteAddress": "127.0.0.1",
-      "remotePort": 61348
-    }
-[12:31:00 UTC] WARN: Call result not found in cache
-    callId: "019b083a-b5e3-7eef-87d6-7fec7f2c0b97"
-[12:31:00 UTC] INFO: request completed
-    reqId: "req-3d"
-    res: {
-      "statusCode": 404
-    }
-    responseTime: 0.567124992609024
-[12:31:02 UTC] INFO: incoming request
-    reqId: "req-3e"
-    req: {
-      "method": "GET",
-      "url": "/api/v1/vapi/calls/019b083a-b5e3-7eef-87d6-7fec7f2c0b97",
-      "host": "localhost:8000",
-      "remoteAddress": "127.0.0.1",
-      "remotePort": 61348
-    }
-[12:31:02 UTC] WARN: Call result not found in cache
-    callId: "019b083a-b5e3-7eef-87d6-7fec7f2c0b97"
-[12:31:02 UTC] INFO: request completed
-    reqId: "req-3e"
-    res: {
-      "statusCode": 404
-    }
-    responseTime: 0.3287910223007202
-[12:31:04 UTC] INFO: incoming request
-    reqId: "req-3f"
-    req: {
-      "method": "GET",
-      "url": "/api/v1/vapi/calls/019b083a-b5e3-7eef-87d6-7fec7f2c0b97",
-      "host": "localhost:8000",
-      "remoteAddress": "127.0.0.1",
-      "remotePort": 61348
-    }
-[12:31:04 UTC] WARN: Call result not found in cache
-    callId: "019b083a-b5e3-7eef-87d6-7fec7f2c0b97"
-[12:31:04 UTC] INFO: request completed
-    reqId: "req-3f"
-    res: {
-      "statusCode": 404
-    }
-    responseTime: 0.1897909939289093
-[12:31:06 UTC] INFO: incoming request
-    reqId: "req-3g"
-    req: {
-      "method": "GET",
-      "url": "/api/v1/vapi/calls/019b083a-b5e3-7eef-87d6-7fec7f2c0b97",
-      "host": "localhost:8000",
-      "remoteAddress": "127.0.0.1",
-      "remotePort": 61348
-    }
-[12:31:06 UTC] WARN: Call result not found in cache
-    callId: "019b083a-b5e3-7eef-87d6-7fec7f2c0b97"
-[12:31:06 UTC] INFO: request completed
-    reqId: "req-3g"
-    res: {
-      "statusCode": 404
-    }
-    responseTime: 0.6148750185966492
-[12:31:08 UTC] INFO: incoming request
-    reqId: "req-3h"
-    req: {
-      "method": "GET",
-      "url": "/api/v1/vapi/calls/019b083a-b5e3-7eef-87d6-7fec7f2c0b97",
-      "host": "localhost:8000",
-      "remoteAddress": "127.0.0.1",
-      "remotePort": 61348
-    }
-[12:31:08 UTC] WARN: Call result not found in cache
-    callId: "019b083a-b5e3-7eef-87d6-7fec7f2c0b97"
-[12:31:08 UTC] INFO: request completed
-    reqId: "req-3h"
-    res: {
-      "statusCode": 404
-    }
-    responseTime: 0.7397080063819885
-[12:31:10 UTC] INFO: incoming request
-    reqId: "req-3i"
-    req: {
-      "method": "GET",
-      "url": "/api/v1/vapi/calls/019b083a-b5e3-7eef-87d6-7fec7f2c0b97",
-      "host": "localhost:8000",
-      "remoteAddress": "127.0.0.1",
-      "remotePort": 61348
-    }
-[12:31:10 UTC] WARN: Call result not found in cache
-    callId: "019b083a-b5e3-7eef-87d6-7fec7f2c0b97"
-[12:31:10 UTC] INFO: request completed
-    reqId: "req-3i"
-    res: {
-      "statusCode": 404
-    }
-    responseTime: 0.7028339803218842
-[12:31:12 UTC] INFO: incoming request
-    reqId: "req-3j"
-    req: {
-      "method": "GET",
-      "url": "/api/v1/vapi/calls/019b083a-b5e3-7eef-87d6-7fec7f2c0b97",
-      "host": "localhost:8000",
-      "remoteAddress": "127.0.0.1",
-      "remotePort": 61348
-    }
-[12:31:12 UTC] WARN: Call result not found in cache
-    callId: "019b083a-b5e3-7eef-87d6-7fec7f2c0b97"
-[12:31:12 UTC] INFO: request completed
-    reqId: "req-3j"
-    res: {
-      "statusCode": 404
-    }
-    responseTime: 0.8732079863548279
-[12:31:14 UTC] INFO: incoming request
-    reqId: "req-3k"
-    req: {
-      "method": "GET",
-      "url": "/api/v1/vapi/calls/019b083a-b5e3-7eef-87d6-7fec7f2c0b97",
-      "host": "localhost:8000",
-      "remoteAddress": "127.0.0.1",
-      "remotePort": 61348
-    }
-[12:31:14 UTC] WARN: Call result not found in cache
-    callId: "019b083a-b5e3-7eef-87d6-7fec7f2c0b97"
-[12:31:14 UTC] INFO: request completed
-    reqId: "req-3k"
-    res: {
-      "statusCode": 404
-    }
-    responseTime: 0.32079198956489563
-[12:31:16 UTC] INFO: incoming request
-    reqId: "req-3l"
-    req: {
-      "method": "GET",
-      "url": "/api/v1/vapi/calls/019b083a-b5e3-7eef-87d6-7fec7f2c0b97",
-      "host": "localhost:8000",
-      "remoteAddress": "127.0.0.1",
-      "remotePort": 61348
-    }
-[12:31:16 UTC] WARN: Call result not found in cache
-    callId: "019b083a-b5e3-7eef-87d6-7fec7f2c0b97"
-[12:31:16 UTC] INFO: request completed
-    reqId: "req-3l"
-    res: {
-      "statusCode": 404
-    }
-    responseTime: 0.3717919886112213
-[12:31:18 UTC] INFO: incoming request
-    reqId: "req-3m"
-    req: {
-      "method": "GET",
-      "url": "/api/v1/vapi/calls/019b083a-b5e3-7eef-87d6-7fec7f2c0b97",
-      "host": "localhost:8000",
-      "remoteAddress": "127.0.0.1",
-      "remotePort": 61348
-    }
-[12:31:18 UTC] WARN: Call result not found in cache
-    callId: "019b083a-b5e3-7eef-87d6-7fec7f2c0b97"
-[12:31:18 UTC] INFO: request completed
-    reqId: "req-3m"
-    res: {
-      "statusCode": 404
-    }
-    responseTime: 0.5028330087661743
-[12:31:20 UTC] INFO: incoming request
-    reqId: "req-3n"
-    req: {
-      "method": "GET",
-      "url": "/api/v1/vapi/calls/019b083a-b5e3-7eef-87d6-7fec7f2c0b97",
-      "host": "localhost:8000",
-      "remoteAddress": "127.0.0.1",
-      "remotePort": 61348
-    }
-[12:31:20 UTC] WARN: Call result not found in cache
-    callId: "019b083a-b5e3-7eef-87d6-7fec7f2c0b97"
-[12:31:20 UTC] INFO: request completed
-    reqId: "req-3n"
-    res: {
-      "statusCode": 404
-    }
-    responseTime: 0.39795801043510437
-[12:31:22 UTC] INFO: incoming request
-    reqId: "req-3o"
-    req: {
-      "method": "GET",
-      "url": "/api/v1/vapi/calls/019b083a-b5e3-7eef-87d6-7fec7f2c0b97",
-      "host": "localhost:8000",
-      "remoteAddress": "127.0.0.1",
-      "remotePort": 61348
-    }
-[12:31:22 UTC] WARN: Call result not found in cache
-    callId: "019b083a-b5e3-7eef-87d6-7fec7f2c0b97"
-[12:31:22 UTC] INFO: request completed
-    reqId: "req-3o"
-    res: {
-      "statusCode": 404
-    }
-    responseTime: 0.8608749806880951
-[12:31:24 UTC] INFO: incoming request
-    reqId: "req-3p"
-    req: {
-      "method": "GET",
-      "url": "/api/v1/vapi/calls/019b083a-b5e3-7eef-87d6-7fec7f2c0b97",
-      "host": "localhost:8000",
-      "remoteAddress": "127.0.0.1",
-      "remotePort": 61348
-    }
-[12:31:24 UTC] WARN: Call result not found in cache
-    callId: "019b083a-b5e3-7eef-87d6-7fec7f2c0b97"
-[12:31:24 UTC] INFO: request completed
-    reqId: "req-3p"
-    res: {
-      "statusCode": 404
-    }
-    responseTime: 0.9325830042362213
-[12:31:26 UTC] INFO: incoming request
-    reqId: "req-3q"
-    req: {
-      "method": "GET",
-      "url": "/api/v1/vapi/calls/019b083a-b5e3-7eef-87d6-7fec7f2c0b97",
-      "host": "localhost:8000",
-      "remoteAddress": "127.0.0.1",
-      "remotePort": 61348
-    }
-[12:31:26 UTC] WARN: Call result not found in cache
-    callId: "019b083a-b5e3-7eef-87d6-7fec7f2c0b97"
-[12:31:26 UTC] INFO: request completed
-    reqId: "req-3q"
-    res: {
-      "statusCode": 404
-    }
-    responseTime: 0.4427909851074219
-[12:31:28 UTC] INFO: incoming request
-    reqId: "req-3r"
-    req: {
-      "method": "GET",
-      "url": "/api/v1/vapi/calls/019b083a-b5e3-7eef-87d6-7fec7f2c0b97",
-      "host": "localhost:8000",
-      "remoteAddress": "127.0.0.1",
-      "remotePort": 61348
-    }
-[12:31:28 UTC] WARN: Call result not found in cache
-    callId: "019b083a-b5e3-7eef-87d6-7fec7f2c0b97"
-[12:31:28 UTC] INFO: request completed
-    reqId: "req-3r"
-    res: {
-      "statusCode": 404
-    }
-    responseTime: 0.399834007024765
-[12:31:30 UTC] INFO: incoming request
-    reqId: "req-3s"
-    req: {
-      "method": "GET",
-      "url": "/api/v1/vapi/calls/019b083a-b5e3-7eef-87d6-7fec7f2c0b97",
-      "host": "localhost:8000",
-      "remoteAddress": "127.0.0.1",
-      "remotePort": 61348
-    }
-[12:31:30 UTC] WARN: Call result not found in cache
-    callId: "019b083a-b5e3-7eef-87d6-7fec7f2c0b97"
-[12:31:30 UTC] INFO: request completed
-    reqId: "req-3s"
-    res: {
-      "statusCode": 404
-    }
-    responseTime: 0.503832995891571
-[12:31:32 UTC] INFO: incoming request
-    reqId: "req-3t"
-    req: {
-      "method": "GET",
-      "url": "/api/v1/vapi/calls/019b083a-b5e3-7eef-87d6-7fec7f2c0b97",
-      "host": "localhost:8000",
-      "remoteAddress": "127.0.0.1",
-      "remotePort": 61348
-    }
-[12:31:32 UTC] WARN: Call result not found in cache
-    callId: "019b083a-b5e3-7eef-87d6-7fec7f2c0b97"
-[12:31:32 UTC] INFO: request completed
-    reqId: "req-3t"
-    res: {
-      "statusCode": 404
-    }
-    responseTime: 0.4410419762134552
-[12:31:34 UTC] INFO: incoming request
-    reqId: "req-3u"
-    req: {
-      "method": "GET",
-      "url": "/api/v1/vapi/calls/019b083a-b5e3-7eef-87d6-7fec7f2c0b97",
-      "host": "localhost:8000",
-      "remoteAddress": "127.0.0.1",
-      "remotePort": 61348
-    }
-[12:31:34 UTC] WARN: Call result not found in cache
-    callId: "019b083a-b5e3-7eef-87d6-7fec7f2c0b97"
-[12:31:34 UTC] INFO: request completed
-    reqId: "req-3u"
-    res: {
-      "statusCode": 404
-    }
-    responseTime: 0.3694160282611847
-[12:31:36 UTC] INFO: incoming request
-    reqId: "req-3v"
-    req: {
-      "method": "GET",
-      "url": "/api/v1/vapi/calls/019b083a-b5e3-7eef-87d6-7fec7f2c0b97",
-      "host": "localhost:8000",
-      "remoteAddress": "127.0.0.1",
-      "remotePort": 61348
-    }
-[12:31:36 UTC] WARN: Call result not found in cache
-    callId: "019b083a-b5e3-7eef-87d6-7fec7f2c0b97"
-[12:31:36 UTC] INFO: request completed
-    reqId: "req-3v"
-    res: {
-      "statusCode": 404
-    }
-    responseTime: 0.1992499828338623
-[12:31:38 UTC] INFO: incoming request
-    reqId: "req-3w"
-    req: {
-      "method": "GET",
-      "url": "/api/v1/vapi/calls/019b083a-b5e3-7eef-87d6-7fec7f2c0b97",
-      "host": "localhost:8000",
-      "remoteAddress": "127.0.0.1",
-      "remotePort": 61348
-    }
-[12:31:38 UTC] WARN: Call result not found in cache
-    callId: "019b083a-b5e3-7eef-87d6-7fec7f2c0b97"
-[12:31:38 UTC] INFO: request completed
-    reqId: "req-3w"
-    res: {
-      "statusCode": 404
-    }
-    responseTime: 0.31975001096725464
-[12:31:40 UTC] INFO: incoming request
-    reqId: "req-3x"
-    req: {
-      "method": "GET",
-      "url": "/api/v1/vapi/calls/019b083a-b5e3-7eef-87d6-7fec7f2c0b97",
-      "host": "localhost:8000",
-      "remoteAddress": "127.0.0.1",
-      "remotePort": 61348
-    }
-[12:31:40 UTC] WARN: Call result not found in cache
-    callId: "019b083a-b5e3-7eef-87d6-7fec7f2c0b97"
-[12:31:40 UTC] INFO: request completed
-    reqId: "req-3x"
-    res: {
-      "statusCode": 404
-    }
-    responseTime: 0.3914160132408142
-[12:31:42 UTC] INFO: incoming request
-    reqId: "req-3y"
-    req: {
-      "method": "GET",
-      "url": "/api/v1/vapi/calls/019b083a-b5e3-7eef-87d6-7fec7f2c0b97",
-      "host": "localhost:8000",
-      "remoteAddress": "127.0.0.1",
-      "remotePort": 61348
-    }
-[12:31:42 UTC] WARN: Call result not found in cache
-    callId: "019b083a-b5e3-7eef-87d6-7fec7f2c0b97"
-[12:31:42 UTC] INFO: request completed
-    reqId: "req-3y"
-    res: {
-      "statusCode": 404
-    }
-    responseTime: 0.3668749928474426
-[12:31:44 UTC] INFO: incoming request
-    reqId: "req-3z"
-    req: {
-      "method": "GET",
-      "url": "/api/v1/vapi/calls/019b083a-b5e3-7eef-87d6-7fec7f2c0b97",
-      "host": "localhost:8000",
-      "remoteAddress": "127.0.0.1",
-      "remotePort": 61348
-    }
-[12:31:44 UTC] WARN: Call result not found in cache
-    callId: "019b083a-b5e3-7eef-87d6-7fec7f2c0b97"
-[12:31:44 UTC] INFO: request completed
-    reqId: "req-3z"
-    res: {
-      "statusCode": 404
-    }
-    responseTime: 0.23112499713897705
-[12:31:46 UTC] INFO: incoming request
-    reqId: "req-40"
-    req: {
-      "method": "GET",
-      "url": "/api/v1/vapi/calls/019b083a-b5e3-7eef-87d6-7fec7f2c0b97",
-      "host": "localhost:8000",
-      "remoteAddress": "127.0.0.1",
-      "remotePort": 61348
-    }
-[12:31:46 UTC] WARN: Call result not found in cache
-    callId: "019b083a-b5e3-7eef-87d6-7fec7f2c0b97"
-[12:31:46 UTC] INFO: request completed
-    reqId: "req-40"
-    res: {
-      "statusCode": 404
-    }
-    responseTime: 0.41783300042152405
-[12:31:48 UTC] INFO: incoming request
-    reqId: "req-41"
-    req: {
-      "method": "GET",
-      "url": "/api/v1/vapi/calls/019b083a-b5e3-7eef-87d6-7fec7f2c0b97",
-      "host": "localhost:8000",
-      "remoteAddress": "127.0.0.1",
-      "remotePort": 61348
-    }
-[12:31:48 UTC] WARN: Call result not found in cache
-    callId: "019b083a-b5e3-7eef-87d6-7fec7f2c0b97"
-[12:31:48 UTC] INFO: request completed
-    reqId: "req-41"
-    res: {
-      "statusCode": 404
-    }
-    responseTime: 0.47737500071525574
-[12:31:50 UTC] INFO: incoming request
-    reqId: "req-42"
-    req: {
-      "method": "GET",
-      "url": "/api/v1/vapi/calls/019b083a-b5e3-7eef-87d6-7fec7f2c0b97",
-      "host": "localhost:8000",
-      "remoteAddress": "127.0.0.1",
-      "remotePort": 61348
-    }
-[12:31:50 UTC] WARN: Call result not found in cache
-    callId: "019b083a-b5e3-7eef-87d6-7fec7f2c0b97"
-[12:31:50 UTC] INFO: request completed
-    reqId: "req-42"
-    res: {
-      "statusCode": 404
-    }
-    responseTime: 0.26887500286102295
-[12:31:52 UTC] INFO: incoming request
-    reqId: "req-43"
-    req: {
-      "method": "GET",
-      "url": "/api/v1/vapi/calls/019b083a-b5e3-7eef-87d6-7fec7f2c0b97",
-      "host": "localhost:8000",
-      "remoteAddress": "127.0.0.1",
-      "remotePort": 61348
-    }
-[12:31:52 UTC] WARN: Call result not found in cache
-    callId: "019b083a-b5e3-7eef-87d6-7fec7f2c0b97"
-[12:31:52 UTC] INFO: request completed
-    reqId: "req-43"
-    res: {
-      "statusCode": 404
-    }
-    responseTime: 0.30708301067352295
-[12:31:54 UTC] INFO: incoming request
-    reqId: "req-44"
-    req: {
-      "method": "GET",
-      "url": "/api/v1/vapi/calls/019b083a-b5e3-7eef-87d6-7fec7f2c0b97",
-      "host": "localhost:8000",
-      "remoteAddress": "127.0.0.1",
-      "remotePort": 61348
-    }
-[12:31:54 UTC] WARN: Call result not found in cache
-    callId: "019b083a-b5e3-7eef-87d6-7fec7f2c0b97"
-[12:31:54 UTC] INFO: request completed
-    reqId: "req-44"
-    res: {
-      "statusCode": 404
-    }
-    responseTime: 1.2793750166893005
-[12:31:56 UTC] INFO: incoming request
-    reqId: "req-45"
-    req: {
-      "method": "GET",
-      "url": "/api/v1/vapi/calls/019b083a-b5e3-7eef-87d6-7fec7f2c0b97",
-      "host": "localhost:8000",
-      "remoteAddress": "127.0.0.1",
-      "remotePort": 61348
-    }
-[12:31:56 UTC] WARN: Call result not found in cache
-    callId: "019b083a-b5e3-7eef-87d6-7fec7f2c0b97"
-[12:31:56 UTC] INFO: request completed
-    reqId: "req-45"
-    res: {
-      "statusCode": 404
-    }
-    responseTime: 0.41270801424980164
-[12:31:58 UTC] INFO: incoming request
-    reqId: "req-46"
-    req: {
-      "method": "GET",
-      "url": "/api/v1/vapi/calls/019b083a-b5e3-7eef-87d6-7fec7f2c0b97",
-      "host": "localhost:8000",
-      "remoteAddress": "127.0.0.1",
-      "remotePort": 61348
-    }
-[12:31:58 UTC] WARN: Call result not found in cache
-    callId: "019b083a-b5e3-7eef-87d6-7fec7f2c0b97"
-[12:31:58 UTC] INFO: request completed
-    reqId: "req-46"
-    res: {
-      "statusCode": 404
-    }
-    responseTime: 0.922542005777359
-[12:32:00 UTC] INFO: incoming request
-    reqId: "req-47"
-    req: {
-      "method": "GET",
-      "url": "/api/v1/vapi/calls/019b083a-b5e3-7eef-87d6-7fec7f2c0b97",
-      "host": "localhost:8000",
-      "remoteAddress": "127.0.0.1",
-      "remotePort": 61348
-    }
-[12:32:00 UTC] WARN: Call result not found in cache
-    callId: "019b083a-b5e3-7eef-87d6-7fec7f2c0b97"
-[12:32:00 UTC] INFO: request completed
-    reqId: "req-47"
-    res: {
-      "statusCode": 404
-    }
-    responseTime: 0.18200001120567322
-[12:32:02 UTC] INFO: incoming request
-    reqId: "req-48"
-    req: {
-      "method": "GET",
-      "url": "/api/v1/vapi/calls/019b083a-b5e3-7eef-87d6-7fec7f2c0b97",
-      "host": "localhost:8000",
-      "remoteAddress": "127.0.0.1",
-      "remotePort": 61348
-    }
-[12:32:02 UTC] WARN: Call result not found in cache
-    callId: "019b083a-b5e3-7eef-87d6-7fec7f2c0b97"
-[12:32:02 UTC] INFO: request completed
-    reqId: "req-48"
-    res: {
-      "statusCode": 404
-    }
-    responseTime: 1.0509999990463257
-[12:32:04 UTC] INFO: incoming request
-    reqId: "req-49"
-    req: {
-      "method": "GET",
-      "url": "/api/v1/vapi/calls/019b083a-b5e3-7eef-87d6-7fec7f2c0b97",
-      "host": "localhost:8000",
-      "remoteAddress": "127.0.0.1",
-      "remotePort": 61348
-    }
-[12:32:04 UTC] WARN: Call result not found in cache
-    callId: "019b083a-b5e3-7eef-87d6-7fec7f2c0b97"
-[12:32:04 UTC] INFO: request completed
-    reqId: "req-49"
-    res: {
-      "statusCode": 404
-    }
-    responseTime: 0.18937501311302185
-[12:32:06 UTC] WARN: Webhook result timeout, will fall back to polling
-    callId: "019b083a-b5e3-7eef-87d6-7fec7f2c0b97"
-    timeoutMs: 300000
-[12:32:06 UTC] INFO: Webhook timeout, falling back to VAPI polling
-    callId: "019b083a-b5e3-7eef-87d6-7fec7f2c0b97"
-[12:32:08 UTC] INFO: Skipping provider update - non-UUID ID (localStorage-only)
-    providerId: "ChIJRURMfy-gVogRtM_hIBmcucM"
-[12:32:09 UTC] INFO: Call result saved to database
-    callId: "019b083a-b5e3-7eef-87d6-7fec7f2c0b97"
-    providerId: "ChIJRURMfy-gVogRtM_hIBmcucM"
-    serviceRequestId: "ed1d9fa2-7e35-4fc8-9f53-6e31b2dc56a4"
-[12:32:09 UTC] INFO: Provider call completed
-    callId: "019b083a-b5e3-7eef-87d6-7fec7f2c0b97"
-    status: "completed"
-    method: "direct_vapi"
-    duration: 0
+    responseTime: 3074.211834013462

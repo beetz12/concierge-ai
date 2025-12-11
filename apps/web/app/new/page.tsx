@@ -31,9 +31,12 @@ const ADMIN_TEST_PHONES = ADMIN_TEST_PHONES_RAW
   : [];
 
 // Backward compatibility: single test number (deprecated, use ADMIN_TEST_PHONES instead)
+// Note: Also handles comma-separated values in legacy variable for compatibility
 const ADMIN_TEST_NUMBER_LEGACY = process.env.NEXT_PUBLIC_ADMIN_TEST_NUMBER;
 if (ADMIN_TEST_NUMBER_LEGACY && ADMIN_TEST_PHONES.length === 0) {
-  ADMIN_TEST_PHONES.push(ADMIN_TEST_NUMBER_LEGACY);
+  // Split by comma in case legacy variable contains multiple numbers
+  const legacyNumbers = ADMIN_TEST_NUMBER_LEGACY.split(",").map((p) => p.trim()).filter(Boolean);
+  ADMIN_TEST_PHONES.push(...legacyNumbers);
 }
 
 const isAdminTestMode = ADMIN_TEST_PHONES.length > 0;
@@ -327,6 +330,40 @@ export default function NewRequest() {
 
         // Small delay between calls
         await new Promise((r) => setTimeout(r, LIVE_CALL_ENABLED ? 2000 : 1000));
+      }
+
+      // Check if ALL calls failed - if so, mark as FAILED early
+      const errorCalls = callLogs.filter((log) => log.status === "error");
+      const successCalls = callLogs.filter((log) => log.status === "success");
+
+      if (callLogs.length > 0 && errorCalls.length === callLogs.length) {
+        // ALL calls failed with errors
+        const outcome = `All ${errorCalls.length} provider call(s) failed. Please check your configuration and try again.`;
+        updateRequest(reqId, {
+          status: RequestStatus.FAILED,
+          interactions: [searchLog, ...callLogs],
+          finalOutcome: outcome,
+        });
+        await updateServiceRequest(reqId, {
+          status: "FAILED",
+          final_outcome: outcome,
+        });
+        return; // Exit early - don't proceed to analysis
+      }
+
+      if (callLogs.length > 0 && successCalls.length === 0) {
+        // No successful calls (all were skipped/warning/error)
+        const outcome = `No successful calls completed. ${errorCalls.length} error(s), ${callLogs.length - errorCalls.length} skipped.`;
+        updateRequest(reqId, {
+          status: RequestStatus.FAILED,
+          interactions: [searchLog, ...callLogs],
+          finalOutcome: outcome,
+        });
+        await updateServiceRequest(reqId, {
+          status: "FAILED",
+          final_outcome: outcome,
+        });
+        return; // Exit early
       }
 
       // 3. Analyze

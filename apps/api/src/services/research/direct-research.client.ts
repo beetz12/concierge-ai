@@ -283,34 +283,84 @@ export class DirectResearchClient {
   /**
    * Filter providers based on criteria
    * NOTE: Phone filtering is handled by enrichment service, not here
+   * FALLBACK: If filtering removes ALL providers, return top providers by rating
    */
   private filterProviders(
     providers: Provider[],
     criteria: FilterCriteria,
   ): Provider[] {
     let filtered = [...providers];
+    const originalCount = providers.length;
 
     // Filter by minimum rating
     if (criteria.minRating !== undefined) {
+      // DEBUG: Log ratings before filtering
+      const beforeCount = filtered.length;
+      const ratingsInfo = filtered.map(p => ({ name: p.name?.substring(0, 20), rating: p.rating }));
+      console.log(`DEBUG Filter: minRating=${criteria.minRating}, providers before filter:`, ratingsInfo);
+
       filtered = filtered.filter(
         (p) => p.rating !== undefined && p.rating >= criteria.minRating!,
       );
+
+      console.log(`DEBUG Filter result: ${beforeCount} -> ${filtered.length} providers after rating filter`);
+    }
+
+    // FALLBACK: If rating filter removed ALL providers, relax the filter
+    // Return top 10 by rating instead of returning empty array
+    if (filtered.length === 0 && originalCount > 0) {
+      this.logger.warn(
+        { minRating: criteria.minRating, originalCount },
+        "Rating filter removed all providers, using top providers by rating instead",
+      );
+      // Sort by rating descending and take top providers (even if below threshold)
+      filtered = [...providers]
+        .filter((p) => p.rating !== undefined)
+        .sort((a, b) => (b.rating || 0) - (a.rating || 0))
+        .slice(0, 10);
+
+      // If still empty (no ratings at all), return original providers
+      if (filtered.length === 0) {
+        filtered = [...providers].slice(0, 10);
+      }
     }
 
     // Filter by maximum distance
     if (criteria.maxDistance !== undefined) {
+      const beforeDistance = filtered.length;
       filtered = filtered.filter(
         (p) => p.distance === undefined || p.distance <= criteria.maxDistance!,
       );
+      // Fallback if distance filter removed all
+      if (filtered.length === 0 && beforeDistance > 0) {
+        this.logger.warn(
+          { maxDistance: criteria.maxDistance, beforeDistance },
+          "Distance filter removed all providers, keeping closest ones",
+        );
+        filtered = [...providers]
+          .sort((a, b) => (a.distance || Infinity) - (b.distance || Infinity))
+          .slice(0, 10);
+      }
     }
 
     // Filter by minimum review count
     if (criteria.minReviewCount !== undefined) {
+      const beforeReviews = filtered.length;
       filtered = filtered.filter(
         (p) =>
           p.reviewCount !== undefined &&
           p.reviewCount >= criteria.minReviewCount!,
       );
+      // Fallback if review filter removed all
+      if (filtered.length === 0 && beforeReviews > 0) {
+        this.logger.warn(
+          { minReviewCount: criteria.minReviewCount, beforeReviews },
+          "Review count filter removed all providers, keeping most reviewed ones",
+        );
+        filtered = [...providers]
+          .sort((a, b) => (b.reviewCount || 0) - (a.reviewCount || 0))
+          .slice(0, 10);
+      }
     }
 
     return filtered;

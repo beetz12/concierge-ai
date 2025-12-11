@@ -49,7 +49,18 @@ export function AppProvider({ children }: { children: ReactNode }) {
   }, [requests, isHydrated]);
 
   const addRequest = (req: ServiceRequest) => {
-    setRequests((prev) => [req, ...prev]);
+    setRequests((prev) => {
+      // Check if request with same ID already exists
+      const existingIndex = prev.findIndex((r) => r.id === req.id);
+      if (existingIndex !== -1) {
+        // Update existing request instead of adding duplicate
+        const updated = [...prev];
+        updated[existingIndex] = { ...prev[existingIndex], ...req };
+        return updated;
+      }
+      // Add new request at the beginning
+      return [req, ...prev];
+    });
   };
 
   const updateRequest = (id: string, updates: Partial<ServiceRequest>) => {

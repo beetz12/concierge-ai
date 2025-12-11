@@ -17,7 +17,7 @@ export async function getServiceRequests(userId?: string) {
     .select(
       `
       *,
-      providers (*),
+      providers!providers_request_id_fkey (*),
       interaction_logs (*)
     `,
     )
@@ -41,7 +41,7 @@ export async function getServiceRequestById(id: string) {
     .select(
       `
       *,
-      providers (*),
+      providers!providers_request_id_fkey (*),
       interaction_logs (*)
     `,
     )

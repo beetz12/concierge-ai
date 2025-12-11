@@ -368,9 +368,9 @@ function createProviderSearchConfig(request: CallRequest) {
       voicemailDetection: {
         provider: "twilio",
         enabled: true,
-        machineDetectionTimeout: 5000,
-        machineDetectionSpeechThreshold: 3000,
-        machineDetectionSpeechEndThreshold: 1200,
+        machineDetectionTimeout: 30, // Max 59 seconds per VAPI API
+        machineDetectionSpeechThreshold: 2500, // Min 1000ms per VAPI API
+        machineDetectionSpeechEndThreshold: 1200, // Min 1000ms per VAPI API
       },
       firstMessage: request.customPrompt.firstMessage,
       endCallFunctionEnabled: true,

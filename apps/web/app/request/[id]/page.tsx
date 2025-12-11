@@ -8,6 +8,8 @@ import StatusBadge from "@/components/StatusBadge";
 import LiveStatus from "@/components/LiveStatus";
 import RecommendedProviders from "@/components/RecommendedProviders";
 import SelectionModal from "@/components/SelectionModal";
+import ProviderCallSection from "@/components/ProviderCallSection";
+import ProviderDetailPanel from "@/components/ProviderDetailPanel";
 import {
   ArrowLeft,
   MapPin,
@@ -53,30 +55,34 @@ const LogItem: React.FC<{ log: InteractionLog; index: number }> = ({ log }) => {
         </div>
         <p className="text-slate-400 mb-3">{log.detail}</p>
 
-        {log.transcript && (
+        {Array.isArray(log.transcript) && log.transcript.length > 0 && (
           <div className="bg-abyss/50 rounded-lg p-4 border border-surface-highlight space-y-3">
             <p className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">
               Transcript
             </p>
-            {log.transcript.map((line, idx) => (
-              <div
-                key={idx}
-                className={`flex gap-3 text-sm ${line.speaker === "AI" ? "justify-end" : "justify-start"}`}
-              >
+            {log.transcript.map((line, idx) => {
+              const speaker = String(line?.speaker || "Unknown");
+              const text = String(line?.text || "");
+              return (
                 <div
-                  className={`max-w-[80%] rounded-2xl px-4 py-2 ${
-                    line.speaker === "AI"
-                      ? "bg-primary-600/20 text-primary-200 border border-primary-500/20 rounded-tr-none"
-                      : "bg-surface-highlight border border-surface-highlight text-slate-300 rounded-tl-none shadow-sm"
-                  }`}
+                  key={idx}
+                  className={`flex gap-3 text-sm ${speaker === "AI" ? "justify-end" : "justify-start"}`}
                 >
-                  <span className="block text-xs opacity-75 mb-1 font-bold">
-                    {line.speaker}
-                  </span>
-                  {line.text}
+                  <div
+                    className={`max-w-[80%] rounded-2xl px-4 py-2 ${
+                      speaker === "AI"
+                        ? "bg-primary-600/20 text-primary-200 border border-primary-500/20 rounded-tr-none"
+                        : "bg-surface-highlight border border-surface-highlight text-slate-300 rounded-tl-none shadow-sm"
+                    }`}
+                  >
+                    <span className="block text-xs opacity-75 mb-1 font-bold">
+                      {speaker}
+                    </span>
+                    {text}
+                  </div>
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         )}
       </div>
@@ -121,6 +127,8 @@ export default function RequestDetails() {
   } | null>(null);
   const [recommendationsLoading, setRecommendationsLoading] = useState(false);
   const [recommendationsChecked, setRecommendationsChecked] = useState(false);
+  // State for provider detail panel (click on candidate card)
+  const [detailPanelProvider, setDetailPanelProvider] = useState<Provider | null>(null);
 
   // Use realtime data if available, otherwise local request, otherwise DB request
   const request = realtimeRequest || localRequest || dbRequest;
@@ -231,15 +239,20 @@ export default function RequestDetails() {
 
         // Transform backend format to frontend format
         const transformedProviders = recs.map((rec: any) => {
-          // Find the matching provider to get rating and review count
+          // Find the matching provider to get rating, address, and other details
           const dbProvider = providers.find((p) => p.name === rec.providerName);
 
           return {
             providerId: dbProvider?.id || "",
             providerName: rec.providerName,
             phone: rec.phone,
-            rating: dbProvider?.rating || 4.5,
-            reviewCount: dbProvider?.review_count,
+            // Use actual DB values with sensible fallbacks
+            rating: dbProvider?.rating ?? rec.rating ?? undefined,
+            reviewCount: dbProvider?.review_count ?? undefined,
+            address: dbProvider?.address || "",
+            hoursOfOperation: dbProvider?.hours_of_operation,
+            googleMapsUri: dbProvider?.google_maps_uri || "",
+            website: dbProvider?.website || "",
             earliestAvailability: rec.earliestAvailability || "Not specified",
             estimatedRate: rec.estimatedRate || "Not specified",
             score: rec.score,
@@ -321,19 +334,50 @@ export default function RequestDetails() {
             rating: p.rating || 0,
             address: p.address || "",
             source: p.source || "User Input",
+            // Call tracking (convert null to undefined, validate JSONB types)
+            callStatus: p.call_status || undefined,
+            callResult: (p.call_result && typeof p.call_result === "object" && !Array.isArray(p.call_result))
+              ? (p.call_result as Provider['callResult'])
+              : undefined,
+            callTranscript: p.call_transcript || undefined,
+            callSummary: p.call_summary || undefined,
+            callDurationMinutes: p.call_duration_minutes || undefined,
+            calledAt: p.called_at || undefined,
+            // Research data (convert null to undefined, handle JSONB variations)
+            reviewCount: p.review_count || undefined,
+            distance: p.distance || undefined,
+            distanceText: p.distance_text || undefined,
+            hoursOfOperation: Array.isArray(p.hours_of_operation)
+              ? p.hours_of_operation as string[]
+              : Array.isArray((p.hours_of_operation as any)?.weekdayText)
+                ? (p.hours_of_operation as any).weekdayText
+                : undefined,
+            isOpenNow: p.is_open_now || undefined,
+            googleMapsUri: p.google_maps_uri || undefined,
+            website: p.website || undefined,
+            placeId: p.place_id || undefined,
           })),
           interactions: logs.map((log) => ({
+            id: log.id,
             timestamp: log.timestamp,
             stepName: log.step_name,
             detail: log.detail,
             status: log.status as "success" | "warning" | "error" | "info",
-            transcript: log.transcript as { speaker: string; text: string }[] | undefined,
+            transcript: Array.isArray(log.transcript)
+              ? (log.transcript as { speaker: string; text: string }[])
+              : undefined,
+            providerName: (log as any).provider_name || undefined,
+            providerId: (log as any).provider_id || undefined,
           })),
           finalOutcome: data.final_outcome || undefined,
-          directContactInfo: data.direct_contact_info
+          directContactInfo: (data.direct_contact_info &&
+            typeof data.direct_contact_info === "object" &&
+            !Array.isArray(data.direct_contact_info) &&
+            "name" in data.direct_contact_info &&
+            "phone" in data.direct_contact_info)
             ? {
-                name: (data.direct_contact_info as any).name,
-                phone: (data.direct_contact_info as any).phone,
+                name: String((data.direct_contact_info as any).name || ""),
+                phone: String((data.direct_contact_info as any).phone || ""),
               }
             : undefined,
         };
@@ -391,10 +435,59 @@ export default function RequestDetails() {
           table: "providers",
           filter: `request_id=eq.${id}`,
         },
-        (payload) => {
+        async (payload) => {
           console.log("Provider update received:", payload);
-          // Trigger recommendations check when provider calls complete
+
+          // Refetch provider data when call results are saved
+          // This ensures call logs, summary, transcript are available in UI
           if (payload.new && payload.new.call_status) {
+            const supabase2 = createClient();
+            const { data: providers } = await supabase2
+              .from("providers")
+              .select("*")
+              .eq("request_id", id)
+              .order("created_at", { ascending: false });
+
+            if (providers && providers.length > 0) {
+              setRealtimeRequest((prev) => {
+                if (!prev) return prev;
+                return {
+                  ...prev,
+                  providersFound: providers.map((p) => ({
+                    id: p.id,
+                    name: p.name,
+                    phone: p.phone || "",
+                    rating: p.rating || 0,
+                    address: p.address || "",
+                    source: p.source || "User Input",
+                    // Call tracking fields - essential for call logs tab
+                    callStatus: p.call_status || undefined,
+                    callResult: (p.call_result && typeof p.call_result === "object" && !Array.isArray(p.call_result))
+                      ? (p.call_result as Provider['callResult'])
+                      : undefined,
+                    callTranscript: p.call_transcript || undefined,
+                    callSummary: p.call_summary || undefined,
+                    callDurationMinutes: p.call_duration_minutes || undefined,
+                    calledAt: p.called_at || undefined,
+                    // Research data
+                    reviewCount: p.review_count || undefined,
+                    distance: p.distance || undefined,
+                    distanceText: p.distance_text || undefined,
+                    hoursOfOperation: Array.isArray(p.hours_of_operation)
+                      ? p.hours_of_operation as string[]
+                      : Array.isArray((p.hours_of_operation as any)?.weekdayText)
+                        ? (p.hours_of_operation as any).weekdayText
+                        : undefined,
+                    isOpenNow: p.is_open_now || undefined,
+                    googleMapsUri: p.google_maps_uri || undefined,
+                    website: p.website || undefined,
+                    placeId: p.place_id || undefined,
+                  })),
+                };
+              });
+            }
+
+            // Also trigger recommendations check
             checkAndGenerateRecommendations();
           }
         }
@@ -433,6 +526,25 @@ export default function RequestDetails() {
                 const providers = providersResult.data || [];
                 const logs = logsResult.data || [];
 
+                // Combine DB logs with any existing local logs (from real-time updates)
+                // and deduplicate by log ID
+                const existingLogs = realtimeRequest?.interactions || localRequest?.interactions || [];
+                const allLogs = [...existingLogs, ...logs.map((log) => ({
+                  id: log.id,
+                  timestamp: log.timestamp,
+                  stepName: log.step_name,
+                  detail: log.detail,
+                  status: log.status as "success" | "warning" | "error" | "info",
+                  transcript: log.transcript as { speaker: string; text: string }[] | undefined,
+                  providerName: (log as any).provider_name || undefined,
+                  providerId: (log as any).provider_id || undefined,
+                }))];
+
+                // Deduplicate by ID, preferring newer entries (later in the array)
+                const deduplicatedLogs = Array.from(
+                  new Map(allLogs.map(log => [log.id || `${log.timestamp}-${log.stepName}`, log])).values()
+                );
+
                 const converted: ServiceRequest = {
                   id: data.id,
                   type: data.type as RequestType,
@@ -449,19 +561,39 @@ export default function RequestDetails() {
                     rating: p.rating || 0,
                     address: p.address || "",
                     source: p.source || "User Input",
+                    // Call tracking (convert null to undefined, validate JSONB types)
+                    callStatus: p.call_status || undefined,
+                    callResult: (p.call_result && typeof p.call_result === "object" && !Array.isArray(p.call_result))
+                      ? (p.call_result as Provider['callResult'])
+                      : undefined,
+                    callTranscript: p.call_transcript || undefined,
+                    callSummary: p.call_summary || undefined,
+                    callDurationMinutes: p.call_duration_minutes || undefined,
+                    calledAt: p.called_at || undefined,
+                    // Research data (convert null to undefined, handle JSONB variations)
+                    reviewCount: p.review_count || undefined,
+                    distance: p.distance || undefined,
+                    distanceText: p.distance_text || undefined,
+                    hoursOfOperation: Array.isArray(p.hours_of_operation)
+                      ? p.hours_of_operation as string[]
+                      : Array.isArray((p.hours_of_operation as any)?.weekdayText)
+                        ? (p.hours_of_operation as any).weekdayText
+                        : undefined,
+                    isOpenNow: p.is_open_now || undefined,
+                    googleMapsUri: p.google_maps_uri || undefined,
+                    website: p.website || undefined,
+                    placeId: p.place_id || undefined,
                   })),
-                  interactions: logs.map((log) => ({
-                    timestamp: log.timestamp,
-                    stepName: log.step_name,
-                    detail: log.detail,
-                    status: log.status as "success" | "warning" | "error" | "info",
-                    transcript: log.transcript as { speaker: string; text: string }[] | undefined,
-                  })),
+                  interactions: deduplicatedLogs,
                   finalOutcome: data.final_outcome || undefined,
-                  directContactInfo: data.direct_contact_info
+                  directContactInfo: (data.direct_contact_info &&
+                    typeof data.direct_contact_info === "object" &&
+                    !Array.isArray(data.direct_contact_info) &&
+                    "name" in data.direct_contact_info &&
+                    "phone" in data.direct_contact_info)
                     ? {
-                        name: (data.direct_contact_info as any).name,
-                        phone: (data.direct_contact_info as any).phone,
+                        name: String((data.direct_contact_info as any).name || ""),
+                        phone: String((data.direct_contact_info as any).phone || ""),
                       }
                     : undefined,
                 };
@@ -657,16 +789,44 @@ export default function RequestDetails() {
         {/* Main Timeline */}
         <div className="lg:col-span-2">
           <h3 className="text-lg font-bold text-slate-100 mb-4">
-            Activity Log
+            Call Logs
           </h3>
           <div className="bg-abyss/30 p-6 rounded-2xl border border-surface-highlight min-h-[400px]">
             {request.interactions.length === 0 && (
-              <div className="text-center text-slate-500 py-10">
-                Initializing AI Agent...
+              <div className="text-center py-10">
+                {request.status === RequestStatus.FAILED ? (
+                  <div className="text-red-400">
+                    <svg className="w-12 h-12 mx-auto mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                    </svg>
+                    <p className="font-medium">Call Failed</p>
+                    <p className="text-sm text-slate-500 mt-1">Unable to complete provider calls. Please try again.</p>
+                  </div>
+                ) : request.status === RequestStatus.COMPLETED ? (
+                  <div className="text-slate-500">
+                    <p>No call logs available for this request.</p>
+                  </div>
+                ) : request.status === RequestStatus.PENDING ? (
+                  <div className="text-slate-500">
+                    <p>Waiting to start...</p>
+                  </div>
+                ) : (
+                  <div className="text-slate-500">
+                    <div className="animate-pulse flex justify-center mb-3">
+                      <div className="w-8 h-8 border-2 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
+                    </div>
+                    <p>Initializing AI Agent...</p>
+                  </div>
+                )}
               </div>
             )}
+            {/* Use ProviderCallSection for call logs with transcripts, LogItem for others */}
             {request.interactions.map((log, i) => (
-              <LogItem key={i} log={log} index={i} />
+              Array.isArray(log.transcript) && log.transcript.length > 0 ? (
+                <ProviderCallSection key={log.id || i} log={log} defaultExpanded={i === 0} />
+              ) : (
+                <LogItem key={log.id || i} log={log} index={i} />
+              )
             ))}
             <div ref={bottomRef} />
           </div>
@@ -683,12 +843,25 @@ export default function RequestDetails() {
                 {request.providersFound.map((p) => (
                   <div
                     key={p.id}
-                    className={`text-sm p-3 rounded-lg border ${request.selectedProvider?.id === p.id ? "bg-primary-500/10 border-primary-500/30 ring-1 ring-primary-500/30" : "bg-surface-highlight border-surface-highlight"}`}
+                    onClick={() => setDetailPanelProvider(p)}
+                    className={`text-sm p-3 rounded-lg border cursor-pointer transition-all hover:border-primary-500/50 hover:shadow-md ${request.selectedProvider?.id === p.id ? "bg-primary-500/10 border-primary-500/30 ring-1 ring-primary-500/30" : "bg-surface-highlight border-surface-highlight"}`}
                   >
                     <div className="font-medium text-slate-200">{p.name}</div>
-                    <div className="text-slate-500 text-xs mt-1">
-                      {p.rating} ★ • {p.source}
+                    <div className="text-slate-500 text-xs mt-1 flex items-center gap-2">
+                      <span>{p.rating ? `${p.rating} ★` : "N/A"}</span>
+                      {p.callStatus && (
+                        <span className={`px-1.5 py-0.5 rounded text-xs ${
+                          p.callStatus === "completed" ? "bg-green-500/20 text-green-400" :
+                          p.callStatus === "failed" ? "bg-red-500/20 text-red-400" :
+                          "bg-yellow-500/20 text-yellow-400"
+                        }`}>
+                          {p.callStatus}
+                        </span>
+                      )}
                     </div>
+                    {p.distanceText && (
+                      <div className="text-slate-500 text-xs mt-1">{p.distanceText}</div>
+                    )}
                   </div>
                 ))}
               </div>
@@ -741,6 +914,29 @@ export default function RequestDetails() {
           onConfirm={handleConfirmBooking}
           onCancel={() => setShowModal(false)}
           loading={bookingLoading}
+        />
+      )}
+
+      {/* Provider Detail Panel - slide out when clicking a candidate card */}
+      {detailPanelProvider && (
+        <ProviderDetailPanel
+          provider={detailPanelProvider}
+          isOpen={!!detailPanelProvider}
+          onClose={() => setDetailPanelProvider(null)}
+          onSelect={(provider) => {
+            // When selecting from detail panel, trigger the booking flow
+            handleProviderSelect({
+              providerId: provider.id,
+              providerName: provider.name,
+              phone: provider.phone || "",
+              rating: provider.rating || 0,
+              earliestAvailability: provider.callResult?.earliest_availability || "",
+              estimatedRate: provider.callResult?.estimated_rate || "",
+              score: 0,
+              reasoning: "",
+            });
+            setDetailPanelProvider(null);
+          }}
         />
       )}
     </div>
