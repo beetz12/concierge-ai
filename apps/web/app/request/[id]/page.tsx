@@ -26,6 +26,7 @@ import {
   Provider,
 } from "@/lib/types";
 import { createClient } from "@/lib/supabase/client";
+import { scheduleBooking } from "@/lib/services/bookingService";
 
 const LogItem: React.FC<{ log: InteractionLog; index: number }> = ({ log }) => {
   const iconMap = {
@@ -225,6 +226,25 @@ export default function RequestDetails() {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [request?.interactions.length]);
 
+  // Load recommendations from localStorage when status changes to COMPLETED/ANALYZING
+  useEffect(() => {
+    if (!id) return;
+
+    // Check if we should load recommendations
+    if (request?.status === RequestStatus.COMPLETED || request?.status === RequestStatus.ANALYZING) {
+      const storedRecs = localStorage.getItem(`recommendations-${id}`);
+      if (storedRecs && !recommendations) {
+        try {
+          const parsed = JSON.parse(storedRecs);
+          console.log("[Request] Loaded recommendations from localStorage:", parsed);
+          setRecommendations(parsed);
+        } catch (e) {
+          console.error("[Request] Failed to parse recommendations:", e);
+        }
+      }
+    }
+  }, [id, request?.status, recommendations]);
+
   // Handler for provider selection
   const handleProviderSelect = (provider: {
     providerId: string;
@@ -249,19 +269,35 @@ export default function RequestDetails() {
 
   // Handler for confirming booking
   const handleConfirmBooking = async () => {
+    if (!selectedProvider || !request) return;
+
     setBookingLoading(true);
     try {
-      // TODO: Call booking API endpoint
-      // await bookProvider(id, selectedProvider);
-      console.log("Booking provider:", selectedProvider);
+      // Call booking API to trigger Kestra schedule_service flow
+      const result = await scheduleBooking({
+        serviceRequestId: id,
+        providerId: selectedProvider.providerId,
+        providerPhone: selectedProvider.phone,
+        providerName: selectedProvider.providerName,
+        serviceDescription: request.criteria,
+        preferredDate: selectedProvider.earliestAvailability,
+        location: request.location,
+      });
 
-      // For now, just close the modal after a brief delay
-      await new Promise((resolve) => setTimeout(resolve, 1000));
+      if (result.success && result.data?.bookingInitiated) {
+        console.log("Booking initiated:", result.data);
+        // Close modal - the booking call is in progress
+        setShowModal(false);
+      } else {
+        console.error("Booking failed:", result.error);
+        // Keep modal open to show error or allow retry
+        alert(`Booking failed: ${result.error || "Unknown error"}`);
+      }
     } catch (error) {
       console.error("Error booking provider:", error);
+      alert("Failed to initiate booking. Please try again.");
     } finally {
       setBookingLoading(false);
-      setShowModal(false);
     }
   };
 
