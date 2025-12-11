@@ -138,7 +138,8 @@ export class CallResultService {
 
   /**
    * Create interaction log for the call
-   * Prevents duplicates by checking if log already exists for this call
+   * Uses database-level unique constraint on call_id for deduplication (2025 best practice)
+   * ON CONFLICT DO NOTHING handles duplicates atomically - no race conditions
    */
   private async createInteractionLog(
     serviceRequestId: string,
@@ -146,25 +147,6 @@ export class CallResultService {
     request: CallRequest,
   ): Promise<void> {
     if (!this.supabase) return;
-
-    // Deduplication: Check if interaction log already exists for this call
-    // This prevents duplicates when both direct call path and webhook call saveCallResult
-    if (result.callId) {
-      const { data: existing } = await this.supabase
-        .from("interaction_logs")
-        .select("id")
-        .eq("request_id", serviceRequestId)
-        .ilike("detail", `%${result.callId}%`)
-        .limit(1);
-
-      if (existing && existing.length > 0) {
-        this.logger.debug(
-          { callId: result.callId, serviceRequestId },
-          "Interaction log already exists for this call, skipping duplicate"
-        );
-        return;
-      }
-    }
 
     // Parse transcript into structured format if possible
     let transcriptData = null;
@@ -211,23 +193,34 @@ export class CallResultService {
       status: logStatus,
       detail: summaryWithCallId,
       transcript: transcriptData,
+      call_id: result.callId || null, // For unique constraint deduplication
     };
 
+    // Use upsert with ON CONFLICT DO NOTHING for atomic deduplication
+    // Database unique constraint on call_id prevents duplicates when both
+    // webhook and polling paths call saveCallResult() simultaneously
     const { error } = await this.supabase
       .from("interaction_logs")
-      .insert(insertData);
+      .upsert(insertData, {
+        onConflict: "call_id",
+        ignoreDuplicates: true,
+      });
 
     if (error) {
       this.logger.error(
         {
           error,
           serviceRequestId,
+          callId: result.callId,
         },
         "Failed to create interaction log",
       );
       throw error;
     }
 
-    this.logger.debug({ serviceRequestId }, "Interaction log created");
+    this.logger.debug(
+      { serviceRequestId, callId: result.callId },
+      "Interaction log created (or duplicate ignored)",
+    );
   }
 }

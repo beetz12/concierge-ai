@@ -61,6 +61,7 @@ export default function NewRequest() {
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showCriteriaInput, setShowCriteriaInput] = useState(false);
+  const [submitError, setSubmitError] = useState<string | null>(null);
 
   // Form validation - all required fields must be filled
   const isFormValid =
@@ -104,6 +105,11 @@ export default function NewRequest() {
       runConciergeProcess(newRequest.id, formData);
     } catch (error) {
       console.error("Failed to create request:", error);
+      setSubmitError(
+        error instanceof Error
+          ? error.message
+          : "Failed to create request. Please try again."
+      );
       setIsSubmitting(false);
     }
   };
@@ -602,6 +608,24 @@ export default function NewRequest() {
             </>
           )}
         </div>
+
+        {/* Error Message */}
+        {submitError && (
+          <div className="bg-red-500/10 border border-red-500/30 text-red-400 px-4 py-3 rounded-xl flex items-start gap-3">
+            <AlertCircle className="w-5 h-5 shrink-0 mt-0.5" />
+            <div className="flex-1">
+              <p className="font-medium">Request Failed</p>
+              <p className="text-sm text-red-400/80 mt-1">{submitError}</p>
+            </div>
+            <button
+              type="button"
+              onClick={() => setSubmitError(null)}
+              className="text-red-400/60 hover:text-red-400 transition-colors"
+            >
+              ×
+            </button>
+          </div>
+        )}
 
         <button
           type="submit"

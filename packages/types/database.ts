@@ -17,6 +17,7 @@ export type Database = {
     Tables: {
       interaction_logs: {
         Row: {
+          call_id: string | null
           created_at: string
           detail: string
           id: string
@@ -27,6 +28,7 @@ export type Database = {
           transcript: Json | null
         }
         Insert: {
+          call_id?: string | null
           created_at?: string
           detail: string
           id?: string
@@ -37,6 +39,7 @@ export type Database = {
           transcript?: Json | null
         }
         Update: {
+          call_id?: string | null
           created_at?: string
           detail?: string
           id?: string
@@ -59,6 +62,9 @@ export type Database = {
       providers: {
         Row: {
           address: string | null
+          booking_confirmed: boolean | null
+          booking_date: string | null
+          booking_time: string | null
           call_cost: number | null
           call_duration_minutes: number | null
           call_id: string | null
@@ -68,6 +74,7 @@ export type Database = {
           call_summary: string | null
           call_transcript: string | null
           called_at: string | null
+          confirmation_number: string | null
           created_at: string
           distance: number | null
           distance_text: string | null
@@ -76,6 +83,7 @@ export type Database = {
           id: string
           international_phone: string | null
           is_open_now: boolean | null
+          last_call_at: string | null
           name: string
           phone: string | null
           place_id: string | null
@@ -87,6 +95,9 @@ export type Database = {
         }
         Insert: {
           address?: string | null
+          booking_confirmed?: boolean | null
+          booking_date?: string | null
+          booking_time?: string | null
           call_cost?: number | null
           call_duration_minutes?: number | null
           call_id?: string | null
@@ -96,6 +107,7 @@ export type Database = {
           call_summary?: string | null
           call_transcript?: string | null
           called_at?: string | null
+          confirmation_number?: string | null
           created_at?: string
           distance?: number | null
           distance_text?: string | null
@@ -104,6 +116,7 @@ export type Database = {
           id?: string
           international_phone?: string | null
           is_open_now?: boolean | null
+          last_call_at?: string | null
           name: string
           phone?: string | null
           place_id?: string | null
@@ -115,6 +128,9 @@ export type Database = {
         }
         Update: {
           address?: string | null
+          booking_confirmed?: boolean | null
+          booking_date?: string | null
+          booking_time?: string | null
           call_cost?: number | null
           call_duration_minutes?: number | null
           call_id?: string | null
@@ -124,6 +140,7 @@ export type Database = {
           call_summary?: string | null
           call_transcript?: string | null
           called_at?: string | null
+          confirmation_number?: string | null
           created_at?: string
           distance?: number | null
           distance_text?: string | null
@@ -132,6 +149,7 @@ export type Database = {
           id?: string
           international_phone?: string | null
           is_open_now?: boolean | null
+          last_call_at?: string | null
           name?: string
           phone?: string | null
           place_id?: string | null

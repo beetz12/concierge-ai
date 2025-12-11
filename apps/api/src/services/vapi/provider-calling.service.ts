@@ -60,6 +60,8 @@ export class ProviderCallingService {
       }
 
       // Save results to database
+      // Database unique constraint on call_id handles deduplication atomically
+      // Safe to call even if webhook already saved - ON CONFLICT DO NOTHING
       await this.callResultService.saveCallResult(result, request);
 
       this.logger.info(

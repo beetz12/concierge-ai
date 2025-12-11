@@ -66,11 +66,11 @@ const LogItem: React.FC<{ log: InteractionLog; index: number }> = ({ log }) => {
               return (
                 <div
                   key={idx}
-                  className={`flex gap-3 text-sm ${speaker === "AI" ? "justify-end" : "justify-start"}`}
+                  className={`flex gap-3 text-sm ${speaker === "AI" || speaker === "assistant" ? "justify-end" : "justify-start"}`}
                 >
                   <div
                     className={`max-w-[80%] rounded-2xl px-4 py-2 ${
-                      speaker === "AI"
+                      speaker === "AI" || speaker === "assistant"
                         ? "bg-primary-600/20 text-primary-200 border border-primary-500/20 rounded-tr-none"
                         : "bg-surface-highlight border border-surface-highlight text-slate-300 rounded-tl-none shadow-sm"
                     }`}
@@ -127,6 +127,12 @@ export default function RequestDetails() {
   } | null>(null);
   const [recommendationsLoading, setRecommendationsLoading] = useState(false);
   const [recommendationsChecked, setRecommendationsChecked] = useState(false);
+  // Inline feedback states (replacing native alert())
+  const [bookingMessage, setBookingMessage] = useState<{
+    type: "success" | "error";
+    title: string;
+    details: string;
+  } | null>(null);
   // State for provider detail panel (click on candidate card)
   const [detailPanelProvider, setDetailPanelProvider] = useState<Provider | null>(null);
 
@@ -706,26 +712,42 @@ export default function RequestDetails() {
 
       // Check if booking was confirmed
       if (result.data.bookingConfirmed) {
-        // Success - show confirmation
-        alert(
-          `Appointment confirmed!\n\nProvider: ${selectedProvider.providerName}\nDate: ${result.data.confirmedDate}\nTime: ${result.data.confirmedTime}\n${result.data.confirmationNumber ? `Confirmation: ${result.data.confirmationNumber}` : ""}`
-        );
+        // Success - show inline confirmation (no alert())
+        const confirmationDetails = [
+          `Provider: ${selectedProvider.providerName}`,
+          `Date: ${result.data.confirmedDate}`,
+          `Time: ${result.data.confirmedTime}`,
+          result.data.confirmationNumber ? `Confirmation #: ${result.data.confirmationNumber}` : "",
+        ].filter(Boolean).join(" • ");
+
+        setBookingMessage({
+          type: "success",
+          title: "Appointment Confirmed!",
+          details: confirmationDetails,
+        });
 
         // Close modal
         setShowModal(false);
 
         // Real-time subscription will handle updating the UI with the new status
       } else {
-        // Booking failed
-        throw new Error(
-          `Booking unsuccessful: ${result.data.callOutcome || "Unknown reason"}\n\nNext steps: ${result.data.nextSteps || "Please try again later"}`
-        );
+        // Booking failed - show inline error
+        setBookingMessage({
+          type: "error",
+          title: "Booking Unsuccessful",
+          details: `${result.data.callOutcome || "Unknown reason"}. Next steps: ${result.data.nextSteps || "Please try again later"}`,
+        });
+        setShowModal(false);
       }
     } catch (error) {
       console.error("Error booking provider:", error);
-      alert(
-        `Failed to book appointment: ${error instanceof Error ? error.message : "Unknown error"}`
-      );
+      // Show inline error (no alert())
+      setBookingMessage({
+        type: "error",
+        title: "Failed to Book Appointment",
+        details: error instanceof Error ? error.message : "Unknown error occurred",
+      });
+      setShowModal(false);
     } finally {
       setBookingLoading(false);
     }
@@ -797,6 +819,58 @@ export default function RequestDetails() {
                   ` Located at ${request.selectedProvider.address}.`}
               </p>
             </div>
+          </div>
+        )}
+
+        {/* Inline Booking Feedback (replaces native alert()) */}
+        {bookingMessage && (
+          <div
+            className={`mt-6 p-4 rounded-xl flex items-start gap-4 ${
+              bookingMessage.type === "success"
+                ? "bg-emerald-500/10 border border-emerald-500/20"
+                : "bg-red-500/10 border border-red-500/20"
+            }`}
+          >
+            <div
+              className={`rounded-full p-2 ${
+                bookingMessage.type === "success"
+                  ? "bg-emerald-500/20 text-emerald-400"
+                  : "bg-red-500/20 text-red-400"
+              }`}
+            >
+              {bookingMessage.type === "success" ? (
+                <CheckCircle className="w-5 h-5" />
+              ) : (
+                <AlertTriangle className="w-5 h-5" />
+              )}
+            </div>
+            <div className="flex-1">
+              <h3
+                className={`font-bold ${
+                  bookingMessage.type === "success"
+                    ? "text-emerald-300"
+                    : "text-red-300"
+                }`}
+              >
+                {bookingMessage.title}
+              </h3>
+              <p
+                className={`text-sm mt-1 ${
+                  bookingMessage.type === "success"
+                    ? "text-emerald-400/80"
+                    : "text-red-400/80"
+                }`}
+              >
+                {bookingMessage.details}
+              </p>
+            </div>
+            <button
+              onClick={() => setBookingMessage(null)}
+              className="text-slate-500 hover:text-slate-300 transition-colors"
+              aria-label="Dismiss message"
+            >
+              <XCircle className="w-5 h-5" />
+            </button>
           </div>
         )}
       </div>

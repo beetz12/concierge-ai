@@ -694,7 +694,10 @@ async function persistCallResultToDatabase(
   );
 
   try {
+    // Database unique constraint on call_id handles deduplication atomically
+    // Both webhook and polling paths can safely call saveCallResult()
     await callResultService.saveCallResult(result, request);
+
     logger.info(
       { callId: result.callId },
       "Call result persisted to database successfully",

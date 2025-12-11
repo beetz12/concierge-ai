@@ -195,20 +195,27 @@ Browser → Next.js (:3000) → /api/* rewrites → Fastify (:8000) → Services
 - Results summary shown to user
 - Task analysis display (what AI planned to do)
 
-### Frontend Pages (98% Complete) ⬆️ Updated Dec 10
+### Frontend Pages (99% Complete) ⬆️ Updated Dec 10
 
 | Page | Route | Status | Notes |
 |------|-------|--------|-------|
 | Dashboard | `/` | ✅ Done | Stats cards, recent activity |
-| New Request | `/new` | ✅ Done | Full research & book form |
-| Direct Task | `/direct` | Partial | Form works, needs transcript/results display |
-| Request Detail | `/request/[id]` | ✅ Done | Timeline, **real-time updates**, **top 3 recommendations**, **selection flow** |
-| History | `/history` | ✅ Done | Shows all past requests |
+| New Request | `/new` | ✅ Done | Full research & book form, **error handling** |
+| Direct Task | `/direct` | ✅ Done | Form works, **phone validation**, **error states** |
+| Request Detail | `/request/[id]` | ✅ Done | Timeline, **real-time updates**, **top 3 recommendations**, **selection flow**, **inline booking feedback** |
+| History | `/history` | ✅ Done | Shows all past requests, **call status badges**, **final outcomes**, **error handling** |
 
 **New Components (Dec 10, 2025):**
 - `components/LiveStatus.tsx` - Real-time status animations
 - `components/RecommendedProviders.tsx` - Top 3 provider cards with scoring
 - `components/SelectionModal.tsx` - Booking confirmation dialog
+
+**UX Improvements (Dec 10, 2025):**
+- `lib/hooks/usePhoneValidation.ts` - Shared E.164 phone validation hook
+- Inline booking feedback (replaced native `alert()`)
+- Form error states with dismiss buttons
+- Transcript speaker alignment fix
+- History page: error handling, final outcomes, call status badges
 
 ### Database Schema (100% Complete)
 
@@ -278,7 +285,7 @@ Browser → Next.js (:3000) → /api/* rewrites → Fastify (:8000) → Services
 
 | ID | Feature | Description | Owner | Status |
 |----|---------|-------------|-------|--------|
-| N1 | History Page Enhancement | Show transcripts, recommendations for past requests | Ajay | 🔴 TODO |
+| N1 | History Page Enhancement | Show transcripts, recommendations for past requests | Ajay | 🟡 PARTIAL (call status + outcome done) |
 | N2 | Loading Skeletons | Better loading states during operations | Hasan | 🔴 TODO |
 | N3 | Responsive Testing | Test all new components on mobile viewports | Ajay | 🔴 TODO |
 
@@ -846,13 +853,15 @@ Frontend integration often reveals API issues that need adjustment.
 History page shows basic request info but could show more useful data.
 
 **Acceptance Criteria:**
-- [ ] Show call status icons (completed, failed, voicemail)
+- [x] Show call status icons (completed, failed, voicemail) ✅ Done Dec 10
 - [ ] Display top recommendation name if available
-- [ ] Show final outcome summary
-- [ ] Link to full details page
+- [x] Show final outcome summary ✅ Done Dec 10
+- [x] Link to full details page ✅ Already existed
 
-**Files to modify:**
-- `apps/web/app/history/page.tsx`
+**Status:** 75% Complete - UX improvements implemented Dec 10
+
+**Files modified:**
+- `apps/web/app/history/page.tsx` - Added error handling, final outcome display, call status badges
 
 ---
 
@@ -1198,4 +1207,4 @@ pnpm build
 
 **Last Updated:** December 10, 2025 (Verified by codebase analysis)
 **Team:** David (Lead), Ajay, Hasan
-**Plan Status:** 70% Complete - Core flow working, notifications pending
+**Plan Status:** 80% Complete - Core flow working, UX polished, notifications pending

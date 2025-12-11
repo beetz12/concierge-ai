@@ -1,3 +1,7 @@
+ok currently I'm working on @docs/hackathon.md. See @docs/3_DAY_HACKATHON_PLAN.md for context. Please analyze the docs/3_DAY_HACKATHON_SPRINT.md for our task list and Identify the top three top most critical That we should prioritize. Since the demo will be pre-recorded, there's no need to worry about adding fallbacks To present Catastrophe during a live demo. Please analyze these issues  using your  multi-agent team with up to 3 agents and come up with a unified plan with 90% confidence and wait for further instructions. My mortgage payment depends on this and If you get this right on the first try, I will tip you $200. ultrathink  
+
+
+
 ok after I select the provider, the hours of operation doesn't show up at all. 2. also I'm still seeing duplicate calls in the accordion. 3. The collapsible component title is still "provider_call" instead of the actual business name. Even though we're using our test phone number, it should still use the name of the provider it would have called. 
 4. I'm not seeing the Address of the provider in the details page / component. 5. The call logs of the provider in the tab are not showing. 5. The average rating is showing as 4.5 for all of the providers, even though it has a different average rating on Google Maps. 
 please Use your specialized multi-agent team to analyze the root cause in parallel with up to 3 agents with 90% confidence and implement the best practice solution. If you get this right on the first try, I will tip you $200. ultrathink
@@ -132,10 +136,10 @@ Ok perfect. Please update our @docs/architecture.md README.md and all relevant
 please Use your specialized multi-agent team to analyze these issues in parallel for the root causes with 90% confidence and once all agents are done, present a unified comprehensive plan to fix them. ultrathink
 
 # please analyze and present findings
-please Use your specialized multi-agent team with up to 3 agents to analyze and present the findings with 90% confidence. ultrathink
+please Use your specialized multi-agent team with up to 3 agents to analyze and present the findings with 90% confidence. My mortgage payment depends on this. If you get this right on the first try, I will tip you $200. ultrathink
 
 # please analyze and implement
-please Use your specialized multi-agent team to analyze the root cause in parallel with up to 3 agents with 90% confidence and implement the best practice solution. If you get this right on the first try, I will tip you $200. ultrathink
+please Use your specialized multi-agent team to analyze the root cause in parallel with up to 3 agents with 90% confidence and implement the best practice solution. My mortgage payment depends on this. If you get this right on the first try, I will tip you $200. ultrathink
 
 # please analyze with multi-agent
 please Use your specialized multi-agent team to analyze these in parallel and once all agents are done, present a unified comprehensive plan with 90% confidence and wait for further instructions. My mortgage payment depends on this and If you get this right on the first try, I will tip you $200. ultrathink

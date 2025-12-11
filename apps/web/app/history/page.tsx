@@ -1,13 +1,21 @@
 import React from "react";
 import Link from "next/link";
 import StatusBadge from "@/components/StatusBadge";
-import { Calendar, MapPin } from "lucide-react";
+import { Calendar, MapPin, AlertCircle, CheckCircle, XCircle } from "lucide-react";
 import { getServiceRequests } from "@/lib/supabase/queries";
 import type { RequestStatus } from "@/lib/types";
 
 export default async function RequestHistory() {
-  // Query database directly
-  const requests = await getServiceRequests();
+  // Query database directly with error handling
+  let requests: Awaited<ReturnType<typeof getServiceRequests>> = [];
+  let fetchError: string | null = null;
+
+  try {
+    requests = await getServiceRequests();
+  } catch (error) {
+    console.error("Failed to load request history:", error);
+    fetchError = "Failed to load request history. Please refresh the page.";
+  }
 
   // Sort by created_at (newest first) - already sorted by query but ensuring consistency
   const sorted = [...(requests || [])].sort(
@@ -21,12 +29,33 @@ export default async function RequestHistory() {
         Request History
       </h1>
 
+      {/* Error State */}
+      {fetchError && (
+        <div className="bg-red-500/10 border border-red-500/30 rounded-2xl p-8 text-center mb-8">
+          <AlertCircle className="w-12 h-12 text-red-400 mx-auto mb-4" />
+          <p className="text-red-400 font-medium">{fetchError}</p>
+          <Link
+            href="/history"
+            className="inline-block mt-4 px-4 py-2 bg-red-500/20 text-red-300 rounded-lg hover:bg-red-500/30 transition-colors"
+          >
+            Try Again
+          </Link>
+        </div>
+      )}
+
       <div className="bg-surface rounded-2xl border border-surface-highlight shadow-xl overflow-hidden">
-        {sorted.length === 0 ? (
+        {!fetchError && sorted.length === 0 ? (
           <div className="p-12 text-center text-slate-400">
-            No history found.
+            <p className="text-lg mb-2">No history found.</p>
+            <p className="text-sm text-slate-500">Your request history will appear here.</p>
+            <Link
+              href="/new"
+              className="inline-block mt-4 px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-500 transition-colors"
+            >
+              Create Your First Request
+            </Link>
           </div>
-        ) : (
+        ) : fetchError ? null : (
           <div className="divide-y divide-surface-highlight">
             {sorted.map((req) => {
               // Find the selected provider from the providers array
@@ -65,6 +94,51 @@ export default async function RequestHistory() {
                       {req.location && (
                         <div className="flex items-center gap-1 text-xs text-slate-500">
                           <MapPin className="w-3 h-3" /> {req.location}
+                        </div>
+                      )}
+
+                      {/* Final Outcome (Fix #5) */}
+                      {req.final_outcome && (
+                        <p className="text-sm text-slate-400 mt-2 line-clamp-2 italic">
+                          {req.final_outcome}
+                        </p>
+                      )}
+
+                      {/* Call Status Summary (Fix #6) */}
+                      {providers.length > 0 && (
+                        <div className="flex gap-2 mt-2 flex-wrap">
+                          {(() => {
+                            const successCount = providers.filter(
+                              (p) => p.call_status === "completed"
+                            ).length;
+                            const failedCount = providers.filter(
+                              (p) => p.call_status === "failed"
+                            ).length;
+                            const pendingCount = providers.filter(
+                              (p) => !p.call_status || p.call_status === "pending"
+                            ).length;
+                            return (
+                              <>
+                                {successCount > 0 && (
+                                  <span className="inline-flex items-center gap-1 text-xs bg-emerald-500/20 text-emerald-400 px-2 py-0.5 rounded">
+                                    <CheckCircle className="w-3 h-3" />
+                                    {successCount} completed
+                                  </span>
+                                )}
+                                {failedCount > 0 && (
+                                  <span className="inline-flex items-center gap-1 text-xs bg-red-500/20 text-red-400 px-2 py-0.5 rounded">
+                                    <XCircle className="w-3 h-3" />
+                                    {failedCount} failed
+                                  </span>
+                                )}
+                                {pendingCount > 0 && providers.length > pendingCount && (
+                                  <span className="text-xs bg-slate-500/20 text-slate-400 px-2 py-0.5 rounded">
+                                    {pendingCount} pending
+                                  </span>
+                                )}
+                              </>
+                            );
+                          })()}
                         </div>
                       )}
                     </div>

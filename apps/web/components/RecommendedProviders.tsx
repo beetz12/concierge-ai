@@ -113,10 +113,13 @@ const RecommendedProviders: React.FC<Props> = ({
                   )}
                 </div>
                 <div className="flex items-center gap-4 text-sm text-slate-400">
-                  <div className="flex items-center gap-1">
+                  <a
+                    href={`tel:${provider.phone}`}
+                    className="flex items-center gap-1 hover:text-primary-400 transition-colors"
+                  >
                     <Phone className="w-4 h-4" />
-                    <span>{provider.phone}</span>
-                  </div>
+                    <span>{provider.phone || "N/A"}</span>
+                  </a>
                   {provider.reviewCount && (
                     <span>({provider.reviewCount} reviews)</span>
                   )}
