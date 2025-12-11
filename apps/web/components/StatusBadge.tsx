@@ -56,7 +56,15 @@ const StatusBadge: React.FC<Props> = ({ status, size = "md" }) => {
     },
   };
 
-  const current = config[status];
+  // Fallback for unknown status values (e.g., from database strings)
+  const fallback = {
+    color: "bg-slate-500/20 text-slate-300 border-slate-500/30",
+    icon: Loader2,
+    label: String(status || "Unknown"),
+    animate: false,
+  };
+
+  const current = config[status] || fallback;
   const Icon = current.icon;
   const sizeClass = size === "sm" ? "px-2 py-0.5 text-xs" : "px-3 py-1 text-sm";
 
