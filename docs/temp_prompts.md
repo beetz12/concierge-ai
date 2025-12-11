@@ -1,3 +1,7 @@
+ ok currently I'm working on @docs/hackathon.md. See @docs/3_DAY_HACKATHON_PLAN.md for context.  I have a question about our Kestra workflow. I'm currently running Kestra in local
+  Docker, but I plan to deploy to Kestra Cloud. I currently have several scripts that are run by my local Kestra instance - see '/Users/dave/Work/concierge-ai/kestra/scripts'. How
+  will these scripts be executed by Kestra cloud? Or do I need to upload the scripts to Kestra cloud server as well?  
+  
 ok currently I'm working on @docs/hackathon.md. See @docs/3_DAY_HACKATHON_PLAN.md for context. Please analyze the docs/3_DAY_HACKATHON_SPRINT.md for our task list and Identify the top three top most critical That we should prioritize. Since the demo will be pre-recorded, there's no need to worry about adding fallbacks To present Catastrophe during a live demo. Please analyze these issues  using your  multi-agent team with up to 3 agents and come up with a unified plan with 90% confidence and wait for further instructions. My mortgage payment depends on this and If you get this right on the first try, I will tip you $200. ultrathink  
 
 

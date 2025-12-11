@@ -1,1024 +1,364 @@
-[01:33:00 UTC] INFO: request completed
-    reqId: "req-9"
-    res: {
-      "statusCode": 200
-    }
-    responseTime: 60.25883302092552
-[01:33:01 UTC] INFO: incoming request
-    reqId: "req-a"
-    req: {
-      "method": "GET",
-      "url": "/api/v1/vapi/calls/019b0b0a-2018-733a-81de-362c75c3d045",
-      "host": "localhost:8000",
-      "remoteAddress": "127.0.0.1",
-      "remotePort": 60125
-    }
-[01:33:01 UTC] WARN: Call result not found in cache
-    callId: "019b0b0a-2018-733a-81de-362c75c3d045"
-[01:33:01 UTC] INFO: request completed
-    reqId: "req-a"
-    res: {
-      "statusCode": 404
-    }
-    responseTime: 0.9723749756813049
-[01:33:03 UTC] INFO: incoming request
-    reqId: "req-b"
-    req: {
-      "method": "GET",
-      "url": "/api/v1/vapi/calls/019b0b0a-2018-733a-81de-362c75c3d045",
-      "host": "localhost:8000",
-      "remoteAddress": "127.0.0.1",
-      "remotePort": 60125
-    }
-[01:33:03 UTC] WARN: Call result not found in cache
-    callId: "019b0b0a-2018-733a-81de-362c75c3d045"
-[01:33:03 UTC] INFO: request completed
-    reqId: "req-b"
-    res: {
-      "statusCode": 404
-    }
-    responseTime: 0.9392080008983612
-[01:33:05 UTC] INFO: incoming request
-    reqId: "req-c"
-    req: {
-      "method": "GET",
-      "url": "/api/v1/vapi/calls/019b0b0a-2018-733a-81de-362c75c3d045",
-      "host": "localhost:8000",
-      "remoteAddress": "127.0.0.1",
-      "remotePort": 60125
-    }
-[01:33:05 UTC] WARN: Call result not found in cache
-    callId: "019b0b0a-2018-733a-81de-362c75c3d045"
-[01:33:05 UTC] INFO: request completed
-    reqId: "req-c"
-    res: {
-      "statusCode": 404
-    }
-    responseTime: 0.22929200530052185
-[01:33:07 UTC] INFO: incoming request
-    reqId: "req-d"
-    req: {
-      "method": "GET",
-      "url": "/api/v1/vapi/calls/019b0b0a-2018-733a-81de-362c75c3d045",
-      "host": "localhost:8000",
-      "remoteAddress": "127.0.0.1",
-      "remotePort": 60125
-    }
-[01:33:07 UTC] WARN: Call result not found in cache
-    callId: "019b0b0a-2018-733a-81de-362c75c3d045"
-[01:33:07 UTC] INFO: request completed
-    reqId: "req-d"
-    res: {
-      "statusCode": 404
-    }
-    responseTime: 0.571833997964859
-[01:33:09 UTC] INFO: incoming request
-    reqId: "req-e"
-    req: {
-      "method": "GET",
-      "url": "/api/v1/vapi/calls/019b0b0a-2018-733a-81de-362c75c3d045",
-      "host": "localhost:8000",
-      "remoteAddress": "127.0.0.1",
-      "remotePort": 60125
-    }
-[01:33:09 UTC] WARN: Call result not found in cache
-    callId: "019b0b0a-2018-733a-81de-362c75c3d045"
-[01:33:09 UTC] INFO: request completed
-    reqId: "req-e"
-    res: {
-      "statusCode": 404
-    }
-    responseTime: 0.8582089841365814
-[01:33:11 UTC] INFO: incoming request
-    reqId: "req-f"
-    req: {
-      "method": "GET",
-      "url": "/api/v1/vapi/calls/019b0b0a-2018-733a-81de-362c75c3d045",
-      "host": "localhost:8000",
-      "remoteAddress": "127.0.0.1",
-      "remotePort": 60125
-    }
-[01:33:11 UTC] WARN: Call result not found in cache
-    callId: "019b0b0a-2018-733a-81de-362c75c3d045"
-[01:33:11 UTC] INFO: request completed
-    reqId: "req-f"
-    res: {
-      "statusCode": 404
-    }
-    responseTime: 0.5807079970836639
-[01:33:13 UTC] INFO: incoming request
-    reqId: "req-g"
-    req: {
-      "method": "GET",
-      "url": "/api/v1/vapi/calls/019b0b0a-2018-733a-81de-362c75c3d045",
-      "host": "localhost:8000",
-      "remoteAddress": "127.0.0.1",
-      "remotePort": 60125
-    }
-[01:33:13 UTC] WARN: Call result not found in cache
-    callId: "019b0b0a-2018-733a-81de-362c75c3d045"
-[01:33:13 UTC] INFO: request completed
-    reqId: "req-g"
-    res: {
-      "statusCode": 404
-    }
-    responseTime: 0.48079100251197815
-[01:33:15 UTC] INFO: incoming request
-    reqId: "req-h"
-    req: {
-      "method": "GET",
-      "url": "/api/v1/vapi/calls/019b0b0a-2018-733a-81de-362c75c3d045",
-      "host": "localhost:8000",
-      "remoteAddress": "127.0.0.1",
-      "remotePort": 60125
-    }
-[01:33:15 UTC] WARN: Call result not found in cache
-    callId: "019b0b0a-2018-733a-81de-362c75c3d045"
-[01:33:15 UTC] INFO: request completed
-    reqId: "req-h"
-    res: {
-      "statusCode": 404
-    }
-    responseTime: 0.6426250040531158
-[01:33:17 UTC] INFO: incoming request
-    reqId: "req-i"
-    req: {
-      "method": "GET",
-      "url": "/api/v1/vapi/calls/019b0b0a-2018-733a-81de-362c75c3d045",
-      "host": "localhost:8000",
-      "remoteAddress": "127.0.0.1",
-      "remotePort": 60125
-    }
-[01:33:17 UTC] WARN: Call result not found in cache
-    callId: "019b0b0a-2018-733a-81de-362c75c3d045"
-[01:33:17 UTC] INFO: request completed
-    reqId: "req-i"
-    res: {
-      "statusCode": 404
-    }
-    responseTime: 0.3237909972667694
-[01:33:19 UTC] INFO: incoming request
-    reqId: "req-j"
-    req: {
-      "method": "GET",
-      "url": "/api/v1/vapi/calls/019b0b0a-2018-733a-81de-362c75c3d045",
-      "host": "localhost:8000",
-      "remoteAddress": "127.0.0.1",
-      "remotePort": 60125
-    }
-[01:33:19 UTC] WARN: Call result not found in cache
-    callId: "019b0b0a-2018-733a-81de-362c75c3d045"
-[01:33:19 UTC] INFO: request completed
-    reqId: "req-j"
-    res: {
-      "statusCode": 404
-    }
-    responseTime: 0.7887919843196869
-[01:33:21 UTC] INFO: incoming request
-    reqId: "req-k"
-    req: {
-      "method": "GET",
-      "url": "/api/v1/vapi/calls/019b0b0a-2018-733a-81de-362c75c3d045",
-      "host": "localhost:8000",
-      "remoteAddress": "127.0.0.1",
-      "remotePort": 60125
-    }
-[01:33:21 UTC] WARN: Call result not found in cache
-    callId: "019b0b0a-2018-733a-81de-362c75c3d045"
-[01:33:21 UTC] INFO: request completed
-    reqId: "req-k"
-    res: {
-      "statusCode": 404
-    }
-    responseTime: 0.46616700291633606
-[AssistantConfig] Using Gemini-generated customPrompt
-[AssistantConfig] Using Gemini-generated customPrompt
-[01:33:22 UTC] INFO: incoming request
-    reqId: "req-l"
-    req: {
-      "method": "POST",
-      "url": "/api/v1/providers/call",
-      "host": "localhost:8000",
-      "remoteAddress": "127.0.0.1",
-      "remotePort": 60309
-    }
-[01:33:22 UTC] INFO: Kestra disabled via env var, using direct VAPI
-[01:33:22 UTC] INFO: Initiating provider call
-    method: "direct_vapi"
-    provider: "One Stop Auto Care"
-    phone: "+18032374468"
-    service: "auto repair"
-    location: "los angeles CA"
-[01:33:22 UTC] INFO: Initiating direct VAPI call
-    provider: "One Stop Auto Care"
-    phone: "+18032374468"
-    service: "auto repair"
-    webhookEnabled: true
-[01:33:23 UTC] INFO: VAPI call created
-    callId: "019b0b0a-9ce6-7444-b816-8f0c0da6b079"
-    status: "queued"
-    webhookEnabled: true
-[01:33:23 UTC] INFO: incoming request
-    reqId: "req-m"
-    req: {
-      "method": "GET",
-      "url": "/api/v1/vapi/calls/019b0b0a-9ce6-7444-b816-8f0c0da6b079",
-      "host": "localhost:8000",
-      "remoteAddress": "127.0.0.1",
-      "remotePort": 60125
-    }
-[01:33:23 UTC] WARN: Call result not found in cache
-    callId: "019b0b0a-9ce6-7444-b816-8f0c0da6b079"
-[01:33:23 UTC] INFO: request completed
-    reqId: "req-m"
-    res: {
-      "statusCode": 404
-    }
-    responseTime: 0.4962500035762787
-[01:33:23 UTC] INFO: incoming request
-    reqId: "req-n"
-    req: {
-      "method": "GET",
-      "url": "/api/v1/vapi/calls/019b0b0a-2018-733a-81de-362c75c3d045",
-      "host": "localhost:8000",
-      "remoteAddress": "127.0.0.1",
-      "remotePort": 60125
-    }
-[01:33:23 UTC] WARN: Call result not found in cache
-    callId: "019b0b0a-2018-733a-81de-362c75c3d045"
-[01:33:23 UTC] INFO: request completed
-    reqId: "req-n"
-    res: {
-      "statusCode": 404
-    }
-    responseTime: 0.40745899081230164
-[01:33:25 UTC] INFO: incoming request
-    reqId: "req-o"
-    req: {
-      "method": "GET",
-      "url": "/api/v1/vapi/calls/019b0b0a-9ce6-7444-b816-8f0c0da6b079",
-      "host": "localhost:8000",
-      "remoteAddress": "127.0.0.1",
-      "remotePort": 60125
-    }
-[01:33:25 UTC] WARN: Call result not found in cache
-    callId: "019b0b0a-9ce6-7444-b816-8f0c0da6b079"
-[01:33:25 UTC] INFO: request completed
-    reqId: "req-o"
-    res: {
-      "statusCode": 404
-    }
-    responseTime: 0.8480409979820251
-[01:33:25 UTC] INFO: incoming request
-    reqId: "req-p"
-    req: {
-      "method": "POST",
-      "url": "/api/v1/vapi/webhook",
-      "host": "2ce8048103bc.ngrok-free.app",
-      "remoteAddress": "127.0.0.1",
-      "remotePort": 60321
-    }
-[01:33:25 UTC] INFO: VAPI webhook received
-    type: "status-update"
-    callId: "019b0b0a-9ce6-7444-b816-8f0c0da6b079"
-[01:33:25 UTC] INFO: request completed
-    reqId: "req-p"
-    res: {
-      "statusCode": 200
-    }
-    responseTime: 0.5635409951210022
-[01:33:25 UTC] INFO: incoming request
-    reqId: "req-q"
-    req: {
-      "method": "GET",
-      "url": "/api/v1/vapi/calls/019b0b0a-2018-733a-81de-362c75c3d045",
-      "host": "localhost:8000",
-      "remoteAddress": "127.0.0.1",
-      "remotePort": 60125
-    }
-[01:33:25 UTC] WARN: Call result not found in cache
-    callId: "019b0b0a-2018-733a-81de-362c75c3d045"
-[01:33:25 UTC] INFO: request completed
-    reqId: "req-q"
-    res: {
-      "statusCode": 404
-    }
-    responseTime: 0.46004199981689453
-[01:33:27 UTC] INFO: incoming request
-    reqId: "req-r"
-    req: {
-      "method": "GET",
-      "url": "/api/v1/vapi/calls/019b0b0a-9ce6-7444-b816-8f0c0da6b079",
-      "host": "localhost:8000",
-      "remoteAddress": "127.0.0.1",
-      "remotePort": 60125
-    }
-[01:33:27 UTC] WARN: Call result not found in cache
-    callId: "019b0b0a-9ce6-7444-b816-8f0c0da6b079"
-[01:33:27 UTC] INFO: request completed
-    reqId: "req-r"
-    res: {
-      "statusCode": 404
-    }
-    responseTime: 0.3394170105457306
-[01:33:27 UTC] INFO: incoming request
-    reqId: "req-s"
-    req: {
-      "method": "GET",
-      "url": "/api/v1/vapi/calls/019b0b0a-2018-733a-81de-362c75c3d045",
-      "host": "localhost:8000",
-      "remoteAddress": "127.0.0.1",
-      "remotePort": 60125
-    }
-[01:33:27 UTC] WARN: Call result not found in cache
-    callId: "019b0b0a-2018-733a-81de-362c75c3d045"
-[01:33:27 UTC] INFO: request completed
-    reqId: "req-s"
-    res: {
-      "statusCode": 404
-    }
-    responseTime: 0.23295798897743225
-[01:33:29 UTC] INFO: incoming request
-    reqId: "req-t"
-    req: {
-      "method": "GET",
-      "url": "/api/v1/vapi/calls/019b0b0a-9ce6-7444-b816-8f0c0da6b079",
-      "host": "localhost:8000",
-      "remoteAddress": "127.0.0.1",
-      "remotePort": 60125
-    }
-[01:33:29 UTC] WARN: Call result not found in cache
-    callId: "019b0b0a-9ce6-7444-b816-8f0c0da6b079"
-[01:33:29 UTC] INFO: request completed
-    reqId: "req-t"
-    res: {
-      "statusCode": 404
-    }
-    responseTime: 0.4360000193119049
-[01:33:29 UTC] INFO: incoming request
-    reqId: "req-u"
-    req: {
-      "method": "GET",
-      "url": "/api/v1/vapi/calls/019b0b0a-2018-733a-81de-362c75c3d045",
-      "host": "localhost:8000",
-      "remoteAddress": "127.0.0.1",
-      "remotePort": 60125
-    }
-[01:33:29 UTC] WARN: Call result not found in cache
-    callId: "019b0b0a-2018-733a-81de-362c75c3d045"
-[01:33:29 UTC] INFO: request completed
-    reqId: "req-u"
-    res: {
-      "statusCode": 404
-    }
-    responseTime: 0.3276669979095459
-[01:33:31 UTC] INFO: incoming request
-    reqId: "req-v"
-    req: {
-      "method": "GET",
-      "url": "/api/v1/vapi/calls/019b0b0a-9ce6-7444-b816-8f0c0da6b079",
-      "host": "localhost:8000",
-      "remoteAddress": "127.0.0.1",
-      "remotePort": 60125
-    }
-[01:33:31 UTC] WARN: Call result not found in cache
-    callId: "019b0b0a-9ce6-7444-b816-8f0c0da6b079"
-[01:33:31 UTC] INFO: request completed
-    reqId: "req-v"
-    res: {
-      "statusCode": 404
-    }
-    responseTime: 0.6193329989910126
-[01:33:31 UTC] INFO: incoming request
-    reqId: "req-w"
-    req: {
-      "method": "GET",
-      "url": "/api/v1/vapi/calls/019b0b0a-2018-733a-81de-362c75c3d045",
-      "host": "localhost:8000",
-      "remoteAddress": "127.0.0.1",
-      "remotePort": 60125
-    }
-[01:33:31 UTC] WARN: Call result not found in cache
-    callId: "019b0b0a-2018-733a-81de-362c75c3d045"
-[01:33:31 UTC] INFO: request completed
-    reqId: "req-w"
-    res: {
-      "statusCode": 404
-    }
-    responseTime: 0.41141602396965027
-[01:33:33 UTC] INFO: incoming request
-    reqId: "req-x"
-    req: {
-      "method": "GET",
-      "url": "/api/v1/vapi/calls/019b0b0a-9ce6-7444-b816-8f0c0da6b079",
-      "host": "localhost:8000",
-      "remoteAddress": "127.0.0.1",
-      "remotePort": 60125
-    }
-[01:33:33 UTC] WARN: Call result not found in cache
-    callId: "019b0b0a-9ce6-7444-b816-8f0c0da6b079"
-[01:33:33 UTC] INFO: request completed
-    reqId: "req-x"
-    res: {
-      "statusCode": 404
-    }
-    responseTime: 0.41508299112319946
-[01:33:33 UTC] INFO: incoming request
-    reqId: "req-y"
-    req: {
-      "method": "GET",
-      "url": "/api/v1/vapi/calls/019b0b0a-2018-733a-81de-362c75c3d045",
-      "host": "localhost:8000",
-      "remoteAddress": "127.0.0.1",
-      "remotePort": 60125
-    }
-[01:33:33 UTC] WARN: Call result not found in cache
-    callId: "019b0b0a-2018-733a-81de-362c75c3d045"
-[01:33:33 UTC] INFO: request completed
-    reqId: "req-y"
-    res: {
-      "statusCode": 404
-    }
-    responseTime: 0.4290839731693268
-[01:33:35 UTC] INFO: incoming request
-    reqId: "req-z"
-    req: {
-      "method": "GET",
-      "url": "/api/v1/vapi/calls/019b0b0a-9ce6-7444-b816-8f0c0da6b079",
-      "host": "localhost:8000",
-      "remoteAddress": "127.0.0.1",
-      "remotePort": 60125
-    }
-[01:33:35 UTC] WARN: Call result not found in cache
-    callId: "019b0b0a-9ce6-7444-b816-8f0c0da6b079"
-[01:33:35 UTC] INFO: request completed
-    reqId: "req-z"
-    res: {
-      "statusCode": 404
-    }
-    responseTime: 3.419375002384186
-[01:33:35 UTC] INFO: incoming request
-    reqId: "req-10"
-    req: {
-      "method": "GET",
-      "url": "/api/v1/vapi/calls/019b0b0a-2018-733a-81de-362c75c3d045",
-      "host": "localhost:8000",
-      "remoteAddress": "127.0.0.1",
-      "remotePort": 60125
-    }
-[01:33:35 UTC] WARN: Call result not found in cache
-    callId: "019b0b0a-2018-733a-81de-362c75c3d045"
-[01:33:35 UTC] INFO: request completed
-    reqId: "req-10"
-    res: {
-      "statusCode": 404
-    }
-    responseTime: 0.6173340082168579
-[01:33:37 UTC] INFO: incoming request
-    reqId: "req-11"
-    req: {
-      "method": "GET",
-      "url": "/api/v1/vapi/calls/019b0b0a-9ce6-7444-b816-8f0c0da6b079",
-      "host": "localhost:8000",
-      "remoteAddress": "127.0.0.1",
-      "remotePort": 60125
-    }
-[01:33:37 UTC] WARN: Call result not found in cache
-    callId: "019b0b0a-9ce6-7444-b816-8f0c0da6b079"
-[01:33:37 UTC] INFO: request completed
-    reqId: "req-11"
-    res: {
-      "statusCode": 404
-    }
-    responseTime: 0.4830840229988098
-[01:33:37 UTC] INFO: incoming request
-    reqId: "req-12"
-    req: {
-      "method": "GET",
-      "url": "/api/v1/vapi/calls/019b0b0a-2018-733a-81de-362c75c3d045",
-      "host": "localhost:8000",
-      "remoteAddress": "127.0.0.1",
-      "remotePort": 60125
-    }
-[01:33:37 UTC] WARN: Call result not found in cache
-    callId: "019b0b0a-2018-733a-81de-362c75c3d045"
-[01:33:37 UTC] INFO: request completed
-    reqId: "req-12"
-    res: {
-      "statusCode": 404
-    }
-    responseTime: 0.32074999809265137
-[01:33:39 UTC] INFO: incoming request
-    reqId: "req-13"
-    req: {
-      "method": "GET",
-      "url": "/api/v1/vapi/calls/019b0b0a-9ce6-7444-b816-8f0c0da6b079",
-      "host": "localhost:8000",
-      "remoteAddress": "127.0.0.1",
-      "remotePort": 60125
-    }
-[01:33:39 UTC] WARN: Call result not found in cache
-    callId: "019b0b0a-9ce6-7444-b816-8f0c0da6b079"
-[01:33:39 UTC] INFO: request completed
-    reqId: "req-13"
-    res: {
-      "statusCode": 404
-    }
-    responseTime: 0.4744580090045929
-[01:33:39 UTC] INFO: incoming request
-    reqId: "req-14"
-    req: {
-      "method": "GET",
-      "url": "/api/v1/vapi/calls/019b0b0a-2018-733a-81de-362c75c3d045",
-      "host": "localhost:8000",
-      "remoteAddress": "127.0.0.1",
-      "remotePort": 60125
-    }
-[01:33:39 UTC] WARN: Call result not found in cache
-    callId: "019b0b0a-2018-733a-81de-362c75c3d045"
-[01:33:39 UTC] INFO: request completed
-    reqId: "req-14"
-    res: {
-      "statusCode": 404
-    }
-    responseTime: 0.43929198384284973
-[01:33:41 UTC] INFO: incoming request
-    reqId: "req-15"
-    req: {
-      "method": "POST",
-      "url": "/api/v1/vapi/webhook",
-      "host": "2ce8048103bc.ngrok-free.app",
-      "remoteAddress": "127.0.0.1",
-      "remotePort": 60392
-    }
-[01:33:41 UTC] INFO: VAPI webhook received
-    type: "status-update"
-    callId: "019b0b0a-9ce6-7444-b816-8f0c0da6b079"
-[01:33:41 UTC] INFO: request completed
-    reqId: "req-15"
-    res: {
-      "statusCode": 200
-    }
-    responseTime: 1.3215830028057098
-[01:33:41 UTC] INFO: incoming request
-    reqId: "req-16"
-    req: {
-      "method": "GET",
-      "url": "/api/v1/vapi/calls/019b0b0a-9ce6-7444-b816-8f0c0da6b079",
-      "host": "localhost:8000",
-      "remoteAddress": "127.0.0.1",
-      "remotePort": 60125
-    }
-[01:33:41 UTC] WARN: Call result not found in cache
-    callId: "019b0b0a-9ce6-7444-b816-8f0c0da6b079"
-[01:33:41 UTC] INFO: request completed
-    reqId: "req-16"
-    res: {
-      "statusCode": 404
-    }
-    responseTime: 0.4134170114994049
-[01:33:41 UTC] INFO: incoming request
-    reqId: "req-17"
-    req: {
-      "method": "GET",
-      "url": "/api/v1/vapi/calls/019b0b0a-2018-733a-81de-362c75c3d045",
-      "host": "localhost:8000",
-      "remoteAddress": "127.0.0.1",
-      "remotePort": 60125
-    }
-[01:33:41 UTC] WARN: Call result not found in cache
-    callId: "019b0b0a-2018-733a-81de-362c75c3d045"
-[01:33:41 UTC] INFO: request completed
-    reqId: "req-17"
-    res: {
-      "statusCode": 404
-    }
-    responseTime: 0.4450419843196869
-[01:33:43 UTC] INFO: incoming request
-    reqId: "req-18"
-    req: {
-      "method": "GET",
-      "url": "/api/v1/vapi/calls/019b0b0a-9ce6-7444-b816-8f0c0da6b079",
-      "host": "localhost:8000",
-      "remoteAddress": "127.0.0.1",
-      "remotePort": 60125
-    }
-[01:33:43 UTC] WARN: Call result not found in cache
-    callId: "019b0b0a-9ce6-7444-b816-8f0c0da6b079"
-[01:33:43 UTC] INFO: request completed
-    reqId: "req-18"
-    res: {
-      "statusCode": 404
-    }
-    responseTime: 0.3725830018520355
-[01:33:43 UTC] INFO: incoming request
-    reqId: "req-19"
-    req: {
-      "method": "GET",
-      "url": "/api/v1/vapi/calls/019b0b0a-2018-733a-81de-362c75c3d045",
-      "host": "localhost:8000",
-      "remoteAddress": "127.0.0.1",
-      "remotePort": 60125
-    }
-[01:33:43 UTC] WARN: Call result not found in cache
-    callId: "019b0b0a-2018-733a-81de-362c75c3d045"
-[01:33:43 UTC] INFO: request completed
-    reqId: "req-19"
-    res: {
-      "statusCode": 404
-    }
-    responseTime: 0.4116249978542328
-[01:33:45 UTC] INFO: incoming request
-    reqId: "req-1a"
-    req: {
-      "method": "GET",
-      "url": "/api/v1/vapi/calls/019b0b0a-9ce6-7444-b816-8f0c0da6b079",
-      "host": "localhost:8000",
-      "remoteAddress": "127.0.0.1",
-      "remotePort": 60125
-    }
-[01:33:45 UTC] WARN: Call result not found in cache
-    callId: "019b0b0a-9ce6-7444-b816-8f0c0da6b079"
-[01:33:45 UTC] INFO: request completed
-    reqId: "req-1a"
-    res: {
-      "statusCode": 404
-    }
-    responseTime: 0.7723750174045563
-[01:33:45 UTC] INFO: incoming request
-    reqId: "req-1b"
-    req: {
-      "method": "GET",
-      "url": "/api/v1/vapi/calls/019b0b0a-2018-733a-81de-362c75c3d045",
-      "host": "localhost:8000",
-      "remoteAddress": "127.0.0.1",
-      "remotePort": 60125
-    }
-[01:33:45 UTC] WARN: Call result not found in cache
-    callId: "019b0b0a-2018-733a-81de-362c75c3d045"
-[01:33:45 UTC] INFO: request completed
-    reqId: "req-1b"
-    res: {
-      "statusCode": 404
-    }
-    responseTime: 0.526540994644165
-[01:33:46 UTC] INFO: incoming request
-    reqId: "req-1c"
-    req: {
-      "method": "POST",
-      "url": "/api/v1/vapi/webhook",
-      "host": "2ce8048103bc.ngrok-free.app",
-      "remoteAddress": "127.0.0.1",
-      "remotePort": 60392
-    }
-[01:33:46 UTC] INFO: VAPI webhook received
-    type: "end-of-call-report"
-    callId: "019b0b0a-9ce6-7444-b816-8f0c0da6b079"
-[01:33:46 UTC] INFO: Call result cached (partial), triggering background enrichment
-    callId: "019b0b0a-9ce6-7444-b816-8f0c0da6b079"
-    status: "completed"
-    duration: 0
-    cost: 0
-    dataStatus: "partial"
-[01:33:46 UTC] INFO: Waiting before VAPI API fetch
-    callId: "019b0b0a-9ce6-7444-b816-8f0c0da6b079"
-    attempt: 1
-    delayMs: 3000
-[01:33:46 UTC] INFO: request completed
-    reqId: "req-1c"
-    res: {
-      "statusCode": 200
-    }
-    responseTime: 2.5506669878959656
-[01:33:47 UTC] INFO: incoming request
-    reqId: "req-1d"
-    req: {
-      "method": "GET",
-      "url": "/api/v1/vapi/calls/019b0b0a-9ce6-7444-b816-8f0c0da6b079",
-      "host": "localhost:8000",
-      "remoteAddress": "127.0.0.1",
-      "remotePort": 60125
-    }
-[01:33:47 UTC] INFO: request completed
-    reqId: "req-1d"
-    res: {
-      "statusCode": 200
-    }
-    responseTime: 0.8202080130577087
-[01:33:47 UTC] INFO: incoming request
-    reqId: "req-1e"
-    req: {
-      "method": "GET",
-      "url": "/api/v1/vapi/calls/019b0b0a-2018-733a-81de-362c75c3d045",
-      "host": "localhost:8000",
-      "remoteAddress": "127.0.0.1",
-      "remotePort": 60125
-    }
-[01:33:47 UTC] WARN: Call result not found in cache
-    callId: "019b0b0a-2018-733a-81de-362c75c3d045"
-[01:33:47 UTC] INFO: request completed
-    reqId: "req-1e"
-    res: {
-      "statusCode": 404
-    }
-    responseTime: 0.3079580068588257
-[01:33:49 UTC] INFO: incoming request
-    reqId: "req-1f"
-    req: {
-      "method": "POST",
-      "url": "/api/v1/vapi/webhook",
-      "host": "2ce8048103bc.ngrok-free.app",
-      "remoteAddress": "127.0.0.1",
-      "remotePort": 60477
-    }
-[01:33:49 UTC] INFO: VAPI webhook received
-    type: "status-update"
-    callId: "019b0b0a-2018-733a-81de-362c75c3d045"
-[01:33:49 UTC] INFO: request completed
-    reqId: "req-1f"
-    res: {
-      "statusCode": 200
-    }
-    responseTime: 1.4539580047130585
-[01:33:49 UTC] INFO: Fetching call data from VAPI API
-    callId: "019b0b0a-9ce6-7444-b816-8f0c0da6b079"
-    attempt: 1
-[01:33:49 UTC] INFO: incoming request
-    reqId: "req-1g"
-    req: {
-      "method": "GET",
-      "url": "/api/v1/vapi/calls/019b0b0a-9ce6-7444-b816-8f0c0da6b079",
-      "host": "localhost:8000",
-      "remoteAddress": "127.0.0.1",
-      "remotePort": 60125
-    }
-[01:33:49 UTC] INFO: request completed
-    reqId: "req-1g"
-    res: {
-      "statusCode": 200
-    }
-    responseTime: 1.0047909915447235
-[01:33:49 UTC] INFO: incoming request
-    reqId: "req-1h"
-    req: {
-      "method": "GET",
-      "url": "/api/v1/vapi/calls/019b0b0a-2018-733a-81de-362c75c3d045",
-      "host": "localhost:8000",
-      "remoteAddress": "127.0.0.1",
-      "remotePort": 60125
-    }
-[01:33:49 UTC] WARN: Call result not found in cache
-    callId: "019b0b0a-2018-733a-81de-362c75c3d045"
-[01:33:49 UTC] INFO: request completed
-    reqId: "req-1h"
-    res: {
-      "statusCode": 404
-    }
-    responseTime: 0.26499998569488525
-[01:33:49 UTC] WARN: Too many consecutive 404s - webhook appears unavailable (is ngrok running?). Falling back to VAPI polling.
-    callId: "019b0b0a-2018-733a-81de-362c75c3d045"
-    consecutive404Count: 30
-[01:33:49 UTC] INFO: Webhook timeout, falling back to VAPI polling
-    callId: "019b0b0a-2018-733a-81de-362c75c3d045"
-[01:33:50 UTC] INFO: Call data enriched successfully from VAPI API
-    callId: "019b0b0a-9ce6-7444-b816-8f0c0da6b079"
-    transcriptLength: 244
-    hasSummary: true
-    dataStatus: "complete"
-[01:33:50 UTC] INFO: Persisting call result to database
-    callId: "019b0b0a-9ce6-7444-b816-8f0c0da6b079"
-    providerId: "291b7b67-6fa9-406d-8938-c67a80f46f8b"
-    serviceRequestId: "033499b1-efef-4f87-8674-ea816753bb34"
-    status: "completed"
-    meetsRequirements: false
-[01:33:51 UTC] INFO: Call result saved to database
-    callId: "019b0b0a-9ce6-7444-b816-8f0c0da6b079"
-    providerId: "291b7b67-6fa9-406d-8938-c67a80f46f8b"
-    serviceRequestId: "033499b1-efef-4f87-8674-ea816753bb34"
-[01:33:51 UTC] INFO: Call result persisted to database successfully
-    callId: "019b0b0a-9ce6-7444-b816-8f0c0da6b079"
-[01:33:51 UTC] INFO: incoming request
-    reqId: "req-1i"
-    req: {
-      "method": "GET",
-      "url": "/api/v1/vapi/calls/019b0b0a-9ce6-7444-b816-8f0c0da6b079",
-      "host": "localhost:8000",
-      "remoteAddress": "127.0.0.1",
-      "remotePort": 60125
-    }
-[01:33:51 UTC] INFO: request completed
-    reqId: "req-1i"
-    res: {
-      "statusCode": 200
-    }
-    responseTime: 0.7191250026226044
-[01:33:53 UTC] INFO: incoming request
-    reqId: "req-1j"
-    req: {
-      "method": "GET",
-      "url": "/api/v1/vapi/calls/019b0b0a-9ce6-7444-b816-8f0c0da6b079",
-      "host": "localhost:8000",
-      "remoteAddress": "127.0.0.1",
-      "remotePort": 60125
-    }
-[01:33:53 UTC] INFO: request completed
-    reqId: "req-1j"
-    res: {
-      "statusCode": 200
-    }
-    responseTime: 0.39524999260902405
-[01:33:55 UTC] INFO: incoming request
-    reqId: "req-1k"
-    req: {
-      "method": "GET",
-      "url": "/api/v1/vapi/calls/019b0b0a-9ce6-7444-b816-8f0c0da6b079",
-      "host": "localhost:8000",
-      "remoteAddress": "127.0.0.1",
-      "remotePort": 60125
-    }
-[01:33:55 UTC] INFO: request completed
-    reqId: "req-1k"
-    res: {
-      "statusCode": 200
-    }
-    responseTime: 0.4385420083999634
-[01:33:57 UTC] INFO: incoming request
-    reqId: "req-1l"
-    req: {
-      "method": "GET",
-      "url": "/api/v1/vapi/calls/019b0b0a-9ce6-7444-b816-8f0c0da6b079",
-      "host": "localhost:8000",
-      "remoteAddress": "127.0.0.1",
-      "remotePort": 60125
-    }
-[01:33:57 UTC] INFO: request completed
-    reqId: "req-1l"
-    res: {
-      "statusCode": 200
-    }
-    responseTime: 0.43483400344848633
-[01:33:59 UTC] INFO: incoming request
-    reqId: "req-1m"
-    req: {
-      "method": "GET",
-      "url": "/api/v1/vapi/calls/019b0b0a-9ce6-7444-b816-8f0c0da6b079",
-      "host": "localhost:8000",
-      "remoteAddress": "127.0.0.1",
-      "remotePort": 60125
-    }
-[01:33:59 UTC] INFO: request completed
-    reqId: "req-1m"
-    res: {
-      "statusCode": 200
-    }
-    responseTime: 0.3726250231266022
-[01:34:01 UTC] INFO: incoming request
-    reqId: "req-1n"
-    req: {
-      "method": "GET",
-      "url": "/api/v1/vapi/calls/019b0b0a-9ce6-7444-b816-8f0c0da6b079",
-      "host": "localhost:8000",
-      "remoteAddress": "127.0.0.1",
-      "remotePort": 60125
-    }
-[01:34:01 UTC] INFO: request completed
-    reqId: "req-1n"
-    res: {
-      "statusCode": 200
-    }
-    responseTime: 0.5617920160293579
-[01:34:03 UTC] INFO: incoming request
-    reqId: "req-1o"
-    req: {
-      "method": "GET",
-      "url": "/api/v1/vapi/calls/019b0b0a-9ce6-7444-b816-8f0c0da6b079",
-      "host": "localhost:8000",
-      "remoteAddress": "127.0.0.1",
-      "remotePort": 60125
-    }
-[01:34:03 UTC] INFO: request completed
-    reqId: "req-1o"
-    res: {
-      "statusCode": 200
-    }
-    responseTime: 0.5079590082168579
-[01:34:05 UTC] INFO: incoming request
-    reqId: "req-1p"
-    req: {
-      "method": "GET",
-      "url": "/api/v1/vapi/calls/019b0b0a-9ce6-7444-b816-8f0c0da6b079",
-      "host": "localhost:8000",
-      "remoteAddress": "127.0.0.1",
-      "remotePort": 60125
-    }
-[01:34:05 UTC] INFO: request completed
-    reqId: "req-1p"
-    res: {
-      "statusCode": 200
-    }
-    responseTime: 0.500249981880188
-[01:34:07 UTC] INFO: incoming request
-    reqId: "req-1q"
-    req: {
-      "method": "GET",
-      "url": "/api/v1/vapi/calls/019b0b0a-9ce6-7444-b816-8f0c0da6b079",
-      "host": "localhost:8000",
-      "remoteAddress": "127.0.0.1",
-      "remotePort": 60125
-    }
-[01:34:07 UTC] INFO: request completed
-    reqId: "req-1q"
-    res: {
-      "statusCode": 200
-    }
-    responseTime: 0.3988339900970459
-[01:34:09 UTC] INFO: incoming request
-    reqId: "req-1r"
-    req: {
-      "method": "GET",
-      "url": "/api/v1/vapi/calls/019b0b0a-9ce6-7444-b816-8f0c0da6b079",
-      "host": "localhost:8000",
-      "remoteAddress": "127.0.0.1",
-      "remotePort": 60125
-    }
-[01:34:09 UTC] INFO: request completed
-    reqId: "req-1r"
-    res: {
-      "statusCode": 200
-    }
-    responseTime: 0.4887079894542694
-[01:34:11 UTC] INFO: incoming request
-    reqId: "req-1s"
-    req: {
-      "method": "GET",
-      "url": "/api/v1/vapi/calls/019b0b0a-9ce6-7444-b816-8f0c0da6b079",
-      "host": "localhost:8000",
-      "remoteAddress": "127.0.0.1",
-      "remotePort": 60125
-    }
-[01:34:11 UTC] INFO: request completed
-    reqId: "req-1s"
-    res: {
-      "statusCode": 200
-    }
-    responseTime: 1.1813330054283142
-[01:34:13 UTC] INFO: incoming request
-    reqId: "req-1t"
-    req: {
-      "method": "GET",
-      "url": "/api/v1/vapi/calls/019b0b0a-9ce6-7444-b816-8f0c0da6b079",
-      "host": "localhost:8000",
-      "remoteAddress": "127.0.0.1",
-      "remotePort": 60125
-    }
-[01:34:13 UTC] INFO: request completed
-    reqId: "req-1t"
-    res: {
-      "statusCode": 200
-    }
-    responseTime: 0.5264170169830322
-[01:34:15 UTC] INFO: incoming request
-    reqId: "req-1u"
-    req: {
-      "method": "GET",
-      "url": "/api/v1/vapi/calls/019b0b0a-9ce6-7444-b816-8f0c0da6b079",
-      "host": "localhost:8000",
-      "remoteAddress": "127.0.0.1",
-      "remotePort": 60125
-    }
-[01:34:15 UTC] INFO: request completed
-    reqId: "req-1u"
-    res: {
-      "statusCode": 200
-    }
-    responseTime: 0.48166701197624207
-[01:34:17 UTC] INFO: incoming request
-    reqId: "req-1v"
-    req: {
-      "method": "GET",
-      "url": "/api/v1/vapi/calls/019b0b0a-9ce6-7444-b816-8f0c0da6b079",
-      "host": "localhost:8000",
-      "remoteAddress": "127.0.0.1",
-      "remotePort": 60125
-    }
-[01:34:17 UTC] INFO: request completed
-    reqId: "req-1v"
-    res: {
-      "statusCode": 200
-    }
-    responseTime: 0.43070799112319946
-[01:34:19 UTC] INFO: incoming request
-    reqId: "req-1w"
-    req: {
-      "method": "GET",
-      "url": "/api/v1/vapi/calls/019b0b0a-9ce6-7444-b816-8f0c0da6b079",
-      "host": "localhost:8000",
-      "remoteAddress": "127.0.0.1",
-      "remotePort": 60125
-    }
-[01:34:19 UTC] INFO: request completed
-    reqId: "req-1w"
-    res: {
-      "statusCode": 200
-    }
-    responseTime: 0.3729169964790344
+forward-logs-shared.ts:95 Download the React DevTools for a better development experience: https://react.dev/link/react-devtools
+forward-logs-shared.ts:95 [HMR] connected
+content.js:2 DEBUG: injectProviderAPI - Wallet Standard API not available
+r.onload @ content.js:2
+script
+i @ content.js:2
+forward-logs-shared.ts:95 [Fast Refresh] rebuilding
+forward-logs-shared.ts:95 [Fast Refresh] done in 185ms
+forward-logs-shared.ts:95 [Fast Refresh] rebuilding
+forward-logs-shared.ts:95 [Fast Refresh] done in 352ms
+VM2661 <anonymous>:1 Detected `scroll-behavior: smooth` on the `<html>` element. To disable smooth scrolling during route transitions, add `data-scroll-behavior="smooth"` to your <html> element. Learn more: https://nextjs.org/docs/messages/missing-data-scroll-behavior
+warn @ forward-logs-shared.ts:95
+warnOnce @ warn-once.ts:6
+disableSmoothScrollDuringRouteTransition @ disable-smooth-scroll.ts:27
+InnerScrollAndFocusHandler.handlePotentialScroll @ layout-router.tsx:247
+componentDidMount @ layout-router.tsx:293
+react_stack_bottom_frame @ react-dom-client.development.js:28039
+runWithFiberInDEV @ react-dom-client.development.js:984
+commitLayoutEffectOnFiber @ react-dom-client.development.js:15004
+recursivelyTraverseLayoutEffects @ react-dom-client.development.js:16368
+commitLayoutEffectOnFiber @ react-dom-client.development.js:14981
+recursivelyTraverseLayoutEffects @ react-dom-client.development.js:16368
+commitLayoutEffectOnFiber @ react-dom-client.development.js:14981
+recursivelyTraverseLayoutEffects @ react-dom-client.development.js:16368
+commitLayoutEffectOnFiber @ react-dom-client.development.js:15202
+recursivelyTraverseLayoutEffects @ react-dom-client.development.js:16368
+commitLayoutEffectOnFiber @ react-dom-client.development.js:15202
+recursivelyTraverseLayoutEffects @ react-dom-client.development.js:16368
+commitLayoutEffectOnFiber @ react-dom-client.development.js:14981
+recursivelyTraverseLayoutEffects @ react-dom-client.development.js:16368
+commitLayoutEffectOnFiber @ react-dom-client.development.js:14981
+recursivelyTraverseLayoutEffects @ react-dom-client.development.js:16368
+commitLayoutEffectOnFiber @ react-dom-client.development.js:15202
+recursivelyTraverseLayoutEffects @ react-dom-client.development.js:16368
+commitLayoutEffectOnFiber @ react-dom-client.development.js:15202
+recursivelyTraverseLayoutEffects @ react-dom-client.development.js:16368
+commitLayoutEffectOnFiber @ react-dom-client.development.js:15202
+recursivelyTraverseLayoutEffects @ react-dom-client.development.js:16368
+commitLayoutEffectOnFiber @ react-dom-client.development.js:14981
+recursivelyTraverseLayoutEffects @ react-dom-client.development.js:16368
+commitLayoutEffectOnFiber @ react-dom-client.development.js:14986
+recursivelyTraverseLayoutEffects @ react-dom-client.development.js:16368
+commitLayoutEffectOnFiber @ react-dom-client.development.js:14981
+recursivelyTraverseLayoutEffects @ react-dom-client.development.js:16368
+commitLayoutEffectOnFiber @ react-dom-client.development.js:14986
+recursivelyTraverseLayoutEffects @ react-dom-client.development.js:16368
+commitLayoutEffectOnFiber @ react-dom-client.development.js:14981
+recursivelyTraverseLayoutEffects @ react-dom-client.development.js:16368
+commitLayoutEffectOnFiber @ react-dom-client.development.js:14981
+recursivelyTraverseLayoutEffects @ react-dom-client.development.js:16368
+commitLayoutEffectOnFiber @ react-dom-client.development.js:14981
+recursivelyTraverseLayoutEffects @ react-dom-client.development.js:16368
+commitLayoutEffectOnFiber @ react-dom-client.development.js:14986
+recursivelyTraverseLayoutEffects @ react-dom-client.development.js:16368
+commitLayoutEffectOnFiber @ react-dom-client.development.js:14981
+recursivelyTraverseLayoutEffects @ react-dom-client.development.js:16368
+commitLayoutEffectOnFiber @ react-dom-client.development.js:14981
+recursivelyTraverseLayoutEffects @ react-dom-client.development.js:16368
+commitLayoutEffectOnFiber @ react-dom-client.development.js:15202
+recursivelyTraverseLayoutEffects @ react-dom-client.development.js:16368
+commitLayoutEffectOnFiber @ react-dom-client.development.js:15202
+recursivelyTraverseLayoutEffects @ react-dom-client.development.js:16368
+commitLayoutEffectOnFiber @ react-dom-client.development.js:14981
+recursivelyTraverseLayoutEffects @ react-dom-client.development.js:16368
+commitLayoutEffectOnFiber @ react-dom-client.development.js:14981
+recursivelyTraverseLayoutEffects @ react-dom-client.development.js:16368
+commitLayoutEffectOnFiber @ react-dom-client.development.js:15097
+recursivelyTraverseLayoutEffects @ react-dom-client.development.js:16368
+commitLayoutEffectOnFiber @ react-dom-client.development.js:15097
+recursivelyTraverseLayoutEffects @ react-dom-client.development.js:16368
+commitLayoutEffectOnFiber @ react-dom-client.development.js:15097
+recursivelyTraverseLayoutEffects @ react-dom-client.development.js:16368
+commitLayoutEffectOnFiber @ react-dom-client.development.js:15097
+recursivelyTraverseLayoutEffects @ react-dom-client.development.js:16368
+commitLayoutEffectOnFiber @ react-dom-client.development.js:14981
+recursivelyTraverseLayoutEffects @ react-dom-client.development.js:16368
+commitLayoutEffectOnFiber @ react-dom-client.development.js:15202
+recursivelyTraverseLayoutEffects @ react-dom-client.development.js:16368
+commitLayoutEffectOnFiber @ react-dom-client.development.js:14981
+recursivelyTraverseLayoutEffects @ react-dom-client.development.js:16368
+commitLayoutEffectOnFiber @ react-dom-client.development.js:15097
+recursivelyTraverseLayoutEffects @ react-dom-client.development.js:16368
+commitLayoutEffectOnFiber @ react-dom-client.development.js:15097
+recursivelyTraverseLayoutEffects @ react-dom-client.development.js:16368
+commitLayoutEffectOnFiber @ react-dom-client.development.js:15202
+recursivelyTraverseLayoutEffects @ react-dom-client.development.js:16368
+commitLayoutEffectOnFiber @ react-dom-client.development.js:14981
+recursivelyTraverseLayoutEffects @ react-dom-client.development.js:16368
+commitLayoutEffectOnFiber @ react-dom-client.development.js:14981
+recursivelyTraverseLayoutEffects @ react-dom-client.development.js:16368
+commitLayoutEffectOnFiber @ react-dom-client.development.js:14986
+recursivelyTraverseLayoutEffects @ react-dom-client.development.js:16368
+commitLayoutEffectOnFiber @ react-dom-client.development.js:14981
+recursivelyTraverseLayoutEffects @ react-dom-client.development.js:16368
+commitLayoutEffectOnFiber @ react-dom-client.development.js:14986
+recursivelyTraverseLayoutEffects @ react-dom-client.development.js:16368
+commitLayoutEffectOnFiber @ react-dom-client.development.js:14981
+recursivelyTraverseLayoutEffects @ react-dom-client.development.js:16368
+commitLayoutEffectOnFiber @ react-dom-client.development.js:14981
+recursivelyTraverseLayoutEffects @ react-dom-client.development.js:16368
+commitLayoutEffectOnFiber @ react-dom-client.development.js:14986
+recursivelyTraverseLayoutEffects @ react-dom-client.development.js:16368
+commitLayoutEffectOnFiber @ react-dom-client.development.js:14981
+recursivelyTraverseLayoutEffects @ react-dom-client.development.js:16368
+commitLayoutEffectOnFiber @ react-dom-client.development.js:15202
+recursivelyTraverseLayoutEffects @ react-dom-client.development.js:16368
+commitLayoutEffectOnFiber @ react-dom-client.development.js:15202
+recursivelyTraverseLayoutEffects @ react-dom-client.development.js:16368
+commitLayoutEffectOnFiber @ react-dom-client.development.js:15202
+recursivelyTraverseLayoutEffects @ react-dom-client.development.js:16368
+commitLayoutEffectOnFiber @ react-dom-client.development.js:15202
+recursivelyTraverseLayoutEffects @ react-dom-client.development.js:16368
+commitLayoutEffectOnFiber @ react-dom-client.development.js:15202
+recursivelyTraverseLayoutEffects @ react-dom-client.development.js:16368
+commitLayoutEffectOnFiber @ react-dom-client.development.js:15202
+recursivelyTraverseLayoutEffects @ react-dom-client.development.js:16368
+commitLayoutEffectOnFiber @ react-dom-client.development.js:15202
+recursivelyTraverseLayoutEffects @ react-dom-client.development.js:16368
+commitLayoutEffectOnFiber @ react-dom-client.development.js:14981
+recursivelyTraverseLayoutEffects @ react-dom-client.development.js:16368
+commitLayoutEffectOnFiber @ react-dom-client.development.js:14986
+recursivelyTraverseLayoutEffects @ react-dom-client.development.js:16368
+commitLayoutEffectOnFiber @ react-dom-client.development.js:14981
+recursivelyTraverseLayoutEffects @ react-dom-client.development.js:16368
+commitLayoutEffectOnFiber @ react-dom-client.development.js:14981
+recursivelyTraverseLayoutEffects @ react-dom-client.development.js:16368
+commitLayoutEffectOnFiber @ react-dom-client.development.js:14981
+recursivelyTraverseLayoutEffects @ react-dom-client.development.js:16368
+commitLayoutEffectOnFiber @ react-dom-client.development.js:15202
+recursivelyTraverseLayoutEffects @ react-dom-client.development.js:16368
+commitLayoutEffectOnFiber @ react-dom-client.development.js:14981
+recursivelyTraverseLayoutEffects @ react-dom-client.development.js:16368
+commitLayoutEffectOnFiber @ react-dom-client.development.js:14981
+recursivelyTraverseLayoutEffects @ react-dom-client.development.js:16368
+commitLayoutEffectOnFiber @ react-dom-client.development.js:15202
+recursivelyTraverseLayoutEffects @ react-dom-client.development.js:16368
+commitLayoutEffectOnFiber @ react-dom-client.development.js:15202
+recursivelyTraverseLayoutEffects @ react-dom-client.development.js:16368
+commitLayoutEffectOnFiber @ react-dom-client.development.js:15063
+flushLayoutEffects @ react-dom-client.development.js:19568
+commitRoot @ react-dom-client.development.js:19333
+commitRootWhenReady @ react-dom-client.development.js:18176
+performWorkOnRoot @ react-dom-client.development.js:18052
+performWorkOnRootViaSchedulerTask @ react-dom-client.development.js:20382
+performWorkUntilDeadline @ scheduler.development.js:45
+run @ setImmediate.js:40
+runIfPresent @ setImmediate.js:69
+onGlobalMessage @ setImmediate.js:109
+<InnerScrollAndFocusHandler>
+exports.jsx @ react-jsx-runtime.development.js:342
+ScrollAndFocusHandler @ layout-router.tsx:321
+react_stack_bottom_frame @ react-dom-client.development.js:28016
+renderWithHooksAgain @ react-dom-client.development.js:8082
+renderWithHooks @ react-dom-client.development.js:7994
+updateFunctionComponent @ react-dom-client.development.js:10499
+beginWork @ react-dom-client.development.js:12134
+runWithFiberInDEV @ react-dom-client.development.js:984
+performUnitOfWork @ react-dom-client.development.js:18995
+workLoopConcurrentByScheduler @ react-dom-client.development.js:18989
+renderRootConcurrent @ react-dom-client.development.js:18971
+performWorkOnRoot @ react-dom-client.development.js:17832
+performWorkOnRootViaSchedulerTask @ react-dom-client.development.js:20382
+performWorkUntilDeadline @ scheduler.development.js:45
+run @ setImmediate.js:40
+runIfPresent @ setImmediate.js:69
+onGlobalMessage @ setImmediate.js:109
+<ScrollAndFocusHandler>
+exports.jsxs @ react-jsx-runtime.development.js:360
+OuterLayoutRouter @ layout-router.tsx:730
+react_stack_bottom_frame @ react-dom-client.development.js:28016
+renderWithHooksAgain @ react-dom-client.development.js:8082
+renderWithHooks @ react-dom-client.development.js:7994
+updateFunctionComponent @ react-dom-client.development.js:10499
+beginWork @ react-dom-client.development.js:12083
+runWithFiberInDEV @ react-dom-client.development.js:984
+performUnitOfWork @ react-dom-client.development.js:18995
+workLoopConcurrentByScheduler @ react-dom-client.development.js:18989
+renderRootConcurrent @ react-dom-client.development.js:18971
+performWorkOnRoot @ react-dom-client.development.js:17832
+performWorkOnRootViaSchedulerTask @ react-dom-client.development.js:20382
+performWorkUntilDeadline @ scheduler.development.js:45
+run @ setImmediate.js:40
+runIfPresent @ setImmediate.js:69
+onGlobalMessage @ setImmediate.js:109
+"use client"
+Function.all @ VM2661 <anonymous>:1
+initializeElement @ react-server-dom-turbopack-client.browser.development.js:1919
+(anonymous) @ react-server-dom-turbopack-client.browser.development.js:4558
+initializeModelChunk @ react-server-dom-turbopack-client.browser.development.js:1810
+resolveModelChunk @ react-server-dom-turbopack-client.browser.development.js:1655
+processFullStringRow @ react-server-dom-turbopack-client.browser.development.js:4388
+processFullBinaryRow @ react-server-dom-turbopack-client.browser.development.js:4248
+processBinaryChunk @ react-server-dom-turbopack-client.browser.development.js:4461
+progress @ react-server-dom-turbopack-client.browser.development.js:4733
+"use server"
+ResponseInstance @ react-server-dom-turbopack-client.browser.development.js:2742
+createResponseFromOptions @ react-server-dom-turbopack-client.browser.development.js:4594
+exports.createFromFetch @ react-server-dom-turbopack-client.browser.development.js:4965
+createFromNextFetch @ fetch-server-response.ts:487
+createFetch @ fetch-server-response.ts:373
+fetchServerResponse @ fetch-server-response.ts:195
+navigateDynamicallyWithNoPrefetch @ navigation.ts:473
+navigate @ navigation.ts:206
+navigateReducer @ navigate-reducer.ts:165
+clientReducer @ router-reducer.ts:30
+action @ app-router-instance.ts:227
+runAction @ app-router-instance.ts:107
+dispatchAction @ app-router-instance.ts:184
+dispatch @ app-router-instance.ts:225
+(anonymous) @ use-action-queue.ts:51
+startTransition @ react-dom-client.development.js:9208
+dispatch @ use-action-queue.ts:50
+dispatchAppRouterAction @ use-action-queue.ts:22
+dispatchNavigateAction @ app-router-instance.ts:296
+(anonymous) @ link.tsx:293
+startTransition @ react.development.js:554
+linkClicked @ link.tsx:292
+onClick @ link.tsx:642
+executeDispatch @ react-dom-client.development.js:20541
+runWithFiberInDEV @ react-dom-client.development.js:984
+processDispatchQueue @ react-dom-client.development.js:20591
+(anonymous) @ react-dom-client.development.js:21162
+batchedUpdates$1 @ react-dom-client.development.js:3375
+dispatchEventForPluginEventSystem @ react-dom-client.development.js:20745
+dispatchEvent @ react-dom-client.development.js:25671
+dispatchDiscreteEvent @ react-dom-client.development.js:25639
+<a>
+exports.jsx @ react-jsx-runtime.development.js:342
+LinkComponent @ link.tsx:725
+react_stack_bottom_frame @ react-dom-client.development.js:28016
+renderWithHooksAgain @ react-dom-client.development.js:8082
+renderWithHooks @ react-dom-client.development.js:7994
+updateFunctionComponent @ react-dom-client.development.js:10499
+beginWork @ react-dom-client.development.js:12134
+runWithFiberInDEV @ react-dom-client.development.js:984
+performUnitOfWork @ react-dom-client.development.js:18995
+workLoopConcurrentByScheduler @ react-dom-client.development.js:18989
+renderRootConcurrent @ react-dom-client.development.js:18971
+performWorkOnRoot @ react-dom-client.development.js:17832
+performWorkOnRootViaSchedulerTask @ react-dom-client.development.js:20382
+performWorkUntilDeadline @ scheduler.development.js:45
+run @ setImmediate.js:40
+runIfPresent @ setImmediate.js:69
+onGlobalMessage @ setImmediate.js:109
+<LinkComponent>
+exports.jsxDEV @ react-jsx-dev-runtime.development.js:342
+(anonymous) @ Sidebar.tsx:47
+Sidebar @ Sidebar.tsx:46
+react_stack_bottom_frame @ react-dom-client.development.js:28016
+renderWithHooksAgain @ react-dom-client.development.js:8082
+renderWithHooks @ react-dom-client.development.js:7994
+updateFunctionComponent @ react-dom-client.development.js:10499
+beginWork @ react-dom-client.development.js:12083
+runWithFiberInDEV @ react-dom-client.development.js:984
+performUnitOfWork @ react-dom-client.development.js:18995
+workLoopConcurrentByScheduler @ react-dom-client.development.js:18989
+renderRootConcurrent @ react-dom-client.development.js:18971
+performWorkOnRoot @ react-dom-client.development.js:17832
+performWorkOnRootViaSchedulerTask @ react-dom-client.development.js:20382
+performWorkUntilDeadline @ scheduler.development.js:45
+run @ setImmediate.js:40
+runIfPresent @ setImmediate.js:69
+onGlobalMessage @ setImmediate.js:109
+"use client"
+RootLayout @ layout.tsx:21
+initializeElement @ react-server-dom-turbopack-client.browser.development.js:1920
+(anonymous) @ react-server-dom-turbopack-client.browser.development.js:4558
+initializeModelChunk @ react-server-dom-turbopack-client.browser.development.js:1810
+getOutlinedModel @ react-server-dom-turbopack-client.browser.development.js:2297
+parseModelString @ react-server-dom-turbopack-client.browser.development.js:2687
+(anonymous) @ react-server-dom-turbopack-client.browser.development.js:4489
+initializeModelChunk @ react-server-dom-turbopack-client.browser.development.js:1810
+resolveModelChunk @ react-server-dom-turbopack-client.browser.development.js:1655
+processFullStringRow @ react-server-dom-turbopack-client.browser.development.js:4388
+processFullBinaryRow @ react-server-dom-turbopack-client.browser.development.js:4248
+processBinaryChunk @ react-server-dom-turbopack-client.browser.development.js:4461
+progress @ react-server-dom-turbopack-client.browser.development.js:4733
+<RootLayout>
+initializeFakeTask @ react-server-dom-turbopack-client.browser.development.js:3338
+initializeDebugInfo @ react-server-dom-turbopack-client.browser.development.js:3363
+initializeDebugChunk @ react-server-dom-turbopack-client.browser.development.js:1754
+processFullStringRow @ react-server-dom-turbopack-client.browser.development.js:4337
+processFullBinaryRow @ react-server-dom-turbopack-client.browser.development.js:4248
+processBinaryChunk @ react-server-dom-turbopack-client.browser.development.js:4461
+progress @ react-server-dom-turbopack-client.browser.development.js:4733
+"use server"
+ResponseInstance @ react-server-dom-turbopack-client.browser.development.js:2742
+createResponseFromOptions @ react-server-dom-turbopack-client.browser.development.js:4594
+exports.createFromReadableStream @ react-server-dom-turbopack-client.browser.development.js:4998
+module evaluation @ app-index.tsx:211
+(anonymous) @ dev-base.ts:244
+runModuleExecutionHooks @ dev-base.ts:278
+instantiateModule @ dev-base.ts:238
+getOrInstantiateModuleFromParent @ dev-base.ts:162
+commonJsRequire @ runtime-utils.ts:389
+(anonymous) @ app-next-turbopack.ts:11
+(anonymous) @ app-bootstrap.ts:79
+loadScriptsInSequence @ app-bootstrap.ts:23
+appBootstrap @ app-bootstrap.ts:61
+module evaluation @ app-next-turbopack.ts:10
+(anonymous) @ dev-base.ts:244
+runModuleExecutionHooks @ dev-base.ts:278
+instantiateModule @ dev-base.ts:238
+getOrInstantiateRuntimeModule @ dev-base.ts:128
+registerChunk @ runtime-backend-dom.ts:57
+await in registerChunk
+registerChunk @ dev-base.ts:1149
+(anonymous) @ dev-backend-dom.ts:126
+(anonymous) @ dev-backend-dom.ts:126
+forward-logs-shared.ts:95 [Fast Refresh] rebuilding
+forward-logs-shared.ts:95 [Fast Refresh] done in 127ms
+page.tsx:174 [Concierge] Persisted 10 providers to database with UUIDs
+page.tsx:233 [Concierge] Starting calls to 2 providers (LIVE_CALL_ENABLED=true, ADMIN_TEST_MODE=true)
+page.tsx:238 [Concierge] ADMIN TEST MODE: Will call 2 provider(s) using test phones: +13106992541, +18032374468
+page.tsx:241 [Concierge] Phone mapping: Columbia Fire Dept. Station 16 → +13106992541, South Carolina Fire Academy → +18032374468
+page.tsx:247 [Concierge] Generating context-aware prompts with Gemini...
+page.tsx:414 Real-time update: {schema: 'public', table: 'service_requests', commit_timestamp: '2025-12-11T04:15:33.125Z', eventType: 'UPDATE', new: {…}, …}
+page.tsx:260 [Concierge] Generated home_service prompts for firefighter
+page.tsx:325 [Concierge] Starting BATCH call to 2 providers via /api/v1/providers/batch-call... (TEST MODE)
+page.tsx:328 [Concierge] Providers: Columbia Fire Dept. Station 16 @ +13106992541, South Carolina Fire Academy @ +18032374468
+page.tsx:388 [Concierge] Batch call error: Error: Batch call failed: 500 - Internal Server Error
+    at runConciergeProcess (page.tsx:362:21)
+error @ intercept-console-error.ts:42
+runConciergeProcess @ page.tsx:388
+await in runConciergeProcess
+handleSubmit @ page.tsx:105
+await in handleSubmit
+executeDispatch @ react-dom-client.development.js:20541
+runWithFiberInDEV @ react-dom-client.development.js:984
+processDispatchQueue @ react-dom-client.development.js:20591
+(anonymous) @ react-dom-client.development.js:21162
+batchedUpdates$1 @ react-dom-client.development.js:3375
+dispatchEventForPluginEventSystem @ react-dom-client.development.js:20745
+dispatchEvent @ react-dom-client.development.js:25671
+dispatchDiscreteEvent @ react-dom-client.development.js:25639
+page.tsx:422 [Concierge] TEST MODE: Skipped 8 provider(s) due to test phone limit (2 test phones available)
+page.tsx:435 [Concierge] - Columbia Fire Dept. Station 26 (Rating: 5) - Skipped
+page.tsx:435 [Concierge] - Columbia Fire Dept. Station 6 (Rating: 4.3) - Skipped
+page.tsx:435 [Concierge] - Columbia Fire Dept. Station 13 (Rating: 5) - Skipped
+page.tsx:435 [Concierge] - West Columbia Fire Department (Rating: 5) - Skipped
+page.tsx:435 [Concierge] - Columbia Fire Dept. Station 7 (Rating: 5) - Skipped
+page.tsx:435 [Concierge] - Columbia Fire Dept. Station 27 (Rating: 5) - Skipped
+page.tsx:435 [Concierge] - Columbia Fire Dept. Headquarters (Rating: 4.6) - Skipped
+page.tsx:435 [Concierge] - Columbia Fire Dept. Station 11 (Rating: 5) - Skipped
+page.tsx:508 [Concierge] Call verification passed - Mode: TEST, Completed: 8, Success: 0, Errors: 1
+forward-logs-shared.ts:95 [Fast Refresh] rebuilding
+forward-logs-shared.ts:95 [Fast Refresh] done in 348ms
+page.tsx:414 Real-time update: {schema: 'public', table: 'service_requests', commit_timestamp: '2025-12-11T04:16:06.767Z', eventType: 'UPDATE', new: {…}, …}
+page.tsx:634 Request status is ANALYZING, checking for recommendations...
+forward-logs-shared.ts:95 [Fast Refresh] rebuilding
+forward-logs-shared.ts:95 [Fast Refresh] done in 120ms
+page.tsx:179 Providers called: 0/10
+page.tsx:184 Not all providers have been called yet, waiting...
+page.tsx:414 Real-time update: {schema: 'public', table: 'service_requests', commit_timestamp: '2025-12-11T04:16:11.428Z', eventType: 'UPDATE', new: {…}, …}
+page.tsx:414 Real-time update: {schema: 'public', table: 'service_requests', commit_timestamp: '2025-12-11T04:16:11.659Z', eventType: 'UPDATE', new: {…}, …}
+forward-logs-shared.ts:95 JSON parse error: SyntaxError: Unexpected token 'M', "Mon: Open "... is not valid JSON
+page.tsx:445 Provider update received: {schema: 'public', table: 'providers', commit_timestamp: '2025-12-11T04:16:44.172Z', eventType: 'UPDATE', new: {…}, …}
+page.tsx:445 Provider update received: {schema: 'public', table: 'providers', commit_timestamp: '2025-12-11T04:16:44.363Z', eventType: 'UPDATE', new: {…}, …}
+page.tsx:414 Real-time update: {schema: 'public', table: 'interaction_logs', commit_timestamp: '2025-12-11T04:16:44.480Z', eventType: 'INSERT', new: {…}, …}
+page.tsx:414 Real-time update: {schema: 'public', table: 'interaction_logs', commit_timestamp: '2025-12-11T04:16:44.526Z', eventType: 'INSERT', new: {…}, …}
+page.tsx:179 Providers called: 2/10
+page.tsx:184 Not all providers have been called yet, waiting...
+page.tsx:179 Providers called: 2/10
+page.tsx:184 Not all providers have been called yet, waiting...

@@ -198,8 +198,10 @@ export class DirectVapiClient {
 
     while (Date.now() - startTime < timeoutMs) {
       try {
+        // Add 5-second timeout to prevent hanging connections
         const response = await fetch(
           `${this.backendUrl}/api/v1/vapi/calls/${callId}`,
+          { signal: AbortSignal.timeout(5000) }
         );
 
         if (response.ok) {

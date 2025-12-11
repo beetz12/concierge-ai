@@ -47,11 +47,15 @@ jobs:
           node-version: '20'
 
       - name: 🤖 Install Cline CLI
+        id: cline-install
         run: |
-          npm install -g @cline/cli || echo "Cline CLI installation attempted"
-          # Authenticate with Cline (if API key provided)
-          if [ -n "${{ secrets.CLINE_API_KEY }}" ]; then
-            cline auth --key "${{ secrets.CLINE_API_KEY }}" 2>/dev/null || true
+          npm install -g cline || echo "::warning::Cline CLI installation failed"
+          if command -v cline &> /dev/null; then
+            echo "installed=true" >> $GITHUB_OUTPUT
+            cline --version 2>/dev/null || echo "Cline installed (version unknown)"
+          else
+            echo "installed=false" >> $GITHUB_OUTPUT
+            echo "::warning::Cline CLI not available - AI review will be skipped"
           fi
 
       - name: 🔍 Get changed files
@@ -66,7 +70,8 @@ jobs:
 
       - name: 🔒 Run Cline Security Review
         id: security
-        if: steps.changed.outputs.has_changes == 'true'
+        if: steps.changed.outputs.has_changes == 'true' && steps.cline-install.outputs.installed == 'true'
+        continue-on-error: true
         run: |
           mkdir -p reports
 
@@ -119,8 +124,27 @@ jobs:
           # Show results
           cat reports/security-review.md || echo "No report generated"
 
+      - name: 📝 Create fallback report if Cline unavailable
+        if: steps.changed.outputs.has_changes == 'true' && steps.cline-install.outputs.installed == 'false'
+        run: |
+          mkdir -p reports
+          cat > reports/security-review.md << 'EOF'
+          ## Security Scan Results
+
+          ⚠️ **Cline CLI not available** - automated AI security review was skipped.
+
+          Please review changes manually for:
+          - 🔴 CRITICAL: Hardcoded secrets, SQL injection, auth bypass
+          - 🟠 HIGH: XSS, missing validation, insecure CORS
+          - 🟡 MEDIUM: Error exposure, missing rate limits
+
+          ---
+          *Manual review recommended*
+          EOF
+
       - name: 💬 Post Security Review Comment
         if: github.event_name == 'pull_request' && steps.changed.outputs.has_changes == 'true'
+        continue-on-error: true
         uses: actions/github-script@v7
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
@@ -150,7 +174,7 @@ jobs:
             });
 
       - name: ❌ Fail if critical issues
-        if: steps.security.outputs.critical_issues == 'true'
+        if: steps.security.outputs.critical_issues == 'true' && steps.cline-install.outputs.installed == 'true'
         run: |
           echo "❌ Critical security issues found!"
           exit 1
@@ -182,7 +206,16 @@ jobs:
           node-version: '20'
 
       - name: 🤖 Install Cline CLI
-        run: npm install -g @cline/cli || echo "Cline CLI installation attempted"
+        id: cline-install-guardian
+        run: |
+          npm install -g cline || echo "::warning::Cline CLI installation failed"
+          if command -v cline &> /dev/null; then
+            echo "installed=true" >> $GITHUB_OUTPUT
+            cline --version 2>/dev/null || echo "Cline installed (version unknown)"
+          else
+            echo "installed=false" >> $GITHUB_OUTPUT
+            echo "::warning::Cline CLI not available - workflow validation will be skipped"
+          fi
 
       - name: 🔍 Find Kestra flows
         id: flows
@@ -192,7 +225,8 @@ jobs:
           echo "has_flows=$([ -n "$FLOWS" ] && echo 'true' || echo 'false')" >> $GITHUB_OUTPUT
 
       - name: 🛡️ Validate Kestra Workflows
-        if: steps.flows.outputs.has_flows == 'true'
+        if: steps.flows.outputs.has_flows == 'true' && steps.cline-install-guardian.outputs.installed == 'true'
+        continue-on-error: true
         run: |
           mkdir -p reports
 
@@ -217,6 +251,25 @@ jobs:
           done
 
           cat reports/workflow-guardian.md
+
+      - name: 📝 Create fallback report if Cline unavailable
+        if: steps.flows.outputs.has_flows == 'true' && steps.cline-install-guardian.outputs.installed == 'false'
+        run: |
+          mkdir -p reports
+          cat > reports/workflow-guardian.md << 'EOF'
+          ## Workflow Validation Results
+
+          ⚠️ **Cline CLI not available** - automated workflow validation was skipped.
+
+          Please validate Kestra workflows manually for:
+          1. Valid YAML syntax and schema
+          2. Security (no hardcoded secrets)
+          3. Proper error handling
+          4. AI prompt quality
+
+          ---
+          *Manual validation recommended*
+          EOF
 
       - name: 📤 Upload Workflow Report
         if: always()
@@ -247,9 +300,20 @@ jobs:
           node-version: '20'
 
       - name: 🤖 Install Cline CLI
-        run: npm install -g @cline/cli || echo "Cline CLI installation attempted"
+        id: cline-install-review
+        run: |
+          npm install -g cline || echo "::warning::Cline CLI installation failed"
+          if command -v cline &> /dev/null; then
+            echo "installed=true" >> $GITHUB_OUTPUT
+            cline --version 2>/dev/null || echo "Cline installed (version unknown)"
+          else
+            echo "installed=false" >> $GITHUB_OUTPUT
+            echo "::warning::Cline CLI not available - code review will be skipped"
+          fi
 
       - name: 🔍 Run Cline Code Review
+        if: steps.cline-install-review.outputs.installed == 'true'
+        continue-on-error: true
         run: |
           mkdir -p reports
 
@@ -279,8 +343,28 @@ jobs:
 
           cat reports/code-review.md
 
+      - name: 📝 Create fallback report if Cline unavailable
+        if: steps.cline-install-review.outputs.installed == 'false'
+        run: |
+          mkdir -p reports
+          cat > reports/code-review.md << 'EOF'
+          ## Code Review Results
+
+          ⚠️ **Cline CLI not available** - automated code review was skipped.
+
+          Please review code manually for:
+          1. TypeScript best practices
+          2. React/Next.js patterns
+          3. Error handling
+          4. Performance issues
+
+          ---
+          *Manual code review recommended*
+          EOF
+
       - name: 💬 Post Code Review Comment
         if: github.event_name == 'pull_request'
+        continue-on-error: true
         uses: actions/github-script@v7
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}

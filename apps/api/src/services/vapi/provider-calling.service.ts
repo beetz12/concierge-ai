@@ -9,7 +9,7 @@ import { DirectVapiClient } from "./direct-vapi.client.js";
 import { CallResultService } from "./call-result.service.js";
 import {
   ConcurrentCallService,
-  type ConcurrentCallResult,
+  type BatchCallResult,
 } from "./concurrent-call.service.js";
 import type { CallRequest, CallResult } from "./types.js";
 
@@ -124,7 +124,7 @@ export class ProviderCallingService {
   async callProvidersBatch(
     requests: CallRequest[],
     options?: { maxConcurrent?: number },
-  ): Promise<ConcurrentCallResult> {
+  ): Promise<BatchCallResult> {
     // Validate input
     if (requests.length === 0) {
       throw new Error("No requests provided for batch calling");
@@ -144,15 +144,37 @@ export class ProviderCallingService {
 
     try {
       if (useKestra) {
-        // Use Kestra's batch flow
-        const result = await this.kestraClient.triggerContactFlow(requests, options);
+        // Use Kestra's batch flow - returns ConcurrentCallResult, needs transformation
+        const kestraResult = await this.kestraClient.triggerContactFlow(requests, options);
+
+        // Transform ConcurrentCallResult to BatchCallResult format
+        // ConcurrentCallResult has stats: { total, successful, failed, timedOut, durationMs }
+        // BatchCallResult needs: { total, completed, failed, timeout, noAnswer, voicemail, duration, averageCallDuration }
+        const concurrentResult = kestraResult as { results: CallResult[]; stats: { total: number; successful: number; failed: number; timedOut: number; durationMs: number } };
+        const totalCallDuration = concurrentResult.results.reduce((sum, r) => sum + r.duration, 0);
+
+        const batchResult: BatchCallResult = {
+          success: concurrentResult.stats.failed < concurrentResult.stats.total,
+          results: concurrentResult.results,
+          stats: {
+            total: concurrentResult.stats.total,
+            completed: concurrentResult.stats.successful,
+            failed: concurrentResult.stats.failed,
+            timeout: concurrentResult.stats.timedOut,
+            noAnswer: concurrentResult.results.filter(r => r.status === "no_answer").length,
+            voicemail: concurrentResult.results.filter(r => r.status === "voicemail").length,
+            duration: concurrentResult.stats.durationMs,
+            averageCallDuration: concurrentResult.results.length > 0 ? totalCallDuration / concurrentResult.results.length : 0,
+          },
+          errors: [],
+        };
 
         this.logger.info(
-          { stats: (result as ConcurrentCallResult).stats, method: "kestra" },
+          { stats: batchResult.stats, method: "kestra" },
           "Batch provider calls completed via Kestra",
         );
 
-        return result as ConcurrentCallResult;
+        return batchResult;
       }
 
       // Use Direct VAPI batch processing via callProvidersBatch()
@@ -166,33 +188,26 @@ export class ProviderCallingService {
         providers: requests.map(req => ({
           name: req.providerName,
           phone: req.providerPhone,
+          id: req.providerId, // Pass through provider ID for database linking
         })),
         serviceNeeded: firstRequest.serviceNeeded,
         userCriteria: firstRequest.userCriteria,
+        problemDescription: firstRequest.problemDescription, // Pass through problem description
+        clientName: firstRequest.clientName, // Pass through client name
         location: firstRequest.location,
         urgency: firstRequest.urgency,
         serviceRequestId: firstRequest.serviceRequestId,
         maxConcurrent: options?.maxConcurrent,
+        customPrompt: firstRequest.customPrompt, // Pass through custom prompt
       });
 
-      // Convert BatchCallResult to ConcurrentCallResult
-      const result: ConcurrentCallResult = {
-        results: batchResult.results,
-        stats: {
-          total: batchResult.stats.total,
-          successful: batchResult.stats.completed,
-          failed: batchResult.stats.failed,
-          timedOut: batchResult.stats.timeout,
-          durationMs: batchResult.stats.duration,
-        },
-      };
-
       this.logger.info(
-        { stats: result.stats, method: "direct_vapi" },
+        { stats: batchResult.stats, method: "direct_vapi" },
         "Batch provider calls completed via Direct VAPI",
       );
 
-      return result;
+      // Return BatchCallResult directly - matches OpenAPI schema
+      return batchResult;
     } catch (error) {
       this.logger.error(
         {

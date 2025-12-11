@@ -51,13 +51,12 @@ tasks:
         type: io.kestra.plugin.scripts.node.Commands
         containerImage: node:20-alpine
         taskRunner:
-          type: io.kestra.plugin.scripts.runner.docker.Docker
-          volumes:
-            - /Users/dave/Work/concierge-ai/kestra/scripts:/kestra
-        beforeCommands:
-          - npm install @vapi-ai/server-sdk @google/generative-ai
+        namespaceFiles:
+          enabled: true
+          include:
+            - scripts/**/*
         commands:
-          - node /kestra/call-provider.js "{{ taskrun.value.phone }}" "{{ inputs.service_needed }}" "{{ inputs.user_criteria }}" "{{ inputs.location }}" "{{ taskrun.value.name }}" "{{ inputs.urgency }}"
+          - node scripts/call-provider.js "{{ taskrun.value.phone }}" "{{ inputs.service_needed }}" "{{ inputs.user_criteria }}" "{{ inputs.location }}" "{{ taskrun.value.name }}" "{{ inputs.urgency }}"
         env:
           VAPI_API_KEY: "{{ envs.vapi_api_key }}"
           VAPI_PHONE_NUMBER_ID: "{{ envs.vapi_phone_number_id }}"

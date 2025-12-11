@@ -5,7 +5,7 @@
  */
 
 import { DirectVapiClient } from "./direct-vapi.client.js";
-import type { CallRequest, CallResult } from "./types.js";
+import type { CallRequest, CallResult, GeneratedPrompt } from "./types.js";
 
 interface Logger {
   info: (obj: Record<string, unknown>, msg?: string) => void;
@@ -19,13 +19,17 @@ export interface BatchCallOptions {
   providers: Array<{
     name: string;
     phone: string;
+    id?: string; // Provider database ID for linking call results
   }>;
   serviceNeeded: string;
   userCriteria: string;
+  problemDescription?: string; // Detailed problem description
+  clientName?: string; // Client's name for personalized greeting
   location: string;
   urgency: "immediate" | "within_24_hours" | "within_2_days" | "flexible";
   serviceRequestId?: string;
   maxConcurrent?: number; // Default: 5
+  customPrompt?: GeneratedPrompt; // Gemini-generated dynamic prompt for Direct Tasks
 }
 
 // Batch call result for high-level API
@@ -96,15 +100,19 @@ export class ConcurrentCallService {
     const errors: Array<{ provider: string; phone: string; error: string }> =
       [];
 
-    // Create call requests for all providers
+    // Create call requests for all providers with all fields
     const requests: CallRequest[] = options.providers.map((provider) => ({
       providerName: provider.name,
       providerPhone: provider.phone,
+      providerId: provider.id, // Pass through provider ID for database linking
       serviceNeeded: options.serviceNeeded,
       userCriteria: options.userCriteria,
+      problemDescription: options.problemDescription, // Pass through problem description
+      clientName: options.clientName, // Pass through client name
       location: options.location,
       urgency: options.urgency,
       serviceRequestId: options.serviceRequestId,
+      customPrompt: options.customPrompt, // Pass through custom prompt for Direct Tasks
     }));
 
     // Process requests in batches with controlled concurrency

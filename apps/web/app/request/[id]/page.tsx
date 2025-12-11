@@ -172,16 +172,31 @@ export default function RequestDetails() {
         return;
       }
 
-      // Check if all providers have been called (have call_status)
+      // Check if all INITIATED calls have completed (reached a final status)
+      // In test mode, not all providers are called - only those with test phones
+      // So we check: of the providers that were called, are all finished?
+      const finalStatuses = ["completed", "failed", "error", "timeout", "no_answer", "voicemail", "busy"];
       const calledProviders = providers.filter((p) => p.call_status);
-      const allProvidersCalled = calledProviders.length === providers.length;
-
-      console.log(
-        `Providers called: ${calledProviders.length}/${providers.length}`
+      const completedProviders = providers.filter((p) =>
+        p.call_status && finalStatuses.includes(p.call_status)
       );
 
-      if (!allProvidersCalled) {
-        console.log("Not all providers have been called yet, waiting...");
+      // All initiated calls are done when:
+      // 1. At least one provider was called (calledProviders.length > 0)
+      // 2. All called providers have reached a final status
+      const allInitiatedCallsComplete = calledProviders.length > 0 &&
+        completedProviders.length === calledProviders.length;
+
+      console.log(
+        `Call progress: ${completedProviders.length}/${calledProviders.length} calls completed (${providers.length} total providers)`
+      );
+
+      if (!allInitiatedCallsComplete) {
+        if (calledProviders.length === 0) {
+          console.log("No calls initiated yet, waiting...");
+        } else {
+          console.log(`${calledProviders.length - completedProviders.length} call(s) still in progress, waiting...`);
+        }
         return;
       }
 
@@ -890,7 +905,9 @@ export default function RequestDetails() {
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
                     </svg>
                     <p className="font-medium">Call Failed</p>
-                    <p className="text-sm text-slate-500 mt-1">Unable to complete provider calls. Please try again.</p>
+                    <p className="text-sm text-slate-500 mt-1 max-w-md mx-auto whitespace-pre-wrap break-words">
+                      {request.finalOutcome || "Unable to complete provider calls. Please try again."}
+                    </p>
                   </div>
                 ) : request.status === RequestStatus.COMPLETED ? (
                   <div className="text-slate-500">

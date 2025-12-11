@@ -24,10 +24,76 @@ export class KestraResearchClient {
   private baseUrl: string;
   private namespace: string;
   private flowId = "research_providers";
+  private tenant: string | null;
+  private apiToken: string | null;
+  private isCloudMode: boolean;
 
   constructor(private logger: Logger) {
-    this.baseUrl = process.env.KESTRA_URL || "http://localhost:8082";
+    const mode = process.env.KESTRA_MODE || "local";
+    this.isCloudMode = mode === "cloud";
+
+    if (this.isCloudMode) {
+      this.baseUrl = process.env.KESTRA_CLOUD_URL || "";
+      this.tenant = process.env.KESTRA_CLOUD_TENANT || "main";
+      this.apiToken = process.env.KESTRA_API_TOKEN || "";
+    } else {
+      this.baseUrl = process.env.KESTRA_LOCAL_URL || "http://localhost:8082";
+      this.tenant = null;
+      this.apiToken = null;
+    }
+
     this.namespace = process.env.KESTRA_NAMESPACE || "ai_concierge";
+  }
+
+  /**
+   * Build execution URL with tenant segment for cloud mode
+   */
+  private buildExecutionUrl(flowId: string): string {
+    if (this.tenant) {
+      return `${this.baseUrl}/api/v1/${this.tenant}/executions/${this.namespace}/${flowId}`;
+    }
+    return `${this.baseUrl}/api/v1/executions/${this.namespace}/${flowId}`;
+  }
+
+  /**
+   * Build status URL with tenant segment for cloud mode
+   */
+  private buildStatusUrl(executionId: string): string {
+    if (this.tenant) {
+      return `${this.baseUrl}/api/v1/${this.tenant}/executions/${executionId}`;
+    }
+    return `${this.baseUrl}/api/v1/executions/${executionId}`;
+  }
+
+  /**
+   * Build request headers with auth for cloud mode
+   */
+  private buildHeaders(isFormData: boolean = false): Record<string, string> {
+    const headers: Record<string, string> = {};
+
+    if (this.apiToken) {
+      headers["Authorization"] = `Bearer ${this.apiToken}`;
+    }
+
+    if (!isFormData) {
+      headers["Content-Type"] = "application/json";
+    }
+
+    return headers;
+  }
+
+  /**
+   * Build request body - FormData for cloud, JSON for local
+   */
+  private buildRequestBody(inputs: Record<string, unknown>): FormData | Record<string, unknown> {
+    if (this.isCloudMode) {
+      const formData = new FormData();
+      Object.entries(inputs).forEach(([key, value]) => {
+        formData.append(key, String(value));
+      });
+      return formData;
+    }
+    return inputs;
   }
 
   /**
@@ -41,6 +107,7 @@ export class KestraResearchClient {
       );
       const response = await axios.get(`${this.baseUrl}/api/v1/health`, {
         timeout,
+        headers: this.buildHeaders(),
       });
       return response.status === 200;
     } catch (error) {
@@ -99,13 +166,11 @@ export class KestraResearchClient {
       min_rating: request.minRating || 4.0,
     };
 
-    const response = await axios.post(
-      `${this.baseUrl}/api/v1/executions/${this.namespace}/${this.flowId}`,
-      inputs,
-      {
-        headers: { "Content-Type": "application/json" },
-      },
-    );
+    const url = this.buildExecutionUrl(this.flowId);
+    const body = this.buildRequestBody(inputs);
+    const headers = this.buildHeaders(this.isCloudMode);
+
+    const response = await axios.post(url, body, { headers });
 
     this.logger.info(
       {
@@ -163,7 +228,8 @@ export class KestraResearchClient {
     executionId: string,
   ): Promise<KestraExecutionStatus> {
     const response = await axios.get(
-      `${this.baseUrl}/api/v1/executions/${executionId}`,
+      this.buildStatusUrl(executionId),
+      { headers: this.buildHeaders() }
     );
     return response.data;
   }

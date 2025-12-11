@@ -46,7 +46,16 @@ jobs:
         run: pnpm install --frozen-lockfile
 
       - name: Install Cline CLI
-        run: npm install -g @cline/cli
+        id: cline-install
+        run: |
+          npm install -g cline || echo "::warning::Cline CLI installation failed"
+          if command -v cline &> /dev/null; then
+            echo "installed=true" >> $GITHUB_OUTPUT
+            cline --version 2>/dev/null || echo "Cline installed (version unknown)"
+          else
+            echo "installed=false" >> $GITHUB_OUTPUT
+            echo "::warning::Cline CLI not available - AI review will be skipped"
+          fi
         env:
           CLINE_API_KEY: ${{ secrets.CLINE_API_KEY }}
 
@@ -62,7 +71,8 @@ jobs:
 
       - name: Run Cline review
         id: cline-review
-        if: steps.changed-files.outputs.any_changed == 'true'
+        if: steps.cline-install.outputs.installed == 'true' && steps.changed-files.outputs.any_changed == 'true'
+        continue-on-error: true
         run: |
           echo "## Cline Analysis Results" > cline-results.md
           echo "" >> cline-results.md
@@ -96,7 +106,25 @@ jobs:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           script: |
             const fs = require('fs');
-            const results = fs.readFileSync('cline-results.md', 'utf8');
+            let results = '';
+
+            // Check if Cline was installed and ran successfully
+            if ('${{ steps.cline-install.outputs.installed }}' === 'true') {
+              try {
+                if (fs.existsSync('cline-results.md')) {
+                  results = fs.readFileSync('cline-results.md', 'utf8');
+                  if (!results || results.trim() === '' || results.trim() === '## Cline Analysis Results') {
+                    results = 'No issues found by Cline AI review.';
+                  }
+                } else {
+                  results = 'Cline review completed but no results file generated.';
+                }
+              } catch (error) {
+                results = `Error reading Cline results: ${error.message}`;
+              }
+            } else {
+              results = '⚠️ Cline CLI was not available for this review. Please check workflow logs for details.';
+            }
 
             const comment = `## 🤖 Cline AI Review
 
@@ -157,7 +185,16 @@ jobs:
         run: pnpm install --frozen-lockfile
 
       - name: Install Cline CLI
-        run: npm install -g @cline/cli
+        id: cline-install
+        run: |
+          npm install -g cline || echo "::warning::Cline CLI installation failed"
+          if command -v cline &> /dev/null; then
+            echo "installed=true" >> $GITHUB_OUTPUT
+            cline --version 2>/dev/null || echo "Cline installed (version unknown)"
+          else
+            echo "installed=false" >> $GITHUB_OUTPUT
+            echo "::warning::Cline CLI not available - test generation will be skipped"
+          fi
         env:
           CLINE_API_KEY: ${{ secrets.CLINE_API_KEY }}
 
@@ -170,7 +207,8 @@ jobs:
             **/*.tsx
 
       - name: Generate tests
-        if: steps.changed-files.outputs.any_changed == 'true'
+        if: steps.cline-install.outputs.installed == 'true' && steps.changed-files.outputs.any_changed == 'true'
+        continue-on-error: true
         run: |
           ./scripts/cline/generate-tests.sh --files ${{ steps.changed-files.outputs.all_changed_files }}
         env:
@@ -222,11 +260,22 @@ jobs:
         run: pnpm install --frozen-lockfile
 
       - name: Install Cline CLI
-        run: npm install -g @cline/cli
+        id: cline-install
+        run: |
+          npm install -g cline || echo "::warning::Cline CLI installation failed"
+          if command -v cline &> /dev/null; then
+            echo "installed=true" >> $GITHUB_OUTPUT
+            cline --version 2>/dev/null || echo "Cline installed (version unknown)"
+          else
+            echo "installed=false" >> $GITHUB_OUTPUT
+            echo "::warning::Cline CLI not available - documentation update will be skipped"
+          fi
         env:
           CLINE_API_KEY: ${{ secrets.CLINE_API_KEY }}
 
       - name: Update documentation
+        if: steps.cline-install.outputs.installed == 'true'
+        continue-on-error: true
         run: |
           ./scripts/cline/update-docs.sh --all
         env:
@@ -273,12 +322,22 @@ jobs:
         run: pnpm install --frozen-lockfile
 
       - name: Install Cline CLI
-        run: npm install -g @cline/cli
+        id: cline-install
+        run: |
+          npm install -g cline || echo "::warning::Cline CLI installation failed"
+          if command -v cline &> /dev/null; then
+            echo "installed=true" >> $GITHUB_OUTPUT
+            cline --version 2>/dev/null || echo "Cline installed (version unknown)"
+          else
+            echo "installed=false" >> $GITHUB_OUTPUT
+            echo "::warning::Cline CLI not available - security scan will be skipped"
+          fi
         env:
           CLINE_API_KEY: ${{ secrets.CLINE_API_KEY }}
 
       - name: Run security scan
         id: security-scan
+        if: steps.cline-install.outputs.installed == 'true'
         run: |
           ./scripts/cline/security-scan.sh --quick
         env:
@@ -301,9 +360,28 @@ jobs:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           script: |
             const fs = require('fs');
-            const reports = fs.readdirSync('security-reports');
-            const latestReport = reports.sort().reverse()[0];
-            const content = fs.readFileSync(`security-reports/${latestReport}`, 'utf8');
+            let content = '';
+
+            // Check if Cline was installed and ran successfully
+            if ('${{ steps.cline-install.outputs.installed }}' === 'true') {
+              try {
+                if (fs.existsSync('security-reports')) {
+                  const reports = fs.readdirSync('security-reports');
+                  if (reports.length > 0) {
+                    const latestReport = reports.sort().reverse()[0];
+                    content = fs.readFileSync(`security-reports/${latestReport}`, 'utf8');
+                  } else {
+                    content = 'Security scan completed but no reports were generated.';
+                  }
+                } else {
+                  content = 'Security scan completed but no reports directory found.';
+                }
+              } catch (error) {
+                content = `Error reading security reports: ${error.message}`;
+              }
+            } else {
+              content = '⚠️ Cline CLI was not available for security scanning. Please check workflow logs for details.';
+            }
 
             const comment = `## 🔒 Security Scan Results
 

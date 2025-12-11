@@ -224,10 +224,32 @@ async function main() {
     try {
         // Step 1: Load shared config and create assistant configuration
         console.log("\n[Step 1/3] Loading shared webhook config...");
-        console.log("[Config] Importing from: ../../apps/api/dist/services/vapi/webhook-config.js");
 
-        // Dynamic import of ESM module from CommonJS
-        const { createWebhookAssistantConfig } = await import('../../apps/api/dist/services/vapi/webhook-config.js');
+        // Load webhook config with fallback logic
+        let createWebhookAssistantConfig;
+
+        try {
+            // Try local scripts folder first (for Kestra Cloud)
+            try {
+                const configModule = await import('./webhook-config.js');
+                createWebhookAssistantConfig = configModule.createWebhookAssistantConfig;
+                console.log("[Config] Webhook config loaded from scripts folder (Kestra Cloud)");
+            } catch (localError) {
+                console.log("[Config] Local webhook import failed, trying monorepo path...");
+
+                // Fallback: Load from monorepo (for local development)
+                const configModule = await import('../../apps/api/dist/services/vapi/webhook-config.js');
+                createWebhookAssistantConfig = configModule.createWebhookAssistantConfig;
+                console.log("[Config] Webhook config loaded from monorepo (local development)");
+            }
+
+        } catch (error) {
+            console.error("[Config] Failed to load webhook configuration:", error.message);
+            console.error("[Config] Make sure:");
+            console.error("  - Local: Run 'pnpm --filter api build'");
+            console.error("  - Cloud: Copy webhook-config.js to scripts folder");
+            process.exit(1);
+        }
 
         console.log("[Config] Creating VAPI assistant with shared webhook config + script enhancements...");
         const assistantConfig = createEnhancedWebhookAssistantConfig(createWebhookAssistantConfig);
