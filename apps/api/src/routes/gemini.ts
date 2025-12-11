@@ -30,7 +30,7 @@ const searchProvidersSchema = z.object({
 
 const simulateCallSchema = z.object({
   providerName: z.string().min(1, "Provider name is required"),
-  userCriteria: z.string().min(1, "User criteria is required"),
+  userCriteria: z.string().default(""), // Optional - empty string allowed
   isDirect: z.boolean().default(false),
 });
 
@@ -73,7 +73,7 @@ const analyzeDirectTaskSchema = z.object({
 const analyzeResearchPromptSchema = z.object({
   serviceType: z.string().min(1, "Service type is required"),
   problemDescription: z.string().optional().default(""),
-  userCriteria: z.string().min(1, "User criteria is required"),
+  userCriteria: z.string().default(""), // Optional - empty string allowed
   location: z.string().min(1, "Location is required"),
   urgency: z.string().min(1, "Urgency is required"),
   providerName: z.string().min(1, "Provider name is required"),

@@ -23,6 +23,7 @@ import {
 import {
   createServiceRequest,
   updateServiceRequest,
+  addInteractionLog,
 } from "@/lib/actions/service-requests";
 
 // Environment toggle for live VAPI calls vs simulated calls
@@ -160,6 +161,20 @@ export default function DirectTask() {
 
           // Convert response to InteractionLog format
           log = callResponseToInteractionLog(data.name, response);
+
+          // Save interaction log to database for real-time display
+          try {
+            await addInteractionLog({
+              request_id: reqId,
+              step_name: log.stepName,
+              detail: log.detail,
+              status: log.status,
+              transcript: log.transcript,
+            });
+            console.log(`[Direct] Saved interaction log to database`);
+          } catch (dbErr) {
+            console.error("[Direct] Failed to save interaction log:", dbErr);
+          }
 
           console.log(
             `[Direct] Call to ${data.name} completed: ${log.status}`,
