@@ -343,7 +343,7 @@ tasks:
 outputs:
   - id: call_results
     type: JSON
-    value: "{{ outputs.aggregate_results.vars.output }}"
+    value: "{{ outputs.aggregate_results.vars.stdout }}"
 ```
 
 ### Step 5: Create Shared Concurrent Call Script for Kestra

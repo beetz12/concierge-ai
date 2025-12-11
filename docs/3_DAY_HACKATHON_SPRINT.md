@@ -242,6 +242,27 @@ Browser → Next.js (:3000) → /api/* rewrites → Fastify (:8000) → Services
 - `apps/api/src/services/vapi/user-notification-assistant-config.ts` (new, 126 lines)
 - `apps/api/src/services/notifications/user-notification.service.ts` (new, 166 lines)
 
+### ✅ Async Batch Call Flow (100% Complete) - Fixed Dec 11
+
+**What it fixed:** Timeout errors when starting new requests. The batch-call endpoint was synchronous (5+ min wait), causing Vercel 45-60s proxy timeout.
+
+**2025 Best Practice Implementation:**
+- `POST /api/v1/providers/batch-call-async` - Returns HTTP 202 Accepted immediately
+- `GET /api/v1/providers/batch-status/:id` - Polling fallback endpoint
+- Background processing with `setImmediate()` for I/O-bound VAPI calls
+- Three-stage call status: `queued` → `in_progress` → `completed`
+- Real-time progress via Supabase WebSocket subscriptions
+
+**Backend Changes:**
+- `apps/api/src/routes/providers.ts` - New async endpoints (lines 515-772)
+- `apps/api/src/services/vapi/call-result.service.ts` - Added `markCallInProgress()`
+- `apps/api/src/services/vapi/direct-vapi.client.ts` - Calls markCallInProgress before waiting
+
+**Frontend Changes:**
+- `apps/web/app/new/page.tsx` - Uses `/batch-call-async`, expects 202
+- `apps/web/app/request/[id]/page.tsx` - Calculates call progress from provider status
+- `apps/web/components/LiveStatus.tsx` - Displays real-time progress bar and current provider
+
 ### Database Schema (100% Complete)
 
 **Tables:** `users`, `service_requests`, `providers`, `interaction_logs`

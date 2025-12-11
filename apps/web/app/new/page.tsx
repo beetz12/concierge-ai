@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { useAppContext } from "@/lib/providers/AppProvider";
 import { RequestStatus, RequestType, ServiceRequest } from "@/lib/types";
 import { Search, MapPin, AlertCircle, Sparkles, User, Phone, MessageSquare, PhoneCall } from "lucide-react";
+import { SegmentedControl } from "@repo/ui/segmented-control";
 import {
   simulateCall,
   analyzeResearchPrompt,
@@ -362,24 +363,24 @@ export default function NewRequest() {
               : undefined,
           };
 
-          // Fire the batch call - don't await, let it run in background
-          fetch("/api/v1/providers/batch-call", {
+          // Start batch calls asynchronously - returns 202 immediately
+          fetch("/api/v1/providers/batch-call-async", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify(batchRequestBody),
           })
             .then(async (response) => {
-              if (!response.ok) {
-                const errorText = await response.text();
-                console.error(`[Concierge] Batch call returned error: ${response.status} - ${errorText}`);
-              } else {
+              if (response.status === 202) {
                 const result = await response.json();
-                console.log(`[Concierge] Batch call completed successfully. Stats:`, result.data?.stats);
+                console.log(`[Concierge] Calls accepted (execution: ${result.data?.executionId}). Providers queued:`, result.data?.providersQueued);
+              } else {
+                const errorText = await response.text();
+                console.error(`[Concierge] Failed to start async calls: ${response.status} - ${errorText}`);
               }
             })
             .catch((error) => {
-              // Only log to console - don't update UI since real-time handles that
-              console.error("[Concierge] Batch call network error (calls may still be running):", error);
+              // Network error - calls may still be running on backend
+              console.error("[Concierge] Network error starting calls (backend may still be processing):", error);
             });
 
           // Add immediate feedback log - calls are now in progress
@@ -629,32 +630,16 @@ export default function NewRequest() {
           <label className="block text-sm font-medium text-slate-300">
             How should we notify you of recommendations?
           </label>
-          <div className="flex gap-6">
-            <label className="flex items-center gap-2 cursor-pointer group">
-              <input
-                type="radio"
-                name="preferredContact"
-                value="text"
-                checked={formData.preferredContact === "text"}
-                onChange={(e) => setFormData({...formData, preferredContact: e.target.value as "phone" | "text"})}
-                className="w-4 h-4 text-primary-600 border-slate-600 focus:ring-primary-500 bg-abyss"
-              />
-              <MessageSquare className="w-4 h-4 text-slate-400 group-hover:text-primary-400 transition-colors" />
-              <span className="text-slate-200 group-hover:text-slate-100 transition-colors">Text Message (SMS)</span>
-            </label>
-            <label className="flex items-center gap-2 cursor-pointer group">
-              <input
-                type="radio"
-                name="preferredContact"
-                value="phone"
-                checked={formData.preferredContact === "phone"}
-                onChange={(e) => setFormData({...formData, preferredContact: e.target.value as "phone" | "text"})}
-                className="w-4 h-4 text-primary-600 border-slate-600 focus:ring-primary-500 bg-abyss"
-              />
-              <PhoneCall className="w-4 h-4 text-slate-400 group-hover:text-primary-400 transition-colors" />
-              <span className="text-slate-200 group-hover:text-slate-100 transition-colors">Phone Call</span>
-            </label>
-          </div>
+          <SegmentedControl
+            options={[
+              { value: "text", label: "Text (SMS)", icon: <MessageSquare className="w-5 h-5" /> },
+              { value: "phone", label: "Phone Call", icon: <PhoneCall className="w-5 h-5" /> },
+            ]}
+            value={formData.preferredContact}
+            onChange={(value) => setFormData({...formData, preferredContact: value})}
+            name="preferredContact"
+            aria-label="Preferred contact method"
+          />
 
           {/* Phone Number Input */}
           <div className="relative">

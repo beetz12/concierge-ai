@@ -17,12 +17,21 @@ interface LiveStatusProps {
     total: number;
     currentProvider?: string;
   };
+  callProgress?: {
+    total: number;
+    queued: number;
+    inProgress: number;
+    completed: number;
+    currentProviderName: string | null;
+    percent: number;
+  } | null;
 }
 
 const LiveStatus: React.FC<LiveStatusProps> = ({
   status,
   currentStep,
   progress,
+  callProgress,
 }) => {
   const getStatusConfig = () => {
     switch (status.toLowerCase()) {
@@ -87,6 +96,38 @@ const LiveStatus: React.FC<LiveStatusProps> = ({
 
   const config = getStatusConfig();
   const Icon = config.icon;
+
+  // Use callProgress for CALLING status if available
+  if (status.toLowerCase() === "calling" && callProgress) {
+    return (
+      <div
+        className={`px-4 py-3 rounded-xl border ${config.bgColor} ${config.borderColor} animate-fadeIn`}
+      >
+        <div className="text-center">
+          <div className="text-lg font-medium text-primary-400">
+            Calling Providers ({callProgress.completed}/{callProgress.total})
+          </div>
+          {callProgress.currentProviderName && (
+            <div className="text-sm text-slate-400 mt-1">
+              Currently calling: {callProgress.currentProviderName}
+            </div>
+          )}
+          {callProgress.queued > 0 && (
+            <div className="text-xs text-slate-500 mt-1">
+              {callProgress.queued} queued, {callProgress.inProgress} in progress
+            </div>
+          )}
+          {/* Progress bar */}
+          <div className="mt-3 w-full bg-slate-700 rounded-full h-2">
+            <div
+              className="bg-primary-500 h-2 rounded-full transition-all duration-500"
+              style={{ width: `${callProgress.percent}%` }}
+            />
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div

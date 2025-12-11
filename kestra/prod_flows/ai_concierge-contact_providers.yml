@@ -40,4 +40,4 @@ tasks:
 outputs:
   - id: call_result
     type: STRING
-    value: "{{ outputs.call_provider_script.vars.output }}"
+    value: "{{ outputs.call_provider_script.vars.stdout }}"
