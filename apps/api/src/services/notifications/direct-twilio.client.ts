@@ -33,6 +33,16 @@ interface NotificationResult {
   method: "direct_twilio" | "kestra" | "skipped";
 }
 
+interface ConfirmationRequest {
+  userPhone: string;
+  userName?: string;
+  providerName: string;
+  bookingDate?: string;
+  bookingTime?: string;
+  confirmationNumber?: string;
+  serviceDescription?: string;
+}
+
 export class DirectTwilioClient {
   private client: twilio.Twilio | null = null;
   private fromNumber: string;
@@ -132,6 +142,70 @@ export class DirectTwilioClient {
   }
 
   /**
+   * Send a booking confirmation SMS notification to the user
+   */
+  async sendConfirmation(
+    request: ConfirmationRequest
+  ): Promise<NotificationResult> {
+    if (!this.isAvailable() || !this.client) {
+      this.logger.warn({}, "Twilio not configured, skipping confirmation SMS");
+      return {
+        success: false,
+        error: "Twilio not configured",
+        method: "direct_twilio",
+      };
+    }
+
+    const messageBody = this.formatConfirmationMessage(request);
+
+    this.logger.info(
+      {
+        to: request.userPhone,
+        userName: request.userName,
+        provider: request.providerName,
+      },
+      "Sending booking confirmation SMS via Twilio"
+    );
+
+    try {
+      const message = await this.client.messages.create({
+        body: messageBody,
+        to: request.userPhone,
+        from: this.fromNumber,
+      });
+
+      this.logger.info(
+        {
+          messageSid: message.sid,
+          status: message.status,
+          to: request.userPhone,
+        },
+        "Confirmation SMS sent successfully"
+      );
+
+      return {
+        success: true,
+        messageSid: message.sid,
+        messageStatus: message.status,
+        method: "direct_twilio",
+      };
+    } catch (error) {
+      const errorMessage =
+        error instanceof Error ? error.message : "Unknown error";
+      this.logger.error(
+        { error: errorMessage, to: request.userPhone },
+        "Failed to send confirmation SMS"
+      );
+
+      return {
+        success: false,
+        error: errorMessage,
+        method: "direct_twilio",
+      };
+    }
+  }
+
+  /**
    * Format the SMS message with top 3 provider recommendations
    */
   private formatSmsMessage(
@@ -160,6 +234,41 @@ export class DirectTwilioClient {
 
     return message;
   }
+
+  /**
+   * Format the booking confirmation SMS message
+   */
+  private formatConfirmationMessage(request: ConfirmationRequest): string {
+    const {
+      userName,
+      providerName,
+      bookingDate,
+      bookingTime,
+      confirmationNumber,
+    } = request;
+
+    let message = `Hi${userName ? ` ${userName}` : ""}! Great news - your appointment is confirmed!\n\n`;
+    message += `Provider: ${providerName}\n`;
+
+    if (bookingDate) {
+      message += `Date: ${bookingDate}\n`;
+    }
+    if (bookingTime) {
+      message += `Time: ${bookingTime}\n`;
+    }
+    if (confirmationNumber) {
+      message += `Confirmation #: ${confirmationNumber}\n`;
+    }
+
+    message += `\nWe'll send you a reminder before your appointment.\n\n- AI Concierge`;
+
+    return message;
+  }
 }
 
-export type { NotificationRequest, NotificationResult, ProviderRecommendation };
+export type {
+  NotificationRequest,
+  NotificationResult,
+  ProviderRecommendation,
+  ConfirmationRequest,
+};

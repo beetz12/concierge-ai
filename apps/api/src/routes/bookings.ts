@@ -7,6 +7,7 @@ import { FastifyInstance } from "fastify";
 import { z } from "zod";
 import { KestraClient } from "../services/vapi/kestra.client.js";
 import { createClient as createSupabaseClient } from "@supabase/supabase-js";
+import { DirectTwilioClient } from "../services/notifications/direct-twilio.client.js";
 
 // Zod schema for booking request
 const scheduleBookingSchema = z.object({
@@ -311,6 +312,61 @@ export default async function bookingRoutes(fastify: FastifyInstance) {
               detail: `Successfully booked appointment with ${validated.providerName}. Confirmation: ${structuredData.confirmation_number || "N/A"}`,
               status: "success",
             });
+
+            // Send confirmation notification to user
+            try {
+              // Fetch service request to get user phone and contact info
+              const { data: request } = await supabase
+                .from("service_requests")
+                .select("user_phone, direct_contact_info, client_name")
+                .eq("id", validated.serviceRequestId)
+                .single();
+
+              if (request?.user_phone) {
+                const twilioClient = new DirectTwilioClient(fastify.log);
+
+                if (twilioClient.isAvailable()) {
+                  const confirmResult = await twilioClient.sendConfirmation({
+                    userPhone: request.user_phone,
+                    userName:
+                      (request.direct_contact_info as any)?.user_name ||
+                      request.client_name ||
+                      validated.customerName,
+                    providerName: validated.providerName,
+                    bookingDate: structuredData.confirmed_date,
+                    bookingTime: structuredData.confirmed_time,
+                    confirmationNumber: structuredData.confirmation_number,
+                    serviceDescription: validated.serviceDescription,
+                  });
+
+                  if (confirmResult.success) {
+                    fastify.log.info(
+                      { messageSid: confirmResult.messageSid },
+                      "Confirmation SMS sent"
+                    );
+
+                    // Log the confirmation
+                    await supabase.from("interaction_logs").insert({
+                      request_id: validated.serviceRequestId,
+                      step_name: "Confirmation SMS Sent",
+                      detail: `Booking confirmation sent via SMS to ${request.user_phone}`,
+                      status: "success",
+                    });
+                  } else {
+                    fastify.log.error(
+                      { error: confirmResult.error },
+                      "Confirmation SMS failed"
+                    );
+                  }
+                }
+              }
+            } catch (notifyError) {
+              fastify.log.error(
+                { error: notifyError },
+                "Error sending confirmation"
+              );
+              // Don't fail the booking response - confirmation is best-effort
+            }
           } else {
             // Booking failed - log it
             await supabase.from("interaction_logs").insert({
