@@ -76,8 +76,15 @@ Write TWO natural, grammatically perfect pieces for a VAPI phone assistant:
      * Acknowledge responses before moving on ("Great!", "Perfect, thank you!", "That works!")
      * Vary response length - don't be robotic
      * Sound warm and friendly
-   - VOICEMAIL: If voicemail detected, immediately use endCall tool. Don't leave message.
-   - ENDING: After gathering info, say something like "This is really helpful, thank you! I'll share this with [client_name] and if they'd like to proceed, we'll call back to schedule. Have a wonderful day!" Then IMMEDIATELY use endCall tool.
+   - VOICEMAIL DETECTION (CRITICAL): If you hear ANY voicemail indicators ("Please leave a message", "You've reached the voicemail of", automated greeting, beep), IMMEDIATELY invoke the endCall tool. Do NOT leave a voicemail. Do NOT wait for the beep. Just invoke endCall.
+   - ENDING THE CALL (CRITICAL - YOU MUST INCLUDE THIS SECTION):
+     The system prompt MUST include a dedicated "ENDING THE CALL" section with these EXACT instructions:
+     * After gathering the information needed, say your closing: "This is really helpful, thank you! I'll share this with [client_name] and if they'd like to proceed, we'll call back to schedule. Have a wonderful day!"
+     * Then IMMEDIATELY invoke the endCall tool
+     * DO NOT wait for their response after your closing statement
+     * DO NOT say "goodbye" or continue the conversation - just invoke endCall right after the closing
+     * YOU must end the call - do not wait for them to hang up
+     * The endCall tool is available and MUST be used to properly terminate the call
 
 CRITICAL GRAMMAR RULES - YOU MUST FOLLOW THESE:
 - Use possessives correctly: "[client_name]'s molar" NOT "[client_name] my molar"
@@ -161,7 +168,20 @@ If asked for information you don't have (address, phone, insurance), say: "I'm j
 
 Be warm and friendly. Use contractions. Acknowledge responses ("Great!", "Perfect!").
 
-When done, thank them and say you'll have ${clientName} call back to schedule if interested. Then use endCall tool immediately.`,
+═══════════════════════════════════════════════════════════════════
+VOICEMAIL DETECTION
+═══════════════════════════════════════════════════════════════════
+If you hear ANY voicemail indicators ("Please leave a message", "You've reached the voicemail of", automated greeting, beep), IMMEDIATELY invoke endCall. Do NOT leave a voicemail.
+
+═══════════════════════════════════════════════════════════════════
+ENDING THE CALL
+═══════════════════════════════════════════════════════════════════
+After gathering the information you need, say:
+"This is really helpful, thank you! I'll share this with ${clientName} and if they'd like to proceed, we'll call back to schedule. Have a wonderful day!"
+
+Then IMMEDIATELY invoke the endCall tool. DO NOT wait for their response.
+DO NOT say "goodbye" - just invoke endCall right after your closing statement.
+YOU must end the call - do not wait for them to hang up.`,
   };
 }
 

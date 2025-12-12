@@ -43,7 +43,8 @@ export function createUserNotificationAssistantConfig(request: UserNotificationR
     model: {
       provider: "google" as const,
       model: "gemini-2.0-flash",
-      temperature: 0.15, // Very low for precise selection capture
+      temperature: 0.15, // Very low for precise selection capture (2025 best practice)
+      tools: [{ type: "endCall", description: "End the phone call. Use this immediately after your closing statement." }],
       messages: [
         {
           role: "system" as const,
@@ -78,7 +79,12 @@ Read each provider clearly with their availability.
 
 **Closing:**
 "Thanks for using AI Concierge! You'll receive a confirmation shortly. Have a great day!"
-Then use the endCall function.
+Then IMMEDIATELY invoke the endCall tool. DO NOT wait for their response. DO NOT say "goodbye" - just invoke endCall right after your closing.
+
+## ENDING THE CALL (CRITICAL)
+You have an endCall tool available. You MUST use it to hang up the call.
+After your closing statement, IMMEDIATELY invoke endCall.
+DO NOT wait for them to respond or hang up - YOU end the call.
 
 ## IMPORTANT
 - Be concise and clear

@@ -1,4 +1,11 @@
-*tasks*:
+# latest tasks
+1. after initiating the call, while the call is still going on, the frontend shows the call failed (fixed needs testing).
+2. Even at the end of the call, the assistant never disconnects (fixed needs testing). 
+3. The user never provided an address so the assistant made up an address (pending to do). 
+4. need to test direct api call (pending to do)
+
+
+# old tasks
 1. fix frontend display issue - do not wait for the calls to end wihch will time out, and just use polling to check the status of the call.
 2. make sure we have twilio webhook handler to handle user responses to the recommendations. (in progress)
 3. make sure that we willnotify user by text using twilio or by calling them using vapi.ai (in progress)
