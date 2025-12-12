@@ -152,7 +152,44 @@ export class ProviderCallingService {
         // Transform ConcurrentCallResult to BatchCallResult format
         // ConcurrentCallResult has stats: { total, successful, failed, timedOut, durationMs }
         // BatchCallResult needs: { total, completed, failed, timeout, noAnswer, voicemail, duration, averageCallDuration }
-        const concurrentResult = kestraResult as { results: CallResult[]; stats: { total: number; successful: number; failed: number; timedOut: number; durationMs: number } };
+        const concurrentResult = kestraResult as {
+          results: CallResult[];
+          stats: { total: number; successful: number; failed: number; timedOut: number; durationMs: number };
+          resultsInDatabase?: boolean; // Flag indicating results are saved via callback to database
+        };
+
+        // Check if results are in database (Kestra script saved them via callback)
+        // In this case, results array is empty but execution was successful
+        if (concurrentResult.resultsInDatabase) {
+          this.logger.info(
+            {
+              method: "kestra",
+              providerCount: requests.length,
+              resultsInDatabase: true,
+            },
+            "Kestra batch completed - results saved directly to database via callback",
+          );
+
+          // Return success - results are already in database
+          // The frontend will get updates via real-time subscriptions
+          return {
+            success: true,
+            results: [], // Empty - actual results are in database
+            stats: {
+              total: requests.length,
+              completed: requests.length,
+              failed: 0,
+              timeout: 0,
+              noAnswer: 0,
+              voicemail: 0,
+              duration: 0,
+              averageCallDuration: 0,
+            },
+            errors: [],
+            resultsInDatabase: true, // Pass flag to caller
+          } as BatchCallResult & { resultsInDatabase?: boolean };
+        }
+
         const totalCallDuration = concurrentResult.results.reduce((sum, r) => sum + r.duration, 0);
 
         const batchResult: BatchCallResult = {

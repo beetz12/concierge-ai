@@ -182,7 +182,10 @@ export default function RequestDetails() {
   }, [request]);
 
   // Check if all provider calls are complete and generate recommendations
-  const checkAndGenerateRecommendations = useCallback(async () => {
+  // Includes retry logic for race conditions where callbacks may not have saved yet
+  const checkAndGenerateRecommendations = useCallback(async (retryCount = 0) => {
+    const MAX_RETRIES = 5; // 5 retries * 2 seconds = 10 seconds max wait
+
     // Only check once and only for valid UUIDs
     if (recommendationsChecked || !id || !isValidUuid(id) || !request) {
       return;
@@ -223,7 +226,7 @@ export default function RequestDetails() {
         completedProviders.length === calledProviders.length;
 
       console.log(
-        `Call progress: ${completedProviders.length}/${calledProviders.length} calls completed (${providers.length} total providers)`
+        `Call progress: ${completedProviders.length}/${calledProviders.length} calls completed (${providers.length} total providers) [retry ${retryCount}/${MAX_RETRIES}]`
       );
 
       if (!allInitiatedCallsComplete) {
@@ -231,6 +234,16 @@ export default function RequestDetails() {
           console.log("No calls initiated yet, waiting...");
         } else {
           console.log(`${calledProviders.length - completedProviders.length} call(s) still in progress, waiting...`);
+        }
+
+        // Retry logic: if calls are in progress and we haven't exhausted retries, schedule another check
+        if (retryCount < MAX_RETRIES && calledProviders.length > 0) {
+          console.log(`[Recommendations] Scheduling retry ${retryCount + 1}/${MAX_RETRIES} in 2 seconds...`);
+          setTimeout(() => {
+            checkAndGenerateRecommendations(retryCount + 1);
+          }, 2000);
+        } else if (retryCount >= MAX_RETRIES) {
+          console.warn("[Recommendations] Max retries reached - some calls may not have completed");
         }
         return;
       }
@@ -715,11 +728,12 @@ export default function RequestDetails() {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [request?.interactions.length]);
 
-  // Check for recommendations when status changes to ANALYZING or COMPLETED
+  // Check for recommendations when status changes to ANALYZING, RECOMMENDED, or COMPLETED
   useEffect(() => {
     if (
       request &&
       (request.status === RequestStatus.ANALYZING ||
+        request.status === RequestStatus.RECOMMENDED ||
         request.status === RequestStatus.COMPLETED) &&
       !recommendationsChecked &&
       !recommendationsLoading
@@ -735,7 +749,8 @@ export default function RequestDetails() {
   // This handles race conditions where JSONB updates don't trigger real-time subscriptions
   useEffect(() => {
     if (
-      request?.status === RequestStatus.ANALYZING &&
+      (request?.status === RequestStatus.ANALYZING ||
+        request?.status === RequestStatus.RECOMMENDED) &&
       !recommendationsChecked &&
       !recommendationsLoading
     ) {
@@ -1118,6 +1133,7 @@ export default function RequestDetails() {
 
       {/* RecommendedProviders Section */}
       {(request.status === RequestStatus.ANALYZING ||
+        request.status === RequestStatus.RECOMMENDED ||
         request.status === RequestStatus.COMPLETED) && (
         <div className="mt-8">
           {recommendationsLoading ? (
