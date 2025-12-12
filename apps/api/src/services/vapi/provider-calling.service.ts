@@ -176,6 +176,21 @@ export class ProviderCallingService {
           "Batch provider calls completed via Kestra",
         );
 
+        // CRITICAL: If ALL calls failed, throw to trigger error handler in routes/providers.ts
+        // This ensures the database status gets updated to FAILED
+        if (!batchResult.success && batchResult.stats.failed === batchResult.stats.total) {
+          const errorMsg = batchResult.results[0]?.error || 'All provider calls failed';
+          this.logger.error(
+            {
+              stats: batchResult.stats,
+              firstError: errorMsg,
+              method: "kestra"
+            },
+            "Kestra batch execution completely failed - throwing to trigger error handler",
+          );
+          throw new Error(`Kestra batch execution failed: ${errorMsg}`);
+        }
+
         return batchResult;
       }
 

@@ -5,7 +5,7 @@ description: "Call multiple service providers concurrently with controlled concu
 inputs:
   - id: providers
     type: JSON
-    description: "Array of providers: [{name: string, phone: string}]"
+    description: "Array of providers: [{name: string, phone: string, id?: string}]"
   - id: service_needed
     type: STRING
     defaults: "plumbing"
@@ -26,6 +26,10 @@ inputs:
     type: INT
     defaults: 5
     description: "Maximum number of concurrent calls (1-10)"
+  - id: service_request_id
+    type: STRING
+    defaults: ""
+    description: "Service request ID for database linking"
 
 tasks:
   - id: validate_inputs
@@ -45,18 +49,19 @@ tasks:
     type: io.kestra.plugin.core.flow.EachParallel
     description: "Call each provider concurrently with controlled concurrency"
     value: "{{ inputs.providers }}"
-    concurrencyLimit: "{{ inputs.max_concurrent }}"
+    concurrent: "{{ inputs.max_concurrent }}"
     tasks:
       - id: call_single_provider
         type: io.kestra.plugin.scripts.node.Commands
-        containerImage: node:20-alpine
-        taskRunner:
+        description: "Call provider via VAPI using Node.js script"
         namespaceFiles:
           enabled: true
           include:
             - scripts/**/*
+        beforeCommands:
+          - npm install @vapi-ai/server-sdk
         commands:
-          - node scripts/call-provider.js "{{ taskrun.value.phone }}" "{{ inputs.service_needed }}" "{{ inputs.user_criteria }}" "{{ inputs.location }}" "{{ taskrun.value.name }}" "{{ inputs.urgency }}"
+          - node scripts/call-provider.js "{{ fromJson(taskrun.value).phone }}" "{{ inputs.service_needed }}" "{{ inputs.user_criteria }}" "{{ inputs.location }}" "{{ fromJson(taskrun.value).name }}" "{{ inputs.urgency }}" "{{ fromJson(taskrun.value).id }}" "{{ inputs.service_request_id }}"
         env:
           VAPI_API_KEY: "{{ envs.vapi_api_key }}"
           VAPI_PHONE_NUMBER_ID: "{{ envs.vapi_phone_number_id }}"

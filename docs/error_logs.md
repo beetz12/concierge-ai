@@ -1,364 +1,293 @@
-forward-logs-shared.ts:95 Download the React DevTools for a better development experience: https://react.dev/link/react-devtools
-forward-logs-shared.ts:95 [HMR] connected
+# frontend logs
 content.js:2 DEBUG: injectProviderAPI - Wallet Standard API not available
 r.onload @ content.js:2
-script
-i @ content.js:2
-forward-logs-shared.ts:95 [Fast Refresh] rebuilding
-forward-logs-shared.ts:95 [Fast Refresh] done in 185ms
-forward-logs-shared.ts:95 [Fast Refresh] rebuilding
-forward-logs-shared.ts:95 [Fast Refresh] done in 352ms
-VM2661 <anonymous>:1 Detected `scroll-behavior: smooth` on the `<html>` element. To disable smooth scrolling during route transitions, add `data-scroll-behavior="smooth"` to your <html> element. Learn more: https://nextjs.org/docs/messages/missing-data-scroll-behavior
+forward-logs-shared.ts:95 Download the React DevTools for a better development experience: https://react.dev/link/react-devtools
+forward-logs-shared.ts:95 [HMR] connected
+forward-logs-shared.ts:95 Detected `scroll-behavior: smooth` on the `<html>` element. To disable smooth scrolling during route transitions, add `data-scroll-behavior="smooth"` to your <html> element. Learn more: https://nextjs.org/docs/messages/missing-data-scroll-behavior
 warn @ forward-logs-shared.ts:95
-warnOnce @ warn-once.ts:6
-disableSmoothScrollDuringRouteTransition @ disable-smooth-scroll.ts:27
-InnerScrollAndFocusHandler.handlePotentialScroll @ layout-router.tsx:247
-componentDidMount @ layout-router.tsx:293
-react_stack_bottom_frame @ react-dom-client.development.js:28039
-runWithFiberInDEV @ react-dom-client.development.js:984
-commitLayoutEffectOnFiber @ react-dom-client.development.js:15004
-recursivelyTraverseLayoutEffects @ react-dom-client.development.js:16368
-commitLayoutEffectOnFiber @ react-dom-client.development.js:14981
-recursivelyTraverseLayoutEffects @ react-dom-client.development.js:16368
-commitLayoutEffectOnFiber @ react-dom-client.development.js:14981
-recursivelyTraverseLayoutEffects @ react-dom-client.development.js:16368
-commitLayoutEffectOnFiber @ react-dom-client.development.js:15202
-recursivelyTraverseLayoutEffects @ react-dom-client.development.js:16368
-commitLayoutEffectOnFiber @ react-dom-client.development.js:15202
-recursivelyTraverseLayoutEffects @ react-dom-client.development.js:16368
-commitLayoutEffectOnFiber @ react-dom-client.development.js:14981
-recursivelyTraverseLayoutEffects @ react-dom-client.development.js:16368
-commitLayoutEffectOnFiber @ react-dom-client.development.js:14981
-recursivelyTraverseLayoutEffects @ react-dom-client.development.js:16368
-commitLayoutEffectOnFiber @ react-dom-client.development.js:15202
-recursivelyTraverseLayoutEffects @ react-dom-client.development.js:16368
-commitLayoutEffectOnFiber @ react-dom-client.development.js:15202
-recursivelyTraverseLayoutEffects @ react-dom-client.development.js:16368
-commitLayoutEffectOnFiber @ react-dom-client.development.js:15202
-recursivelyTraverseLayoutEffects @ react-dom-client.development.js:16368
-commitLayoutEffectOnFiber @ react-dom-client.development.js:14981
-recursivelyTraverseLayoutEffects @ react-dom-client.development.js:16368
-commitLayoutEffectOnFiber @ react-dom-client.development.js:14986
-recursivelyTraverseLayoutEffects @ react-dom-client.development.js:16368
-commitLayoutEffectOnFiber @ react-dom-client.development.js:14981
-recursivelyTraverseLayoutEffects @ react-dom-client.development.js:16368
-commitLayoutEffectOnFiber @ react-dom-client.development.js:14986
-recursivelyTraverseLayoutEffects @ react-dom-client.development.js:16368
-commitLayoutEffectOnFiber @ react-dom-client.development.js:14981
-recursivelyTraverseLayoutEffects @ react-dom-client.development.js:16368
-commitLayoutEffectOnFiber @ react-dom-client.development.js:14981
-recursivelyTraverseLayoutEffects @ react-dom-client.development.js:16368
-commitLayoutEffectOnFiber @ react-dom-client.development.js:14981
-recursivelyTraverseLayoutEffects @ react-dom-client.development.js:16368
-commitLayoutEffectOnFiber @ react-dom-client.development.js:14986
-recursivelyTraverseLayoutEffects @ react-dom-client.development.js:16368
-commitLayoutEffectOnFiber @ react-dom-client.development.js:14981
-recursivelyTraverseLayoutEffects @ react-dom-client.development.js:16368
-commitLayoutEffectOnFiber @ react-dom-client.development.js:14981
-recursivelyTraverseLayoutEffects @ react-dom-client.development.js:16368
-commitLayoutEffectOnFiber @ react-dom-client.development.js:15202
-recursivelyTraverseLayoutEffects @ react-dom-client.development.js:16368
-commitLayoutEffectOnFiber @ react-dom-client.development.js:15202
-recursivelyTraverseLayoutEffects @ react-dom-client.development.js:16368
-commitLayoutEffectOnFiber @ react-dom-client.development.js:14981
-recursivelyTraverseLayoutEffects @ react-dom-client.development.js:16368
-commitLayoutEffectOnFiber @ react-dom-client.development.js:14981
-recursivelyTraverseLayoutEffects @ react-dom-client.development.js:16368
-commitLayoutEffectOnFiber @ react-dom-client.development.js:15097
-recursivelyTraverseLayoutEffects @ react-dom-client.development.js:16368
-commitLayoutEffectOnFiber @ react-dom-client.development.js:15097
-recursivelyTraverseLayoutEffects @ react-dom-client.development.js:16368
-commitLayoutEffectOnFiber @ react-dom-client.development.js:15097
-recursivelyTraverseLayoutEffects @ react-dom-client.development.js:16368
-commitLayoutEffectOnFiber @ react-dom-client.development.js:15097
-recursivelyTraverseLayoutEffects @ react-dom-client.development.js:16368
-commitLayoutEffectOnFiber @ react-dom-client.development.js:14981
-recursivelyTraverseLayoutEffects @ react-dom-client.development.js:16368
-commitLayoutEffectOnFiber @ react-dom-client.development.js:15202
-recursivelyTraverseLayoutEffects @ react-dom-client.development.js:16368
-commitLayoutEffectOnFiber @ react-dom-client.development.js:14981
-recursivelyTraverseLayoutEffects @ react-dom-client.development.js:16368
-commitLayoutEffectOnFiber @ react-dom-client.development.js:15097
-recursivelyTraverseLayoutEffects @ react-dom-client.development.js:16368
-commitLayoutEffectOnFiber @ react-dom-client.development.js:15097
-recursivelyTraverseLayoutEffects @ react-dom-client.development.js:16368
-commitLayoutEffectOnFiber @ react-dom-client.development.js:15202
-recursivelyTraverseLayoutEffects @ react-dom-client.development.js:16368
-commitLayoutEffectOnFiber @ react-dom-client.development.js:14981
-recursivelyTraverseLayoutEffects @ react-dom-client.development.js:16368
-commitLayoutEffectOnFiber @ react-dom-client.development.js:14981
-recursivelyTraverseLayoutEffects @ react-dom-client.development.js:16368
-commitLayoutEffectOnFiber @ react-dom-client.development.js:14986
-recursivelyTraverseLayoutEffects @ react-dom-client.development.js:16368
-commitLayoutEffectOnFiber @ react-dom-client.development.js:14981
-recursivelyTraverseLayoutEffects @ react-dom-client.development.js:16368
-commitLayoutEffectOnFiber @ react-dom-client.development.js:14986
-recursivelyTraverseLayoutEffects @ react-dom-client.development.js:16368
-commitLayoutEffectOnFiber @ react-dom-client.development.js:14981
-recursivelyTraverseLayoutEffects @ react-dom-client.development.js:16368
-commitLayoutEffectOnFiber @ react-dom-client.development.js:14981
-recursivelyTraverseLayoutEffects @ react-dom-client.development.js:16368
-commitLayoutEffectOnFiber @ react-dom-client.development.js:14986
-recursivelyTraverseLayoutEffects @ react-dom-client.development.js:16368
-commitLayoutEffectOnFiber @ react-dom-client.development.js:14981
-recursivelyTraverseLayoutEffects @ react-dom-client.development.js:16368
-commitLayoutEffectOnFiber @ react-dom-client.development.js:15202
-recursivelyTraverseLayoutEffects @ react-dom-client.development.js:16368
-commitLayoutEffectOnFiber @ react-dom-client.development.js:15202
-recursivelyTraverseLayoutEffects @ react-dom-client.development.js:16368
-commitLayoutEffectOnFiber @ react-dom-client.development.js:15202
-recursivelyTraverseLayoutEffects @ react-dom-client.development.js:16368
-commitLayoutEffectOnFiber @ react-dom-client.development.js:15202
-recursivelyTraverseLayoutEffects @ react-dom-client.development.js:16368
-commitLayoutEffectOnFiber @ react-dom-client.development.js:15202
-recursivelyTraverseLayoutEffects @ react-dom-client.development.js:16368
-commitLayoutEffectOnFiber @ react-dom-client.development.js:15202
-recursivelyTraverseLayoutEffects @ react-dom-client.development.js:16368
-commitLayoutEffectOnFiber @ react-dom-client.development.js:15202
-recursivelyTraverseLayoutEffects @ react-dom-client.development.js:16368
-commitLayoutEffectOnFiber @ react-dom-client.development.js:14981
-recursivelyTraverseLayoutEffects @ react-dom-client.development.js:16368
-commitLayoutEffectOnFiber @ react-dom-client.development.js:14986
-recursivelyTraverseLayoutEffects @ react-dom-client.development.js:16368
-commitLayoutEffectOnFiber @ react-dom-client.development.js:14981
-recursivelyTraverseLayoutEffects @ react-dom-client.development.js:16368
-commitLayoutEffectOnFiber @ react-dom-client.development.js:14981
-recursivelyTraverseLayoutEffects @ react-dom-client.development.js:16368
-commitLayoutEffectOnFiber @ react-dom-client.development.js:14981
-recursivelyTraverseLayoutEffects @ react-dom-client.development.js:16368
-commitLayoutEffectOnFiber @ react-dom-client.development.js:15202
-recursivelyTraverseLayoutEffects @ react-dom-client.development.js:16368
-commitLayoutEffectOnFiber @ react-dom-client.development.js:14981
-recursivelyTraverseLayoutEffects @ react-dom-client.development.js:16368
-commitLayoutEffectOnFiber @ react-dom-client.development.js:14981
-recursivelyTraverseLayoutEffects @ react-dom-client.development.js:16368
-commitLayoutEffectOnFiber @ react-dom-client.development.js:15202
-recursivelyTraverseLayoutEffects @ react-dom-client.development.js:16368
-commitLayoutEffectOnFiber @ react-dom-client.development.js:15202
-recursivelyTraverseLayoutEffects @ react-dom-client.development.js:16368
-commitLayoutEffectOnFiber @ react-dom-client.development.js:15063
-flushLayoutEffects @ react-dom-client.development.js:19568
-commitRoot @ react-dom-client.development.js:19333
-commitRootWhenReady @ react-dom-client.development.js:18176
-performWorkOnRoot @ react-dom-client.development.js:18052
-performWorkOnRootViaSchedulerTask @ react-dom-client.development.js:20382
-performWorkUntilDeadline @ scheduler.development.js:45
-run @ setImmediate.js:40
-runIfPresent @ setImmediate.js:69
-onGlobalMessage @ setImmediate.js:109
-<InnerScrollAndFocusHandler>
-exports.jsx @ react-jsx-runtime.development.js:342
-ScrollAndFocusHandler @ layout-router.tsx:321
-react_stack_bottom_frame @ react-dom-client.development.js:28016
-renderWithHooksAgain @ react-dom-client.development.js:8082
-renderWithHooks @ react-dom-client.development.js:7994
-updateFunctionComponent @ react-dom-client.development.js:10499
-beginWork @ react-dom-client.development.js:12134
-runWithFiberInDEV @ react-dom-client.development.js:984
-performUnitOfWork @ react-dom-client.development.js:18995
-workLoopConcurrentByScheduler @ react-dom-client.development.js:18989
-renderRootConcurrent @ react-dom-client.development.js:18971
-performWorkOnRoot @ react-dom-client.development.js:17832
-performWorkOnRootViaSchedulerTask @ react-dom-client.development.js:20382
-performWorkUntilDeadline @ scheduler.development.js:45
-run @ setImmediate.js:40
-runIfPresent @ setImmediate.js:69
-onGlobalMessage @ setImmediate.js:109
-<ScrollAndFocusHandler>
-exports.jsxs @ react-jsx-runtime.development.js:360
-OuterLayoutRouter @ layout-router.tsx:730
-react_stack_bottom_frame @ react-dom-client.development.js:28016
-renderWithHooksAgain @ react-dom-client.development.js:8082
-renderWithHooks @ react-dom-client.development.js:7994
-updateFunctionComponent @ react-dom-client.development.js:10499
-beginWork @ react-dom-client.development.js:12083
-runWithFiberInDEV @ react-dom-client.development.js:984
-performUnitOfWork @ react-dom-client.development.js:18995
-workLoopConcurrentByScheduler @ react-dom-client.development.js:18989
-renderRootConcurrent @ react-dom-client.development.js:18971
-performWorkOnRoot @ react-dom-client.development.js:17832
-performWorkOnRootViaSchedulerTask @ react-dom-client.development.js:20382
-performWorkUntilDeadline @ scheduler.development.js:45
-run @ setImmediate.js:40
-runIfPresent @ setImmediate.js:69
-onGlobalMessage @ setImmediate.js:109
-"use client"
-Function.all @ VM2661 <anonymous>:1
-initializeElement @ react-server-dom-turbopack-client.browser.development.js:1919
-(anonymous) @ react-server-dom-turbopack-client.browser.development.js:4558
-initializeModelChunk @ react-server-dom-turbopack-client.browser.development.js:1810
-resolveModelChunk @ react-server-dom-turbopack-client.browser.development.js:1655
-processFullStringRow @ react-server-dom-turbopack-client.browser.development.js:4388
-processFullBinaryRow @ react-server-dom-turbopack-client.browser.development.js:4248
-processBinaryChunk @ react-server-dom-turbopack-client.browser.development.js:4461
-progress @ react-server-dom-turbopack-client.browser.development.js:4733
-"use server"
-ResponseInstance @ react-server-dom-turbopack-client.browser.development.js:2742
-createResponseFromOptions @ react-server-dom-turbopack-client.browser.development.js:4594
-exports.createFromFetch @ react-server-dom-turbopack-client.browser.development.js:4965
-createFromNextFetch @ fetch-server-response.ts:487
-createFetch @ fetch-server-response.ts:373
-fetchServerResponse @ fetch-server-response.ts:195
-navigateDynamicallyWithNoPrefetch @ navigation.ts:473
-navigate @ navigation.ts:206
-navigateReducer @ navigate-reducer.ts:165
-clientReducer @ router-reducer.ts:30
-action @ app-router-instance.ts:227
-runAction @ app-router-instance.ts:107
-dispatchAction @ app-router-instance.ts:184
-dispatch @ app-router-instance.ts:225
-(anonymous) @ use-action-queue.ts:51
-startTransition @ react-dom-client.development.js:9208
-dispatch @ use-action-queue.ts:50
-dispatchAppRouterAction @ use-action-queue.ts:22
-dispatchNavigateAction @ app-router-instance.ts:296
-(anonymous) @ link.tsx:293
-startTransition @ react.development.js:554
-linkClicked @ link.tsx:292
-onClick @ link.tsx:642
-executeDispatch @ react-dom-client.development.js:20541
-runWithFiberInDEV @ react-dom-client.development.js:984
-processDispatchQueue @ react-dom-client.development.js:20591
-(anonymous) @ react-dom-client.development.js:21162
-batchedUpdates$1 @ react-dom-client.development.js:3375
-dispatchEventForPluginEventSystem @ react-dom-client.development.js:20745
-dispatchEvent @ react-dom-client.development.js:25671
-dispatchDiscreteEvent @ react-dom-client.development.js:25639
-<a>
-exports.jsx @ react-jsx-runtime.development.js:342
-LinkComponent @ link.tsx:725
-react_stack_bottom_frame @ react-dom-client.development.js:28016
-renderWithHooksAgain @ react-dom-client.development.js:8082
-renderWithHooks @ react-dom-client.development.js:7994
-updateFunctionComponent @ react-dom-client.development.js:10499
-beginWork @ react-dom-client.development.js:12134
-runWithFiberInDEV @ react-dom-client.development.js:984
-performUnitOfWork @ react-dom-client.development.js:18995
-workLoopConcurrentByScheduler @ react-dom-client.development.js:18989
-renderRootConcurrent @ react-dom-client.development.js:18971
-performWorkOnRoot @ react-dom-client.development.js:17832
-performWorkOnRootViaSchedulerTask @ react-dom-client.development.js:20382
-performWorkUntilDeadline @ scheduler.development.js:45
-run @ setImmediate.js:40
-runIfPresent @ setImmediate.js:69
-onGlobalMessage @ setImmediate.js:109
-<LinkComponent>
-exports.jsxDEV @ react-jsx-dev-runtime.development.js:342
-(anonymous) @ Sidebar.tsx:47
-Sidebar @ Sidebar.tsx:46
-react_stack_bottom_frame @ react-dom-client.development.js:28016
-renderWithHooksAgain @ react-dom-client.development.js:8082
-renderWithHooks @ react-dom-client.development.js:7994
-updateFunctionComponent @ react-dom-client.development.js:10499
-beginWork @ react-dom-client.development.js:12083
-runWithFiberInDEV @ react-dom-client.development.js:984
-performUnitOfWork @ react-dom-client.development.js:18995
-workLoopConcurrentByScheduler @ react-dom-client.development.js:18989
-renderRootConcurrent @ react-dom-client.development.js:18971
-performWorkOnRoot @ react-dom-client.development.js:17832
-performWorkOnRootViaSchedulerTask @ react-dom-client.development.js:20382
-performWorkUntilDeadline @ scheduler.development.js:45
-run @ setImmediate.js:40
-runIfPresent @ setImmediate.js:69
-onGlobalMessage @ setImmediate.js:109
-"use client"
-RootLayout @ layout.tsx:21
-initializeElement @ react-server-dom-turbopack-client.browser.development.js:1920
-(anonymous) @ react-server-dom-turbopack-client.browser.development.js:4558
-initializeModelChunk @ react-server-dom-turbopack-client.browser.development.js:1810
-getOutlinedModel @ react-server-dom-turbopack-client.browser.development.js:2297
-parseModelString @ react-server-dom-turbopack-client.browser.development.js:2687
-(anonymous) @ react-server-dom-turbopack-client.browser.development.js:4489
-initializeModelChunk @ react-server-dom-turbopack-client.browser.development.js:1810
-resolveModelChunk @ react-server-dom-turbopack-client.browser.development.js:1655
-processFullStringRow @ react-server-dom-turbopack-client.browser.development.js:4388
-processFullBinaryRow @ react-server-dom-turbopack-client.browser.development.js:4248
-processBinaryChunk @ react-server-dom-turbopack-client.browser.development.js:4461
-progress @ react-server-dom-turbopack-client.browser.development.js:4733
-<RootLayout>
-initializeFakeTask @ react-server-dom-turbopack-client.browser.development.js:3338
-initializeDebugInfo @ react-server-dom-turbopack-client.browser.development.js:3363
-initializeDebugChunk @ react-server-dom-turbopack-client.browser.development.js:1754
-processFullStringRow @ react-server-dom-turbopack-client.browser.development.js:4337
-processFullBinaryRow @ react-server-dom-turbopack-client.browser.development.js:4248
-processBinaryChunk @ react-server-dom-turbopack-client.browser.development.js:4461
-progress @ react-server-dom-turbopack-client.browser.development.js:4733
-"use server"
-ResponseInstance @ react-server-dom-turbopack-client.browser.development.js:2742
-createResponseFromOptions @ react-server-dom-turbopack-client.browser.development.js:4594
-exports.createFromReadableStream @ react-server-dom-turbopack-client.browser.development.js:4998
-module evaluation @ app-index.tsx:211
-(anonymous) @ dev-base.ts:244
-runModuleExecutionHooks @ dev-base.ts:278
-instantiateModule @ dev-base.ts:238
-getOrInstantiateModuleFromParent @ dev-base.ts:162
-commonJsRequire @ runtime-utils.ts:389
-(anonymous) @ app-next-turbopack.ts:11
-(anonymous) @ app-bootstrap.ts:79
-loadScriptsInSequence @ app-bootstrap.ts:23
-appBootstrap @ app-bootstrap.ts:61
-module evaluation @ app-next-turbopack.ts:10
-(anonymous) @ dev-base.ts:244
-runModuleExecutionHooks @ dev-base.ts:278
-instantiateModule @ dev-base.ts:238
-getOrInstantiateRuntimeModule @ dev-base.ts:128
-registerChunk @ runtime-backend-dom.ts:57
-await in registerChunk
-registerChunk @ dev-base.ts:1149
-(anonymous) @ dev-backend-dom.ts:126
-(anonymous) @ dev-backend-dom.ts:126
-forward-logs-shared.ts:95 [Fast Refresh] rebuilding
-forward-logs-shared.ts:95 [Fast Refresh] done in 127ms
-page.tsx:174 [Concierge] Persisted 10 providers to database with UUIDs
-page.tsx:233 [Concierge] Starting calls to 2 providers (LIVE_CALL_ENABLED=true, ADMIN_TEST_MODE=true)
-page.tsx:238 [Concierge] ADMIN TEST MODE: Will call 2 provider(s) using test phones: +13106992541, +18032374468
-page.tsx:241 [Concierge] Phone mapping: Columbia Fire Dept. Station 16 → +13106992541, South Carolina Fire Academy → +18032374468
-page.tsx:247 [Concierge] Generating context-aware prompts with Gemini...
-page.tsx:414 Real-time update: {schema: 'public', table: 'service_requests', commit_timestamp: '2025-12-11T04:15:33.125Z', eventType: 'UPDATE', new: {…}, …}
-page.tsx:260 [Concierge] Generated home_service prompts for firefighter
-page.tsx:325 [Concierge] Starting BATCH call to 2 providers via /api/v1/providers/batch-call... (TEST MODE)
-page.tsx:328 [Concierge] Providers: Columbia Fire Dept. Station 16 @ +13106992541, South Carolina Fire Academy @ +18032374468
-page.tsx:388 [Concierge] Batch call error: Error: Batch call failed: 500 - Internal Server Error
-    at runConciergeProcess (page.tsx:362:21)
-error @ intercept-console-error.ts:42
-runConciergeProcess @ page.tsx:388
-await in runConciergeProcess
-handleSubmit @ page.tsx:105
-await in handleSubmit
-executeDispatch @ react-dom-client.development.js:20541
-runWithFiberInDEV @ react-dom-client.development.js:984
-processDispatchQueue @ react-dom-client.development.js:20591
-(anonymous) @ react-dom-client.development.js:21162
-batchedUpdates$1 @ react-dom-client.development.js:3375
-dispatchEventForPluginEventSystem @ react-dom-client.development.js:20745
-dispatchEvent @ react-dom-client.development.js:25671
-dispatchDiscreteEvent @ react-dom-client.development.js:25639
-page.tsx:422 [Concierge] TEST MODE: Skipped 8 provider(s) due to test phone limit (2 test phones available)
-page.tsx:435 [Concierge] - Columbia Fire Dept. Station 26 (Rating: 5) - Skipped
-page.tsx:435 [Concierge] - Columbia Fire Dept. Station 6 (Rating: 4.3) - Skipped
-page.tsx:435 [Concierge] - Columbia Fire Dept. Station 13 (Rating: 5) - Skipped
-page.tsx:435 [Concierge] - West Columbia Fire Department (Rating: 5) - Skipped
-page.tsx:435 [Concierge] - Columbia Fire Dept. Station 7 (Rating: 5) - Skipped
-page.tsx:435 [Concierge] - Columbia Fire Dept. Station 27 (Rating: 5) - Skipped
-page.tsx:435 [Concierge] - Columbia Fire Dept. Headquarters (Rating: 4.6) - Skipped
-page.tsx:435 [Concierge] - Columbia Fire Dept. Station 11 (Rating: 5) - Skipped
-page.tsx:508 [Concierge] Call verification passed - Mode: TEST, Completed: 8, Success: 0, Errors: 1
-forward-logs-shared.ts:95 [Fast Refresh] rebuilding
-forward-logs-shared.ts:95 [Fast Refresh] done in 348ms
-page.tsx:414 Real-time update: {schema: 'public', table: 'service_requests', commit_timestamp: '2025-12-11T04:16:06.767Z', eventType: 'UPDATE', new: {…}, …}
-page.tsx:634 Request status is ANALYZING, checking for recommendations...
-forward-logs-shared.ts:95 [Fast Refresh] rebuilding
-forward-logs-shared.ts:95 [Fast Refresh] done in 120ms
-page.tsx:179 Providers called: 0/10
-page.tsx:184 Not all providers have been called yet, waiting...
-page.tsx:414 Real-time update: {schema: 'public', table: 'service_requests', commit_timestamp: '2025-12-11T04:16:11.428Z', eventType: 'UPDATE', new: {…}, …}
-page.tsx:414 Real-time update: {schema: 'public', table: 'service_requests', commit_timestamp: '2025-12-11T04:16:11.659Z', eventType: 'UPDATE', new: {…}, …}
-forward-logs-shared.ts:95 JSON parse error: SyntaxError: Unexpected token 'M', "Mon: Open "... is not valid JSON
-page.tsx:445 Provider update received: {schema: 'public', table: 'providers', commit_timestamp: '2025-12-11T04:16:44.172Z', eventType: 'UPDATE', new: {…}, …}
-page.tsx:445 Provider update received: {schema: 'public', table: 'providers', commit_timestamp: '2025-12-11T04:16:44.363Z', eventType: 'UPDATE', new: {…}, …}
-page.tsx:414 Real-time update: {schema: 'public', table: 'interaction_logs', commit_timestamp: '2025-12-11T04:16:44.480Z', eventType: 'INSERT', new: {…}, …}
-page.tsx:414 Real-time update: {schema: 'public', table: 'interaction_logs', commit_timestamp: '2025-12-11T04:16:44.526Z', eventType: 'INSERT', new: {…}, …}
-page.tsx:179 Providers called: 2/10
-page.tsx:184 Not all providers have been called yet, waiting...
-page.tsx:179 Providers called: 2/10
-page.tsx:184 Not all providers have been called yet, waiting...
+page.tsx:183 [Concierge] Persisted 3 providers to database with UUIDs
+page.tsx:242 [Concierge] Starting calls to 2 providers (LIVE_CALL_ENABLED=true, ADMIN_TEST_MODE=true)
+page.tsx:247 [Concierge] ADMIN TEST MODE: Will call 2 provider(s) using test phones: +13106992541, +18032374468
+page.tsx:250 [Concierge] Phone mapping: NorthStar Financial & Retirement Planning, LLC → +13106992541, TruNorth Advisors | Retirement Wealth Management Group → +18032374468
+page.tsx:256 [Concierge] Generating context-aware prompts with Gemini...
+page.tsx:269 [Concierge] Generated professional prompts for financial advisor
+page.tsx:334 [Concierge] Starting BATCH call to 2 providers via /api/v1/providers/batch-call... (TEST MODE)
+page.tsx:337 [Concierge] Providers: NorthStar Financial & Retirement Planning, LLC @ +13106992541, TruNorth Advisors | Retirement Wealth Management Group @ +18032374468
+page.tsx:407 [Concierge] Batch call initiated for 2 providers - UI will update via real-time subscriptions
+page.tsx:433 [Concierge] TEST MODE: Skipped 1 provider(s) due to test phone limit (2 test phones available)
+page.tsx:446 [Concierge] - Fiduciary Organization, LLC (Woodmark Advisors) (Rating: 5) - Skipped
+page.tsx:485 [Concierge] Calls initiated, transitioning to ANALYZING. Real-time will handle results.
+page.tsx:709 Request status is ANALYZING, checking for recommendations...
+page.tsx:496 [Concierge] Request 31a10ae9-23ad-4cde-9cd0-4371c97aaf48 now in ANALYZING state. Waiting for calls to complete via real-time.
+page.tsx:709 Request status is ANALYZING, checking for recommendations...
+page.tsx:222 Call progress: 0/2 calls completed (3 total providers)
+page.tsx:230 2 call(s) still in progress, waiting...
+page.tsx:222 Call progress: 0/2 calls completed (3 total providers)
+page.tsx:230 2 call(s) still in progress, waiting...
+page.tsx:375 [Concierge] Calls accepted (execution: 9a093fe1-1e4b-4de0-a65e-32fde0dd862d). Providers queued: 2
+page.tsx:585 Interaction log added: {schema: 'public', table: 'interaction_logs', commit_timestamp: '2025-12-12T01:33:04.001Z', eventType: 'INSERT', new: {…}, …}
+page.tsx:709 Request status is ANALYZING, checking for recommendations...
+page.tsx:222 Call progress: 0/2 calls completed (3 total providers)
+page.tsx:230 2 call(s) still in progress, waiting...
+page.tsx:725 [Recommendations] Fallback poll triggered after 5s
+page.tsx:222 Call progress: 0/2 calls completed (3 total providers)
+page.tsx:230 2 call(s) still in progress, waiting...
+
+
+# backend logs
+
+🚀 API server running at http://localhost:8000
+[01:01:39 UTC] INFO: ✓ Supabase database connection verified
+[01:01:39 UTC] INFO: ✓ Supabase plugin initialized successfully
+[01:01:39 UTC] INFO: Google Places API available
+    service: "google_places"
+[01:01:39 UTC] INFO: Webhook URL configured - using hybrid mode
+    webhookUrl: "https://2ce8048103bc.ngrok-free.app/api/v1/vapi/webhook"
+[01:01:39 UTC] INFO: Webhook URL configured - using hybrid mode
+    webhookUrl: "https://2ce8048103bc.ngrok-free.app/api/v1/vapi/webhook"
+[01:01:39 UTC] INFO: WebhookCacheService initialized
+    ttl: 30
+[01:01:39 UTC] INFO: VAPI API client initialized for background enrichment
+[01:01:39 UTC] INFO: CallResultService initialized for DB persistence
+[01:01:39 UTC] WARN: Twilio credentials not configured - SMS sending disabled
+[01:01:39 UTC] INFO: [UserNotificationService] Initialized with VAPI
+[01:01:39 UTC] INFO: Server listening at http://127.0.0.1:8000
+[01:01:39 UTC] INFO: Server listening at http://172.26.0.169:8000
+[01:01:39 UTC] INFO: Server listening at http://169.254.55.11:8000
+^C8:24:56 PM [tsx] Previous process hasn't exited yet. Force killing...
+dave@M3Max api % npm run dev
+
+> api@0.1.0 dev
+> tsx watch src/index.ts
+
+🚀 API server running at http://localhost:8000
+[01:24:59 UTC] INFO: ✓ Supabase database connection verified
+[01:24:59 UTC] INFO: ✓ Supabase plugin initialized successfully
+[01:24:59 UTC] INFO: Google Places API available
+    service: "google_places"
+[01:24:59 UTC] INFO: Webhook URL configured - using hybrid mode
+    webhookUrl: "https://2ce8048103bc.ngrok-free.app/api/v1/vapi/webhook"
+[01:24:59 UTC] INFO: Webhook URL configured - using hybrid mode
+    webhookUrl: "https://2ce8048103bc.ngrok-free.app/api/v1/vapi/webhook"
+[01:24:59 UTC] INFO: WebhookCacheService initialized
+    ttl: 30
+[01:24:59 UTC] INFO: VAPI API client initialized for background enrichment
+[01:24:59 UTC] INFO: CallResultService initialized for DB persistence
+[01:24:59 UTC] WARN: Twilio credentials not configured - SMS sending disabled
+[01:24:59 UTC] INFO: [UserNotificationService] Initialized with VAPI
+[01:24:59 UTC] INFO: Server listening at http://127.0.0.1:8000
+[01:24:59 UTC] INFO: Server listening at http://172.26.0.169:8000
+[01:24:59 UTC] INFO: Server listening at http://169.254.55.11:8000
+DEBUG Places API raw response (first 3): [
+  {
+    "id": "ChIJ33O8bV-l-IgRh8NotL6VUXk",
+    "formattedAddress": "6208 Garners Ferry Rd Suite A, Columbia, SC 29209, USA",
+    "location": {
+      "latitude": 33.981802099999996,
+      "longitude": -80.963411
+    },
+    "rating": 5,
+    "googleMapsUri": "https://maps.google.com/?cid=8741932998005932935&g_mp=Cidnb29nbGUubWFwcy5wbGFjZXMudjEuUGxhY2VzLlNlYXJjaFRleHQQAhgEIAA",
+    "businessStatus": "OPERATIONAL",
+    "userRatingCount": 67,
+    "displayName": {
+      "text": "Capital City Financial Partners",
+      "languageCode": "en"
+    }
+  },
+  {
+    "id": "ChIJE0qUAWSl-IgROfEsj5QJCRY",
+    "formattedAddress": "Bank of America Plaza, 1901 Main St #1475, Columbia, SC 29201, USA",
+    "location": {
+      "latitude": 34.010813,
+      "longitude": -81.03831699999999
+    },
+    "rating": 5,
+    "googleMapsUri": "https://maps.google.com/?cid=1587810877286707513&g_mp=Cidnb29nbGUubWFwcy5wbGFjZXMudjEuUGxhY2VzLlNlYXJjaFRleHQQAhgEIAA",
+    "businessStatus": "OPERATIONAL",
+    "userRatingCount": 59,
+    "displayName": {
+      "text": "HG Wealth Advisors, LLC",
+      "languageCode": "en"
+    }
+  },
+  {
+    "id": "ChIJ2cKROxuj-IgRG7DLqkdK4dQ",
+    "formattedAddress": "2000 Center Point Rd, Columbia, SC 29210, USA",
+    "location": {
+      "latitude": 34.0415817,
+      "longitude": -81.1122535
+    },
+    "rating": 5,
+    "googleMapsUri": "https://maps.google.com/?cid=15339623477469229083&g_mp=Cidnb29nbGUubWFwcy5wbGFjZXMudjEuUGxhY2VzLlNlYXJjaFRleHQQAhgEIAA",
+    "businessStatus": "OPERATIONAL",
+    "userRatingCount": 15,
+    "displayName": {
+      "text": "Cornerstone Financial Management",
+      "languageCode": "en"
+    }
+  }
+]
+DEBUG Ratings found: 20/20 places have ratings
+DEBUG Filter: minRating=4.5, providers before filter: [
+  { name: 'Capital City Financi', rating: 5 },
+  { name: 'HG Wealth Advisors, ', rating: 5 },
+  { name: 'Cornerstone Financia', rating: 5 },
+  { name: 'Cornerstone Wealth A', rating: 5 },
+  { name: 'Milestone Wealth Adv', rating: 5 },
+  { name: 'Capital Wealth Group', rating: 5 },
+  { name: 'Limehouse Financial', rating: 4.9 },
+  { name: 'Brightworks Financia', rating: 5 },
+  { name: 'TruNorth Advisors | ', rating: 4.9 },
+  { name: 'Jamie Danford, CFP -', rating: 5 },
+  { name: 'First Command Financ', rating: 5 },
+  { name: 'Fiduciary Organizati', rating: 5 },
+  { name: 'EFinancial Advisors', rating: 5 },
+  { name: 'DaVinci Financial De', rating: 5 },
+  { name: 'Cornerstone Financia', rating: 4.8 },
+  { name: 'Dyadic Financial Man', rating: 5 },
+  { name: 'NorthStar Financial ', rating: 4.9 },
+  { name: 'PAG Advisory Group', rating: 5 },
+  { name: 'Creative Financial S', rating: 5 },
+  { name: 'CCM Investment Advis', rating: 5 }
+]
+DEBUG Filter result: 20 -> 20 providers after rating filter
+Enrichment: 3 with placeId, 0 without
+Enriching 3 providers...
+Enriching 3 providers in batches of 5...
+[01:32:59 UTC] INFO: incoming request
+    reqId: "req-1"
+    req: {
+      "method": "POST",
+      "url": "/api/v1/workflows/research",
+      "host": "localhost:8000",
+      "remoteAddress": "127.0.0.1",
+      "remotePort": 58939
+    }
+[01:32:59 UTC] INFO: Starting provider research
+    service: "financial advisor"
+    location: "columbia sc"
+    serviceRequestId: "31a10ae9-23ad-4cde-9cd0-4371c97aaf48"
+[01:32:59 UTC] INFO: Using Direct Gemini for research
+    method: "direct_gemini"
+[01:32:59 UTC] INFO: Starting provider research
+    service: "financial advisor"
+    location: "columbia sc"
+    hasPlacesAPI: true
+[01:32:59 UTC] INFO: Searching with Places API
+    service: "financial advisor"
+    location: "columbia sc"
+    minRating: 4.5
+[01:33:00 UTC] INFO: Places API search completed
+    totalFound: 20
+[01:33:00 UTC] INFO: Places API results filtered and sorted
+    totalFound: 20
+    afterFilters: 3
+    returned: 3
+Successfully enriched 3 providers
+Phone filter: 3 with phone, 0 without
+Enrichment complete: {
+  totalInput: 3,
+  enrichedCount: 3,
+  withPhoneCount: 3,
+  skippedNoPlaceId: 0,
+  durationMs: 208
+}
+[01:33:00 UTC] INFO: request completed
+    reqId: "req-1"
+    res: {
+      "statusCode": 200
+    }
+    responseTime: 781.142666041851
+[01:33:00 UTC] INFO: incoming request
+    reqId: "req-2"
+    req: {
+      "method": "POST",
+      "url": "/api/v1/gemini/analyze-research-prompt",
+      "host": "localhost:8000",
+      "remoteAddress": "127.0.0.1",
+      "remotePort": 58950
+    }
+[01:33:03 UTC] INFO: request completed
+    reqId: "req-2"
+    res: {
+      "statusCode": 200
+    }
+    responseTime: 2931.7346670031548
+[01:33:03 UTC] INFO: incoming request
+    reqId: "req-3"
+    req: {
+      "method": "POST",
+      "url": "/api/v1/providers/batch-call-async",
+      "host": "localhost:8000",
+      "remoteAddress": "127.0.0.1",
+      "remotePort": 58972
+    }
+[01:33:03 UTC] INFO: Starting async batch call
+    executionId: "9a093fe1-1e4b-4de0-a65e-32fde0dd862d"
+    providerCount: 2
+[01:33:04 UTC] INFO: request completed
+    reqId: "req-3"
+    res: {
+      "statusCode": 202
+    }
+    responseTime: 473.365208029747
+[01:33:04 UTC] INFO: Background batch call processing started
+    executionId: "9a093fe1-1e4b-4de0-a65e-32fde0dd862d"
+[01:33:04 UTC] INFO: Initiating batch provider calls (single routing decision)
+    method: "kestra"
+    providerCount: 2
+    maxConcurrent: 5
+[01:33:04 UTC] INFO: Triggering Kestra batch contact flow
+    providerCount: 2
+    flowId: "contact_providers"
+    maxConcurrent: 5
+[01:33:04 UTC] INFO: Kestra concurrent execution triggered
+    executionId: "4uuCfBWrFbWSiZsZkCx3ai"
+    namespace: "ai_concierge"
+    flowId: "contact_providers"
+[01:33:09 UTC] ERROR: Kestra batch execution failed
+    state: "FAILED"
+    executionId: "4uuCfBWrFbWSiZsZkCx3ai"
+[01:33:09 UTC] INFO: Batch provider calls completed via Kestra
+    stats: {
+      "total": 2,
+      "completed": 0,
+      "failed": 2,
+      "timeout": 0,
+      "noAnswer": 0,
+      "voicemail": 0,
+      "duration": 0,
+      "averageCallDuration": 0
+    }
+    method: "kestra"
+[01:33:09 UTC] INFO: Background batch call processing completed
+    executionId: "9a093fe1-1e4b-4de0-a65e-32fde0dd862d"
+
+
+# kestra logs
+Execution failed! Last error was: Cannot invoke “io.kestra.core.models.tasks.runners.TaskRunner.getType()” because the return value of “io.kestra.plugin.scripts.exec.AbstractExecScript.getTaskRunner()” is null
+
+State
+Namespace
+ai_concierge
+Flow
+contact_providers
+Revision
+5
+Labels
+system.correlationId:4uuCfBWrFbWSiZsZkCx3ai
+Created date
+2 minutes ago
+Updated date
+2 minutes ago
+Duration
+0.99s
+Steps
+4
+Attempt
+1
+Original creation date
+2 minutes ago
+Schedule date
+

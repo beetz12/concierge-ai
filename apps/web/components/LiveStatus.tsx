@@ -13,6 +13,7 @@ import {
   PhoneCall,
   Clock,
   Zap,
+  AlertTriangle,
 } from "lucide-react";
 
 interface LiveStatusProps {
@@ -38,6 +39,7 @@ interface LiveStatusProps {
     detail: string;
     status: "success" | "warning" | "error" | "info";
   }>;
+  providers?: Array<{ callStatus?: string | null }>;
 }
 
 interface SearchStep {
@@ -54,6 +56,7 @@ const LiveStatus: React.FC<LiveStatusProps> = ({
   callProgress,
   providersFound = 0,
   interactions = [],
+  providers = [],
 }) => {
   const getStatusConfig = () => {
     // Null safety: ensure status is a string before calling toLowerCase
@@ -123,6 +126,38 @@ const LiveStatus: React.FC<LiveStatusProps> = ({
 
   // Null safety: use safe status for all comparisons
   const safeStatus = (status || "").toLowerCase();
+
+  // Derive actual display status based on call progress
+  // This ensures UI reflects real state, not just status enum
+  // Example: If status is ANALYZING but calls are still in_progress/queued,
+  // we should continue showing the CALLING UI until all calls complete
+  const hasActiveOrQueuedCalls = callProgress &&
+    (callProgress.inProgress > 0 || callProgress.queued > 0);
+
+  const effectiveDisplayStatus = (() => {
+    // Case 1: Active or queued calls - show CALLING UI
+    if (safeStatus === "analyzing" && hasActiveOrQueuedCalls) {
+      return "calling"; // Override to show call progress
+    }
+
+    // Case 2: ANALYZING but callProgress is null - check provider states
+    if (safeStatus === "analyzing" && !callProgress && providers && providers.length > 0) {
+      // Check if any providers have error status
+      const hasErrors = providers.some(p =>
+        p.callStatus === 'error' || p.callStatus === 'failed'
+      );
+      // Check if all providers have no call status (calls never started)
+      const noCallsStarted = providers.every(p => !p.callStatus);
+
+      if (hasErrors || noCallsStarted) {
+        // Calls failed or never started - don't show "AI Analysis"
+        // Show a "waiting" or "error" state instead
+        return "calling_failed"; // New status for display
+      }
+    }
+
+    return safeStatus; // Use actual status for all other cases
+  })();
 
   // SEARCHING status - show detailed search steps
   if (safeStatus === "searching") {
@@ -243,7 +278,8 @@ const LiveStatus: React.FC<LiveStatusProps> = ({
   }
 
   // CALLING status - show concurrent call progress
-  if (safeStatus === "calling" && callProgress) {
+  // Use effectiveDisplayStatus to handle ANALYZING->CALLING override
+  if (effectiveDisplayStatus === "calling" && callProgress) {
     const hasQueuedCalls = callProgress.queued > 0;
     const hasActiveCalls = callProgress.inProgress > 0;
     const hasCompletedCalls = callProgress.completed > 0;
@@ -380,7 +416,8 @@ const LiveStatus: React.FC<LiveStatusProps> = ({
   }
 
   // ANALYZING status - show AI analysis steps
-  if (safeStatus === "analyzing") {
+  // Use effectiveDisplayStatus to ensure we only show analysis UI when calls are truly done
+  if (effectiveDisplayStatus === "analyzing") {
     const hasCompletedCalls = interactions.some((i) =>
       (i.stepName || "").includes("Calling") && i.status === "success"
     );
@@ -478,6 +515,25 @@ const LiveStatus: React.FC<LiveStatusProps> = ({
               </div>
             );
           })}
+        </div>
+      </div>
+    );
+  }
+
+  // CALLING_FAILED status - show error state when calls never started or failed
+  if (effectiveDisplayStatus === "calling_failed") {
+    return (
+      <div className={`px-5 py-4 rounded-xl border bg-red-500/10 border-red-500/30 animate-fadeIn`}>
+        <div className="flex items-center gap-3">
+          <AlertTriangle className="w-6 h-6 text-red-400" />
+          <div>
+            <p className="text-base font-bold text-red-400">
+              Call Process Interrupted
+            </p>
+            <p className="text-xs text-slate-400 mt-0.5">
+              Provider calls could not be completed. Please try again.
+            </p>
+          </div>
         </div>
       </div>
     );
