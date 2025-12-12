@@ -34,6 +34,8 @@ jobs:
     name: 🔒 AI Security Scan
     runs-on: ubuntu-latest
     timeout-minutes: 10
+    env:
+      ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
 
     steps:
       - name: 📥 Checkout code
@@ -195,6 +197,8 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 10
     if: contains(github.event.head_commit.modified, 'kestra/') || github.event_name == 'pull_request'
+    env:
+      ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
 
     steps:
       - name: 📥 Checkout code
@@ -288,6 +292,8 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 15
     needs: security-review
+    env:
+      ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
 
     steps:
       - name: 📥 Checkout code
