@@ -19,6 +19,9 @@ import {
   XCircle,
   Terminal,
   Loader2,
+  Calendar,
+  Clock,
+  Hash,
 } from "lucide-react";
 import {
   InteractionLog,
@@ -435,6 +438,11 @@ export default function RequestDetails() {
             googleMapsUri: p.google_maps_uri || undefined,
             website: p.website || undefined,
             placeId: p.place_id || undefined,
+            // Booking confirmation
+            booking_confirmed: p.booking_confirmed || undefined,
+            booking_date: p.booking_date || undefined,
+            booking_time: p.booking_time || undefined,
+            confirmation_number: p.confirmation_number || undefined,
           })),
           interactions: logs.map((log) => ({
             id: log.id,
@@ -563,6 +571,11 @@ export default function RequestDetails() {
                     googleMapsUri: p.google_maps_uri || undefined,
                     website: p.website || undefined,
                     placeId: p.place_id || undefined,
+                    // Booking confirmation
+                    booking_confirmed: p.booking_confirmed || undefined,
+                    booking_date: p.booking_date || undefined,
+                    booking_time: p.booking_time || undefined,
+                    confirmation_number: p.confirmation_number || undefined,
                   })),
                 };
               });
@@ -664,6 +677,11 @@ export default function RequestDetails() {
                     googleMapsUri: p.google_maps_uri || undefined,
                     website: p.website || undefined,
                     placeId: p.place_id || undefined,
+                    // Booking confirmation
+                    booking_confirmed: p.booking_confirmed || undefined,
+                    booking_date: p.booking_date || undefined,
+                    booking_time: p.booking_time || undefined,
+                    confirmation_number: p.confirmation_number || undefined,
                   })),
                   interactions: deduplicatedLogs,
                   finalOutcome: data.final_outcome || undefined,
@@ -899,6 +917,48 @@ export default function RequestDetails() {
             </div>
           </div>
         )}
+
+        {/* Show booking confirmation details when available */}
+        {(() => {
+          const providers = request.providersFound || [];
+          const bookedProvider = request.selectedProvider?.booking_confirmed
+            ? request.selectedProvider
+            : providers.find(p => p.booking_confirmed);
+
+          if (!bookedProvider) return null;
+
+          return (
+            <div className="mt-6 bg-emerald-500/10 border border-emerald-500/30 rounded-lg p-4">
+              <h3 className="text-emerald-400 font-bold flex items-center gap-2 mb-3">
+                <CheckCircle className="w-5 h-5" />
+                Appointment Confirmed!
+              </h3>
+              <div className="space-y-2 text-sm">
+                {bookedProvider.booking_date && (
+                  <p className="flex items-center gap-2">
+                    <Calendar className="w-4 h-4 text-slate-400" />
+                    <span className="text-slate-300">Date:</span>
+                    <span className="text-white font-medium">{bookedProvider.booking_date}</span>
+                  </p>
+                )}
+                {bookedProvider.booking_time && (
+                  <p className="flex items-center gap-2">
+                    <Clock className="w-4 h-4 text-slate-400" />
+                    <span className="text-slate-300">Time:</span>
+                    <span className="text-white font-medium">{bookedProvider.booking_time}</span>
+                  </p>
+                )}
+                {bookedProvider.confirmation_number && (
+                  <p className="flex items-center gap-2">
+                    <Hash className="w-4 h-4 text-slate-400" />
+                    <span className="text-slate-300">Confirmation #:</span>
+                    <span className="text-white font-medium font-mono">{bookedProvider.confirmation_number}</span>
+                  </p>
+                )}
+              </div>
+            </div>
+          );
+        })()}
 
         {/* Inline Booking Feedback (replaces native alert()) */}
         {bookingMessage && (

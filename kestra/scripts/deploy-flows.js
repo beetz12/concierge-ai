@@ -37,6 +37,7 @@ const { execSync } = require('child_process');
 
 const EXTENSIONS = ['.yaml', '.yml'];
 const DEFAULT_DIR = path.join(__dirname, '..', 'flows');
+const SCRIPTS_DIR = path.join(__dirname);  // kestra/scripts directory
 
 const CONFIG = {
     url: process.env.KESTRA_LOCAL_URL || 'http://localhost:8082',
@@ -100,6 +101,91 @@ function extractNamespace(content) {
     // Extract the namespace from the YAML content
     const match = content.match(/^namespace:\s*(\S+)/m);
     return match ? match[1] : null;
+}
+
+function findScriptFiles(dir) {
+    const files = [];
+    const SCRIPT_EXTENSIONS = ['.js', '.ts', '.sh', '.py'];
+
+    if (!fs.existsSync(dir)) {
+        return files;
+    }
+
+    const entries = fs.readdirSync(dir, { withFileTypes: true });
+
+    for (const entry of entries) {
+        const fullPath = path.join(dir, entry.name);
+
+        if (entry.isDirectory()) {
+            // Skip node_modules and hidden directories
+            if (!entry.name.startsWith('.') && entry.name !== 'node_modules') {
+                files.push(...findScriptFiles(fullPath));
+            }
+        } else if (entry.isFile()) {
+            const ext = path.extname(entry.name).toLowerCase();
+            // Include script files but exclude the deploy script itself
+            if (SCRIPT_EXTENSIONS.includes(ext) && entry.name !== 'deploy-flows.js') {
+                files.push(fullPath);
+            }
+        }
+    }
+
+    return files;
+}
+
+// ============================================================================
+// NAMESPACE FILES FUNCTIONS
+// ============================================================================
+
+function uploadNamespaceFile(filePath, baseDir, options) {
+    const { url, username, password, namespace, dryRun } = options;
+
+    // Calculate relative path from scripts dir (e.g., "call-provider.js" -> "scripts/call-provider.js")
+    const relativePath = path.relative(baseDir, filePath);
+    const namespacePath = `scripts/${relativePath}`;
+    const fileName = path.basename(filePath);
+
+    if (dryRun) {
+        console.log(`    \x1b[36m[Dry-run: would upload ${namespacePath}]\x1b[0m`);
+        return { file: fileName, path: namespacePath, success: true, dryRun: true };
+    }
+
+    try {
+        // Kestra API: POST /api/v1/namespaces/{namespace}/files with multipart form
+        // The path query parameter specifies the destination path in namespace storage
+        const encodedPath = encodeURIComponent(`/${namespacePath}`);
+        const curlCmd = `curl -s -o /dev/null -w "%{http_code}" -X POST \
+            "${url}/api/v1/namespaces/${namespace}/files?path=${encodedPath}" \
+            -u "${username}:${password}" \
+            -F "fileContent=@${filePath}"`;
+
+        const result = execSync(curlCmd, { encoding: 'utf-8', timeout: 30000 }).trim();
+
+        if (result === '201' || result === '200' || result === '204') {
+            console.log(`    \x1b[32m✓\x1b[0m ${namespacePath}`);
+            return { file: fileName, path: namespacePath, success: true };
+        } else {
+            console.log(`    \x1b[31m✗\x1b[0m ${namespacePath} (HTTP ${result})`);
+            return { file: fileName, path: namespacePath, success: false, error: `HTTP ${result}` };
+        }
+    } catch (error) {
+        console.log(`    \x1b[31m✗\x1b[0m ${namespacePath}: ${error.message}`);
+        return { file: fileName, path: namespacePath, success: false, error: error.message };
+    }
+}
+
+function uploadNamespaceFiles(scriptsDir, options) {
+    const scriptFiles = findScriptFiles(scriptsDir);
+
+    if (scriptFiles.length === 0) {
+        console.log(`    (no script files found)`);
+        return [];
+    }
+
+    console.log(`    Found ${scriptFiles.length} script file(s) to upload`);
+
+    const results = scriptFiles.map(file => uploadNamespaceFile(file, scriptsDir, options));
+    return results;
 }
 
 // ============================================================================
@@ -231,13 +317,16 @@ function deployFlow(filePath, options) {
 // SUMMARY
 // ============================================================================
 
-function printSummary(results, dryRun, deletedCount = 0) {
+function printSummary(results, dryRun, deletedCount = 0, namespaceFileResults = []) {
     const successful = results.filter(r => r.success);
     const failed = results.filter(r => !r.success);
+    const nsSuccessful = namespaceFileResults.filter(r => r.success && !r.dryRun);
+    const nsFailed = namespaceFileResults.filter(r => !r.success && !r.dryRun);
 
     printHeader('DEPLOYMENT SUMMARY');
 
     console.log(`
+  Namespace files: ${nsSuccessful.length > 0 ? `\x1b[32m${nsSuccessful.length} uploaded\x1b[0m` : '0 uploaded'}${nsFailed.length > 0 ? `, \x1b[31m${nsFailed.length} failed\x1b[0m` : ''}
   Deleted flows:   ${deletedCount}
   Deployed flows:  ${results.length}
   Successful:      \x1b[32m${successful.length}\x1b[0m
@@ -256,6 +345,13 @@ function printSummary(results, dryRun, deletedCount = 0) {
         printSubHeader('Failed Deployments');
         failed.forEach(r => {
             console.log(`    \x1b[31m✗\x1b[0m ${r.file}: ${r.error}`);
+        });
+    }
+
+    if (nsFailed.length > 0) {
+        printSubHeader('Failed Namespace File Uploads');
+        nsFailed.forEach(r => {
+            console.log(`    \x1b[31m✗\x1b[0m ${r.path}: ${r.error}`);
         });
     }
 
@@ -364,6 +460,17 @@ function main() {
         console.log(`    \x1b[32m✓\x1b[0m Connected to Kestra at ${options.url}`);
     }
 
+    // Upload namespace files (scripts) BEFORE deploying flows
+    printSubHeader(`Uploading namespace files to ${options.namespace}`);
+    const namespaceFileResults = uploadNamespaceFiles(SCRIPTS_DIR, options);
+    const failedUploads = namespaceFileResults.filter(r => !r.success && !r.dryRun);
+    if (failedUploads.length > 0) {
+        console.error(`\n  \x1b[33mWARNING: ${failedUploads.length} file(s) failed to upload\x1b[0m`);
+    } else if (namespaceFileResults.length > 0) {
+        const uploadCount = namespaceFileResults.filter(r => r.success).length;
+        console.log(`    Uploaded ${uploadCount} namespace file(s)`);
+    }
+
     // Find YAML files
     const yamlFiles = findYamlFiles(options.targetDir);
 
@@ -400,7 +507,7 @@ function main() {
     const results = yamlFiles.map(file => deployFlow(file, options));
 
     // Print summary
-    printSummary(results, options.dryRun, existingFlows.length);
+    printSummary(results, options.dryRun, existingFlows.length, namespaceFileResults);
 
     // Exit with error code if any deployments failed
     const failed = results.filter(r => !r.success);

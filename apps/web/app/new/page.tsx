@@ -352,6 +352,8 @@ export default function NewRequest() {
             clientName: data.clientName,
             location: data.location,
             urgency: data.urgency,
+            preferredContact: formData.preferredContact,
+            userPhone: userPhoneValidation.normalized,
             serviceRequestId: reqId,
             maxConcurrent: 5,
             customPrompt: researchPrompt

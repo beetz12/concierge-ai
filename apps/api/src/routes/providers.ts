@@ -66,6 +66,8 @@ const batchCallSchema = z.object({
   serviceRequestId: z.string().optional(),
   maxConcurrent: z.number().int().min(1).max(10).optional(),
   customPrompt: generatedPromptSchema.optional(), // Gemini-generated dynamic prompt
+  preferredContact: z.enum(["phone", "text"]).optional(), // User's preferred contact method
+  userPhone: z.string().optional(), // User's phone number for notifications
 });
 
 // Recommendation schema for analyzing call results
@@ -599,6 +601,15 @@ export default async function providerRoutes(fastify: FastifyInstance) {
                 firstMessage: { type: "string" },
                 closingScript: { type: "string" },
               },
+            },
+            preferredContact: {
+              type: "string",
+              enum: ["phone", "text"],
+              description: "User's preferred contact method for recommendations",
+            },
+            userPhone: {
+              type: "string",
+              description: "User's phone number for notifications",
             },
           },
         },

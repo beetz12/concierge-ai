@@ -110,7 +110,7 @@ export default async function twilioWebhookRoutes(fastify: FastifyInstance) {
         // Get the top 3 providers for this request
         const { data: providers, error: providersError } = await supabase
           .from("providers")
-          .select("id, name, call_status, earliest_availability")
+          .select("id, name, phone, call_status, earliest_availability")
           .eq("request_id", serviceRequest.id)
           .order("created_at", { ascending: true })
           .limit(3);
@@ -195,6 +195,60 @@ export default async function twilioWebhookRoutes(fastify: FastifyInstance) {
           detail: `User replied "${selection}" to select ${selectedProvider.name}`,
           status: "success",
         });
+
+        // Auto-trigger booking call to provider
+        try {
+          const backendUrl = process.env.BACKEND_URL || 'http://localhost:8000';
+
+          // Get full request details for booking
+          const { data: fullRequest } = await supabase
+            .from('service_requests')
+            .select('*, providers(*)')
+            .eq('id', serviceRequest.id)
+            .single();
+
+          if (fullRequest && selectedProvider) {
+            // Fire and forget - don't wait for booking to complete
+            fetch(`${backendUrl}/api/v1/providers/book`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                serviceRequestId: fullRequest.id,
+                providerId: selectedProvider.id,
+                providerPhone: selectedProvider.phone,
+                providerName: selectedProvider.name,
+                serviceNeeded: fullRequest.title || fullRequest.description || 'service',
+                clientName: fullRequest.direct_contact_info?.user_name || fullRequest.client_name || 'Customer',
+                clientPhone: fullRequest.user_phone,
+                location: fullRequest.location || '',
+                preferredDateTime: selectedProvider.earliest_availability || '',
+                additionalNotes: '',
+              })
+            }).then(res => {
+              if (!res.ok) {
+                console.error('[Twilio Webhook] Booking trigger failed:', res.status);
+              } else {
+                console.log('[Twilio Webhook] Booking triggered successfully');
+              }
+            }).catch(err => {
+              console.error('[Twilio Webhook] Booking trigger error:', err);
+            });
+
+            // Log the booking trigger
+            await supabase.from('interaction_logs').insert({
+              request_id: serviceRequest.id,
+              step_name: 'Booking Auto-Triggered',
+              detail: `Booking automatically triggered for ${selectedProvider.name} via SMS selection`,
+              status: 'info',
+            });
+          }
+        } catch (bookingError) {
+          fastify.log.error(
+            { error: bookingError },
+            '[Twilio Webhook] Error triggering booking'
+          );
+          // Don't fail the webhook response - booking is best-effort
+        }
 
         // Send confirmation SMS
         if (twilioClient) {

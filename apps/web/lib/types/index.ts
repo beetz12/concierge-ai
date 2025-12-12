@@ -50,6 +50,11 @@ export interface Provider {
   googleMapsUri?: string;
   website?: string;
   placeId?: string;
+  // Booking confirmation
+  booking_confirmed?: boolean;
+  booking_date?: string;
+  booking_time?: string;
+  confirmation_number?: string;
 }
 
 export interface InteractionLog {

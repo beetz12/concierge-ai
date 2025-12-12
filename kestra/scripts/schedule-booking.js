@@ -140,7 +140,7 @@ async function main() {
             attempts++;
 
             try {
-                const updatedCall = await vapi.calls.get(call.id);
+                const updatedCall = await vapi.calls.get({ id: call.id });
                 status = updatedCall.status;
                 console.log(`[VAPI Booking] Status check ${attempts}/${maxAttempts}: ${status}`);
 
