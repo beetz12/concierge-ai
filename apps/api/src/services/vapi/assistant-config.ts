@@ -138,6 +138,8 @@ Thank them genuinely when they help.`;
       provider: "google" as const,
       model: "gemini-2.0-flash-exp",
       messages: [{ role: "system" as const, content: systemPrompt }],
+      tools: [{ type: "endCall", description: "End the phone call. Use this immediately after your closing statement." }],
+      temperature: 0.15,  // Very low for reliable tool invocation (2025 best practice)
     },
     transcriber: {
       provider: "deepgram" as const,
@@ -152,6 +154,8 @@ Thank them genuinely when they help.`;
     },
     firstMessage: `Hi there! This is an AI assistant calling on behalf of my client regarding ${request.providerName}. Do you have just a moment?`,
     endCallFunctionEnabled: true,
+    endCallMessage: "Thank you so much for your time. Have a wonderful day!",
+    silenceTimeoutSeconds: 20,  // Safety net: auto-end after 20s silence post-closing
     analysisPlan: {
       summaryPlan: {
         enabled: true,
@@ -243,6 +247,8 @@ function createDynamicDirectTaskConfig(request: CallRequest, customPrompt: Gener
       provider: "google" as const,
       model: "gemini-2.0-flash-exp",
       messages: [{ role: "system" as const, content: customPrompt.systemPrompt }],
+      tools: [{ type: "endCall", description: "End the phone call. Use this immediately after your closing statement." }],
+      temperature: 0.15,  // Very low for reliable tool invocation (2025 best practice)
     },
     transcriber: {
       provider: "deepgram" as const,
@@ -257,6 +263,8 @@ function createDynamicDirectTaskConfig(request: CallRequest, customPrompt: Gener
     },
     firstMessage: customPrompt.firstMessage,
     endCallFunctionEnabled: true,
+    endCallMessage: "Thank you so much for your time. Have a wonderful day!",
+    silenceTimeoutSeconds: 20,  // Safety net: auto-end after 20s silence post-closing
     analysisPlan: {
       summaryPlan: {
         enabled: true,
@@ -345,6 +353,24 @@ function createProviderSearchConfig(request: CallRequest) {
 
     const clientName = request.clientName || "my client";
 
+    // CRITICAL: Append explicit endCall instructions to ensure reliable call termination
+    // This acts as a safety net even if Gemini's generated prompt lacks strong endCall instructions
+    const endCallSafetyNet = `
+
+═══════════════════════════════════════════════════════════════════
+CRITICAL: ENDING THE CALL
+═══════════════════════════════════════════════════════════════════
+You have an endCall tool available. You MUST use it to hang up the call.
+
+After your closing statement (thanking them and saying you'll call back to schedule),
+IMMEDIATELY invoke the endCall tool. DO NOT wait for their response.
+DO NOT say "goodbye" or continue the conversation - just invoke endCall.
+YOU must end the call - do not wait for them to hang up.
+
+If you detect voicemail (automated greeting, "leave a message", beep), immediately invoke endCall.`;
+
+    const enhancedSystemPrompt = request.customPrompt.systemPrompt + endCallSafetyNet;
+
     return {
       name: `Concierge-${Date.now().toString().slice(-8)}`,
       voice: {
@@ -356,9 +382,9 @@ function createProviderSearchConfig(request: CallRequest) {
       model: {
         provider: "google" as const,
         model: "gemini-2.0-flash-exp",
-        messages: [{ role: "system" as const, content: request.customPrompt.systemPrompt }],
-        tools: [{ type: "endCall" }],
-        temperature: 0.3,
+        messages: [{ role: "system" as const, content: enhancedSystemPrompt }],
+        tools: [{ type: "endCall", description: "End the phone call. Use this immediately after your closing statement." }],
+        temperature: 0.15,  // Very low for reliable tool invocation (2025 best practice)
       },
       transcriber: {
         provider: "deepgram" as const,
@@ -375,6 +401,7 @@ function createProviderSearchConfig(request: CallRequest) {
       firstMessage: request.customPrompt.firstMessage,
       endCallFunctionEnabled: true,
       endCallMessage: request.customPrompt.closingScript || "Thank you so much for your time. Have a wonderful day!",
+      silenceTimeoutSeconds: 20,  // Safety net: auto-end after 20s silence post-closing
       analysisPlan: {
         structuredDataSchema: {
           type: "object",
@@ -588,8 +615,8 @@ For unusual requirements, frame naturally: "${clientName} specifically mentioned
           content: systemPrompt,
         },
       ],
-      tools: [{ type: "endCall" }],  // Best practice for 2025 - explicit tool declaration
-      temperature: 0.3,  // Lower temperature for reliable tool invocation
+      tools: [{ type: "endCall", description: "End the phone call. Use this immediately after your closing statement." }],
+      temperature: 0.15,  // Very low for reliable tool invocation (2025 best practice)
     },
 
     // Transcription
@@ -617,6 +644,8 @@ For unusual requirements, frame naturally: "${clientName} specifically mentioned
 
     // Enable endCall function (VAPI handles tool registration automatically)
     endCallFunctionEnabled: true,
+    endCallMessage: "Thank you so much for your time. Have a wonderful day!",
+    silenceTimeoutSeconds: 20,  // Safety net: auto-end after 20s silence post-closing
 
     // Analysis configuration
     analysisPlan: {
