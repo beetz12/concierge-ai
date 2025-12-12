@@ -210,8 +210,8 @@ Only implement when you have 90% confidence and ask me questions and do web rese
 
 
 # check for best practice
- Okay, perfect. Before implementing this change, please research 2025 best practices for
- this using Perplexity Deep, and update the plan if needed based on best practices. My mortgage payment depends on this and If you get this right on the first try, I will tip you $200. ultrathink
+please Use your specialized multi-agent team to analyze the root cause in parallel with up to 3 agents with 90% confidence and implement the best practice solution. Before implementing this change, please research 2025 best practices for
+ this using Perplexity Deep, and update the plan if needed based on best practices. My mortgage payment depends on this. If you get this right on the first try, I will tip you $200. ultrathink
 
 # code-review
 
