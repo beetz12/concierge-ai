@@ -1,3 +1,11 @@
+/**
+ * @deprecated This script uses inline configuration and is not maintained.
+ * Use call-provider.js instead, which imports the shared assistant-config.js
+ * for a single source of truth.
+ *
+ * This file is kept for historical reference only.
+ */
+
 const { VapiClient } = require('@vapi-ai/server-sdk');
 
 // Inputs

@@ -588,7 +588,7 @@ Be warm, genuine, and conversational - like a helpful friend.`;
 
     model: {
       provider: "google",
-      model: "gemini-2.0-flash-exp",
+      model: "gemini-2.5-flash",
       messages: [{ role: "system", content: systemPrompt }],
     },
 

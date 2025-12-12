@@ -508,7 +508,7 @@ Output:
 
 **Implementation Hints:**
 - Create `apps/api/src/services/recommendations/recommend.service.ts`
-- Use `gemini-2.0-flash-exp` model for analysis
+- Use `gemini-2.5-flash` model for analysis
 - Filter out: `status !== "completed"`, `availability === "unavailable"`, `disqualified === true`
 - Add route in `apps/api/src/routes/providers.ts`
 

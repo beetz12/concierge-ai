@@ -81,6 +81,30 @@ Significantly enhanced the LiveStatus component to show detailed agent progress 
 - Step circles matching the analyzing theme
 - Progressive opacity for pending steps
 
+### 4. RECOMMENDED Status
+
+**When**: After backend generates AI recommendations (top 3 providers)
+**Duration**: Until user selects a provider
+**Visual**: Indigo/purple badge with sparkles icon
+**UI Elements**:
+- Top 3 provider cards with scores and reasoning
+- "Ready to Book" status indicator
+- Selection buttons for each recommended provider
+
+**Status Transition**: Triggered automatically by backend after analyzing call results
+
+**Features:**
+- Backend-owned recommendation generation
+- Automatic status transition from ANALYZING → RECOMMENDED
+- Real-time update via Supabase subscription
+- No frontend polling or API calls needed
+
+**Visual Elements:**
+- Indigo/purple color scheme (indigo-600 badge, sparkles icon)
+- Provider cards with AI-generated scores (0-100)
+- Reasoning paragraphs explaining each recommendation
+- Clear call-to-action buttons for booking selection
+
 ## Technical Implementation
 
 ### Data Flow
@@ -216,6 +240,7 @@ To see the enhanced status:
 - **SEARCHING**: Blue theme (blue-400, blue-500/20)
 - **CALLING**: Amber/Yellow theme (amber-400, amber-500/20)
 - **ANALYZING**: Purple theme (purple-400, purple-500/20)
+- **RECOMMENDED**: Indigo theme (indigo-600, indigo-500/20)
 - **COMPLETED**: Emerald/Green theme (emerald-400, emerald-500/20)
 - **FAILED**: Red theme (red-400, red-500/20)
 

@@ -183,6 +183,9 @@ export class KestraClient {
       user_criteria: request.userCriteria,
       location: request.location,
       urgency: request.urgency,
+      client_name: request.clientName || "my client",
+      client_address: request.clientAddress || "",
+      problem_description: request.problemDescription || "",
     };
 
     const url = this.buildExecutionUrl(this.flowId);
@@ -420,6 +423,9 @@ export class KestraClient {
         urgency: firstRequest.urgency,
         max_concurrent: options?.maxConcurrent || 5,
         service_request_id: firstRequest.serviceRequestId,  // ADD THIS for tracking
+        client_name: firstRequest.clientName || "my client",
+        client_address: firstRequest.clientAddress || "",
+        problem_description: firstRequest.problemDescription || "",
       };
 
       // Trigger execution

@@ -157,7 +157,7 @@ Thank them sincerely when they confirm the appointment.`;
     // Model configuration
     model: {
       provider: "google" as const,
-      model: "gemini-2.0-flash-exp",
+      model: "gemini-2.5-flash",
       messages: [
         {
           role: "system" as const,

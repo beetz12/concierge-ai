@@ -30,6 +30,18 @@ inputs:
     type: STRING
     defaults: ""
     description: "Service request ID for database linking"
+  - id: client_name
+    type: STRING
+    defaults: "my client"
+    description: "Client name for personalized greeting"
+  - id: client_address
+    type: STRING
+    defaults: ""
+    description: "Full street address for service (optional)"
+  - id: problem_description
+    type: STRING
+    defaults: ""
+    description: "Detailed problem description (optional)"
 
 tasks:
   - id: validate_inputs
@@ -52,10 +64,16 @@ tasks:
     concurrent: "{{ inputs.max_concurrent }}"
     tasks:
       - id: call_single_provider
-        type: io.kestra.plugin.scripts.node.Script
-        description: "Call provider via VAPI"
+        type: io.kestra.plugin.scripts.node.Commands
+        description: "Call provider via VAPI using external script"
+        namespaceFiles:
+          enabled: true
+          include:
+            - scripts/**/*
         beforeCommands:
           - npm install @vapi-ai/server-sdk node-fetch
+        commands:
+          - node scripts/call-provider.js "$PHONE" "$SERVICE" "$CRITERIA" "$LOCATION" "$PROVIDER_NAME" "$URGENCY" "$PROVIDER_ID" "$SERVICE_REQUEST_ID" "$CLIENT_NAME" "$CLIENT_ADDRESS" "$PROBLEM_DESCRIPTION"
         env:
           VAPI_API_KEY: "{{ envs.vapi_api_key }}"
           VAPI_PHONE_NUMBER_ID: "{{ envs.vapi_phone_number_id }}"
@@ -68,156 +86,9 @@ tasks:
           PROVIDER_ID: "{{ fromJson(taskrun.value).id }}"
           SERVICE_REQUEST_ID: "{{ inputs.service_request_id }}"
           BACKEND_URL: "{{ envs.backend_url | default('http://localhost:8000') }}"
-        script: |
-          const { VapiClient } = require('@vapi-ai/server-sdk');
-          const vapi = new VapiClient({ token: process.env.VAPI_API_KEY });
-
-          const config = {
-            phone: process.env.PHONE,
-            service: process.env.SERVICE,
-            criteria: process.env.CRITERIA,
-            location: process.env.LOCATION,
-            providerName: process.env.PROVIDER_NAME,
-            urgency: process.env.URGENCY,
-            providerId: process.env.PROVIDER_ID,
-            serviceRequestId: process.env.SERVICE_REQUEST_ID
-          };
-
-          console.log(`[VAPI] Calling ${config.providerName} at ${config.phone}`);
-          console.log(`[VAPI] Service: ${config.service}, Location: ${config.location}`);
-
-          async function main() {
-            const call = await vapi.calls.create({
-              phoneNumberId: process.env.VAPI_PHONE_NUMBER_ID,
-              customer: { number: config.phone, name: "Service Provider" },
-              assistant: {
-                name: "AI Concierge Research Assistant",
-                model: { provider: "google", model: "gemini-2.0-flash" },
-                voice: { provider: "11labs", voiceId: "21m00Tcm4TlvDq8ikWAM" },
-                firstMessage: `Hello, this is an AI assistant calling on behalf of a customer looking for ${config.service} service in ${config.location}. Am I speaking with someone who can help with availability information?`,
-                endCallMessage: "Thank you for your time. Goodbye."
-              }
-            });
-
-            console.log(`[VAPI] Call initiated: ${call.id}`);
-
-            let status = call.status;
-            let attempts = 0;
-            while (['queued', 'ringing', 'in-progress'].includes(status) && attempts < 60) {
-              await new Promise(r => setTimeout(r, 5000));
-              attempts++;
-              const updated = await vapi.calls.get({ id: call.id });
-              status = updated.status;
-              console.log(`[VAPI] Status ${attempts}: ${status}`);
-
-              if (status === 'ended') {
-                const result = {
-                  status: 'completed',
-                  callId: call.id,
-                  duration: updated.duration || 0,
-                  transcript: updated.artifact?.transcript || '',
-                  analysis: updated.analysis || {},
-                  provider: {
-                    name: config.providerName,
-                    phone: config.phone,
-                  }
-                };
-
-                // Save to database via API
-                try {
-                  const fetch = (await import('node-fetch')).default;
-                  const backendUrl = process.env.BACKEND_URL || 'http://localhost:8000';
-                  const saveResponse = await fetch(`${backendUrl}/api/v1/providers/save-call-result`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                      providerId: config.providerId,
-                      serviceRequestId: config.serviceRequestId,
-                      callResult: result
-                    })
-                  });
-                  const saveData = await saveResponse.json();
-                  console.log(`[KESTRA] Saved result to DB: ${saveResponse.status} - ${saveData.message || saveData.error}`);
-                } catch (saveError) {
-                  console.error(`[KESTRA] Failed to save result: ${saveError.message}`);
-                }
-
-                console.log(JSON.stringify(result));
-                return;
-              }
-            }
-
-            // Timeout case
-            const timeoutResult = {
-              status: 'timeout',
-              callId: call.id,
-              duration: 0,
-              transcript: '',
-              analysis: {},
-              provider: {
-                name: config.providerName,
-                phone: config.phone,
-              }
-            };
-
-            // Save timeout to database
-            try {
-              const fetch = (await import('node-fetch')).default;
-              const backendUrl = process.env.BACKEND_URL || 'http://localhost:8000';
-              const saveResponse = await fetch(`${backendUrl}/api/v1/providers/save-call-result`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                  providerId: config.providerId,
-                  serviceRequestId: config.serviceRequestId,
-                  callResult: timeoutResult
-                })
-              });
-              const saveData = await saveResponse.json();
-              console.log(`[KESTRA] Saved timeout to DB: ${saveResponse.status}`);
-            } catch (saveError) {
-              console.error(`[KESTRA] Failed to save timeout: ${saveError.message}`);
-            }
-
-            console.log(JSON.stringify(timeoutResult));
-          }
-
-          main().catch(async (e) => {
-            console.error(e.message);
-
-            // Save error to database
-            const errorResult = {
-              status: 'error',
-              callId: '',
-              duration: 0,
-              transcript: '',
-              analysis: {},
-              error: e.message,
-              provider: {
-                name: config.providerName,
-                phone: config.phone,
-              }
-            };
-
-            try {
-              const fetch = (await import('node-fetch')).default;
-              const backendUrl = process.env.BACKEND_URL || 'http://localhost:8000';
-              const saveResponse = await fetch(`${backendUrl}/api/v1/providers/save-call-result`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                  providerId: config.providerId,
-                  serviceRequestId: config.serviceRequestId,
-                  callResult: errorResult
-                })
-              });
-              console.log(`[KESTRA] Saved error to DB: ${saveResponse.status}`);
-            } catch (saveError) {
-              console.error(`[KESTRA] Failed to save error: ${saveError.message}`);
-            }
-
-            process.exit(1);
-          });
+          CLIENT_NAME: "{{ inputs.client_name }}"
+          CLIENT_ADDRESS: "{{ inputs.client_address }}"
+          PROBLEM_DESCRIPTION: "{{ inputs.problem_description }}"
 
   - id: aggregate_results
     type: io.kestra.plugin.core.debug.Return
