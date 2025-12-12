@@ -15,9 +15,33 @@ import {
 interface Props {
   status: RequestStatus;
   size?: "sm" | "md";
+  callProgress?: {
+    total: number;
+    queued: number;
+    inProgress: number;
+    completed: number;
+    currentProviderName: string | null;
+    percent: number;
+  } | null;
 }
 
-const StatusBadge: React.FC<Props> = ({ status, size = "md" }) => {
+const StatusBadge: React.FC<Props> = ({ status, size = "md", callProgress }) => {
+  // CRITICAL FIX: Derive display status from call progress to match LiveStatus
+  // When status is ANALYZING but calls are still running, show CALLING instead
+  const displayStatus = (() => {
+    if (status === RequestStatus.ANALYZING && callProgress) {
+      const hasActiveCalls = callProgress.inProgress > 0;
+      const hasQueuedCalls = callProgress.queued > 0;
+      const callsNotFinished = callProgress.completed < callProgress.total;
+
+      // If any calls are still running or queued, show CALLING status
+      if (hasActiveCalls || hasQueuedCalls || callsNotFinished) {
+        return RequestStatus.CALLING;
+      }
+    }
+    return status;
+  })();
+
   const config = {
     [RequestStatus.PENDING]: {
       color: "bg-slate-500/20 text-slate-300 border-slate-500/30",
@@ -71,7 +95,7 @@ const StatusBadge: React.FC<Props> = ({ status, size = "md" }) => {
     animate: false,
   };
 
-  const current = config[status] || fallback;
+  const current = config[displayStatus] || fallback;
   const Icon = current.icon;
   const sizeClass = size === "sm" ? "px-2 py-0.5 text-xs" : "px-3 py-1 text-sm";
 

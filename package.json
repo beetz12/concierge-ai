@@ -15,8 +15,10 @@
     "cline:test": "./scripts/cline/generate-tests.sh",
     "cline:docs": "./scripts/cline/update-docs.sh --all",
     "cline:setup": "./scripts/setup-husky.sh",
-    "migrate:workflow": "node kestra/scripts/migrate-envs-to-secrets.js",
-    "migrate:workflow:dry": "node kestra/scripts/migrate-envs-to-secrets.js --dry-run"
+    "migrate:workflow": "node kestra/scripts/deploy-flows.js",
+    "migrate:workflow:dry": "node kestra/scripts/deploy-flows.js --dry-run",
+    "migrate:workflow-vars": "node kestra/scripts/migrate-envs-to-secrets.js",
+    "migrate:workflow-vars:dry": "node kestra/scripts/migrate-envs-to-secrets.js --dry-run"
   },
   "devDependencies": {
     "husky": "^9.0.11",

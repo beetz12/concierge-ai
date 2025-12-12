@@ -182,8 +182,10 @@ export class ResearchService {
       this.logger.debug({ healthy }, "Kestra health check result");
       return healthy;
     } catch (error) {
-      this.logger.debug({ error }, "Kestra health check failed");
-      return false;
+      // STRICT MODE: Re-throw error so strict mode check can be triggered
+      // This ensures KESTRA_ENABLED=true actually enforces Kestra usage
+      this.logger.error({ error }, "Kestra health check failed");
+      throw error;
     }
   }
 

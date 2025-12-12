@@ -5,7 +5,7 @@ services:
     image: kestra/kestra:v1.1.6
     container_name: kestra
     user: "root"
-    command: server standalone
+    entrypoint: ["/bin/sh", "-c", "chmod 666 /var/run/docker.sock && exec /app/kestra server standalone"]
     ports:
       - "8082:8080"
     env_file:

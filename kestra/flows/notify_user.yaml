@@ -34,9 +34,6 @@ tasks:
   - id: send_sms
     type: io.kestra.plugin.scripts.node.Commands
     description: "Send SMS notification via Twilio"
-    containerImage: node:20-alpine
-    taskRunner:
-      type: io.kestra.plugin.scripts.runner.docker.Docker
     namespaceFiles:
       enabled: true
       include:

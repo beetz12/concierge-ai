@@ -705,12 +705,35 @@ export default async function providerRoutes(fastify: FastifyInstance) {
               "Background batch call processing failed"
             );
 
-            // Log error to database for visibility
+            const errorMessage = error instanceof Error ? error.message : "Unknown error";
+
+            // Update service request status to FAILED (triggers real-time subscription)
+            if (validated.serviceRequestId) {
+              await supabase
+                .from("service_requests")
+                .update({
+                  status: "FAILED",
+                  final_outcome: `Failed to complete provider calls: ${errorMessage}`,
+                })
+                .eq("id", validated.serviceRequestId);
+            }
+
+            // Mark all queued/in_progress providers as error
+            const providerIds = validated.providers.map((p) => p.id).filter(Boolean);
+            if (providerIds.length > 0) {
+              await supabase
+                .from("providers")
+                .update({ call_status: "error" })
+                .in("id", providerIds)
+                .in("call_status", ["queued", "in_progress"]);
+            }
+
+            // Log error to interaction_logs for audit trail
             if (validated.serviceRequestId) {
               await supabase.from("interaction_logs").insert({
                 request_id: validated.serviceRequestId,
                 step_name: "Batch Calls Error",
-                detail: `Background processing failed: ${error instanceof Error ? error.message : "Unknown error"}`,
+                detail: `Background processing failed: ${errorMessage}`,
                 status: "error",
               });
             }

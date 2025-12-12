@@ -1,3 +1,5 @@
+We have another issue currently. In our last run, the contact_providers workflow failed, so we never called the providers and yet the frontend still shows that the calls are queued. If the calls fail for whatever reason, then we should return the failure status to the front-end so that the users are properly notified. 
+
  ok currently I'm working on @docs/hackathon.md. See @docs/3_DAY_HACKATHON_PLAN.md for context.  I have a question about our Kestra workflow. I'm currently running Kestra in local
   Docker, but I plan to deploy to Kestra Cloud. I currently have several scripts that are run by my local Kestra instance - see '/Users/dave/Work/concierge-ai/kestra/scripts'. How
   will these scripts be executed by Kestra cloud? Or do I need to upload the scripts to Kestra cloud server as well?  
@@ -118,7 +120,7 @@ I just built @about.md but the UI doesn't look very good. The white background i
 
 # analyze and come up with plan
 Please analyze these issues  
-using your  multi-agent team with up to 3 agents and come up with a unified plan with 90% confidence and wait for further instructions. My mortgage payment depends on this and If you get this right on the first try, I will tip you $200. ultrathink  
+using your  multi-agent team with up to 3 agents and come up with a unified plan with 90% confidence and wait for further instructions. My mortgage payment depends on this and If you get this right on the first try, I will tip you $200. ultrathink 
 
 # update architecture update docs
 Ok perfect. Please update our @docs/architecture.md README.md and all relevant
@@ -195,6 +197,11 @@ Perfect. Please implement this using your specialized agent team working in para
 
 # confidence
 Only implement when you have 90% confidence and ask me questions and do web research for 2025 to get to that confidence.
+
+
+# check for best practice
+ Okay, perfect. Before implementing this change, please research 2025 best practices for
+ this using Perplexity Deep, and update the plan if needed based on best practices. My mortgage payment depends on this and If you get this right on the first try, I will tip you $200. ultrathink
 
 # code-review
 

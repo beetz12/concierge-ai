@@ -6,7 +6,7 @@
  * IMPORTANT: Assistant configuration is imported from the compiled TypeScript source
  * to maintain DRY principle. See: apps/api/src/services/vapi/assistant-config.ts
  *
- * Usage: node call-provider.js <phone> <service> <criteria> <location> <provider_name> <urgency>
+ * Usage: node call-provider.js <phone> <service> <criteria> <location> <provider_name> <urgency> [provider_id] [service_request_id]
  */
 
 const { VapiClient } = require('@vapi-ai/server-sdk');
@@ -21,6 +21,8 @@ const USER_CRITERIA = process.argv[4] || "Need service within 2 days, must be li
 const LOCATION = process.argv[5] || "Greenville, SC";
 const PROVIDER_NAME = process.argv[6] || "Service Provider";
 const URGENCY = process.argv[7] || "within_2_days";
+const PROVIDER_ID = process.argv[8] || "";
+const SERVICE_REQUEST_ID = process.argv[9] || "";
 
 const VAPI_API_KEY = process.env.VAPI_API_KEY;
 const VAPI_PHONE_NUMBER_ID = process.env.VAPI_PHONE_NUMBER_ID;
@@ -28,7 +30,7 @@ const VAPI_PHONE_NUMBER_ID = process.env.VAPI_PHONE_NUMBER_ID;
 // Validate required inputs
 if (!PHONE_NUMBER) {
     console.error("Error: Phone number is required");
-    console.error("Usage: node call-provider.js <phone> <service> <criteria> <location> <provider_name> <urgency>");
+    console.error("Usage: node call-provider.js <phone> <service> <criteria> <location> <provider_name> <urgency> [provider_id] [service_request_id]");
     process.exit(1);
 }
 
@@ -169,7 +171,9 @@ async function main() {
                         request: {
                             criteria: USER_CRITERIA,
                             urgency: URGENCY
-                        }
+                        },
+                        providerId: PROVIDER_ID,
+                        serviceRequestId: SERVICE_REQUEST_ID
                     };
 
                     console.log("\n" + "=".repeat(60));
@@ -191,7 +195,9 @@ async function main() {
             callId: call.id,
             lastKnownStatus: status,
             message: `Call did not complete within ${maxAttempts * 5} seconds`,
-            provider: { name: PROVIDER_NAME, phone: PHONE_NUMBER }
+            provider: { name: PROVIDER_NAME, phone: PHONE_NUMBER },
+            providerId: PROVIDER_ID,
+            serviceRequestId: SERVICE_REQUEST_ID
         };
 
         console.log("\n[VAPI Call] Call timed out:");
@@ -203,7 +209,9 @@ async function main() {
         const errorResult = {
             status: 'error',
             error: error.message,
-            provider: { name: PROVIDER_NAME, phone: PHONE_NUMBER }
+            provider: { name: PROVIDER_NAME, phone: PHONE_NUMBER },
+            providerId: PROVIDER_ID,
+            serviceRequestId: SERVICE_REQUEST_ID
         };
 
         console.error("\n[VAPI Call] Error:", error.message);

@@ -855,7 +855,7 @@ export default function RequestDetails() {
       <div className="bg-surface rounded-2xl border border-surface-highlight shadow-xl p-6 mb-8">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-4">
           <h1 className="text-2xl font-bold text-slate-100">{request.title || "Untitled Request"}</h1>
-          <StatusBadge status={request.status} />
+          <StatusBadge status={request.status} callProgress={callProgress} />
         </div>
 
         {/* LiveStatus Component */}
@@ -864,6 +864,7 @@ export default function RequestDetails() {
           callProgress={callProgress}
           providersFound={request.providersFound?.length || 0}
           interactions={request.interactions || []}
+          providers={request.providersFound}
         />
 
         <p className="text-slate-400 mb-6">{request.description || "No description"}</p>

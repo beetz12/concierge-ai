@@ -90,17 +90,21 @@ export class KestraResearchClient {
   }
 
   /**
-   * Build request body - FormData for cloud, JSON for local
+   * Build request body - FormData for both cloud and local modes
+   * Kestra execution API requires multipart/form-data, not JSON
+   * Handles objects/arrays by JSON stringifying, primitives as-is
    */
-  private buildRequestBody(inputs: Record<string, unknown>): FormData | Record<string, unknown> {
-    if (this.isCloudMode) {
-      const formData = new FormData();
-      Object.entries(inputs).forEach(([key, value]) => {
+  private buildRequestBody(inputs: Record<string, unknown>): FormData {
+    const formData = new FormData();
+    Object.entries(inputs).forEach(([key, value]) => {
+      // Handle objects/arrays by JSON stringifying, primitives as-is
+      if (typeof value === "object" && value !== null) {
+        formData.append(key, JSON.stringify(value));
+      } else {
         formData.append(key, String(value));
-      });
-      return formData;
-    }
-    return inputs;
+      }
+    });
+    return formData;
   }
 
   /**
@@ -112,7 +116,8 @@ export class KestraResearchClient {
         process.env.KESTRA_HEALTH_CHECK_TIMEOUT || "3000",
         10,
       );
-      const response = await axios.get(`${this.baseUrl}/api/v1/health`, {
+      // Use /api/v1/configs as health check - /api/v1/health doesn't exist in local Kestra
+      const response = await axios.get(`${this.baseUrl}/api/v1/configs`, {
         timeout,
         headers: this.buildHeaders(),
       });
@@ -170,7 +175,8 @@ export class KestraResearchClient {
 
     const url = this.buildExecutionUrl(this.flowId);
     const body = this.buildRequestBody(inputs);
-    const headers = this.buildHeaders(this.isCloudMode);
+    // Always use FormData headers - Kestra execution API requires multipart/form-data
+    const headers = this.buildHeaders(true);
 
     const response = await axios.post(url, body, { headers });
 
@@ -202,14 +208,14 @@ export class KestraResearchClient {
       this.logger.debug(
         {
           executionId,
-          state: status.state,
+          state: status.state.current,
           attempt: attempts + 1,
           maxAttempts,
         },
         "Polling Kestra execution",
       );
 
-      if (["SUCCESS", "FAILED", "KILLED"].includes(status.state)) {
+      if (["SUCCESS", "FAILED", "KILLED"].includes(status.state.current)) {
         return status;
       }
 
@@ -246,15 +252,15 @@ export class KestraResearchClient {
     // Kestra outputs are in state.outputs.json (from flow output)
     const rawOutput = state.outputs?.json;
 
-    if (!rawOutput || state.state !== "SUCCESS") {
+    if (!rawOutput || state.state.current !== "SUCCESS") {
       return {
         status: "error",
         method: "kestra",
         providers: [],
         error:
-          state.state === "SUCCESS"
+          state.state.current === "SUCCESS"
             ? "No output from Kestra execution"
-            : `Kestra execution ${state.state.toLowerCase()}`,
+            : `Kestra execution ${state.state.current.toLowerCase()}`,
       };
     }
 

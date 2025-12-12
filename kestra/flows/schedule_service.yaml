@@ -54,9 +54,6 @@ tasks:
   - id: make_booking_call
     type: io.kestra.plugin.scripts.node.Commands
     description: "Make VAPI call to schedule appointment"
-    containerImage: node:20-alpine
-    taskRunner:
-      type: io.kestra.plugin.scripts.runner.docker.Docker
     namespaceFiles:
       enabled: true
       include:
@@ -68,6 +65,7 @@ tasks:
     env:
       VAPI_API_KEY: "{{ envs.vapi_api_key }}"
       VAPI_PHONE_NUMBER_ID: "{{ envs.vapi_phone_number_id }}"
+      GEMINI_API_KEY: "{{ envs.gemini_api_key }}"
 
   - id: log_result
     type: io.kestra.plugin.core.debug.Return

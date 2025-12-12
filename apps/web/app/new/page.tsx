@@ -196,16 +196,16 @@ export default function NewRequest() {
         }));
       } catch (dbErr) {
         console.error("[Concierge] Failed to persist providers to database:", dbErr);
-        // Fallback to original IDs if database insert fails (less ideal but keeps flow working)
-        providers = workflowResult.providers.map((p) => ({
-          id: p.id,
-          name: p.name,
-          phone: p.phone,
-          rating: p.rating,
-          address: p.address,
-          reason: p.reason || "",
-          placeId: p.placeId || p.id,
-        }));
+        // Database persistence is critical - without UUIDs, call results can't be saved
+        // and real-time subscriptions won't work. Fail with clear error.
+        await updateStatus("FAILED", {
+          finalOutcome: "Database error: Unable to save provider information. Please try again.",
+        });
+        await updateServiceRequest(reqId, {
+          status: "FAILED",
+          final_outcome: "Database error during provider persistence",
+        });
+        return;
       }
 
       const searchLog = {
@@ -374,13 +374,26 @@ export default function NewRequest() {
                 const result = await response.json();
                 console.log(`[Concierge] Calls accepted (execution: ${result.data?.executionId}). Providers queued:`, result.data?.providersQueued);
               } else {
+                // API error - update local state immediately (backend may also update via DB)
                 const errorText = await response.text();
                 console.error(`[Concierge] Failed to start async calls: ${response.status} - ${errorText}`);
+                updateRequest(reqId, {
+                  status: RequestStatus.FAILED,
+                  finalOutcome: `Failed to initiate calls: ${response.status} - ${errorText}`,
+                });
+                // Also try to update database status
+                updateServiceRequest(reqId, { status: "FAILED", final_outcome: `API error: ${response.status}` }).catch(console.error);
               }
             })
             .catch((error) => {
-              // Network error - calls may still be running on backend
-              console.error("[Concierge] Network error starting calls (backend may still be processing):", error);
+              // Network error - update status to show failure
+              console.error("[Concierge] Network error starting calls:", error);
+              updateRequest(reqId, {
+                status: RequestStatus.FAILED,
+                finalOutcome: `Network error initiating calls: ${error.message || "Connection failed"}`,
+              });
+              // Also try to update database status
+              updateServiceRequest(reqId, { status: "FAILED", final_outcome: "Network error" }).catch(console.error);
             });
 
           // Add immediate feedback log - calls are now in progress

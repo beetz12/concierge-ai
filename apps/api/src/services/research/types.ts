@@ -60,9 +60,17 @@ export interface SystemStatus {
   activeResearchMethod: "kestra" | "direct_gemini";
 }
 
+export interface KestraExecutionState {
+  current: "CREATED" | "RUNNING" | "SUCCESS" | "FAILED" | "KILLED";
+  histories?: Array<{ state: string; date: string }>;
+  duration?: string;
+  startDate?: string;
+  endDate?: string;
+}
+
 export interface KestraExecutionStatus {
   id: string;
-  state: "CREATED" | "RUNNING" | "SUCCESS" | "FAILED" | "KILLED";
+  state: KestraExecutionState;
   outputs?: Record<string, unknown>;
 }
 
