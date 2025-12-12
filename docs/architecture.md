@@ -1300,7 +1300,7 @@ export function createAssistantConfig(request: CallRequest) {
   return {
     name: `Concierge-${Date.now()}`,
     voice: { provider: "11labs", voiceId: "..." },
-    model: { provider: "google", model: "gemini-2.0-flash-exp" },
+    model: { provider: "google", model: "gemini-2.5-flash" },
     analysisPlan: {
       structuredDataPlan: {
         schema: {
@@ -1541,6 +1541,54 @@ flowchart LR
 | `notify_user` | - | **Needed** (SMS via Twilio) |
 | `schedule_service` | - | **Needed** (VAPI callback) |
 
+### Backend-Owned Recommendation Generation (December 2025)
+
+The system now features **automatic backend-triggered recommendation generation** after all provider calls complete. This eliminates race conditions and ensures reliable recommendation delivery.
+
+#### Architecture Flow
+
+```
+POST /batch-call-async (202 Accepted)
+           ↓
+  setImmediate() background worker
+           ↓
+  Kestra batch calls (or Direct VAPI fallback)
+           ↓
+  resultsInDatabase: true flag received
+           ↓
+  Poll DB every 2s for all providers to complete (max 30s)
+           ↓
+  Transform provider data → CallResult format
+           ↓
+  Trigger Kestra recommend_providers OR Direct Gemini
+           ↓
+  Update status: ANALYZING → RECOMMENDED
+           ↓
+  Supabase Realtime broadcasts to frontend
+```
+
+#### Implementation Details
+
+**Location**: `apps/api/src/routes/providers.ts` (lines 708-926)
+
+**Trigger Conditions**:
+- Activated when `batchResult.resultsInDatabase === true`
+- Runs in background via `setImmediate()` - non-blocking
+
+**Key Steps**:
+
+1. **Status Update to ANALYZING** - Immediately updates service request status
+2. **Poll for Completion** - Polls database every 2 seconds (max 15 attempts = 30 seconds)
+3. **Transform Provider Data** - Converts DB provider records to CallResult format
+4. **Generate Recommendations** - Kestra workflow (primary) or Direct Gemini (fallback)
+5. **Status Update to RECOMMENDED** - Only if recommendations generated successfully
+
+**Benefits**:
+- **Automatic**: No frontend logic to determine when to trigger recommendations
+- **Reliable**: Backend owns the entire flow, eliminating race conditions
+- **Real-time**: UI updates immediately via Supabase Realtime subscription
+- **Resilient**: Kestra-first with Gemini fallback for high availability
+
 ## 3. Data Flow & Real-Time Updates
 
 How the user gets feedback without reloading.
@@ -1572,6 +1620,53 @@ sequenceDiagram
     SB-->>UI: Realtime Event (Done)
     UI-->>User: Show Result
 ```
+
+#### Supabase Realtime Technical Details
+
+The frontend receives real-time updates using **Supabase Realtime**, which leverages PostgreSQL's LISTEN/NOTIFY mechanism over WebSocket connections.
+
+**How It Works**:
+```
+Database Change → PostgreSQL Trigger → pg_notify() → Supabase Realtime Server → WebSocket → Frontend
+```
+
+**Subscribed Tables** (`apps/web/app/request/[id]/page.tsx`):
+
+| Table | Event | Filter | Purpose |
+|-------|-------|--------|---------|
+| `service_requests` | `*` (all) | `id=eq.${id}` | Status changes (ANALYZING → RECOMMENDED) |
+| `providers` | `UPDATE` | `request_id=eq.${id}` | Call results, status updates |
+
+**Code Example**:
+```typescript
+const channel = supabase
+  .channel(`request-${id}`)
+  .on("postgres_changes", {
+    event: "*",
+    schema: "public",
+    table: "service_requests",
+    filter: `id=eq.${id}`
+  }, (payload) => {
+    // Automatically triggered when request status changes
+    setRealtimeRequest(payload.new);
+  })
+  .on("postgres_changes", {
+    event: "UPDATE",
+    schema: "public",
+    table: "providers",
+    filter: `request_id=eq.${id}`
+  }, (payload) => {
+    // Triggers when call_result, call_status updated
+    updateProviderInState(payload.new);
+  })
+  .subscribe();
+```
+
+**Performance Characteristics**:
+- **Latency**: ~200ms end-to-end from database update to UI
+- **Efficiency**: Only subscribed clients receive filtered updates
+- **Scalability**: WebSocket connections managed by Supabase infrastructure
+- **Battery-friendly**: No client-side polling required
 
 ## 4. Infrastructure & DevOps Pipeline
 
@@ -1658,6 +1753,42 @@ erDiagram
         timestamp timestamp
     }
 ```
+
+### Request Status Flow
+
+The `RECOMMENDED` status was added in December 2025 to clearly separate the analysis phase from user decision time.
+
+**Complete Status Enum** (`apps/web/lib/types/index.ts`):
+
+```typescript
+export enum RequestStatus {
+  PENDING = "PENDING",       // Request created
+  SEARCHING = "SEARCHING",   // Researching providers
+  CALLING = "CALLING",       // Making VAPI calls
+  ANALYZING = "ANALYZING",   // Processing call results
+  RECOMMENDED = "RECOMMENDED", // NEW: Top 3 ready for user selection
+  BOOKING = "BOOKING",       // Scheduling appointment
+  COMPLETED = "COMPLETED",   // Appointment confirmed
+  FAILED = "FAILED",         // Error state
+}
+```
+
+**Status Flow Diagram**:
+
+```
+PENDING → SEARCHING → CALLING → ANALYZING → RECOMMENDED → BOOKING → COMPLETED
+                                    ↓              ↓
+                                 FAILED        CANCELLED
+```
+
+**Critical Transition: ANALYZING → RECOMMENDED**
+
+This transition is **backend-owned** and occurs when:
+1. All provider calls have completed (success, failed, or timeout)
+2. Backend has generated AI recommendations via Kestra or Gemini
+3. Top 3 providers are scored and ranked with reasoning
+
+The frontend simply **observes** this status change via Supabase Realtime and displays the recommendations.
 
 ### Provider Persistence Architecture (December 2025)
 

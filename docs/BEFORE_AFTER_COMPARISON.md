@@ -112,6 +112,50 @@
 
 ---
 
+### RECOMMENDED Stage (NEW - December 2025)
+
+#### Before
+Frontend had to manually trigger recommendation API after detecting call completion
+
+#### After
+```
+┌─────────────────────────────────────────────────────────────────┐
+│ ✨ Recommendations Ready!                                        │
+│ Top 3 providers selected by AI                                  │
+│                                                                  │
+│ ┌────────────────────────────────────────────────────────────┐ │
+│ │ 🥇 ABC Plumbing                          Score: 95/100     │ │
+│ │ ⭐⭐⭐⭐⭐ 4.8/5.0                                         │ │
+│ │                                                            │ │
+│ │ "Highest rated with immediate availability and licensed   │ │
+│ │  professionals. Best match for urgent plumbing needs."    │ │
+│ │                                                            │ │
+│ │                            [Select to Book] ────────────> │ │
+│ └────────────────────────────────────────────────────────────┘ │
+│                                                                  │
+│ [2 more provider cards...]                                       │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+**What's New:**
+- Backend-owned recommendation generation
+- Automatic status transition from ANALYZING → RECOMMENDED
+- Real-time update via Supabase subscription
+- No frontend polling or API calls needed
+
+**User Experience:**
+- Seamless transition from "Analyzing..." to "Recommendations Ready!"
+- Immediate display of top 3 providers with AI scoring
+- Clear call-to-action to select a provider
+
+**Technical Benefits:**
+- Single source of truth for recommendations in database
+- Reduced API calls (backend generates once, frontend subscribes)
+- Improved reliability (no race conditions from multiple API triggers)
+- Better separation of concerns (backend = logic, frontend = display)
+
+---
+
 ## Key Improvements
 
 ### 1. **Transparency**
@@ -144,7 +188,7 @@
 > "The system is now searching for providers... and it's calling them... and now it's analyzing."
 
 **New Demo Script:**
-> "Watch as the AI queries Google Maps with grounding - see? It found 5 providers. Now it's filtering by rating. Perfect! Now watch these concurrent calls - we're calling 5 providers at the same time. See the metrics? 2 in the queue, 2 active, 1 done. We're currently calling ABC Plumbing. Now the AI is collecting transcripts, running Gemini analysis, scoring each provider, and generating recommendations. Everything happens in real-time with full transparency."
+> "Watch as the AI queries Google Maps with grounding - see? It found 5 providers. Now it's filtering by rating. Perfect! Now watch these concurrent calls - we're calling 5 providers at the same time. See the metrics? 2 in the queue, 2 active, 1 done. We're currently calling ABC Plumbing. Now the AI is collecting transcripts, running Gemini analysis, scoring each provider, and generating recommendations. And there it is - the status automatically updated to RECOMMENDED with our top 3 providers, complete with AI scores and reasoning. Everything happens in real-time with full transparency."
 
 ### Technical Depth Showcase
 
@@ -162,10 +206,10 @@ The enhanced status reveals:
 - **Files Changed:** 3
 - **Lines Added:** ~400
 - **New Animations:** 2 (pulse, shimmer)
-- **Status Stages Enhanced:** 3 (Searching, Calling, Analyzing)
+- **Status Stages Enhanced:** 4 (Searching, Calling, Analyzing, Recommended)
 - **Progress Indicators:** 12 total (4 per stage)
 - **Real-time Metrics:** 3 (Queued, Active, Done)
-- **Color Themes:** 5 (per status type)
+- **Color Themes:** 6 (per status type including Recommended)
 
 ---
 
@@ -214,7 +258,9 @@ When showing to judges:
 - ✅ Note the live provider name
 - ✅ Watch the progress bar fill with shimmer
 - ✅ Explain the ANALYZING AI steps
+- ✅ Watch the automatic transition to RECOMMENDED status
+- ✅ Show the top 3 provider cards with AI scoring and reasoning
 - ✅ Mention Gemini 2.5 Flash by name
 - ✅ Emphasize real-time updates via Supabase
 
-**Result:** Judges see a professional, production-ready system with full transparency into the AI agent's sophisticated workflow.
+**Result:** Judges see a professional, production-ready system with full transparency into the AI agent's sophisticated workflow, culminating in actionable recommendations.

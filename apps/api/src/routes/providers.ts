@@ -1243,7 +1243,7 @@ export default async function providerRoutes(fastify: FastifyInstance) {
         tags: ["providers"],
         summary: "Analyze call results and recommend top 3 providers",
         description:
-          "Uses Gemini 2.0 Flash to analyze call results from multiple providers and recommend the top 3 based on availability, rates, criteria match, call quality, and professionalism.",
+          "Uses Gemini 2.5 Flash to analyze call results from multiple providers and recommend the top 3 based on availability, rates, criteria match, call quality, and professionalism.",
         body: {
           type: "object",
           required: ["callResults", "originalCriteria", "serviceRequestId"],

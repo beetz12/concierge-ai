@@ -23,6 +23,9 @@ const PROVIDER_NAME = process.argv[6] || "Service Provider";
 const URGENCY = process.argv[7] || "within_2_days";
 const PROVIDER_ID = process.argv[8] || "";
 const SERVICE_REQUEST_ID = process.argv[9] || "";
+const CLIENT_NAME = process.argv[10] || process.env.CLIENT_NAME || "my client";
+const CLIENT_ADDRESS = process.argv[11] || process.env.CLIENT_ADDRESS || "";
+const PROBLEM_DESCRIPTION = process.argv[12] || process.env.PROBLEM_DESCRIPTION || "";
 
 const VAPI_API_KEY = process.env.VAPI_API_KEY;
 const VAPI_PHONE_NUMBER_ID = process.env.VAPI_PHONE_NUMBER_ID;
@@ -96,6 +99,9 @@ async function main() {
     console.log(`[VAPI Call] Location: ${LOCATION}`);
     console.log(`[VAPI Call] Urgency: ${URGENCY}`);
     console.log(`[VAPI Call] Criteria: ${USER_CRITERIA}`);
+    console.log(`[VAPI Call] Client: ${CLIENT_NAME}`);
+    if (CLIENT_ADDRESS) console.log(`[VAPI Call] Address: ${CLIENT_ADDRESS}`);
+    if (PROBLEM_DESCRIPTION) console.log(`[VAPI Call] Problem: ${PROBLEM_DESCRIPTION}`);
     console.log("=".repeat(60));
 
     try {
@@ -110,7 +116,10 @@ async function main() {
             userCriteria: USER_CRITERIA,
             location: LOCATION,
             providerName: PROVIDER_NAME,
-            urgency: URGENCY
+            urgency: URGENCY,
+            clientName: CLIENT_NAME,
+            clientAddress: CLIENT_ADDRESS,
+            problemDescription: PROBLEM_DESCRIPTION
         };
         const assistantConfig = createAssistantConfig(callRequest);
         console.log("[Config] Using shared configuration from TypeScript source");
