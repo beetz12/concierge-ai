@@ -9,7 +9,8 @@ export interface BookingRequest {
   serviceNeeded: string;
   clientName?: string;
   clientPhone?: string;
-  location: string;
+  location: string; // City/state (backward compatible)
+  clientAddress?: string; // Full street address
   preferredDateTime?: string;
   serviceRequestId?: string;
   providerId?: string;
@@ -38,7 +39,7 @@ Now you are calling back to lock in a specific date and time.
 APPOINTMENT DETAILS
 ═══════════════════════════════════════════════════════════════════
 Service needed: ${request.serviceNeeded}
-Client location: ${request.location}
+${request.clientAddress ? `Service address: ${request.clientAddress}` : `Service area: ${request.location} (general area only)`}
 Preferred time: ${preferredTime}
 ${request.additionalNotes ? `Additional notes: ${request.additionalNotes}` : ""}
 
@@ -47,8 +48,9 @@ INFORMATION YOU CAN PROVIDE
 ═══════════════════════════════════════════════════════════════════
 ${request.clientName ? `Client name: ${request.clientName}` : "Client name: Available upon scheduling"}
 ${request.clientPhone ? `Client callback number: ${request.clientPhone}` : "Client will provide contact details directly"}
+${request.clientAddress ? `If asked for the address: "The service address is ${request.clientAddress}"` : `CRITICAL: You do NOT have the street address. If asked: "${clientName} will provide their exact address when the technician arrives."`}
 
-If they ask for information you don't have (like exact address, payment method, etc.):
+If they ask for information you don't have (like payment method, etc.):
 "${clientName} will provide those details directly when you arrive for the appointment.
 For now, we just want to lock in the date and time."
 
