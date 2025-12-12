@@ -1,6 +1,6 @@
 /**
  * Provider Recommendation Service
- * Analyzes call results using Gemini 2.0 Flash to recommend top 3 providers
+ * Analyzes call results using Gemini 2.5 Flash to recommend top 3 providers
  */
 
 import { GoogleGenAI } from "@google/genai";
@@ -15,7 +15,7 @@ import type { CallResult } from "../vapi/types.js";
 
 export class RecommendationService {
   private ai: GoogleGenAI;
-  private model = "gemini-2.0-flash-exp";
+  private model = "gemini-2.5-flash";
 
   constructor() {
     const apiKey = process.env.GEMINI_API_KEY;

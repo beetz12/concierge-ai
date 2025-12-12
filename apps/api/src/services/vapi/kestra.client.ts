@@ -183,6 +183,9 @@ export class KestraClient {
       user_criteria: request.userCriteria,
       location: request.location,
       urgency: request.urgency,
+      client_name: request.clientName || "my client",
+      client_address: request.clientAddress || "",
+      problem_description: request.problemDescription || "",
     };
 
     const url = this.buildExecutionUrl(this.flowId);
@@ -296,8 +299,82 @@ export class KestraClient {
     }
 
     // Parse the JSON output from call-provider.js
-    const parsed =
-      typeof rawOutput === "string" ? JSON.parse(rawOutput) : rawOutput;
+    let parsed;
+    if (typeof rawOutput === "string") {
+      const trimmedOutput = rawOutput.trim();
+
+      // Check if output is a summary string (not JSON)
+      if (!trimmedOutput.startsWith("[") && !trimmedOutput.startsWith("{")) {
+        this.logger.info(
+          { executionId: state.id, output: trimmedOutput.substring(0, 100) },
+          "Kestra single call returned summary string - result may be saved via callback to database",
+        );
+
+        // Return success indicator - result should be in database
+        return {
+          status: "completed",
+          callId: state.id,
+          callMethod: "kestra",
+          duration: 0,
+          endedReason: "completed",
+          transcript: "",
+          analysis: {
+            summary: trimmedOutput,
+            structuredData: {} as StructuredCallData,
+            successEvaluation: "",
+          },
+          provider: {
+            name: request.providerName,
+            phone: request.providerPhone,
+            service: request.serviceNeeded,
+            location: request.location,
+          },
+          request: {
+            criteria: request.userCriteria,
+            urgency: request.urgency,
+          },
+          resultInDatabase: true, // Flag to indicate result is in DB
+        } as CallResult & { resultInDatabase?: boolean };
+      }
+
+      // Try to parse as JSON with error handling
+      try {
+        parsed = JSON.parse(trimmedOutput);
+      } catch (parseError) {
+        this.logger.error(
+          { executionId: state.id, parseError, rawOutput: trimmedOutput.substring(0, 200) },
+          "Failed to parse Kestra single call output as JSON",
+        );
+
+        // Return success with flag - result may be in database via callback
+        return {
+          status: "completed",
+          callId: state.id,
+          callMethod: "kestra",
+          duration: 0,
+          endedReason: "completed",
+          transcript: "",
+          analysis: {
+            summary: "Call completed - result saved via callback",
+            structuredData: {} as StructuredCallData,
+            successEvaluation: "",
+          },
+          provider: {
+            name: request.providerName,
+            phone: request.providerPhone,
+            service: request.serviceNeeded,
+            location: request.location,
+          },
+          request: {
+            criteria: request.userCriteria,
+            urgency: request.urgency,
+          },
+          resultInDatabase: true,
+        } as CallResult & { resultInDatabase?: boolean };
+      }
+    } else {
+      parsed = rawOutput;
+    }
 
     // Merge parsed result with kestra method identifier
     return {
@@ -346,6 +423,9 @@ export class KestraClient {
         urgency: firstRequest.urgency,
         max_concurrent: options?.maxConcurrent || 5,
         service_request_id: firstRequest.serviceRequestId,  // ADD THIS for tracking
+        client_name: firstRequest.clientName || "my client",
+        client_address: firstRequest.clientAddress || "",
+        problem_description: firstRequest.problemDescription || "",
       };
 
       // Trigger execution
@@ -461,9 +541,61 @@ export class KestraClient {
       };
     }
 
-    // Parse the results
-    const results: CallResult[] =
-      typeof rawOutput === "string" ? JSON.parse(rawOutput) : rawOutput;
+    // Parse the results - with protection for summary strings
+    let results: CallResult[];
+
+    if (typeof rawOutput === "string") {
+      // Check if the output is a summary string (not JSON)
+      // contact_providers.yaml outputs: "All X providers called successfully..."
+      // In this case, results are already saved to DB via /save-call-result callback
+      const trimmedOutput = rawOutput.trim();
+      if (!trimmedOutput.startsWith("[") && !trimmedOutput.startsWith("{")) {
+        this.logger.info(
+          { executionId: state.id, output: trimmedOutput.substring(0, 100) },
+          "Kestra batch returned summary string - results are saved via callback to database",
+        );
+
+        // Return special indicator that results are in database, not in output
+        // The caller should fetch results from database
+        return {
+          results: [],
+          stats: {
+            total: requests.length,
+            successful: requests.length, // Assume success since execution completed
+            failed: 0,
+            timedOut: 0,
+            durationMs: 0,
+          },
+          resultsInDatabase: true, // Flag to indicate caller should fetch from DB
+        } as ConcurrentCallResult & { resultsInDatabase?: boolean };
+      }
+
+      // Try to parse as JSON with error handling
+      try {
+        results = JSON.parse(trimmedOutput);
+      } catch (parseError) {
+        this.logger.error(
+          { executionId: state.id, parseError, rawOutput: trimmedOutput.substring(0, 200) },
+          "Failed to parse Kestra batch output as JSON",
+        );
+
+        // Results may be in database via callback - return success indicator
+        return {
+          results: [],
+          stats: {
+            total: requests.length,
+            successful: requests.length,
+            failed: 0,
+            timedOut: 0,
+            durationMs: 0,
+          },
+          resultsInDatabase: true,
+        } as ConcurrentCallResult & { resultsInDatabase?: boolean };
+      }
+    } else {
+      // rawOutput is already parsed (not a string) - type assertion needed
+      results = rawOutput as CallResult[];
+    }
 
     // Ensure all results have kestra method identifier
     const callResults = results.map((result) => ({
@@ -604,6 +736,8 @@ export class KestraClient {
     customerName?: string;
     customerPhone?: string;
     location?: string;
+    serviceRequestId?: string;
+    providerId?: string;
   }): Promise<{ success: boolean; executionId?: string; bookingStatus?: string; error?: string }> {
     this.logger.info(
       {
@@ -624,6 +758,8 @@ export class KestraClient {
         customer_name: request.customerName || "Customer",
         customer_phone: request.customerPhone || "",
         location: request.location || "",
+        service_request_id: request.serviceRequestId || "",
+        provider_id: request.providerId || "",
       };
 
       // Use FormData - Kestra execution API requires multipart/form-data

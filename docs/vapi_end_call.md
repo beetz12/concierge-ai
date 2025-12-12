@@ -51,7 +51,7 @@ Instead of relying on the model to remember to call `endCall`, **structure the c
 // In your assistant config, add this:
 model: {
   provider: "google" as const,
-  model: "gemini-2.0-flash-exp",
+  model: "gemini-2.5-flash",
   messages: [
     {
       role: "system" as const,
@@ -79,7 +79,7 @@ const assistantConfig = {
   
   model: {
     provider: "google" as const,
-    model: "gemini-2.0-flash-exp",
+    model: "gemini-2.5-flash",
     messages: [{
       role: "system" as const,
       content: `${systemPrompt}
@@ -119,7 +119,7 @@ The issue is that Gemini **tool_choice** might not be enforcing tool invocation.
 ```javascript
 model: {
   provider: "google" as const,
-  model: "gemini-2.0-flash-exp",
+  model: "gemini-2.5-flash",
   messages: [{
     role: "system" as const,
     content: `${systemPrompt}
@@ -192,7 +192,7 @@ endCallMessage: "Thank you so much for your time. Have a wonderful day!",
 // In model config:
 model: {
   provider: "google",
-  model: "gemini-2.0-flash-exp",
+  model: "gemini-2.5-flash",
   messages: [{
     role: "system",
     content: `${systemPrompt}

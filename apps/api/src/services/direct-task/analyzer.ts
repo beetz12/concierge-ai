@@ -45,7 +45,7 @@ export async function analyzeDirectTask(
   request: AnalyzeDirectTaskRequest
 ): Promise<AnalyzeDirectTaskResponse> {
   const ai = getAiClient();
-  const model = "gemini-2.0-flash-exp";
+  const model = "gemini-2.5-flash";
 
   try {
     // Step 1: Classify the task

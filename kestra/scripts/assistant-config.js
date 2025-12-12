@@ -127,7 +127,7 @@ Thank them genuinely when they help.`;
         },
         model: {
             provider: "google",
-            model: "gemini-2.0-flash-exp",
+            model: "gemini-2.5-flash",
             messages: [{ role: "system", content: systemPrompt }],
         },
         transcriber: {
@@ -229,7 +229,7 @@ function createDynamicDirectTaskConfig(request, customPrompt) {
         },
         model: {
             provider: "google",
-            model: "gemini-2.0-flash-exp",
+            model: "gemini-2.5-flash",
             messages: [{ role: "system", content: customPrompt.systemPrompt }],
         },
         transcriber: {
@@ -339,7 +339,7 @@ function createProviderSearchConfig(request) {
             },
             model: {
                 provider: "google",
-                model: "gemini-2.0-flash-exp",
+                model: "gemini-2.5-flash",
                 messages: [{ role: "system", content: request.customPrompt.systemPrompt }],
                 tools: [{ type: "endCall" }],
                 temperature: 0.3,
@@ -560,7 +560,7 @@ For unusual requirements, frame naturally: "${clientName} specifically mentioned
         // Model configuration
         model: {
             provider: "google",
-            model: "gemini-2.0-flash-exp",
+            model: "gemini-2.5-flash",
             messages: [
                 {
                     role: "system",

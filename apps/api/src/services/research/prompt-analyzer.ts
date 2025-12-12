@@ -113,7 +113,7 @@ Return ONLY valid JSON (no markdown, no explanation):
 </output_format>`;
 
   const response = await ai.models.generateContent({
-    model: "gemini-2.0-flash-exp",
+    model: "gemini-2.5-flash",
     contents: analysisPrompt,
   });
 

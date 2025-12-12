@@ -30,6 +30,18 @@ inputs:
     type: STRING
     defaults: ""
     description: "Service request ID for database linking"
+  - id: client_name
+    type: STRING
+    defaults: "my client"
+    description: "Client name for personalized greeting"
+  - id: client_address
+    type: STRING
+    defaults: ""
+    description: "Full street address for service (optional)"
+  - id: problem_description
+    type: STRING
+    defaults: ""
+    description: "Detailed problem description (optional)"
 
 tasks:
   - id: validate_inputs
@@ -52,10 +64,16 @@ tasks:
     concurrent: "{{ inputs.max_concurrent }}"
     tasks:
       - id: call_single_provider
-        type: io.kestra.plugin.scripts.node.Script
-        description: "Call provider via VAPI"
+        type: io.kestra.plugin.scripts.node.Commands
+        description: "Call provider via VAPI using external script"
+        namespaceFiles:
+          enabled: true
+          include:
+            - scripts/**/*
         beforeCommands:
-          - npm install @vapi-ai/server-sdk
+          - npm install @vapi-ai/server-sdk node-fetch
+        commands:
+          - node scripts/call-provider.js "$PHONE" "$SERVICE" "$CRITERIA" "$LOCATION" "$PROVIDER_NAME" "$URGENCY" "$PROVIDER_ID" "$SERVICE_REQUEST_ID" "$CLIENT_NAME" "$CLIENT_ADDRESS" "$PROBLEM_DESCRIPTION"
         env:
           VAPI_API_KEY: "{{ envs.vapi_api_key }}"
           VAPI_PHONE_NUMBER_ID: "{{ envs.vapi_phone_number_id }}"
@@ -67,65 +85,10 @@ tasks:
           URGENCY: "{{ inputs.urgency }}"
           PROVIDER_ID: "{{ fromJson(taskrun.value).id }}"
           SERVICE_REQUEST_ID: "{{ inputs.service_request_id }}"
-        script: |
-          const { VapiClient } = require('@vapi-ai/server-sdk');
-          const vapi = new VapiClient({ token: process.env.VAPI_API_KEY });
-
-          const config = {
-            phone: process.env.PHONE,
-            service: process.env.SERVICE,
-            criteria: process.env.CRITERIA,
-            location: process.env.LOCATION,
-            providerName: process.env.PROVIDER_NAME,
-            urgency: process.env.URGENCY,
-            providerId: process.env.PROVIDER_ID,
-            serviceRequestId: process.env.SERVICE_REQUEST_ID
-          };
-
-          console.log(`[VAPI] Calling ${config.providerName} at ${config.phone}`);
-          console.log(`[VAPI] Service: ${config.service}, Location: ${config.location}`);
-
-          async function main() {
-            const call = await vapi.calls.create({
-              phoneNumberId: process.env.VAPI_PHONE_NUMBER_ID,
-              customer: { number: config.phone, name: "Service Provider" },
-              assistant: {
-                name: "AI Concierge Research Assistant",
-                model: { provider: "google", model: "gemini-2.0-flash" },
-                voice: { provider: "11labs", voiceId: "21m00Tcm4TlvDq8ikWAM" },
-                firstMessage: `Hello, this is an AI assistant calling on behalf of a customer looking for ${config.service} service in ${config.location}. Am I speaking with someone who can help with availability information?`,
-                endCallMessage: "Thank you for your time. Goodbye."
-              }
-            });
-
-            console.log(`[VAPI] Call initiated: ${call.id}`);
-
-            let status = call.status;
-            let attempts = 0;
-            while (['queued', 'ringing', 'in-progress'].includes(status) && attempts < 60) {
-              await new Promise(r => setTimeout(r, 5000));
-              attempts++;
-              const updated = await vapi.calls.get({ id: call.id });
-              status = updated.status;
-              console.log(`[VAPI] Status ${attempts}: ${status}`);
-
-              if (status === 'ended') {
-                console.log(JSON.stringify({
-                  status: 'completed',
-                  callId: call.id,
-                  providerId: config.providerId,
-                  analysis: updated.analysis || {}
-                }));
-                return;
-              }
-            }
-            console.log(JSON.stringify({ status: 'timeout', callId: call.id }));
-          }
-
-          main().catch(e => {
-            console.error(e.message);
-            process.exit(1);
-          });
+          BACKEND_URL: "{{ envs.backend_url | default('http://localhost:8000') }}"
+          CLIENT_NAME: "{{ inputs.client_name }}"
+          CLIENT_ADDRESS: "{{ inputs.client_address }}"
+          PROBLEM_DESCRIPTION: "{{ inputs.problem_description }}"
 
   - id: aggregate_results
     type: io.kestra.plugin.core.debug.Return

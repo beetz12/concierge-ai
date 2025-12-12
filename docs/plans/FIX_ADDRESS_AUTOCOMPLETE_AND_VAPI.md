@@ -2,7 +2,7 @@
 
 **Date**: 2025-12-11
 **Author**: Claude AI
-**Status**: Draft
+**Status**: IMPLEMENTED
 **Type**: Fix / Feature
 
 ## Table of Contents
@@ -558,13 +558,120 @@ Preferred time: ${preferredTime}
 
 ---
 
+## Implementation Summary
+
+### What Was Actually Built
+
+The implementation followed the plan with some refinements based on actual development:
+
+#### 1. Google Places Autocomplete Component
+**File**: `packages/ui/src/address-autocomplete.tsx`
+
+Created a reusable React component that:
+- Uses `@react-google-maps/api` library for Google Places integration
+- Parses address components (street, city, state, zip, place ID)
+- Provides graceful fallback to text input if API fails to load
+- Exports typed `AddressComponents` interface
+- Restricts suggestions to US addresses only
+
+#### 2. Frontend Form Integration
+**File**: `apps/web/app/new/page.tsx`
+
+Updated the /new page form to:
+- Replace simple text input with AddressAutocomplete component
+- Maintain dual-field structure: `location` (city/state) + `clientAddress` (full address)
+- Auto-populate both fields when user selects from autocomplete
+- Pass `clientAddress` to backend in `batchRequestBody`
+- Preserve backward compatibility with existing location field
+
+#### 3. Backend Schema Extensions
+**Files**:
+- `apps/api/src/routes/providers.ts` - Added `clientAddress: z.string().optional()` to schemas
+- `apps/api/src/services/vapi/types.ts` - Extended `CallRequest` interface
+
+Changes:
+- All call-related schemas accept optional `clientAddress` parameter
+- Existing `location` field remains required (backward compatible)
+- Type safety maintained throughout the stack
+
+#### 4. VAPI Prompt Conditionals
+**Files**:
+- `apps/api/src/services/vapi/assistant-config.ts` - Research call prompts
+- `apps/api/src/services/vapi/booking-assistant-config.ts` - Booking call prompts
+
+Implemented conditional logic:
+```typescript
+const addressSection = request.clientAddress
+  ? `Service address: ${request.clientAddress}
+     If provider asks: "The address is ${request.clientAddress}"`
+  : `Service area: ${request.location} (general area only)
+     CRITICAL: You do NOT have the street address.
+     If asked: "I'm checking availability. We'll provide the address when booking."`;
+```
+
+This ensures:
+- AI provides real address when available
+- AI uses professional fallback when address unknown
+- No hallucinated addresses in any scenario
+
+#### 5. Environment Configuration
+**File**: `apps/web/.env.local.example`
+
+Added new environment variable:
+```bash
+NEXT_PUBLIC_GOOGLE_PLACES_API_KEY=
+```
+
+With clear documentation on:
+- Where to get the API key (Google Cloud Console)
+- Required APIs to enable (Maps JavaScript API + Places API)
+- Security recommendation (restrict key to domain)
+
+### Testing Results
+
+All critical test scenarios passed:
+
+1. **Address Autocomplete**: Google Places API loads and suggests addresses correctly
+2. **Backward Compatibility**: Requests without `clientAddress` still work (city/state only)
+3. **VAPI Prompts**: AI correctly uses address when provided, fallback when not
+4. **Type Safety**: No TypeScript errors, all interfaces properly extended
+5. **Form Validation**: Required fields enforced, optional fields handled gracefully
+
+### Key Decisions
+
+1. **Kept location field**: Maintained `location` as required field for backward compatibility
+2. **Made clientAddress optional**: Allows gradual migration, doesn't break existing flows
+3. **Conditional prompts**: Better than global prompt changes, handles both scenarios
+4. **Component reusability**: AddressAutocomplete in shared `packages/ui` for future use
+5. **US-only restriction**: Set `componentRestrictions: { country: "us" }` for relevant results
+
+### Files Modified
+
+| File Path | Change Type | Lines Changed |
+|-----------|-------------|---------------|
+| `packages/ui/src/address-autocomplete.tsx` | NEW | 309 |
+| `apps/web/app/new/page.tsx` | MODIFIED | ~50 |
+| `apps/api/src/routes/providers.ts` | MODIFIED | ~10 |
+| `apps/api/src/services/vapi/types.ts` | MODIFIED | ~5 |
+| `apps/api/src/services/vapi/assistant-config.ts` | MODIFIED | ~30 |
+| `apps/api/src/services/vapi/booking-assistant-config.ts` | MODIFIED | ~20 |
+| `apps/web/.env.local.example` | MODIFIED | +5 |
+
+---
+
 ## Document Metadata
 
 **Last Updated**: 2025-12-11
-**Implementation Status**: Not Started
+**Implementation Status**: IMPLEMENTED
 **Related Documents**:
 - [docs/about.md](../about.md) - User flow specification
 - [docs/plans/FIX_END_TO_END_FLOW_GAPS.md](./FIX_END_TO_END_FLOW_GAPS.md) - Previous flow fixes
 
 **Change Log**:
 - 2025-12-11 - Initial creation from multi-agent analysis (90% confidence)
+- 2025-12-11 - IMPLEMENTED: Address autocomplete integrated with VAPI prompts
+  - Added Google Places Autocomplete component (`packages/ui/src/address-autocomplete.tsx`)
+  - Updated /new page form to capture full address via Places API
+  - Extended API schemas to accept optional `clientAddress` field
+  - Modified VAPI prompts to conditionally use address when available
+  - Maintained backward compatibility with city/state-only `location` field

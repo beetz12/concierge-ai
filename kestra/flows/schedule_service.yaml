@@ -34,6 +34,14 @@ inputs:
     type: STRING
     defaults: ""
     description: "Service location/address"
+  - id: service_request_id
+    type: STRING
+    defaults: ""
+    description: "Service request ID for database linking"
+  - id: provider_id
+    type: STRING
+    defaults: ""
+    description: "Provider ID for database linking"
 
 tasks:
   - id: validate_inputs
@@ -59,13 +67,16 @@ tasks:
       include:
         - scripts/**/*
     beforeCommands:
-      - npm install @vapi-ai/server-sdk
+      - npm install @vapi-ai/server-sdk node-fetch
     commands:
       - node scripts/schedule-booking.js "{{ inputs.provider_phone }}" "{{ inputs.provider_name }}" "{{ inputs.service_description }}" "{{ inputs.preferred_date }}" "{{ inputs.preferred_time }}" "{{ inputs.customer_name }}" "{{ inputs.customer_phone }}" "{{ inputs.location }}"
     env:
       VAPI_API_KEY: "{{ envs.vapi_api_key }}"
       VAPI_PHONE_NUMBER_ID: "{{ envs.vapi_phone_number_id }}"
       GEMINI_API_KEY: "{{ envs.gemini_api_key }}"
+      BACKEND_URL: "{{ envs.backend_url | default('http://localhost:8000') }}"
+      SERVICE_REQUEST_ID: "{{ inputs.service_request_id }}"
+      PROVIDER_ID: "{{ inputs.provider_id }}"
 
   - id: log_result
     type: io.kestra.plugin.core.debug.Return

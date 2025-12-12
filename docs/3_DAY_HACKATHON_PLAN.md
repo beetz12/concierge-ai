@@ -528,7 +528,7 @@ export class RecommendationService {
       };
     }
 
-    const model = this.genAI.getGenerativeModel({ model: "gemini-2.0-flash-exp" });
+    const model = this.genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
 
     const prompt = `You are analyzing service provider call results to recommend the top 3 providers.
 
@@ -671,7 +671,7 @@ IMPORTANT:
     },
     model: {
       provider: "google" as const,
-      model: "gemini-2.0-flash-exp",
+      model: "gemini-2.5-flash",
       messages: [{ role: "system" as const, content: systemPrompt }],
     },
     firstMessage: `Hi! I'm calling on behalf of ${appointmentDetails.customerName}. We spoke earlier about ${appointmentDetails.serviceDescription} and I'd like to schedule an appointment.`,
@@ -1380,7 +1380,7 @@ tasks:
             return;
           }
 
-          const model = genAI.getGenerativeModel({ model: 'gemini-2.0-flash-exp' });
+          const model = genAI.getGenerativeModel({ model: 'gemini-2.5-flash' });
           const prompt = 'Analyze these providers and return top 3: ' + JSON.stringify(successful);
           const result = await model.generateContent(prompt);
           console.log(result.response.text());
