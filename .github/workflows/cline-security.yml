@@ -220,7 +220,8 @@ jobs:
       - name: 🔍 Find Kestra flows
         id: flows
         run: |
-          FLOWS=$(find kestra/flows -name "*.yaml" -o -name "*.yml" 2>/dev/null | head -10 || echo "")
+          # Convert newlines to spaces for GitHub Actions output (2025 best practice)
+          FLOWS=$(find kestra/flows -name "*.yaml" -o -name "*.yml" 2>/dev/null | head -10 | tr '\n' ' ' | xargs || echo "")
           echo "flows=$FLOWS" >> $GITHUB_OUTPUT
           echo "has_flows=$([ -n "$FLOWS" ] && echo 'true' || echo 'false')" >> $GITHUB_OUTPUT
 
