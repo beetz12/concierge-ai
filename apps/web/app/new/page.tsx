@@ -6,6 +6,7 @@ import { useAppContext } from "@/lib/providers/AppProvider";
 import { RequestStatus, RequestType, ServiceRequest } from "@/lib/types";
 import { Search, MapPin, AlertCircle, Sparkles, User, Phone, MessageSquare, PhoneCall } from "lucide-react";
 import { SegmentedControl } from "@repo/ui/segmented-control";
+import { AddressAutocomplete, type AddressComponents } from "@repo/ui/address-autocomplete";
 import {
   simulateCall,
   analyzeResearchPrompt,
@@ -54,7 +55,14 @@ export default function NewRequest() {
     clientName: "",
     title: "",
     description: "",
-    location: "",
+    location: "", // City/state for backward compatibility
+    clientAddress: {
+      formatted: "",
+      street: "",
+      city: "",
+      state: "",
+      zip: "",
+    } as AddressComponents,
     criteria: "",
     urgency: "within_2_days" as "immediate" | "within_24_hours" | "within_2_days" | "flexible",
     minRating: 4.5,
@@ -351,6 +359,7 @@ export default function NewRequest() {
             problemDescription: data.description,
             clientName: data.clientName,
             location: data.location,
+            clientAddress: data.clientAddress.formatted, // Full street address for VAPI
             urgency: data.urgency,
             preferredContact: formData.preferredContact,
             userPhone: userPhoneValidation.normalized,
@@ -593,21 +602,27 @@ export default function NewRequest() {
 
         <div>
           <label className="block text-sm font-semibold text-slate-300 mb-2">
-            Where are you located?
+            What is your service address?
           </label>
           <div className="relative">
-            <MapPin className="absolute left-3 top-3.5 w-5 h-5 text-slate-500" />
-            <input
-              type="text"
-              required
-              placeholder="e.g. Greenville, SC or Zip Code"
+            <MapPin className="absolute left-3 top-3.5 w-5 h-5 text-slate-500 z-10" />
+            <AddressAutocomplete
+              value={formData.clientAddress.formatted}
+              onChange={(address) => {
+                setFormData({
+                  ...formData,
+                  location: `${address.city}, ${address.state}`, // backward compatible
+                  clientAddress: address,
+                });
+              }}
+              placeholder="Start typing your address..."
               className="w-full pl-10 pr-4 py-3 rounded-xl border border-surface-highlight focus:border-primary-500 focus:ring-2 focus:ring-primary-500/20 outline-none transition-all bg-abyss text-slate-100 placeholder-slate-600"
-              value={formData.location}
-              onChange={(e) =>
-                setFormData({ ...formData, location: e.target.value })
-              }
+              required
             />
           </div>
+          <p className="mt-1 text-xs text-slate-500">
+            Select from suggestions for accurate address
+          </p>
         </div>
 
         <div>

@@ -12,7 +12,8 @@ export interface CallRequest {
   userCriteria: string;
   problemDescription?: string; // Detailed problem description
   clientName?: string; // Client's name for personalized greeting
-  location: string;
+  location: string; // City/state (backward compatible)
+  clientAddress?: string; // Full street address for VAPI prompts
   urgency: "immediate" | "within_24_hours" | "within_2_days" | "flexible";
   serviceRequestId?: string; // For DB linking
   providerId?: string; // For DB linking

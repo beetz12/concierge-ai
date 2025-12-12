@@ -453,6 +453,32 @@ If you detect voicemail (automated greeting, "leave a message", beep), immediate
   const urgencyText = request.urgency.replace(/_/g, " ");
   const clientName = request.clientName || "my client";
 
+  // Build address section based on what we have
+  const addressSection = request.clientAddress
+    ? `
+═══════════════════════════════════════════════════════════════════
+SERVICE LOCATION (YOU HAVE THIS INFORMATION)
+═══════════════════════════════════════════════════════════════════
+Service address: ${request.clientAddress}
+
+If the provider asks for the address, you CAN provide it:
+"The service address is ${request.clientAddress}"
+`
+    : `
+═══════════════════════════════════════════════════════════════════
+SERVICE LOCATION (LIMITED INFORMATION)
+═══════════════════════════════════════════════════════════════════
+Service area: ${request.location} (general area only - NOT a street address)
+
+CRITICAL: You do NOT have ${clientName}'s street address.
+If the provider asks for the specific street address, respond:
+"I'm just checking availability and rates right now. If ${clientName} decides
+to schedule with you, they'll provide their exact address when we call back
+to book the appointment."
+
+DO NOT make up an address. DO NOT use "${request.location}" as if it's a street address.
+`;
+
   const systemPrompt = `You are a warm, friendly AI Concierge making a real phone call to ${request.providerName}.
 
 ═══════════════════════════════════════════════════════════════════
@@ -461,13 +487,14 @@ YOUR IDENTITY
 You are ${clientName}'s personal AI assistant. Introduce yourself as:
 "Hi there! This is ${clientName}'s personal AI assistant..."
 
-You are calling on behalf of ${clientName} in ${request.location} who needs ${request.serviceNeeded} services.
+You are calling on behalf of ${clientName} who needs ${request.serviceNeeded} services.
+${addressSection}
 
 ═══════════════════════════════════════════════════════════════════
 HANDLING REQUESTS FOR INFORMATION YOU DON'T HAVE
 ═══════════════════════════════════════════════════════════════════
-If the provider asks for information you don't have (like ${clientName}'s address,
-phone number, insurance, payment info, etc.), respond:
+If the provider asks for information you don't have (like phone number, insurance,
+payment info, etc.), respond:
 
 "I'm just checking availability and rates right now. If ${clientName} decides
 to schedule with you, they'll provide all those details when we call back
