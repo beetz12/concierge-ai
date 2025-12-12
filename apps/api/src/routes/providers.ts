@@ -12,7 +12,7 @@ import {
   ConcurrentCallService,
   KestraClient,
 } from "../services/vapi/index.js";
-import type { CallRequest } from "../services/vapi/types.js";
+import type { CallRequest, CallResult } from "../services/vapi/types.js";
 import { RecommendationService } from "../services/recommendations/recommend.service.js";
 
 // Schema for Gemini-generated custom prompts
@@ -787,6 +787,123 @@ export default async function providerRoutes(fastify: FastifyInstance) {
   );
 
   /**
+   * POST /api/v1/providers/save-call-result
+   * Save call result from Kestra workflow to database
+   * This enables real-time updates to frontend via Supabase subscriptions
+   */
+  fastify.post(
+    "/save-call-result",
+    {
+      schema: {
+        tags: ["providers"],
+        summary: "Save call result from Kestra",
+        description: "Called by Kestra after each VAPI call completes to persist results",
+        body: {
+          type: "object",
+          required: ["providerId", "serviceRequestId", "callResult"],
+          properties: {
+            providerId: { type: "string" },
+            serviceRequestId: { type: "string" },
+            callResult: {
+              type: "object",
+              properties: {
+                status: { type: "string" },
+                callId: { type: "string" },
+                duration: { type: "number" },
+                transcript: { type: "string" },
+                analysis: { type: "object" },
+                provider: { type: "object" },
+              },
+            },
+          },
+        },
+        response: {
+          200: {
+            type: "object",
+            properties: {
+              success: { type: "boolean" },
+            },
+          },
+          500: {
+            type: "object",
+            properties: {
+              success: { type: "boolean" },
+              error: { type: "string" },
+            },
+          },
+        },
+      },
+    },
+    async (request, reply) => {
+      try {
+        const { providerId, serviceRequestId, callResult } = request.body as {
+          providerId: string;
+          serviceRequestId: string;
+          callResult: any;
+        };
+
+        request.log.info(
+          { providerId, serviceRequestId, status: callResult.status },
+          "Saving Kestra call result to database"
+        );
+
+        // Create Supabase client
+        const supabase = createClient(
+          process.env.SUPABASE_URL!,
+          process.env.SUPABASE_SERVICE_ROLE_KEY!
+        );
+
+        // Update provider with call result
+        const { error: providerError } = await supabase
+          .from("providers")
+          .update({
+            call_status: callResult.status || "completed",
+            call_result: callResult,
+            call_transcript: callResult.transcript || "",
+            call_summary: callResult.analysis?.summary || "",
+            call_duration_minutes: callResult.duration || 0,
+            call_id: callResult.callId || null,
+            call_method: "kestra",
+            called_at: new Date().toISOString(),
+          })
+          .eq("id", providerId);
+
+        if (providerError) {
+          request.log.error({ error: providerError }, "Failed to update provider");
+          return reply.status(500).send({ success: false, error: providerError.message });
+        }
+
+        // Create interaction log for real-time updates
+        const logStatus = callResult.status === "completed" ? "success" :
+                         callResult.status === "error" ? "error" : "warning";
+
+        const { error: logError } = await supabase
+          .from("interaction_logs")
+          .insert({
+            request_id: serviceRequestId,
+            step_name: `Calling ${callResult.provider?.name || "Provider"}`,
+            status: logStatus,
+            detail: callResult.analysis?.summary || `Call ${callResult.status}`,
+            transcript: callResult.transcript ? [{ role: "transcript", content: callResult.transcript }] : null,
+            call_id: callResult.callId || null,
+          });
+
+        if (logError) {
+          request.log.warn({ error: logError }, "Failed to create interaction log (non-fatal)");
+        }
+
+        return reply.send({ success: true });
+      } catch (error) {
+        request.log.error({ error }, "Error saving call result");
+        return reply.status(500).send({
+          success: false,
+          error: error instanceof Error ? error.message : "Unknown error",
+        });
+      }
+    }
+  );
+
+  /**
    * GET /api/v1/providers/batch-status/:serviceRequestId
    *
    * Status polling endpoint for clients without real-time support.
@@ -1039,12 +1156,28 @@ export default async function providerRoutes(fastify: FastifyInstance) {
             );
             // Fall through to direct Gemini
           } else {
-            return reply.send({
-              success: true,
-              data: kestraResult.recommendations,
-              method: "kestra",
-              executionId: kestraResult.executionId,
-            });
+            // Validate that we have actual recommendations data
+            if (!kestraResult.recommendations ||
+                !kestraResult.recommendations.recommendations ||
+                kestraResult.recommendations.recommendations.length === 0) {
+              request.log.warn(
+                {
+                  executionId: kestraResult.executionId,
+                  hasRecommendations: !!kestraResult.recommendations,
+                  hasRecommendationsArray: !!(kestraResult.recommendations?.recommendations),
+                  recommendationsLength: kestraResult.recommendations?.recommendations?.length || 0
+                },
+                "Kestra returned success but empty/invalid recommendations - falling back to direct Gemini"
+              );
+              // Fall through to direct Gemini fallback below
+            } else {
+              return reply.send({
+                success: true,
+                data: kestraResult.recommendations,
+                method: "kestra",
+                executionId: kestraResult.executionId,
+              });
+            }
           }
         }
 
@@ -1054,6 +1187,19 @@ export default async function providerRoutes(fastify: FastifyInstance) {
         const recommendations = await recommendationService.generateRecommendations(
           validated
         );
+
+        // Ensure we never return undefined data with success: true
+        if (!recommendations || !recommendations.recommendations || recommendations.recommendations.length === 0) {
+          request.log.error(
+            {
+              hasRecommendations: !!recommendations,
+              hasRecommendationsArray: !!(recommendations?.recommendations),
+              recommendationsLength: recommendations?.recommendations?.length || 0
+            },
+            "Direct Gemini API returned invalid recommendations data"
+          );
+          throw new Error("Failed to generate valid recommendations from AI service");
+        }
 
         return reply.send({
           success: true,

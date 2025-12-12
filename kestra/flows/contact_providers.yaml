@@ -55,7 +55,7 @@ tasks:
         type: io.kestra.plugin.scripts.node.Script
         description: "Call provider via VAPI"
         beforeCommands:
-          - npm install @vapi-ai/server-sdk
+          - npm install @vapi-ai/server-sdk node-fetch
         env:
           VAPI_API_KEY: "{{ envs.vapi_api_key }}"
           VAPI_PHONE_NUMBER_ID: "{{ envs.vapi_phone_number_id }}"
@@ -67,6 +67,7 @@ tasks:
           URGENCY: "{{ inputs.urgency }}"
           PROVIDER_ID: "{{ fromJson(taskrun.value).id }}"
           SERVICE_REQUEST_ID: "{{ inputs.service_request_id }}"
+          BACKEND_URL: "{{ envs.backend_url | default('http://localhost:8000') }}"
         script: |
           const { VapiClient } = require('@vapi-ai/server-sdk');
           const vapi = new VapiClient({ token: process.env.VAPI_API_KEY });
@@ -110,20 +111,111 @@ tasks:
               console.log(`[VAPI] Status ${attempts}: ${status}`);
 
               if (status === 'ended') {
-                console.log(JSON.stringify({
+                const result = {
                   status: 'completed',
                   callId: call.id,
-                  providerId: config.providerId,
-                  analysis: updated.analysis || {}
-                }));
+                  duration: updated.duration || 0,
+                  transcript: updated.artifact?.transcript || '',
+                  analysis: updated.analysis || {},
+                  provider: {
+                    name: config.providerName,
+                    phone: config.phone,
+                  }
+                };
+
+                // Save to database via API
+                try {
+                  const fetch = (await import('node-fetch')).default;
+                  const backendUrl = process.env.BACKEND_URL || 'http://localhost:8000';
+                  const saveResponse = await fetch(`${backendUrl}/api/v1/providers/save-call-result`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                      providerId: config.providerId,
+                      serviceRequestId: config.serviceRequestId,
+                      callResult: result
+                    })
+                  });
+                  const saveData = await saveResponse.json();
+                  console.log(`[KESTRA] Saved result to DB: ${saveResponse.status} - ${saveData.message || saveData.error}`);
+                } catch (saveError) {
+                  console.error(`[KESTRA] Failed to save result: ${saveError.message}`);
+                }
+
+                console.log(JSON.stringify(result));
                 return;
               }
             }
-            console.log(JSON.stringify({ status: 'timeout', callId: call.id }));
+
+            // Timeout case
+            const timeoutResult = {
+              status: 'timeout',
+              callId: call.id,
+              duration: 0,
+              transcript: '',
+              analysis: {},
+              provider: {
+                name: config.providerName,
+                phone: config.phone,
+              }
+            };
+
+            // Save timeout to database
+            try {
+              const fetch = (await import('node-fetch')).default;
+              const backendUrl = process.env.BACKEND_URL || 'http://localhost:8000';
+              const saveResponse = await fetch(`${backendUrl}/api/v1/providers/save-call-result`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                  providerId: config.providerId,
+                  serviceRequestId: config.serviceRequestId,
+                  callResult: timeoutResult
+                })
+              });
+              const saveData = await saveResponse.json();
+              console.log(`[KESTRA] Saved timeout to DB: ${saveResponse.status}`);
+            } catch (saveError) {
+              console.error(`[KESTRA] Failed to save timeout: ${saveError.message}`);
+            }
+
+            console.log(JSON.stringify(timeoutResult));
           }
 
-          main().catch(e => {
+          main().catch(async (e) => {
             console.error(e.message);
+
+            // Save error to database
+            const errorResult = {
+              status: 'error',
+              callId: '',
+              duration: 0,
+              transcript: '',
+              analysis: {},
+              error: e.message,
+              provider: {
+                name: config.providerName,
+                phone: config.phone,
+              }
+            };
+
+            try {
+              const fetch = (await import('node-fetch')).default;
+              const backendUrl = process.env.BACKEND_URL || 'http://localhost:8000';
+              const saveResponse = await fetch(`${backendUrl}/api/v1/providers/save-call-result`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                  providerId: config.providerId,
+                  serviceRequestId: config.serviceRequestId,
+                  callResult: errorResult
+                })
+              });
+              console.log(`[KESTRA] Saved error to DB: ${saveResponse.status}`);
+            } catch (saveError) {
+              console.error(`[KESTRA] Failed to save error: ${saveError.message}`);
+            }
+
             process.exit(1);
           });
 

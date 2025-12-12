@@ -604,6 +604,8 @@ export class KestraClient {
     customerName?: string;
     customerPhone?: string;
     location?: string;
+    serviceRequestId?: string;
+    providerId?: string;
   }): Promise<{ success: boolean; executionId?: string; bookingStatus?: string; error?: string }> {
     this.logger.info(
       {
@@ -624,6 +626,8 @@ export class KestraClient {
         customer_name: request.customerName || "Customer",
         customer_phone: request.customerPhone || "",
         location: request.location || "",
+        service_request_id: request.serviceRequestId || "",
+        provider_id: request.providerId || "",
       };
 
       // Use FormData - Kestra execution API requires multipart/form-data

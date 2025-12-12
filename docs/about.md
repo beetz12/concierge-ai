@@ -1,6 +1,6 @@
 I want to build an AI receptionist / secretary that can help me research various local service providers and book appointments with them. 
 
-0. on the /new page, The user provides detailed information about their provider request such as what he needs help with, his location, minimum rating, urgency, problem description, additional criteria, and their preferred form of contact (phone or text)
+0. on the /new page, The user provides detailed information about their provider request such as what he needs help with, their service address (via Google Places autocomplete), minimum rating, urgency, problem description, additional criteria, and their preferred form of contact (phone or text)
 1. Use the kestra/flows/research_agent.yaml flow (or direct api call) to search for a list of 10 qualified providers in my area. Meanwhile the request details page will show that the search is in progress As the search is completed, the user will see the list of all 10 providers. 
 2. use the kestra/flows/contact_providers.yaml flow (or direct api call) to call each provider using vapi.ai. Before the call, we will take the user's request and generate a dynamic vapi.ai assistant prompt using Gemini. We will initiate the call using VAPI.AI and collect detailed information from each provider, such as their availability, rates, etc. Meanwhile the user will see the calls that are queued and in progress. 
 3. Use the kestra/flows/recommend_providers.yaml flow (or direct api call) to recommend he top three providers to the user. 
