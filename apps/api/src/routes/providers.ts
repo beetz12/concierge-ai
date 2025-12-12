@@ -33,6 +33,7 @@ const callProviderSchema = z.object({
   problemDescription: z.string().optional(),
   clientName: z.string().optional(),
   location: z.string().min(1, "Location is required"),
+  clientAddress: z.string().optional(), // Full street address for VAPI prompts
   urgency: z.enum([
     "immediate",
     "within_24_hours",
@@ -60,6 +61,7 @@ const batchCallSchema = z.object({
   problemDescription: z.string().optional(), // Detailed problem description
   clientName: z.string().optional(), // Client's name for personalized greeting
   location: z.string().min(1, "Location is required"),
+  clientAddress: z.string().optional(), // Full street address for VAPI prompts
   urgency: z
     .enum(["immediate", "within_24_hours", "within_2_days", "flexible"])
     .default("within_2_days"),
@@ -89,6 +91,7 @@ const bookingSchema = z.object({
   clientName: z.string().optional(),
   clientPhone: z.string().optional(),
   location: z.string().min(1, "Location is required"),
+  clientAddress: z.string().optional(), // Full street address for VAPI prompts
   preferredDateTime: z.string().optional(),
   additionalNotes: z.string().optional(),
 });
@@ -477,6 +480,7 @@ export default async function providerRoutes(fastify: FastifyInstance) {
           problemDescription: validated.problemDescription,
           clientName: validated.clientName,
           location: validated.location,
+          clientAddress: validated.clientAddress,
           urgency: validated.urgency,
           serviceRequestId: validated.serviceRequestId,
           customPrompt: validated.customPrompt,
@@ -676,6 +680,7 @@ export default async function providerRoutes(fastify: FastifyInstance) {
           problemDescription: validated.problemDescription,
           clientName: validated.clientName,
           location: validated.location,
+          clientAddress: validated.clientAddress,
           urgency: validated.urgency,
           customPrompt: validated.customPrompt,
           serviceRequestId: validated.serviceRequestId,
@@ -1212,6 +1217,7 @@ export default async function providerRoutes(fastify: FastifyInstance) {
           clientName: validated.clientName,
           clientPhone: validated.clientPhone,
           location: validated.location,
+          clientAddress: validated.clientAddress,
           preferredDateTime: validated.preferredDateTime,
           serviceRequestId: validated.serviceRequestId,
           providerId: validated.providerId,
