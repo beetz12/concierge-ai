@@ -1,48 +1,71 @@
 #!/usr/bin/env node
 /**
- * Kestra Flow Deployment Script
+ * Kestra Flow Deployment Script (Interactive)
  *
- * Uploads all local Kestra workflow YAML files to the local Kestra instance
- * using the REST API.
+ * Supports deployment to both LOCAL Kestra (Docker) and KESTRA CLOUD.
+ *
+ * Features:
+ *   - Interactive mode selection (Local/Cloud)
+ *   - For Cloud: Copies flows to prod_flows/, transforms envs→secrets, deploys
+ *   - For Local: Deploys directly from flows/
+ *   - Bearer token auth for Cloud, Basic auth for Local
  *
  * Usage:
- *   node deploy-flows.js [options] [directory]
+ *   node deploy-flows.js [options]
  *
  * Options:
+ *   --local       Deploy to local Kestra (skip interactive prompt)
+ *   --cloud       Deploy to Kestra Cloud (skip interactive prompt)
  *   --dry-run     Preview what would be deployed without making changes
  *   --namespace   Override the default namespace (default: ai_concierge)
- *   --url         Override Kestra URL (default: http://localhost:8082)
  *   --help        Show this help message
  *
- * Examples:
- *   node deploy-flows.js                              # Deploy all flows from ../flows
- *   node deploy-flows.js --dry-run                    # Preview only
- *   node deploy-flows.js /path/to/flows               # Custom directory
- *   node deploy-flows.js --namespace my_namespace     # Different namespace
- *
  * Environment Variables:
- *   KESTRA_LOCAL_URL       - Kestra API URL (default: http://localhost:8082)
- *   KESTRA_LOCAL_USERNAME  - Basic auth username (default: admin@kestra.local)
- *   KESTRA_LOCAL_PASSWORD  - Basic auth password (default: Admin123456)
- *   KESTRA_NAMESPACE       - Default namespace (default: ai_concierge)
+ *   LOCAL:
+ *     KESTRA_LOCAL_URL       - Local Kestra URL (default: http://localhost:8082)
+ *     KESTRA_LOCAL_USERNAME  - Basic auth username (default: admin@kestra.local)
+ *     KESTRA_LOCAL_PASSWORD  - Basic auth password (default: Admin123456)
+ *
+ *   CLOUD:
+ *     KESTRA_CLOUD_URL       - Kestra Cloud URL (e.g., https://prod.myorg.kestra.cloud)
+ *     KESTRA_CLOUD_TENANT    - Kestra Cloud tenant (default: main)
+ *     KESTRA_API_TOKEN       - Kestra Cloud API token
+ *
+ *   SHARED:
+ *     KESTRA_NAMESPACE       - Default namespace (default: ai_concierge)
  */
 
 const fs = require('fs');
 const path = require('path');
 const { execSync } = require('child_process');
+const readline = require('readline');
 
 // ============================================================================
 // CONFIGURATION
 // ============================================================================
 
 const EXTENSIONS = ['.yaml', '.yml'];
-const DEFAULT_DIR = path.join(__dirname, '..', 'flows');
-const SCRIPTS_DIR = path.join(__dirname);  // kestra/scripts directory
+const FLOWS_DIR = path.join(__dirname, '..', 'flows');
+const PROD_FLOWS_DIR = path.join(__dirname, '..', 'prod_flows');
+const SCRIPTS_DIR = path.join(__dirname);
+
+// Transformation pattern for Cloud migration
+const ENVS_PATTERN = /\{\{\s*envs\.(\w+)\s*\}\}/g;
 
 const CONFIG = {
-    url: process.env.KESTRA_LOCAL_URL || 'http://localhost:8082',
-    username: process.env.KESTRA_LOCAL_USERNAME || 'admin@kestra.local',
-    password: process.env.KESTRA_LOCAL_PASSWORD || 'Admin123456',
+    // Local Kestra (Docker)
+    local: {
+        url: process.env.KESTRA_LOCAL_URL || 'http://localhost:8082',
+        username: process.env.KESTRA_LOCAL_USERNAME || 'admin@kestra.local',
+        password: process.env.KESTRA_LOCAL_PASSWORD || 'Admin123456',
+    },
+    // Kestra Cloud
+    cloud: {
+        url: process.env.KESTRA_CLOUD_URL || '',
+        tenant: process.env.KESTRA_CLOUD_TENANT || 'main',
+        apiToken: process.env.KESTRA_API_TOKEN || '',
+    },
+    // Shared
     namespace: process.env.KESTRA_NAMESPACE || 'ai_concierge',
 };
 
@@ -62,12 +85,36 @@ function printSubHeader(text) {
     console.log(`  ${'-'.repeat(text.length)}`);
 }
 
+function printBox(lines, color = '') {
+    const maxLen = Math.max(...lines.map(l => l.length));
+    const border = '+' + '-'.repeat(maxLen + 2) + '+';
+    console.log(`\n  ${color}${border}\x1b[0m`);
+    lines.forEach(line => {
+        const padding = ' '.repeat(maxLen - line.length);
+        console.log(`  ${color}| ${line}${padding} |\x1b[0m`);
+    });
+    console.log(`  ${color}${border}\x1b[0m`);
+}
+
+async function promptUser(question) {
+    const rl = readline.createInterface({
+        input: process.stdin,
+        output: process.stdout,
+    });
+
+    return new Promise((resolve) => {
+        rl.question(question, (answer) => {
+            rl.close();
+            resolve(answer.trim().toLowerCase());
+        });
+    });
+}
+
 function findYamlFiles(dir) {
     const files = [];
 
     if (!fs.existsSync(dir)) {
-        console.error(`\n  ERROR: Directory not found: ${dir}`);
-        process.exit(1);
+        return files;
     }
 
     const entries = fs.readdirSync(dir, { withFileTypes: true });
@@ -76,12 +123,10 @@ function findYamlFiles(dir) {
         const fullPath = path.join(dir, entry.name);
 
         if (entry.isDirectory()) {
-            // Skip node_modules and hidden directories
             if (!entry.name.startsWith('.') && entry.name !== 'node_modules') {
                 files.push(...findYamlFiles(fullPath));
             }
         } else if (entry.isFile() && EXTENSIONS.includes(path.extname(entry.name).toLowerCase())) {
-            // Skip backup files
             if (!entry.name.endsWith('.bak')) {
                 files.push(fullPath);
             }
@@ -92,13 +137,11 @@ function findYamlFiles(dir) {
 }
 
 function extractFlowId(content) {
-    // Extract the flow ID from the YAML content
     const match = content.match(/^id:\s*(\S+)/m);
     return match ? match[1] : null;
 }
 
 function extractNamespace(content) {
-    // Extract the namespace from the YAML content
     const match = content.match(/^namespace:\s*(\S+)/m);
     return match ? match[1] : null;
 }
@@ -117,14 +160,14 @@ function findScriptFiles(dir) {
         const fullPath = path.join(dir, entry.name);
 
         if (entry.isDirectory()) {
-            // Skip node_modules and hidden directories
             if (!entry.name.startsWith('.') && entry.name !== 'node_modules') {
                 files.push(...findScriptFiles(fullPath));
             }
         } else if (entry.isFile()) {
             const ext = path.extname(entry.name).toLowerCase();
-            // Include script files but exclude the deploy script itself
-            if (SCRIPT_EXTENSIONS.includes(ext) && entry.name !== 'deploy-flows.js') {
+            if (SCRIPT_EXTENSIONS.includes(ext) &&
+                entry.name !== 'deploy-flows.js' &&
+                entry.name !== 'migrate-envs-to-secrets.js') {
                 files.push(fullPath);
             }
         }
@@ -134,13 +177,173 @@ function findScriptFiles(dir) {
 }
 
 // ============================================================================
-// NAMESPACE FILES FUNCTIONS
+// CLOUD PREPARATION FUNCTIONS
 // ============================================================================
 
-function uploadNamespaceFile(filePath, baseDir, options) {
-    const { url, username, password, namespace, dryRun } = options;
+function clearProdFlowsDir() {
+    if (!fs.existsSync(PROD_FLOWS_DIR)) {
+        fs.mkdirSync(PROD_FLOWS_DIR, { recursive: true });
+        return 0;
+    }
 
-    // Calculate relative path from scripts dir (e.g., "call-provider.js" -> "scripts/call-provider.js")
+    const files = fs.readdirSync(PROD_FLOWS_DIR);
+    let deleted = 0;
+
+    for (const file of files) {
+        const fullPath = path.join(PROD_FLOWS_DIR, file);
+        const stat = fs.statSync(fullPath);
+
+        if (stat.isFile()) {
+            fs.unlinkSync(fullPath);
+            deleted++;
+        } else if (stat.isDirectory()) {
+            fs.rmSync(fullPath, { recursive: true });
+            deleted++;
+        }
+    }
+
+    return deleted;
+}
+
+function copyFlowsToProd() {
+    const sourceFiles = findYamlFiles(FLOWS_DIR);
+    const copied = [];
+
+    for (const sourceFile of sourceFiles) {
+        const relativePath = path.relative(FLOWS_DIR, sourceFile);
+        const destPath = path.join(PROD_FLOWS_DIR, relativePath);
+
+        // Ensure destination directory exists
+        const destDir = path.dirname(destPath);
+        if (!fs.existsSync(destDir)) {
+            fs.mkdirSync(destDir, { recursive: true });
+        }
+
+        // Copy file
+        fs.copyFileSync(sourceFile, destPath);
+        copied.push({ source: relativePath, dest: destPath });
+    }
+
+    return copied;
+}
+
+function transformEnvsToSecrets(filePath) {
+    const content = fs.readFileSync(filePath, 'utf-8');
+    const matches = [];
+
+    // Find all envs references
+    let match;
+    const pattern = /\{\{\s*envs\.(\w+)\s*\}\}/g;
+    while ((match = pattern.exec(content)) !== null) {
+        matches.push(match[1]);
+    }
+
+    if (matches.length === 0) {
+        return { transformed: false, secrets: [] };
+    }
+
+    // Transform content
+    const newContent = content.replace(ENVS_PATTERN, "{{ secret('$1') }}");
+    fs.writeFileSync(filePath, newContent, 'utf-8');
+
+    return { transformed: true, secrets: [...new Set(matches)] };
+}
+
+function prepareProdFlows(dryRun = false) {
+    printSubHeader('Preparing Cloud-ready flows');
+
+    // Step 1: Clear prod_flows directory
+    console.log(`\n    \x1b[33m1. Clearing prod_flows directory...\x1b[0m`);
+    if (dryRun) {
+        console.log(`       \x1b[36m[Dry-run: would delete all files in prod_flows/]\x1b[0m`);
+    } else {
+        const deleted = clearProdFlowsDir();
+        console.log(`       Deleted ${deleted} existing file(s)`);
+    }
+
+    // Step 2: Copy flows to prod_flows
+    console.log(`\n    \x1b[33m2. Copying flows to prod_flows/...\x1b[0m`);
+    let copiedFiles = [];
+    if (dryRun) {
+        const sourceFiles = findYamlFiles(FLOWS_DIR);
+        console.log(`       \x1b[36m[Dry-run: would copy ${sourceFiles.length} file(s)]\x1b[0m`);
+        copiedFiles = sourceFiles.map(f => ({ source: path.basename(f), dest: f }));
+    } else {
+        copiedFiles = copyFlowsToProd();
+        console.log(`       Copied ${copiedFiles.length} flow file(s)`);
+        copiedFiles.forEach(f => {
+            console.log(`         \x1b[32m✓\x1b[0m ${f.source}`);
+        });
+    }
+
+    // Step 3: Transform envs → secrets
+    console.log(`\n    \x1b[33m3. Transforming envs → secret()...\x1b[0m`);
+    const allSecrets = new Set();
+    let transformedCount = 0;
+
+    if (dryRun) {
+        // Preview what would be transformed
+        const sourceFiles = findYamlFiles(FLOWS_DIR);
+        for (const file of sourceFiles) {
+            const content = fs.readFileSync(file, 'utf-8');
+            const matches = content.match(ENVS_PATTERN);
+            if (matches) {
+                console.log(`       \x1b[36m[Would transform ${path.basename(file)}: ${matches.length} reference(s)]\x1b[0m`);
+                matches.forEach(m => {
+                    const varName = m.match(/envs\.(\w+)/)[1];
+                    allSecrets.add(varName);
+                });
+                transformedCount++;
+            }
+        }
+    } else {
+        const prodFiles = findYamlFiles(PROD_FLOWS_DIR);
+        for (const file of prodFiles) {
+            const result = transformEnvsToSecrets(file);
+            if (result.transformed) {
+                transformedCount++;
+                result.secrets.forEach(s => allSecrets.add(s));
+                console.log(`       \x1b[32m✓\x1b[0m ${path.basename(file)}: ${result.secrets.length} reference(s) transformed`);
+            }
+        }
+    }
+
+    if (transformedCount === 0) {
+        console.log(`       (no envs references found)`);
+    }
+
+    // Show required secrets
+    if (allSecrets.size > 0) {
+        console.log(`\n    \x1b[33m4. Required Kestra Cloud Secrets:\x1b[0m`);
+        console.log(`       Add these in: Namespace Settings → Secrets → Add Secret\n`);
+        [...allSecrets].sort().forEach(secret => {
+            const envVar = secret.toUpperCase();
+            console.log(`       • ${secret}  ←  $${envVar}`);
+        });
+    }
+
+    return {
+        copiedCount: copiedFiles.length,
+        transformedCount,
+        secrets: [...allSecrets],
+    };
+}
+
+// ============================================================================
+// NAMESPACE FILE FUNCTIONS
+// ============================================================================
+
+function getAuthHeader(options) {
+    if (options.isCloud) {
+        return `-H "Authorization: Bearer ${options.apiToken}"`;
+    } else {
+        return `-u "${options.username}:${options.password}"`;
+    }
+}
+
+function uploadNamespaceFile(filePath, baseDir, options) {
+    const { url, namespace, dryRun, isCloud } = options;
+
     const relativePath = path.relative(baseDir, filePath);
     const namespacePath = `scripts/${relativePath}`;
     const fileName = path.basename(filePath);
@@ -151,12 +354,15 @@ function uploadNamespaceFile(filePath, baseDir, options) {
     }
 
     try {
-        // Kestra API: POST /api/v1/namespaces/{namespace}/files with multipart form
-        // The path query parameter specifies the destination path in namespace storage
+        const authHeader = getAuthHeader(options);
+        const apiPath = isCloud
+            ? `${url}/api/v1/${options.tenant}/namespaces/${namespace}/files`
+            : `${url}/api/v1/namespaces/${namespace}/files`;
+
         const encodedPath = encodeURIComponent(`/${namespacePath}`);
         const curlCmd = `curl -s -o /dev/null -w "%{http_code}" -X POST \
-            "${url}/api/v1/namespaces/${namespace}/files?path=${encodedPath}" \
-            -u "${username}:${password}" \
+            "${apiPath}?path=${encodedPath}" \
+            ${authHeader} \
             -F "fileContent=@${filePath}"`;
 
         const result = execSync(curlCmd, { encoding: 'utf-8', timeout: 30000 }).trim();
@@ -193,12 +399,17 @@ function uploadNamespaceFiles(scriptsDir, options) {
 // ============================================================================
 
 function checkKestraHealth(options) {
-    const { url, username, password } = options;
+    const { url, isCloud } = options;
 
     try {
+        const authHeader = getAuthHeader(options);
+        const healthUrl = isCloud
+            ? `${url}/api/v1/${options.tenant}/configs`
+            : `${url}/api/v1/configs`;
+
         const result = execSync(
-            `curl -s -o /dev/null -w "%{http_code}" -u "${username}:${password}" "${url}/api/v1/configs"`,
-            { encoding: 'utf-8', timeout: 5000 }
+            `curl -s -o /dev/null -w "%{http_code}" ${authHeader} "${healthUrl}"`,
+            { encoding: 'utf-8', timeout: 10000 }
         ).trim();
 
         return result === '200';
@@ -208,11 +419,16 @@ function checkKestraHealth(options) {
 }
 
 function getExistingFlows(options) {
-    const { url, username, password, namespace } = options;
+    const { url, namespace, isCloud } = options;
 
     try {
+        const authHeader = getAuthHeader(options);
+        const apiPath = isCloud
+            ? `${url}/api/v1/${options.tenant}/flows/${namespace}`
+            : `${url}/api/v1/flows/${namespace}`;
+
         const result = execSync(
-            `curl -s -u "${username}:${password}" "${url}/api/v1/flows/${namespace}"`,
+            `curl -s ${authHeader} "${apiPath}"`,
             { encoding: 'utf-8', timeout: 10000 }
         );
 
@@ -224,7 +440,7 @@ function getExistingFlows(options) {
 }
 
 function deleteFlow(flowId, options) {
-    const { url, username, password, namespace, dryRun } = options;
+    const { url, namespace, dryRun, isCloud } = options;
 
     if (dryRun) {
         console.log(`    \x1b[36m[Dry-run: would delete ${namespace}/${flowId}]\x1b[0m`);
@@ -232,8 +448,13 @@ function deleteFlow(flowId, options) {
     }
 
     try {
+        const authHeader = getAuthHeader(options);
+        const apiPath = isCloud
+            ? `${url}/api/v1/${options.tenant}/flows/${namespace}/${flowId}`
+            : `${url}/api/v1/flows/${namespace}/${flowId}`;
+
         const result = execSync(
-            `curl -s -o /dev/null -w "%{http_code}" -X DELETE -u "${username}:${password}" "${url}/api/v1/flows/${namespace}/${flowId}"`,
+            `curl -s -o /dev/null -w "%{http_code}" -X DELETE ${authHeader} "${apiPath}"`,
             { encoding: 'utf-8', timeout: 10000 }
         ).trim();
 
@@ -251,11 +472,10 @@ function deleteFlow(flowId, options) {
 }
 
 function deployFlow(filePath, options) {
-    const { url, username, password, namespace, dryRun } = options;
+    const { url, namespace, dryRun, isCloud } = options;
     const content = fs.readFileSync(filePath, 'utf-8');
     const fileName = path.basename(filePath);
 
-    // Extract flow ID and namespace from YAML
     const flowId = extractFlowId(content);
     const flowNamespace = extractNamespace(content) || namespace;
 
@@ -270,21 +490,23 @@ function deployFlow(filePath, options) {
     console.log(`    Namespace: ${flowNamespace}`);
 
     if (dryRun) {
-        console.log(`    \x1b[36m[Dry-run: would deploy to ${url}/api/v1/flows/${flowNamespace}/${flowId}]\x1b[0m`);
+        console.log(`    \x1b[36m[Dry-run: would deploy to ${isCloud ? 'Kestra Cloud' : 'Local Kestra'}]\x1b[0m`);
         return { file: fileName, flowId, namespace: flowNamespace, success: true, dryRun: true };
     }
 
     try {
-        // Use POST to create a new flow (works for both create and update in Kestra)
-        // POST /api/v1/flows creates or updates a flow based on the YAML content
-        const curlCmd = `curl -s -X POST "${url}/api/v1/flows" \
-            -u "${username}:${password}" \
+        const authHeader = getAuthHeader(options);
+        const apiPath = isCloud
+            ? `${url}/api/v1/${options.tenant}/flows`
+            : `${url}/api/v1/flows`;
+
+        const curlCmd = `curl -s -X POST "${apiPath}" \
+            ${authHeader} \
             -H "Content-Type: application/x-yaml" \
             --data-binary @"${filePath}"`;
 
         const result = execSync(curlCmd, { encoding: 'utf-8', timeout: 60000 });
 
-        // Parse response to check for errors
         let response;
         try {
             response = JSON.parse(result);
@@ -317,7 +539,8 @@ function deployFlow(filePath, options) {
 // SUMMARY
 // ============================================================================
 
-function printSummary(results, dryRun, deletedCount = 0, namespaceFileResults = []) {
+function printSummary(results, options, deletedCount = 0, namespaceFileResults = [], prepResult = null) {
+    const { dryRun, isCloud } = options;
     const successful = results.filter(r => r.success);
     const failed = results.filter(r => !r.success);
     const nsSuccessful = namespaceFileResults.filter(r => r.success && !r.dryRun);
@@ -325,7 +548,10 @@ function printSummary(results, dryRun, deletedCount = 0, namespaceFileResults = 
 
     printHeader('DEPLOYMENT SUMMARY');
 
+    const target = isCloud ? '\x1b[35mKESTRA CLOUD\x1b[0m' : '\x1b[32mLOCAL KESTRA\x1b[0m';
+
     console.log(`
+  Target:          ${target}
   Namespace files: ${nsSuccessful.length > 0 ? `\x1b[32m${nsSuccessful.length} uploaded\x1b[0m` : '0 uploaded'}${nsFailed.length > 0 ? `, \x1b[31m${nsFailed.length} failed\x1b[0m` : ''}
   Deleted flows:   ${deletedCount}
   Deployed flows:  ${results.length}
@@ -333,6 +559,15 @@ function printSummary(results, dryRun, deletedCount = 0, namespaceFileResults = 
   Failed:          ${failed.length > 0 ? `\x1b[31m${failed.length}\x1b[0m` : '0'}
   Mode:            ${dryRun ? '\x1b[36mDRY-RUN (no changes made)\x1b[0m' : '\x1b[32mLIVE\x1b[0m'}
 `);
+
+    if (prepResult && prepResult.secrets.length > 0 && isCloud) {
+        printSubHeader('Required Cloud Secrets Reminder');
+        console.log(`\n  Make sure these secrets exist in Kestra Cloud:`);
+        prepResult.secrets.forEach(s => {
+            console.log(`    • ${s}`);
+        });
+        console.log('');
+    }
 
     if (successful.length > 0 && !dryRun) {
         printSubHeader('Deployed Flows');
@@ -348,13 +583,6 @@ function printSummary(results, dryRun, deletedCount = 0, namespaceFileResults = 
         });
     }
 
-    if (nsFailed.length > 0) {
-        printSubHeader('Failed Namespace File Uploads');
-        nsFailed.forEach(r => {
-            console.log(`    \x1b[31m✗\x1b[0m ${r.path}: ${r.error}`);
-        });
-    }
-
     console.log('');
 }
 
@@ -364,43 +592,50 @@ function printSummary(results, dryRun, deletedCount = 0, namespaceFileResults = 
 
 function showHelp() {
     console.log(`
-Kestra Flow Deployment Script
-=============================
+Kestra Flow Deployment Script (Interactive)
+============================================
 
-Uploads all local Kestra workflow YAML files to the local Kestra instance.
+Supports deployment to both LOCAL Kestra (Docker) and KESTRA CLOUD.
 
 Usage:
-  node deploy-flows.js [options] [directory]
+  node deploy-flows.js [options]
 
 Options:
-  --dry-run          Preview what would be deployed without making changes
-  --namespace NAME   Override the default namespace (default: ai_concierge)
-  --url URL          Override Kestra URL (default: http://localhost:8082)
-  --help             Show this help message
-
-Examples:
-  node deploy-flows.js                              # Deploy all flows from ../flows
-  node deploy-flows.js --dry-run                    # Preview only
-  node deploy-flows.js /path/to/flows               # Custom directory
-  node deploy-flows.js --namespace my_namespace     # Different namespace
+  --local          Deploy to local Kestra (skip interactive prompt)
+  --cloud          Deploy to Kestra Cloud (skip interactive prompt)
+  --dry-run        Preview what would be deployed without making changes
+  --namespace NAME Override the default namespace (default: ai_concierge)
+  --help           Show this help message
 
 Environment Variables:
-  KESTRA_LOCAL_URL       - Kestra API URL
-  KESTRA_LOCAL_USERNAME  - Basic auth username
-  KESTRA_LOCAL_PASSWORD  - Basic auth password
-  KESTRA_NAMESPACE       - Default namespace
+  LOCAL:
+    KESTRA_LOCAL_URL       - Local Kestra URL (default: http://localhost:8082)
+    KESTRA_LOCAL_USERNAME  - Basic auth username
+    KESTRA_LOCAL_PASSWORD  - Basic auth password
+
+  CLOUD:
+    KESTRA_CLOUD_URL       - Kestra Cloud URL
+    KESTRA_CLOUD_TENANT    - Kestra Cloud tenant (default: main)
+    KESTRA_API_TOKEN       - Kestra Cloud API token
+
+  SHARED:
+    KESTRA_NAMESPACE       - Default namespace (default: ai_concierge)
+
+Examples:
+  node deploy-flows.js              # Interactive mode
+  node deploy-flows.js --local      # Deploy to local Kestra
+  node deploy-flows.js --cloud      # Deploy to Kestra Cloud
+  node deploy-flows.js --dry-run    # Preview deployment
 `);
 }
 
 function parseArgs(args) {
     const options = {
         dryRun: false,
+        forceLocal: false,
+        forceCloud: false,
         namespace: CONFIG.namespace,
-        url: CONFIG.url,
-        username: CONFIG.username,
-        password: CONFIG.password,
         showHelp: false,
-        targetDir: DEFAULT_DIR,
     };
 
     for (let i = 0; i < args.length; i++) {
@@ -410,23 +645,52 @@ function parseArgs(args) {
             options.dryRun = true;
         } else if (arg === '--help' || arg === '-h') {
             options.showHelp = true;
+        } else if (arg === '--local' || arg === '-l') {
+            options.forceLocal = true;
+        } else if (arg === '--cloud' || arg === '-c') {
+            options.forceCloud = true;
         } else if (arg === '--namespace' && args[i + 1]) {
             options.namespace = args[++i];
-        } else if (arg === '--url' && args[i + 1]) {
-            options.url = args[++i];
-        } else if (!arg.startsWith('--')) {
-            options.targetDir = path.resolve(arg);
         }
     }
 
     return options;
 }
 
-function main() {
-    const args = process.argv.slice(2);
-    const options = parseArgs(args);
+async function selectDeploymentTarget(options) {
+    // If forced via CLI, skip prompt
+    if (options.forceLocal) return 'local';
+    if (options.forceCloud) return 'cloud';
 
-    if (options.showHelp) {
+    // Interactive selection
+    printBox([
+        'KESTRA DEPLOYMENT TARGET',
+        '',
+        'Where do you want to deploy?',
+        '',
+        '[L] Local Kestra (Docker - localhost:8082)',
+        '[C] Kestra Cloud (Production)',
+        '',
+        'Enter L or C:',
+    ], '\x1b[36m');
+
+    const answer = await promptUser('\n  Your choice: ');
+
+    if (answer === 'l' || answer === 'local') {
+        return 'local';
+    } else if (answer === 'c' || answer === 'cloud') {
+        return 'cloud';
+    } else {
+        console.log(`\n  \x1b[31mInvalid choice. Please enter L or C.\x1b[0m\n`);
+        process.exit(1);
+    }
+}
+
+async function main() {
+    const args = process.argv.slice(2);
+    const cliOptions = parseArgs(args);
+
+    if (cliOptions.showHelp) {
         showHelp();
         process.exit(0);
     }
@@ -434,17 +698,64 @@ function main() {
     // Print header
     printHeader('KESTRA FLOW DEPLOYMENT');
 
+    // Select deployment target
+    const target = await selectDeploymentTarget(cliOptions);
+    const isCloud = target === 'cloud';
+
+    // Build options based on target
+    const options = {
+        dryRun: cliOptions.dryRun,
+        namespace: cliOptions.namespace,
+        isCloud,
+        ...(isCloud ? {
+            url: CONFIG.cloud.url,
+            apiToken: CONFIG.cloud.apiToken,
+            tenant: CONFIG.cloud.tenant,
+        } : {
+            url: CONFIG.local.url,
+            username: CONFIG.local.username,
+            password: CONFIG.local.password,
+        }),
+    };
+
+    // Validate Cloud configuration
+    if (isCloud) {
+        if (!options.url) {
+            console.error(`\n  \x1b[31mERROR: KESTRA_CLOUD_URL not set\x1b[0m`);
+            console.error(`  Set the environment variable or check your .env file\n`);
+            process.exit(1);
+        }
+        if (!options.apiToken) {
+            console.error(`\n  \x1b[31mERROR: KESTRA_API_TOKEN not set\x1b[0m`);
+            console.error(`  Set the environment variable or check your .env file\n`);
+            process.exit(1);
+        }
+    }
+
+    // Determine source directory
+    // In Cloud dry-run, files aren't actually copied to prod_flows, so use flows/ for preview
+    const sourceDir = isCloud && !cliOptions.dryRun ? PROD_FLOWS_DIR : FLOWS_DIR;
+
     console.log(`
-  Target:    ${options.targetDir}
-  Kestra:    ${options.url}
+  Target:    ${isCloud ? '\x1b[35mKestra Cloud\x1b[0m' : '\x1b[32mLocal Kestra\x1b[0m'}
+  URL:       ${options.url}
   Namespace: ${options.namespace}
   Mode:      ${options.dryRun ? '\x1b[36mDRY-RUN\x1b[0m' : '\x1b[32mLIVE\x1b[0m'}
 `);
 
-    // Check if directory exists
-    if (!fs.existsSync(options.targetDir)) {
-        console.error(`\n  \x1b[31mERROR: Directory not found: ${options.targetDir}\x1b[0m`);
-        process.exit(1);
+    // For Cloud deployment, prepare prod_flows
+    let prepResult = null;
+    if (isCloud) {
+        prepResult = prepareProdFlows(options.dryRun);
+
+        if (!options.dryRun && prepResult.secrets.length > 0) {
+            console.log(`\n  \x1b[33m⚠ IMPORTANT: Ensure secrets are configured in Kestra Cloud before continuing.\x1b[0m`);
+            const proceed = await promptUser('\n  Continue with deployment? (y/n): ');
+            if (proceed !== 'y' && proceed !== 'yes') {
+                console.log(`\n  Deployment cancelled.\n`);
+                process.exit(0);
+            }
+        }
     }
 
     // Check Kestra health (skip in dry-run)
@@ -454,13 +765,17 @@ function main() {
         const healthy = checkKestraHealth(options);
         if (!healthy) {
             console.error(`\n  \x1b[31mERROR: Cannot connect to Kestra at ${options.url}\x1b[0m`);
-            console.error(`  Make sure Kestra is running: docker-compose up -d kestra\n`);
+            if (isCloud) {
+                console.error(`  Check your KESTRA_CLOUD_URL and KESTRA_API_TOKEN\n`);
+            } else {
+                console.error(`  Make sure Kestra is running: docker-compose up -d kestra\n`);
+            }
             process.exit(1);
         }
         console.log(`    \x1b[32m✓\x1b[0m Connected to Kestra at ${options.url}`);
     }
 
-    // Upload namespace files (scripts) BEFORE deploying flows
+    // Upload namespace files (scripts)
     printSubHeader(`Uploading namespace files to ${options.namespace}`);
     const namespaceFileResults = uploadNamespaceFiles(SCRIPTS_DIR, options);
     const failedUploads = namespaceFileResults.filter(r => !r.success && !r.dryRun);
@@ -472,18 +787,12 @@ function main() {
     }
 
     // Find YAML files
-    const yamlFiles = findYamlFiles(options.targetDir);
+    const yamlFiles = findYamlFiles(sourceDir);
 
     if (yamlFiles.length === 0) {
-        console.error(`\n  \x1b[31mERROR: No .yaml or .yml files found in ${options.targetDir}\x1b[0m\n`);
+        console.error(`\n  \x1b[31mERROR: No .yaml or .yml files found in ${sourceDir}\x1b[0m\n`);
         process.exit(1);
     }
-
-    // Get list of flow IDs we're about to deploy
-    const localFlowIds = yamlFiles.map(file => {
-        const content = fs.readFileSync(file, 'utf-8');
-        return extractFlowId(content);
-    }).filter(Boolean);
 
     // Delete existing flows in the namespace
     printSubHeader(`Cleaning existing flows in ${options.namespace}`);
@@ -507,7 +816,7 @@ function main() {
     const results = yamlFiles.map(file => deployFlow(file, options));
 
     // Print summary
-    printSummary(results, options.dryRun, existingFlows.length, namespaceFileResults);
+    printSummary(results, options, existingFlows.length, namespaceFileResults, prepResult);
 
     // Exit with error code if any deployments failed
     const failed = results.filter(r => !r.success);
@@ -521,4 +830,7 @@ function main() {
 }
 
 // Run
-main();
+main().catch(err => {
+    console.error(`\n  \x1b[31mFatal error: ${err.message}\x1b[0m\n`);
+    process.exit(1);
+});

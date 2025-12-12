@@ -67,6 +67,12 @@ const StatusBadge: React.FC<Props> = ({ status, size = "md", callProgress }) => 
       label: "Analyzing",
       animate: true,
     },
+    [RequestStatus.RECOMMENDED]: {
+      color: "bg-indigo-500/20 text-indigo-300 border-indigo-500/30",
+      icon: CheckCircle2,
+      label: "Ready to Book",
+      animate: false,
+    },
     [RequestStatus.BOOKING]: {
       color: "bg-amber-500/20 text-amber-300 border-amber-500/30",
       icon: Calendar,

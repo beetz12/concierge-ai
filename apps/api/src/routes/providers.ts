@@ -710,11 +710,220 @@ export default async function providerRoutes(fastify: FastifyInstance) {
           try {
             fastify.log.info({ executionId }, "Background batch call processing started");
 
-            await callingService.callProvidersBatch(requests, {
+            const batchResult = await callingService.callProvidersBatch(requests, {
               maxConcurrent: validated.maxConcurrent || 5,
-            });
+            }) as { success: boolean; resultsInDatabase?: boolean; stats?: { completed?: number } };
 
-            fastify.log.info({ executionId }, "Background batch call processing completed");
+            fastify.log.info(
+              { executionId, success: batchResult.success, resultsInDatabase: batchResult.resultsInDatabase },
+              "Background batch call processing completed"
+            );
+
+            // If resultsInDatabase flag is set, results were saved via Kestra callbacks
+            // Wait for all providers to have results, then generate recommendations
+            if (batchResult.resultsInDatabase && validated.serviceRequestId) {
+              fastify.log.info(
+                { executionId, serviceRequestId: validated.serviceRequestId },
+                "Kestra batch completed with results in database - waiting for all provider results"
+              );
+
+              // Step 1: Update status to ANALYZING
+              await supabase
+                .from("service_requests")
+                .update({
+                  status: "ANALYZING",
+                })
+                .eq("id", validated.serviceRequestId);
+
+              // Log success to interaction_logs
+              await supabase.from("interaction_logs").insert({
+                request_id: validated.serviceRequestId,
+                step_name: "Batch Calls Completed",
+                detail: `All ${validated.providers.length} provider calls completed via Kestra. Results saved to database.`,
+                status: "success",
+              });
+
+              // Step 2: Poll for all providers to have final call_status (max 30 seconds)
+              const finalStatuses = ["completed", "failed", "error", "timeout", "no_answer", "voicemail", "busy"];
+              let allProvidersComplete = false;
+              let pollAttempts = 0;
+              const maxPollAttempts = 15; // 15 attempts * 2 seconds = 30 seconds max
+
+              while (!allProvidersComplete && pollAttempts < maxPollAttempts) {
+                pollAttempts++;
+
+                const { data: providers, error: fetchError } = await supabase
+                  .from("providers")
+                  .select("id, call_status, call_result, name, phone")
+                  .eq("request_id", validated.serviceRequestId);
+
+                if (fetchError) {
+                  fastify.log.error({ error: fetchError }, "Failed to fetch providers for recommendation check");
+                  break;
+                }
+
+                if (!providers || providers.length === 0) {
+                  fastify.log.warn({ serviceRequestId: validated.serviceRequestId }, "No providers found");
+                  break;
+                }
+
+                const calledProviders = providers.filter(p => p.call_status);
+                const completedProviders = providers.filter(p =>
+                  p.call_status && finalStatuses.includes(p.call_status)
+                );
+
+                fastify.log.debug(
+                  {
+                    pollAttempt: pollAttempts,
+                    total: providers.length,
+                    called: calledProviders.length,
+                    completed: completedProviders.length
+                  },
+                  "Polling provider completion status"
+                );
+
+                // All called providers have reached final status
+                if (calledProviders.length > 0 && completedProviders.length === calledProviders.length) {
+                  allProvidersComplete = true;
+                  fastify.log.info(
+                    {
+                      executionId,
+                      completedCount: completedProviders.length,
+                      totalProviders: providers.length
+                    },
+                    "All provider calls completed - generating recommendations"
+                  );
+
+                  // Step 3: Transform provider data to CallResult format for recommendations API
+                  // Fetch service request for context
+                  const { data: serviceRequest } = await supabase
+                    .from("service_requests")
+                    .select("title, criteria, location")
+                    .eq("id", validated.serviceRequestId)
+                    .single();
+
+                  const callResults = completedProviders.map(p => {
+                    const callResultData = p.call_result as any;
+                    return {
+                      status: p.call_status,
+                      callId: callResultData?.callId || "",
+                      callMethod: "kestra" as const,
+                      duration: callResultData?.duration || 0,
+                      endedReason: callResultData?.endedReason || "",
+                      transcript: callResultData?.transcript || "",
+                      analysis: callResultData?.analysis || {
+                        summary: callResultData?.analysis?.summary || "",
+                        structuredData: callResultData?.structuredData || {},
+                        successEvaluation: "",
+                      },
+                      provider: {
+                        name: p.name,
+                        phone: p.phone || "",
+                        service: serviceRequest?.title || validated.serviceNeeded,
+                        location: serviceRequest?.location || validated.location,
+                      },
+                      request: {
+                        criteria: serviceRequest?.criteria || validated.userCriteria,
+                        urgency: validated.urgency,
+                      },
+                    };
+                  });
+
+                  // Step 4: Generate recommendations (Kestra or Direct Gemini)
+                  try {
+                    const kestraEnabled = process.env.KESTRA_ENABLED === "true";
+                    const kestraHealthy = kestraEnabled && await kestraClient.healthCheck();
+
+                    fastify.log.info(
+                      { kestraEnabled, kestraHealthy, callResultsCount: callResults.length },
+                      "Generating recommendations"
+                    );
+
+                    let recommendationSuccess = false;
+
+                    if (kestraHealthy) {
+                      // Use Kestra workflow
+                      const kestraResult = await kestraClient.triggerRecommendProvidersFlow({
+                        callResults,
+                        originalCriteria: serviceRequest?.criteria || validated.userCriteria || "",
+                        serviceRequestId: validated.serviceRequestId,
+                      });
+
+                      if (kestraResult.success && kestraResult.recommendations?.recommendations?.length > 0) {
+                        recommendationSuccess = true;
+                        fastify.log.info(
+                          { executionId: kestraResult.executionId, recommendationCount: kestraResult.recommendations.recommendations.length },
+                          "Kestra recommendations generated successfully"
+                        );
+                      } else {
+                        fastify.log.warn(
+                          { error: kestraResult.error },
+                          "Kestra recommendation failed, falling back to direct Gemini"
+                        );
+                      }
+                    }
+
+                    // Fallback to Direct Gemini if Kestra unavailable or failed
+                    if (!recommendationSuccess) {
+                      const directResult = await recommendationService.generateRecommendations({
+                        callResults,
+                        originalCriteria: serviceRequest?.criteria || validated.userCriteria || "",
+                        serviceRequestId: validated.serviceRequestId,
+                      });
+
+                      if (directResult?.recommendations?.length > 0) {
+                        recommendationSuccess = true;
+                        fastify.log.info(
+                          { recommendationCount: directResult.recommendations.length },
+                          "Direct Gemini recommendations generated successfully"
+                        );
+                      }
+                    }
+
+                    // Step 5: Update status to RECOMMENDED if recommendations were generated
+                    if (recommendationSuccess) {
+                      await supabase
+                        .from("service_requests")
+                        .update({ status: "RECOMMENDED" })
+                        .eq("id", validated.serviceRequestId);
+
+                      await supabase.from("interaction_logs").insert({
+                        request_id: validated.serviceRequestId,
+                        step_name: "Recommendations Generated",
+                        detail: "AI analyzed all call results and generated provider recommendations.",
+                        status: "success",
+                      });
+
+                      fastify.log.info(
+                        { executionId, serviceRequestId: validated.serviceRequestId },
+                        "Status updated to RECOMMENDED"
+                      );
+                    } else {
+                      fastify.log.warn(
+                        { executionId },
+                        "Failed to generate recommendations - keeping status as ANALYZING"
+                      );
+                    }
+                  } catch (recError) {
+                    fastify.log.error(
+                      { error: recError },
+                      "Error generating recommendations"
+                    );
+                    // Keep status as ANALYZING so frontend can retry
+                  }
+                } else {
+                  // Wait 2 seconds before next poll
+                  await new Promise(resolve => setTimeout(resolve, 2000));
+                }
+              }
+
+              if (!allProvidersComplete) {
+                fastify.log.warn(
+                  { executionId, pollAttempts, serviceRequestId: validated.serviceRequestId },
+                  "Timed out waiting for all providers to complete - frontend will handle recommendation generation"
+                );
+              }
+            }
           } catch (error) {
             fastify.log.error(
               { executionId, error },
