@@ -412,6 +412,8 @@ export default async function bookingRoutes(fastify: FastifyInstance) {
           customerName: validated.customerName,
           customerPhone: validated.customerPhone,
           location: validated.location,
+          serviceRequestId: validated.serviceRequestId,
+          providerId: validated.providerId,
         });
 
         if (!result.success) {
@@ -485,6 +487,294 @@ export default async function bookingRoutes(fastify: FastifyInstance) {
             success: false,
             error: "Validation error",
             details: error.errors,
+          });
+        }
+
+        const errorMessage =
+          error instanceof Error ? error.message : "Unknown error";
+        return reply.status(500).send({
+          success: false,
+          error: errorMessage,
+        });
+      }
+    }
+  );
+
+  /**
+   * POST /api/v1/bookings/save-booking-result
+   * Save booking result from Kestra workflow
+   * Called by schedule-booking.js after call completes
+   */
+  const saveBookingResultSchema = z.object({
+    serviceRequestId: z.string().min(1, "Service request ID is required"),
+    providerId: z.string().min(1, "Provider ID is required"),
+    bookingResult: z.object({
+      status: z.enum(["completed", "timeout", "error"]),
+      callId: z.string().optional(),
+      duration: z.number().optional(),
+      endedReason: z.string().optional(),
+      booking_confirmed: z.boolean(),
+      confirmed_date: z.string().nullable().optional(),
+      confirmed_time: z.string().nullable().optional(),
+      confirmation_number: z.string().nullable().optional(),
+      call_outcome: z.string().optional(),
+      special_instructions: z.string().nullable().optional(),
+      booking_failure_reason: z.string().nullable().optional(),
+      transcript: z.string().optional(),
+      analysis: z.object({
+        summary: z.string().optional(),
+        structuredData: z.record(z.unknown()).optional(),
+        successEvaluation: z.string().optional(),
+      }).optional(),
+      provider: z.object({
+        name: z.string(),
+        phone: z.string(),
+      }).optional(),
+      appointment: z.object({
+        service: z.string().optional(),
+        location: z.string().optional(),
+        customer: z.string().optional(),
+        customerPhone: z.string().optional(),
+        preferredDate: z.string().optional(),
+        preferredTime: z.string().optional(),
+      }).optional(),
+      error: z.string().optional(),
+    }),
+  });
+
+  fastify.post(
+    "/save-booking-result",
+    {
+      schema: {
+        tags: ["bookings"],
+        summary: "Save booking result from Kestra workflow",
+        description:
+          "Called by the Kestra schedule-booking.js script after a booking call completes. Persists the result to the database.",
+        body: {
+          type: "object",
+          required: ["serviceRequestId", "providerId", "bookingResult"],
+          properties: {
+            serviceRequestId: {
+              type: "string",
+              description: "ID of the service request",
+            },
+            providerId: {
+              type: "string",
+              description: "ID of the provider",
+            },
+            bookingResult: {
+              type: "object",
+              description: "The booking call result from VAPI",
+            },
+          },
+        },
+        response: {
+          200: {
+            type: "object",
+            properties: {
+              success: { type: "boolean" },
+              message: { type: "string" },
+            },
+          },
+          400: {
+            type: "object",
+            properties: {
+              success: { type: "boolean" },
+              error: { type: "string" },
+            },
+          },
+          500: {
+            type: "object",
+            properties: {
+              success: { type: "boolean" },
+              error: { type: "string" },
+            },
+          },
+        },
+      },
+    },
+    async (request, reply) => {
+      try {
+        const validated = saveBookingResultSchema.parse(request.body);
+        const { serviceRequestId, providerId, bookingResult } = validated;
+
+        fastify.log.info(
+          {
+            serviceRequestId,
+            providerId,
+            status: bookingResult.status,
+            booking_confirmed: bookingResult.booking_confirmed,
+          },
+          "Saving booking result from Kestra"
+        );
+
+        const supabase = createSupabaseClient(
+          process.env.SUPABASE_URL!,
+          process.env.SUPABASE_SERVICE_ROLE_KEY!
+        );
+
+        const bookingConfirmed = bookingResult.booking_confirmed || false;
+        const transcript = bookingResult.transcript || "";
+
+        // Update provider record with booking details
+        const { error: updateProviderError } = await supabase
+          .from("providers")
+          .update({
+            booking_confirmed: bookingConfirmed,
+            booking_date: bookingResult.confirmed_date || null,
+            booking_time: bookingResult.confirmed_time || null,
+            confirmation_number: bookingResult.confirmation_number || null,
+            call_status: bookingConfirmed ? "booking_confirmed" : "booking_failed",
+            last_call_at: new Date().toISOString(),
+            call_transcript: transcript,
+            call_id: bookingResult.callId || null,
+          })
+          .eq("id", providerId);
+
+        if (updateProviderError) {
+          fastify.log.error(
+            { error: updateProviderError },
+            "Failed to update provider record"
+          );
+        }
+
+        // Update service request based on booking outcome
+        if (bookingConfirmed) {
+          const { error: updateRequestError } = await supabase
+            .from("service_requests")
+            .update({
+              selected_provider_id: providerId,
+              status: "COMPLETED",
+              final_outcome: `Appointment confirmed with ${bookingResult.provider?.name || "provider"} for ${bookingResult.confirmed_date || "TBD"} at ${bookingResult.confirmed_time || "TBD"}`,
+            })
+            .eq("id", serviceRequestId);
+
+          if (updateRequestError) {
+            fastify.log.error(
+              { error: updateRequestError },
+              "Failed to update service request"
+            );
+          }
+
+          // Create interaction log for successful booking
+          await supabase.from("interaction_logs").insert({
+            request_id: serviceRequestId,
+            step_name: "Booking Confirmed",
+            detail: `Successfully booked appointment with ${bookingResult.provider?.name || "provider"}. Confirmation: ${bookingResult.confirmation_number || "N/A"}. Date: ${bookingResult.confirmed_date || "TBD"} at ${bookingResult.confirmed_time || "TBD"}`,
+            status: "success",
+            transcript: transcript,
+            call_id: bookingResult.callId || null,
+          });
+
+          // Send confirmation notification to user
+          try {
+            const { data: request } = await supabase
+              .from("service_requests")
+              .select("user_phone, direct_contact_info, client_name")
+              .eq("id", serviceRequestId)
+              .single();
+
+            if (request?.user_phone) {
+              const twilioClient = new DirectTwilioClient(fastify.log);
+
+              if (twilioClient.isAvailable()) {
+                const confirmResult = await twilioClient.sendConfirmation({
+                  userPhone: request.user_phone,
+                  userName:
+                    (request.direct_contact_info as any)?.user_name ||
+                    request.client_name ||
+                    bookingResult.appointment?.customer,
+                  providerName: bookingResult.provider?.name || "Provider",
+                  bookingDate: bookingResult.confirmed_date || undefined,
+                  bookingTime: bookingResult.confirmed_time || undefined,
+                  confirmationNumber: bookingResult.confirmation_number || undefined,
+                  serviceDescription: bookingResult.appointment?.service,
+                });
+
+                if (confirmResult.success) {
+                  fastify.log.info(
+                    { messageSid: confirmResult.messageSid },
+                    "Confirmation SMS sent via Kestra callback"
+                  );
+
+                  await supabase.from("interaction_logs").insert({
+                    request_id: serviceRequestId,
+                    step_name: "Confirmation SMS Sent",
+                    detail: `Booking confirmation sent via SMS to ${request.user_phone}`,
+                    status: "success",
+                  });
+                } else {
+                  fastify.log.error(
+                    { error: confirmResult.error },
+                    "Confirmation SMS failed"
+                  );
+                }
+              }
+            }
+          } catch (notifyError) {
+            fastify.log.error(
+              { error: notifyError },
+              "Error sending confirmation from Kestra callback"
+            );
+          }
+        } else {
+          // Booking failed - update status and log
+          const failureReason = bookingResult.booking_failure_reason || bookingResult.call_outcome || "unknown";
+
+          const { error: updateRequestError } = await supabase
+            .from("service_requests")
+            .update({
+              status: "RECOMMENDED", // Return to recommended state so user can try another provider
+            })
+            .eq("id", serviceRequestId);
+
+          if (updateRequestError) {
+            fastify.log.error(
+              { error: updateRequestError },
+              "Failed to update service request status after booking failure"
+            );
+          }
+
+          await supabase.from("interaction_logs").insert({
+            request_id: serviceRequestId,
+            step_name: "Booking Failed",
+            detail: `Failed to confirm booking with ${bookingResult.provider?.name || "provider"}. Reason: ${failureReason}`,
+            status: "warning",
+            transcript: transcript,
+            call_id: bookingResult.callId || null,
+          });
+        }
+
+        // Handle timeout and error cases specifically
+        if (bookingResult.status === "timeout") {
+          await supabase.from("interaction_logs").insert({
+            request_id: serviceRequestId,
+            step_name: "Booking Call Timeout",
+            detail: `Booking call to ${bookingResult.provider?.name || "provider"} timed out`,
+            status: "error",
+          });
+        } else if (bookingResult.status === "error") {
+          await supabase.from("interaction_logs").insert({
+            request_id: serviceRequestId,
+            step_name: "Booking Call Error",
+            detail: `Booking call failed with error: ${bookingResult.error || "Unknown error"}`,
+            status: "error",
+          });
+        }
+
+        return reply.send({
+          success: true,
+          message: bookingConfirmed
+            ? "Booking confirmed and saved"
+            : "Booking result saved (not confirmed)",
+        });
+      } catch (error: unknown) {
+        request.log.error({ error }, "Failed to save booking result");
+
+        if (error instanceof z.ZodError) {
+          return reply.status(400).send({
+            success: false,
+            error: `Validation error: ${error.errors.map((e) => e.message).join(", ")}`,
           });
         }
 

@@ -70,6 +70,12 @@ Key endpoints:
 - **Supabase**: Server-side persistence with RLS and real-time subscriptions
 - **Server Actions**: Database mutations with cache revalidation
 
+### Address Capture
+
+- **Google Places Autocomplete**: `/new` page captures full structured address (street, city, state, zip)
+- **VAPI Integration**: `clientAddress` field flows through to AI prompts, enabling agents to provide real addresses when providers ask
+- **Component**: `packages/ui/src/address-autocomplete.tsx` - reusable autocomplete with Google Places API
+
 ### Database (Supabase/PostgreSQL)
 
 Tables: `users`, `service_requests`, `providers`, `interaction_logs`
@@ -90,7 +96,8 @@ Schema: `supabase/migrations/20250101000000_initial_schema.sql`
 | `apps/web/lib/supabase/server.ts`                | Server-side Supabase client                    |
 | `apps/api/src/services/vapi/direct-vapi.client.ts` | DirectVapiClient with hybrid webhook support |
 | `apps/api/src/services/vapi/webhook-cache.service.ts` | In-memory cache for webhook results       |
-| `apps/web/lib/actions/service-requests.ts`       | Server actions including `addProviders()`  |
+| `apps/web/lib/actions/service-requests.ts`       | Server actions including `addProviders()`      |
+| `packages/ui/src/address-autocomplete.tsx`       | Google Places autocomplete component           |
 
 ### Provider Persistence Pattern (Critical)
 
@@ -134,6 +141,7 @@ BACKEND_URL=http://localhost:8000  # Internal URL for webhook cache polling
 ```
 NEXT_PUBLIC_SUPABASE_URL=...
 NEXT_PUBLIC_SUPABASE_ANON_KEY=...
+NEXT_PUBLIC_GOOGLE_PLACES_API_KEY=...       # Google Places API for address autocomplete
 NEXT_PUBLIC_LIVE_CALL_ENABLED=true          # Enable real VAPI calls
 NEXT_PUBLIC_ADMIN_TEST_PHONES=+1234,+5678   # Comma-separated test phones (recommended)
 NEXT_PUBLIC_ADMIN_TEST_NUMBER=+1234         # Legacy single test phone (deprecated)
@@ -154,6 +162,7 @@ Note: Gemini API key is backend-only (not exposed to client).
 - **Database**: Supabase (PostgreSQL with RLS, real-time)
 - **AI**: Google Gemini 2.5 Flash with Google Maps grounding
 - **Voice AI**: VAPI.ai for automated provider calling (concurrent calls supported)
+- **Address Services**: Google Places API for autocomplete and geocoding
 - **Workflow**: Kestra for orchestration (optional, with direct API fallback)
 
 ## VAPI Assistant Configuration

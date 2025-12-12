@@ -1,8 +1,14 @@
 # latest tasks
-1. after initiating the call, while the call is still going on, the frontend shows the call failed (fixed needs testing).
-2. Even at the end of the call, the assistant never disconnects (fixed needs testing). 
-3. The user never provided an address so the assistant made up an address (pending to do). 
-4. need to test direct api call (pending to do)
+1. after initiating the request, the Frontend is supposed to first show the steps it's taking such as researching providers... and then show the provider list while it makes the call, but this doesn't happen. 
+2. After initiating the call, while the call is still going on, the frontend shows initializing agent... instead of the previous view of show the provider list and the providers being concurrently called. 
+3. Even after the call is successfully terminated, the front-end does not show the recommended providers and has an error. 
+
+4. Even at the end of the call, the assistant never disconnects 
+5. The user never provided an address so the assistant made up an address (Added address fields with auto-suggest on new requests page but needs testing). 
+6. need to test direct api call (pending to do)
+
+
+7. fix cline code review workflow (in progress)
 
 
 # old tasks

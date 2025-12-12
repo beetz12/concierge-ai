@@ -337,6 +337,416 @@ await makeCall(requestId);
 
 ---
 
+## Address Autocomplete Architecture (December 2025)
+
+### Overview
+
+The Address Autocomplete feature solves a critical problem in the VAPI calling system: **the AI was making up fake addresses** when providing client locations to service providers. This happened because users only provided city/state (e.g., "Greenville, SC"), and the AI would generate plausible but incorrect street addresses during calls.
+
+**Problem:**
+```
+User Input: "Greenville, SC"
+VAPI Call: "The client is located at 123 Main Street, Greenville, SC" ❌ MADE UP
+Result: Provider goes to wrong address, wastes time, poor user experience
+```
+
+**Solution:**
+The app now uses Google Places Autocomplete to capture the **full structured address** from the user upfront, eliminating AI hallucination and ensuring providers receive accurate location information.
+
+### Solution Architecture
+
+The architecture introduces three key components:
+
+1. **Frontend Autocomplete Component** - Reusable Google Places Autocomplete with structured data extraction
+2. **Dual Location Fields** - Backward-compatible API that accepts both legacy `location` and new `clientAddress`
+3. **Conditional VAPI Prompts** - Smart prompt logic that uses real address when available, graceful fallback when not
+
+```mermaid
+flowchart TD
+    subgraph Frontend
+        A[User types address] --> B[AddressAutocomplete Component]
+        B --> C[Google Places API]
+        C --> D[Extract structured data]
+        D --> E[Form State: AddressComponents]
+    end
+
+    subgraph API Request
+        E --> F[Build API Request]
+        F --> G{clientAddress provided?}
+        G -->|Yes| H[Include full address]
+        G -->|No| I[Include location only - legacy]
+    end
+
+    subgraph Backend Processing
+        H --> J[Validate with Zod Schema]
+        I --> J
+        J --> K[Pass to VAPI Assistant Config]
+    end
+
+    subgraph VAPI Prompt Generation
+        K --> L{clientAddress exists?}
+        L -->|Yes| M[Use real address in prompt]
+        L -->|No| N[Use fallback script - no address]
+        M --> O[VAPI Call with accurate location]
+        N --> O
+    end
+
+    style B fill:#4a90e2,color:#fff
+    style D fill:#7bed9f,color:#000
+    style M fill:#7bed9f,color:#000
+    style N fill:#ffffcc,color:#000
+```
+
+### AddressComponents Interface
+
+The system uses a strongly-typed `AddressComponents` interface to ensure data consistency across the entire application:
+
+```typescript
+// Shared interface for structured address data
+interface AddressComponents {
+  formatted: string;      // "123 Main St, Greenville, SC 29601"
+  street: string;         // "123 Main St"
+  city: string;           // "Greenville"
+  state: string;          // "SC"
+  zip: string;            // "29601"
+  placeId?: string;       // "ChIJRURMfy-gVogRtM_hIBmcucM" (Google Place ID)
+}
+```
+
+**Field Breakdown:**
+
+| Field       | Purpose                                               | Example                           | Required |
+|-------------|-------------------------------------------------------|-----------------------------------|----------|
+| `formatted` | Complete address for display and storage             | "123 Main St, Greenville, SC 29601" | Yes      |
+| `street`    | Street address only (used in VAPI prompts)            | "123 Main St"                     | Yes      |
+| `city`      | City name                                             | "Greenville"                      | Yes      |
+| `state`     | State code (2 letters)                                | "SC"                              | Yes      |
+| `zip`       | ZIP/postal code                                       | "29601"                           | Yes      |
+| `placeId`   | Google Place ID for reference/validation              | "ChIJRURMfy-gVogRtM_hIBmcucM"     | No       |
+
+### Frontend Component (`packages/ui/src/address-autocomplete.tsx`)
+
+The `AddressAutocomplete` component is a **reusable, framework-agnostic** React component that provides Google Places Autocomplete with smart data extraction.
+
+**Key Features:**
+
+1. **Autocomplete Integration** - Uses Google Places Autocomplete API with `usePlacesAutocomplete` hook
+2. **Smart Data Extraction** - Parses Google's address_components into structured fields
+3. **Real-time Validation** - Ensures all required fields (street, city, state, zip) are present
+4. **Error Handling** - Graceful fallback if Google API unavailable or address incomplete
+5. **Customizable UI** - Accepts className for styling, provides clear visual feedback
+
+**Implementation Example:**
+
+```typescript
+import { AddressAutocomplete } from "@repo/ui/address-autocomplete";
+
+export default function MyForm() {
+  const [address, setAddress] = useState<AddressComponents>({
+    formatted: "",
+    street: "",
+    city: "",
+    state: "",
+    zip: "",
+  });
+
+  return (
+    <AddressAutocomplete
+      value={address.formatted}
+      onChange={setAddress}
+      placeholder="Enter your address"
+      className="w-full"
+    />
+  );
+}
+```
+
+**Data Extraction Logic:**
+
+The component uses Google's `address_components` array to extract structured data:
+
+```typescript
+// Google returns: address_components = [
+//   { types: ["street_number"], long_name: "123" },
+//   { types: ["route"], long_name: "Main St" },
+//   { types: ["locality"], long_name: "Greenville" },
+//   { types: ["administrative_area_level_1"], short_name: "SC" },
+//   { types: ["postal_code"], long_name: "29601" }
+// ]
+
+const extractAddressComponents = (details): AddressComponents => {
+  const components = details.address_components;
+
+  // Extract each field using Google's type system
+  const streetNumber = findComponent(components, "street_number");
+  const route = findComponent(components, "route");
+  const city = findComponent(components, "locality");
+  const state = findComponent(components, "administrative_area_level_1", "short_name");
+  const zip = findComponent(components, "postal_code");
+
+  return {
+    formatted: details.formatted_address,
+    street: `${streetNumber} ${route}`.trim(),
+    city,
+    state,
+    zip,
+    placeId: details.place_id,
+  };
+};
+```
+
+### Backend Integration
+
+#### API Schema (`apps/api/src/routes/providers.ts`)
+
+The Zod validation schema supports **both** legacy and new address formats for backward compatibility:
+
+```typescript
+// Search providers request schema
+const searchProvidersRequestSchema = z.object({
+  content: z.string().min(1, "Service description is required"),
+  location: z.string().min(1, "Location is required"),  // LEGACY: "Greenville, SC"
+  urgency: z.string().optional(),
+  criteria: z.string().optional(),
+  clientAddress: z.string().optional(),  // NEW: Full address from autocomplete
+});
+
+// Contact provider request schema
+const contactProviderRequestSchema = z.object({
+  requestId: z.string().uuid(),
+  providerId: z.string().uuid(),
+  serviceNeeded: z.string(),
+  userCriteria: z.string().optional(),
+  location: z.string(),           // LEGACY
+  clientAddress: z.string().optional(),  // NEW
+  urgency: z.string().optional(),
+});
+```
+
+**Backward Compatibility Strategy:**
+
+| Request Scenario | `location` Field | `clientAddress` Field | VAPI Behavior |
+|------------------|------------------|----------------------|---------------|
+| **New Form (with autocomplete)** | "Greenville, SC" | "123 Main St, Greenville, SC 29601" | Uses clientAddress ✅ |
+| **Legacy Form (no autocomplete)** | "Greenville, SC" | undefined | Uses fallback script ⚠️ |
+| **API-only requests** | "Greenville, SC" | undefined | Uses fallback script ⚠️ |
+
+### VAPI Prompt Conditional Logic
+
+#### Research Assistant Config (`apps/api/src/services/vapi/assistant-config.ts`)
+
+The VAPI assistant prompt adapts based on whether `clientAddress` is available:
+
+```typescript
+export function createAssistantConfig(
+  request: CallRequest,
+  customPrompt?: GeneratedPrompt
+) {
+  const { clientAddress, location } = request;
+
+  // CONDITIONAL: Use real address or fallback script
+  const addressScript = clientAddress
+    ? `The client's address is ${clientAddress}.`
+    : `If they ask for the client's address, let them know we'll provide that once they confirm availability and pricing.`;
+
+  const firstMessage = customPrompt?.prompt || `
+Hello! I'm calling on behalf of a client who needs ${request.serviceNeeded || "service"}
+in ${location}. ${addressScript}
+
+${request.userCriteria ? `The client specifically needs: ${request.userCriteria}.` : ""}
+
+I'd like to confirm a few quick things:
+1. Do you have availability ${request.urgency || "soon"}?
+2. What are your rates for this type of work?
+${request.userCriteria ? "3. Can you meet the specific requirements mentioned?" : ""}
+
+This will only take a minute or two. Does that work?
+  `.trim();
+
+  return {
+    name: `Concierge-${Date.now()}`,
+    firstMessage,
+    // ... rest of config
+  };
+}
+```
+
+**Example Prompts:**
+
+**With clientAddress (New Flow):**
+```
+Hello! I'm calling on behalf of a client who needs plumbing service in Greenville, SC.
+The client's address is 123 Main St, Greenville, SC 29601. ✅
+
+I'd like to confirm a few quick things:
+1. Do you have availability within 2 days?
+2. What are your rates for this type of work?
+```
+
+**Without clientAddress (Legacy/Fallback):**
+```
+Hello! I'm calling on behalf of a client who needs plumbing service in Greenville, SC.
+If they ask for the client's address, let them know we'll provide that once they confirm
+availability and pricing. ⚠️
+
+I'd like to confirm a few quick things:
+1. Do you have availability within 2 days?
+2. What are your rates for this type of work?
+```
+
+#### Booking Assistant Config (`apps/api/src/services/vapi/booking-assistant-config.ts`)
+
+The booking flow also uses conditional address logic:
+
+```typescript
+export function createBookingAssistantConfig(request: BookingCallRequest) {
+  const { clientAddress, location } = request;
+
+  const addressScript = clientAddress
+    ? `The service address is ${clientAddress}.`
+    : `For the service address, please let them know we'll provide that when we call back to confirm.`;
+
+  const firstMessage = `
+Hello! I'm calling back on behalf of [Client Name] to schedule an appointment for
+${request.serviceNeeded || "service"} in ${location}.
+
+${addressScript}
+
+We discussed:
+- Service needed: ${request.serviceNeeded}
+- Estimated rate: ${request.estimatedRate || "To be confirmed"}
+- ${request.criteria ? `Requirements: ${request.criteria}` : ""}
+
+What times work best for your schedule?
+  `.trim();
+
+  // ... rest of config
+}
+```
+
+### Environment Configuration
+
+The frontend requires a Google Places API key to enable autocomplete:
+
+```bash
+# apps/web/.env.local
+NEXT_PUBLIC_GOOGLE_PLACES_API_KEY=your-google-api-key-here
+```
+
+**Key Requirements:**
+
+1. **API Key Restrictions** - Recommended to restrict by HTTP referrer (your domain)
+2. **Enabled APIs** - Ensure "Places API" is enabled in Google Cloud Console
+3. **Billing Account** - Required for Places API (though autocomplete is usually free tier)
+
+**Without API Key:**
+
+If `NEXT_PUBLIC_GOOGLE_PLACES_API_KEY` is not set:
+- Autocomplete component shows standard text input (graceful degradation)
+- User can still type city/state manually
+- Form falls back to legacy `location`-only mode
+- VAPI uses fallback script (no address provided)
+
+### Data Flow Example
+
+Let's trace a complete request with address autocomplete:
+
+**Step 1: User Input**
+```typescript
+// User selects from Google autocomplete dropdown
+Selected: "123 Main St, Greenville, SC 29601"
+
+// AddressAutocomplete extracts structured data
+{
+  formatted: "123 Main St, Greenville, SC 29601",
+  street: "123 Main St",
+  city: "Greenville",
+  state: "SC",
+  zip: "29601",
+  placeId: "ChIJRURMfy-gVogRtM_hIBmcucM"
+}
+```
+
+**Step 2: Form Submission**
+```typescript
+// Frontend sends both fields for backward compatibility
+POST /api/v1/gemini/search-providers
+{
+  content: "Need emergency plumbing",
+  location: "Greenville, SC",           // LEGACY - for DB queries
+  clientAddress: "123 Main St, Greenville, SC 29601",  // NEW - for VAPI
+  urgency: "within_24_hours",
+  criteria: "Licensed, emergency service"
+}
+```
+
+**Step 3: Backend Validation**
+```typescript
+// Zod schema validates both fields
+const validated = searchProvidersRequestSchema.parse(requestBody);
+// ✅ Passes - both location and clientAddress present
+```
+
+**Step 4: VAPI Call Creation**
+```typescript
+// CallRequest includes both fields
+const callRequest: CallRequest = {
+  phoneNumber: "+18645551234",
+  providerName: "ABC Plumbing",
+  serviceNeeded: "emergency plumbing",
+  location: "Greenville, SC",
+  clientAddress: "123 Main St, Greenville, SC 29601",  // ✅ Available
+  urgency: "within_24_hours",
+};
+
+// Assistant config uses clientAddress
+const config = createAssistantConfig(callRequest);
+// Prompt includes: "The client's address is 123 Main St, Greenville, SC 29601."
+```
+
+**Step 5: VAPI Call Execution**
+```
+AI: "Hello! I'm calling on behalf of a client who needs emergency plumbing in
+     Greenville, SC. The client's address is 123 Main St, Greenville, SC 29601."
+
+Provider: "Great, what floor is the unit on?"
+
+AI: "Let me check with the client and call you back. First, can you confirm your
+     rates for emergency plumbing?"
+
+[Call continues with accurate address context]
+```
+
+### Files Modified
+
+| File | Purpose | Changes |
+|------|---------|---------|
+| `packages/ui/src/address-autocomplete.tsx` | **NEW** Reusable autocomplete component | Complete implementation with Google Places integration |
+| `apps/web/app/new/page.tsx` | Research & Book form | Added AddressAutocomplete, clientAddress state, API integration |
+| `apps/api/src/routes/providers.ts` | API endpoints | Added `clientAddress?: string` to Zod schemas |
+| `apps/api/src/services/vapi/assistant-config.ts` | VAPI research prompts | Conditional address logic based on clientAddress |
+| `apps/api/src/services/vapi/booking-assistant-config.ts` | VAPI booking prompts | Conditional address logic for scheduling calls |
+| `apps/api/src/services/vapi/types.ts` | TypeScript types | Added `clientAddress?: string` to CallRequest interface |
+
+### Benefits
+
+1. **Eliminates AI Hallucination** - No more made-up addresses
+2. **Better Provider Experience** - Providers get accurate location information upfront
+3. **Improved Scheduling** - Providers can assess travel time/distance before committing
+4. **User Confidence** - Users see their exact address in the system
+5. **Backward Compatible** - Legacy forms without autocomplete still work
+6. **Graceful Degradation** - Falls back to city/state if Google API unavailable
+
+### Future Enhancements
+
+- **Address Validation** - Verify address exists and is serviceable
+- **Distance Calculation** - Show distance from provider to client address in research results
+- **Map Visualization** - Display client location and provider locations on interactive map
+- **Service Area Filtering** - Filter providers based on whether they serve the client's area
+- **Multi-location Support** - Handle requests for multiple service addresses
+
+---
+
 ## 1. High-Level System Architecture
 
 ### Current State (Day 3+)
