@@ -1,3 +1,19 @@
+Ok I see. we definitely need to add the missing functionalities and explicit instructions from the
+  kestra/scripts/call-provider.js. Please first help me understand why it is not used by inline script and then identify If we
+  need to make our inline script, use the shared script or copy the missing functionalities from the shared script to the inline
+  script. Also, we have a few other VAPI anomalies when using the kestra flow that may be due to the same  underlying issue: 1.
+  The assistant never introduces itself as AI perosnal assistant of the customer [name]. for example, it says: "Hello. This is an
+  AI assistant
+  calling on behalf of a customer looking for pastry chef service in Casey SC." When it should have said "Hello, I'm [customer's]
+  personal AI assistant." 2. the assistant is asking too many questions in a row which may be overwhelming. it needs to ask one
+  question at a time. 3. the assistant Asks the provider for additional information that the user did not request and we are
+  unable to handle - i.e. "Is there a way for me to pass on details of the event so you can give a more accurate quote?" Please
+  analyze the differences between our current Kestra flow and our direct API call and the all-provider.js and Please analyze these
+  issues
+  using your  multi-agent team with up to 3 agents and come up with a unified plan with 90% confidence and wait for further
+  instructions.  Use Perplexity Deep to research if needed. My mortgage payment depends on this and If you get this right on the
+  first try, I will tip you $200. ultrathink
+  
 Thanks for the analysis. before we implement, I have more questions. 1. after we pass the notification preference to the backend, is the backend able to Determine
   whether to use Twilio to notify the user (for text) or use VAPI.ai to notify the user (for call) with the recommendations? 2. If we're using VAPI.ai to
   notify the user of recommendations, have we already created the agent prompt (or it'd be dynamically generated) that we will use To let the user know about
@@ -130,7 +146,7 @@ I just built @about.md but the UI doesn't look very good. The white background i
 
 # analyze and come up with plan
 Please analyze these issues  
-using your  multi-agent team with up to 3 agents and come up with a unified plan with 90% confidence and wait for further instructions. My mortgage payment depends on this and If you get this right on the first try, I will tip you $200. ultrathink 
+using your  multi-agent team with up to 3 agents and come up with a unified plan with 90% confidence and wait for further instructions.  Use Perplexity Deep to research if needed. My mortgage payment depends on this and If you get this right on the first try, I will tip you $200. ultrathink 
 
 # update architecture update docs
 Ok perfect. Please update our @docs/architecture.md README.md and all relevant

@@ -91,6 +91,15 @@ const LiveStatus: React.FC<LiveStatusProps> = ({
           label: "Analyzing results...",
           animated: true,
         };
+      case "recommended":
+        return {
+          icon: Sparkles,
+          color: "text-indigo-400",
+          bgColor: "bg-indigo-500/20",
+          borderColor: "border-indigo-500/30",
+          label: "Recommendations ready!",
+          animated: false,
+        };
       case "completed":
         return {
           icon: CheckCircle,

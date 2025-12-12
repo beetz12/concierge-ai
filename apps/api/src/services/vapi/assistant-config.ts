@@ -136,7 +136,7 @@ Thank them genuinely when they help.`;
     },
     model: {
       provider: "google" as const,
-      model: "gemini-2.0-flash-exp",
+      model: "gemini-2.5-flash",
       messages: [{ role: "system" as const, content: systemPrompt }],
       tools: [{ type: "endCall", description: "End the phone call. Use this immediately after your closing statement." }],
       temperature: 0.15,  // Very low for reliable tool invocation (2025 best practice)
@@ -245,7 +245,7 @@ function createDynamicDirectTaskConfig(request: CallRequest, customPrompt: Gener
     },
     model: {
       provider: "google" as const,
-      model: "gemini-2.0-flash-exp",
+      model: "gemini-2.5-flash",
       messages: [{ role: "system" as const, content: customPrompt.systemPrompt }],
       tools: [{ type: "endCall", description: "End the phone call. Use this immediately after your closing statement." }],
       temperature: 0.15,  // Very low for reliable tool invocation (2025 best practice)
@@ -381,7 +381,7 @@ If you detect voicemail (automated greeting, "leave a message", beep), immediate
       },
       model: {
         provider: "google" as const,
-        model: "gemini-2.0-flash-exp",
+        model: "gemini-2.5-flash",
         messages: [{ role: "system" as const, content: enhancedSystemPrompt }],
         tools: [{ type: "endCall", description: "End the phone call. Use this immediately after your closing statement." }],
         temperature: 0.15,  // Very low for reliable tool invocation (2025 best practice)
@@ -635,7 +635,7 @@ For unusual requirements, frame naturally: "${clientName} specifically mentioned
     // Model configuration
     model: {
       provider: "google" as const,
-      model: "gemini-2.0-flash-exp",
+      model: "gemini-2.5-flash",
       messages: [
         {
           role: "system" as const,

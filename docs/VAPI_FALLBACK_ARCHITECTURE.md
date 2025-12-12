@@ -509,7 +509,7 @@ export function createAssistantConfig(request: CallRequest) {
     },
     model: {
       provider: "google" as const,
-      model: "gemini-2.0-flash-exp",
+      model: "gemini-2.5-flash",
       messages: [{ role: "system" as const, content: systemPrompt }],
     },
     analysisPlan: {
@@ -1057,7 +1057,7 @@ For unusual requirements, frame naturally: "My client specifically mentioned..."
       },
       model: {
         provider: "google",
-        model: "gemini-2.0-flash-exp",
+        model: "gemini-2.5-flash",
         messages: [{ role: "system", content: systemPrompt }],
       },
       transcriber: {

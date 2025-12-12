@@ -1,8 +1,12 @@
 # latest tasks
-1. after initiating the call, while the call is still going on, the frontend shows the call failed (fixed needs testing).
-2. Even at the end of the call, the assistant never disconnects (fixed needs testing). 
-3. The user never provided an address so the assistant made up an address (pending to do). 
+0. 
+1. Even after the call is successfully terminated, the front-end does not show the recommended providers and displays an error. 
+2. Even at the end of the call, and after saying goodbye the assistant never disconnects 
+3. the assistant is asking too many questions in a row which may be overwhelming. it needs to ask one question at a time. also doesn't mention the customer's name
 4. need to test direct api call (pending to do)
+
+
+7. fix cline code review workflow (in progress)
 
 
 # old tasks

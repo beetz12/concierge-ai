@@ -27,6 +27,9 @@ const LOCATION = process.argv[9] || "";
 
 const VAPI_API_KEY = process.env.VAPI_API_KEY;
 const VAPI_PHONE_NUMBER_ID = process.env.VAPI_PHONE_NUMBER_ID;
+const BACKEND_URL = process.env.BACKEND_URL || 'http://localhost:8000';
+const SERVICE_REQUEST_ID = process.env.SERVICE_REQUEST_ID || '';
+const PROVIDER_ID = process.env.PROVIDER_ID || '';
 
 // Validate required inputs
 if (!PROVIDER_PHONE) {
@@ -42,6 +45,34 @@ if (!VAPI_API_KEY || !VAPI_PHONE_NUMBER_ID) {
 
 // Initialize VAPI client
 const vapi = new VapiClient({ token: VAPI_API_KEY });
+
+// ============================================================================
+// HELPER: Save booking result to backend API
+// ============================================================================
+
+async function saveBookingResult(result) {
+    if (!SERVICE_REQUEST_ID || !PROVIDER_ID) {
+        console.log("[KESTRA] Skipping DB save - missing SERVICE_REQUEST_ID or PROVIDER_ID");
+        return;
+    }
+
+    try {
+        const fetch = (await import('node-fetch')).default;
+        const saveResponse = await fetch(`${BACKEND_URL}/api/v1/bookings/save-booking-result`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                serviceRequestId: SERVICE_REQUEST_ID,
+                providerId: PROVIDER_ID,
+                bookingResult: result
+            })
+        });
+        const saveData = await saveResponse.json();
+        console.log(`[KESTRA] Saved booking result to DB: ${saveResponse.status} - ${saveData.message || saveData.error || 'OK'}`);
+    } catch (saveError) {
+        console.error(`[KESTRA] Failed to save booking result: ${saveError.message}`);
+    }
+}
 
 // ============================================================================
 // ASSISTANT CONFIGURATION (Imported from TypeScript source)
@@ -182,6 +213,9 @@ async function main() {
                         }
                     };
 
+                    // Save to database via API
+                    await saveBookingResult(result);
+
                     console.log("\n" + "=".repeat(60));
                     console.log("[VAPI Booking] FINAL RESULT:");
                     console.log("=".repeat(60));
@@ -206,6 +240,9 @@ async function main() {
             provider: { name: PROVIDER_NAME, phone: PROVIDER_PHONE }
         };
 
+        // Save timeout to database
+        await saveBookingResult(timeoutResult);
+
         console.log("\n[VAPI Booking] Call timed out:");
         console.log(JSON.stringify(timeoutResult, null, 2));
         console.log("\n[KESTRA_OUTPUT]");
@@ -219,6 +256,9 @@ async function main() {
             call_outcome: 'error',
             provider: { name: PROVIDER_NAME, phone: PROVIDER_PHONE }
         };
+
+        // Save error to database
+        await saveBookingResult(errorResult);
 
         console.error("\n[VAPI Booking] Error:", error.message);
         console.log("\n[KESTRA_OUTPUT]");

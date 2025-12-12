@@ -7,6 +7,7 @@ export enum RequestStatus {
   SEARCHING = "SEARCHING",
   CALLING = "CALLING",
   ANALYZING = "ANALYZING",
+  RECOMMENDED = "RECOMMENDED", // Recommendations generated, awaiting user selection
   BOOKING = "BOOKING",
   COMPLETED = "COMPLETED",
   FAILED = "FAILED",
