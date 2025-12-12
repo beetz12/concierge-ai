@@ -43,19 +43,40 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
-      - name: Install Cline CLI
+      - name: Install and Configure Cline CLI
         id: cline-install
         run: |
-          npm install -g cline || echo "::warning::Cline CLI installation failed"
-          if command -v cline &> /dev/null; then
-            echo "installed=true" >> $GITHUB_OUTPUT
-            cline --version 2>/dev/null || echo "Cline installed (version unknown)"
-          else
+          # Install Cline CLI
+          npm install -g @anthropic-ai/cline 2>/dev/null || npm install -g cline 2>/dev/null || {
+            echo "::warning::Cline CLI installation failed"
             echo "installed=false" >> $GITHUB_OUTPUT
+            exit 0
+          }
+
+          if ! command -v cline &> /dev/null; then
             echo "::warning::Cline CLI not available - AI review will be skipped"
+            echo "installed=false" >> $GITHUB_OUTPUT
+            exit 0
+          fi
+
+          cline --version 2>/dev/null || echo "Cline installed (version unknown)"
+
+          # Configure authentication non-interactively
+          if [[ -n "${ANTHROPIC_API_KEY:-}" ]]; then
+            echo "Configuring Cline with Anthropic API..."
+            cline auth anthropic "$ANTHROPIC_API_KEY" 2>/dev/null || {
+              echo "::warning::Cline auth configuration failed - trying alternative method"
+              # Create config directory and file manually if auth command fails
+              mkdir -p ~/.cline
+              echo '{"provider":"anthropic","configured":true}' > ~/.cline/config.json 2>/dev/null || true
+            }
+            echo "installed=true" >> $GITHUB_OUTPUT
+          else
+            echo "::warning::ANTHROPIC_API_KEY not set - Cline AI review will be skipped"
+            echo "installed=false" >> $GITHUB_OUTPUT
           fi
         env:
-          CLINE_API_KEY: ${{ secrets.CLINE_API_KEY }}
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
 
       - name: Get changed files
         id: changed-files
@@ -74,19 +95,38 @@ jobs:
         run: |
           echo "## Cline Analysis Results" > cline-results.md
           echo "" >> cline-results.md
+          echo "**Project:** AI Concierge (Next.js 16 + Fastify 5 + Supabase)" >> cline-results.md
+          echo "" >> cline-results.md
 
-          # Review changed files
+          # Create a combined file for review
+          REVIEW_CONTENT=$(mktemp)
           for file in ${{ steps.changed-files.outputs.all_changed_files }}; do
-            echo "Reviewing: $file"
-
-            cline review "$file" \
-              --context "AI Concierge: Next.js 16 + Fastify 5 + Supabase" \
-              --rules "TypeScript strict mode, Zod validation, proper error handling, Supabase RLS" \
-              --format markdown \
-              >> cline-results.md || true
-
-            echo "" >> cline-results.md
+            echo "=== FILE: $file ===" >> "$REVIEW_CONTENT"
+            cat "$file" >> "$REVIEW_CONTENT" 2>/dev/null || echo "[File not found]" >> "$REVIEW_CONTENT"
+            echo "" >> "$REVIEW_CONTENT"
           done
+
+          # Run Cline with valid task command
+          PROMPT="Review the following code files for issues. Focus on:
+          - TypeScript strict mode compliance
+          - Zod validation usage
+          - Proper error handling
+          - Security issues (SQL injection, XSS, etc.)
+          - Supabase RLS patterns
+
+          For each issue found, output:
+          - CRITICAL: for security vulnerabilities
+          - ERROR: for bugs or type errors
+          - WARNING: for code quality issues
+          - INFO: for suggestions
+
+          Format output as markdown."
+
+          cline -y -m act -f "$REVIEW_CONTENT" "$PROMPT" >> cline-results.md 2>&1 || {
+            echo "Cline review encountered an error" >> cline-results.md
+          }
+
+          rm -f "$REVIEW_CONTENT"
 
           # Check if critical issues found
           if grep -q "CRITICAL" cline-results.md || grep -q "ERROR" cline-results.md; then
@@ -95,7 +135,7 @@ jobs:
             echo "critical_issues=false" >> $GITHUB_OUTPUT
           fi
         env:
-          CLINE_API_KEY: ${{ secrets.CLINE_API_KEY }}
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
 
       - name: Post review comment
         if: steps.changed-files.outputs.any_changed == 'true'
@@ -154,6 +194,7 @@ jobs:
           name: cline-review-results
           path: cline-results.md
           retention-days: 30
+          if-no-files-found: ignore
 
   cline-generate-tests:
     name: Generate Tests
@@ -180,19 +221,32 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
-      - name: Install Cline CLI
+      - name: Install and Configure Cline CLI
         id: cline-install
         run: |
-          npm install -g cline || echo "::warning::Cline CLI installation failed"
-          if command -v cline &> /dev/null; then
-            echo "installed=true" >> $GITHUB_OUTPUT
-            cline --version 2>/dev/null || echo "Cline installed (version unknown)"
-          else
+          npm install -g @anthropic-ai/cline 2>/dev/null || npm install -g cline 2>/dev/null || {
+            echo "::warning::Cline CLI installation failed"
             echo "installed=false" >> $GITHUB_OUTPUT
+            exit 0
+          }
+
+          if ! command -v cline &> /dev/null; then
             echo "::warning::Cline CLI not available - test generation will be skipped"
+            echo "installed=false" >> $GITHUB_OUTPUT
+            exit 0
+          fi
+
+          cline --version 2>/dev/null || echo "Cline installed (version unknown)"
+
+          if [[ -n "${ANTHROPIC_API_KEY:-}" ]]; then
+            cline auth anthropic "$ANTHROPIC_API_KEY" 2>/dev/null || mkdir -p ~/.cline
+            echo "installed=true" >> $GITHUB_OUTPUT
+          else
+            echo "::warning::ANTHROPIC_API_KEY not set - test generation will be skipped"
+            echo "installed=false" >> $GITHUB_OUTPUT
           fi
         env:
-          CLINE_API_KEY: ${{ secrets.CLINE_API_KEY }}
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
 
       - name: Get changed files
         id: changed-files
@@ -208,7 +262,7 @@ jobs:
         run: |
           ./scripts/cline/generate-tests.sh --files ${{ steps.changed-files.outputs.all_changed_files }}
         env:
-          CLINE_API_KEY: ${{ secrets.CLINE_API_KEY }}
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
           CLINE_ENABLED: true
 
       - name: Commit generated tests
@@ -253,19 +307,32 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
-      - name: Install Cline CLI
+      - name: Install and Configure Cline CLI
         id: cline-install
         run: |
-          npm install -g cline || echo "::warning::Cline CLI installation failed"
-          if command -v cline &> /dev/null; then
-            echo "installed=true" >> $GITHUB_OUTPUT
-            cline --version 2>/dev/null || echo "Cline installed (version unknown)"
-          else
+          npm install -g @anthropic-ai/cline 2>/dev/null || npm install -g cline 2>/dev/null || {
+            echo "::warning::Cline CLI installation failed"
             echo "installed=false" >> $GITHUB_OUTPUT
+            exit 0
+          }
+
+          if ! command -v cline &> /dev/null; then
             echo "::warning::Cline CLI not available - documentation update will be skipped"
+            echo "installed=false" >> $GITHUB_OUTPUT
+            exit 0
+          fi
+
+          cline --version 2>/dev/null || echo "Cline installed (version unknown)"
+
+          if [[ -n "${ANTHROPIC_API_KEY:-}" ]]; then
+            cline auth anthropic "$ANTHROPIC_API_KEY" 2>/dev/null || mkdir -p ~/.cline
+            echo "installed=true" >> $GITHUB_OUTPUT
+          else
+            echo "::warning::ANTHROPIC_API_KEY not set - documentation update will be skipped"
+            echo "installed=false" >> $GITHUB_OUTPUT
           fi
         env:
-          CLINE_API_KEY: ${{ secrets.CLINE_API_KEY }}
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
 
       - name: Update documentation
         if: steps.cline-install.outputs.installed == 'true'
@@ -273,7 +340,7 @@ jobs:
         run: |
           ./scripts/cline/update-docs.sh --all
         env:
-          CLINE_API_KEY: ${{ secrets.CLINE_API_KEY }}
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
           CLINE_ENABLED: true
 
       - name: Commit updated docs
@@ -313,19 +380,32 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
-      - name: Install Cline CLI
+      - name: Install and Configure Cline CLI
         id: cline-install
         run: |
-          npm install -g cline || echo "::warning::Cline CLI installation failed"
-          if command -v cline &> /dev/null; then
-            echo "installed=true" >> $GITHUB_OUTPUT
-            cline --version 2>/dev/null || echo "Cline installed (version unknown)"
-          else
+          npm install -g @anthropic-ai/cline 2>/dev/null || npm install -g cline 2>/dev/null || {
+            echo "::warning::Cline CLI installation failed"
             echo "installed=false" >> $GITHUB_OUTPUT
+            exit 0
+          }
+
+          if ! command -v cline &> /dev/null; then
             echo "::warning::Cline CLI not available - security scan will be skipped"
+            echo "installed=false" >> $GITHUB_OUTPUT
+            exit 0
+          fi
+
+          cline --version 2>/dev/null || echo "Cline installed (version unknown)"
+
+          if [[ -n "${ANTHROPIC_API_KEY:-}" ]]; then
+            cline auth anthropic "$ANTHROPIC_API_KEY" 2>/dev/null || mkdir -p ~/.cline
+            echo "installed=true" >> $GITHUB_OUTPUT
+          else
+            echo "::warning::ANTHROPIC_API_KEY not set - security scan will be skipped"
+            echo "installed=false" >> $GITHUB_OUTPUT
           fi
         env:
-          CLINE_API_KEY: ${{ secrets.CLINE_API_KEY }}
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
 
       - name: Run security scan
         id: security-scan
@@ -333,7 +413,7 @@ jobs:
         run: |
           ./scripts/cline/security-scan.sh --quick
         env:
-          CLINE_API_KEY: ${{ secrets.CLINE_API_KEY }}
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
           CLINE_ENABLED: true
         continue-on-error: true
 
@@ -344,6 +424,7 @@ jobs:
           name: security-scan-report
           path: security-reports/
           retention-days: 90
+          if-no-files-found: ignore
 
       - name: Post security summary
         if: always()
