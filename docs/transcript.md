@@ -1,80 +1,66 @@
 
-Assistant
-Hello. This is an AI assistant calling on behalf of a customer looking for emergency plumbing service in Greenville SC.
-10:16:42 PM(+00:02.34)
 
 Assistant
-Am I speaking with someone who can help with availability information?
-10:16:48 PM(+00:09.03)
+Hi there. I'm Jack's personal AI assistant. Jack is looking to get a ceiling fan installed at his home and asked me to call around for him. Do you have a quick moment?
+10:49:49 AM(+00:02.36)
 User
-Yes. You are.
+Yes. I do.
 
-10:16:53 PM(+00:12.79)
-
-Assistant
-Okay. Great. My customer is experiencing a burst pipe and needs a plumber ASAP.
-10:16:55 PM(+00:15.79)
+10:49:58 AM(+00:10.98)
 
 Assistant
-Are you able to dispatch someone to customer's address? I will provide this if you can help right away.
-10:16:59 PM(+00:19.69)
+Great. I was wondering when you might be able to come out to Greenville SC to install a ceiling fan.
+10:50:00 AM(+00:13.09)
 User
-What's the address?
+Uh, I can do it Monday. Around
 
-10:17:05 PM(+00:24.96)
-
-Assistant
-The address is 1 23 Main Street,
-10:17:07 PM(+00:27.48)
+10:50:07 AM(+00:20.04)
 
 Assistant
-Greenville s c 2 9 6 0 1.
-10:17:10 PM(+00:30.07)
+Perfect.
+10:50:10 AM(+00:22.96)
 User
-I don't think
+10 o'clock.
 
-10:17:15 PM(+00:35.34)
+10:50:10 AM(+00:22.99)
+
+Assistant
+Perfect. Thank you. And what would the cost be for this type of service call?
+10:50:12 AM(+00:25.51)
 User
-let me check. 1 moment.
+Alright, Crystal. It'll be 8 250 dollars.
 
-10:17:17 PM(+00:37.14)
-
-Assistant
-Thank you. I appreciate you checking.
-10:17:20 PM(+00:40.09)
+10:50:15 AM(+00:27.36)
 
 Assistant
-The customer is understandably stressed, so any help you can provide would be fantastic.
-10:17:21 PM(+00:41.98)
+Okay. And what does that include?
+10:50:22 AM(+00:34.69)
 User
-Yeah. I can come out in the next hour.
+Includes the install.
 
-10:17:29 PM(+00:49.27)
-
-Assistant
-That's wonderful news. The customer will be so relieved.
-10:17:33 PM(+00:53.08)
+10:50:26 AM(+00:38.91)
 
 Assistant
-Just to confirm, that's 123 Main Street, Greenville s c 2 9 6 0 1, and you expect to be there within the hour?
-10:17:36 PM(+00:56.09)
+Okay. So that's just for labor to install it. Does that include any parts or anything like that?
+10:50:29 AM(+00:42.26)
 User
-Yes. I'll be there.
+No. The customer will have to provide the fan.
 
-10:17:44 PM(+01:04.47)
-
-Assistant
-Perfect. Thank you so much for your help. I'll let the customer know immediately.
-10:17:47 PM(+01:07.07)
+10:50:36 AM(+00:48.36)
 
 Assistant
-Have a great day.
-10:17:50 PM(+01:10.78)
+Okay. Got it. This is really helpful. Thank you. I'll share this with Jack. And if he'd like to proceed, we'll call back to schedule. Have a wonderful day.
+10:50:39 AM(+00:52.12)
+
+EndCall
+Completed successfully
+10:50 AM
+10:50:52 AM(+01:05.52)
 User
-Alright.
+Okay.
 
-10:17:55 PM(+01:15.52)
+10:50:53 AM(+01:06.17)
 
 Assistant
-Goodbye.
-10:17:56 PM(+01:16.44)
+Thank you so much for your time. Have a wonderful day.
+10:50:54 AM(+01:07.02)
