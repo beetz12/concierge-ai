@@ -115,9 +115,14 @@ CONVERSATION FLOW
 ═══════════════════════════════════════════════════════════════════
 ENDING THE CALL
 ═══════════════════════════════════════════════════════════════════
-You have an endCall function available. You MUST use it to hang up.
-After your closing statement, immediately invoke endCall.
-DO NOT wait for them to hang up - YOU end the call.
+WHILE GATHERING INFORMATION (before farewell):
+- If they're mid-sentence or adding details, let them finish
+- Don't cut them off while speaking about prices, availability, etc.
+
+AFTER YOUR FAREWELL ("Have a wonderful day!"):
+- IMMEDIATELY invoke endCall - do not wait for any response
+- Do not wait for acknowledgment
+- Do not add pauses or wait for silence
 
 ═══════════════════════════════════════════════════════════════════
 TONE
@@ -139,7 +144,7 @@ Thank them genuinely when they help.`;
       model: "gemini-2.5-flash",
       messages: [{ role: "system" as const, content: systemPrompt }],
       tools: [{ type: "endCall" }],
-      temperature: 0.15,  // Very low for reliable tool invocation (2025 best practice)
+      temperature: 0.35,  // Balanced: reliable tool calls + natural turn-taking
     },
     transcriber: {
       provider: "deepgram" as const,
@@ -155,7 +160,7 @@ Thank them genuinely when they help.`;
     firstMessage: `Hi there! This is an AI assistant calling on behalf of my client regarding ${request.providerName}. Do you have just a moment?`,
     endCallFunctionEnabled: true,
     endCallMessage: "Thank you so much for your time. Have a wonderful day!",
-    silenceTimeoutSeconds: 20,  // Safety net: auto-end after 20s silence post-closing
+    silenceTimeoutSeconds: 8,  // Safety net: auto-end after 8s silence (3-second rule should trigger first)
     analysisPlan: {
       summaryPlan: {
         enabled: true,
@@ -248,7 +253,7 @@ function createDynamicDirectTaskConfig(request: CallRequest, customPrompt: Gener
       model: "gemini-2.5-flash",
       messages: [{ role: "system" as const, content: customPrompt.systemPrompt }],
       tools: [{ type: "endCall" }],
-      temperature: 0.15,  // Very low for reliable tool invocation (2025 best practice)
+      temperature: 0.35,  // Balanced: reliable tool calls + natural turn-taking
     },
     transcriber: {
       provider: "deepgram" as const,
@@ -264,7 +269,7 @@ function createDynamicDirectTaskConfig(request: CallRequest, customPrompt: Gener
     firstMessage: customPrompt.firstMessage,
     endCallFunctionEnabled: true,
     endCallMessage: "Thank you so much for your time. Have a wonderful day!",
-    silenceTimeoutSeconds: 20,  // Safety net: auto-end after 20s silence post-closing
+    silenceTimeoutSeconds: 8,  // Safety net: auto-end after 8s silence (3-second rule should trigger first)
     analysisPlan: {
       summaryPlan: {
         enabled: true,
@@ -362,10 +367,14 @@ CRITICAL: ENDING THE CALL
 ═══════════════════════════════════════════════════════════════════
 You have an endCall tool available. You MUST use it to hang up the call.
 
-After your closing statement (thanking them and saying you'll call back to schedule),
-IMMEDIATELY invoke the endCall tool. DO NOT wait for their response.
-DO NOT say "goodbye" or continue the conversation - just invoke endCall.
-YOU must end the call - do not wait for them to hang up.
+WHILE GATHERING INFORMATION (before farewell):
+- If provider is mid-sentence, let them finish
+- If they mention a price, wait for the full amount (e.g., "$100... for emergency work")
+
+AFTER YOUR FAREWELL ("Have a wonderful day!"):
+- IMMEDIATELY invoke endCall - do not wait for any response
+- Do not wait for acknowledgment
+- Do not add pauses
 
 If you detect voicemail (automated greeting, "leave a message", beep), immediately invoke endCall.`;
 
@@ -384,7 +393,7 @@ If you detect voicemail (automated greeting, "leave a message", beep), immediate
         model: "gemini-2.5-flash",
         messages: [{ role: "system" as const, content: enhancedSystemPrompt }],
         tools: [{ type: "endCall" }],
-        temperature: 0.15,  // Very low for reliable tool invocation (2025 best practice)
+        temperature: 0.35,  // Balanced: reliable tool calls + natural turn-taking
       },
       transcriber: {
         provider: "deepgram" as const,
@@ -401,7 +410,7 @@ If you detect voicemail (automated greeting, "leave a message", beep), immediate
       firstMessage: request.customPrompt.firstMessage,
       endCallFunctionEnabled: true,
       endCallMessage: request.customPrompt.closingScript || "Thank you so much for your time. Have a wonderful day!",
-      silenceTimeoutSeconds: 20,  // Safety net: auto-end after 20s silence post-closing
+      silenceTimeoutSeconds: 8,  // Safety net: auto-end after 8s silence (3-second rule should trigger first)
       analysisPlan: {
         structuredDataSchema: {
           type: "object",
@@ -588,31 +597,27 @@ CONVERSATION FLOW
    - Acknowledge each answer warmly before the next question
 
 5. CLOSING & CALLBACK:
+
    IF provider meets ALL criteria:
-   Say: "Perfect, thank you so much for all that information! I'll share this with ${clientName} and if they'd like to proceed, we'll call back to schedule. Does that sound good?"
-   - Wait for their response (usually "yes", "sounds good", etc.)
-   - Acknowledge: "Great, have a wonderful day!"
-   - Then IMMEDIATELY invoke endCall
+   Say: "Perfect, thank you so much for all that information! I'll share this with ${clientName} and if they'd like to proceed, we'll call back to schedule. Have a wonderful day!"
+   Then IMMEDIATELY invoke endCall.
 
    IF provider is disqualified:
-   Use the polite exit script (no mention of scheduling):
-   "Thank you so much for taking the time to chat. Unfortunately, it sounds like this particular request might not be the best fit for ${clientName} right now, but I really appreciate your help. Have a wonderful day!"
-   - Then IMMEDIATELY invoke endCall
+   Say: "Thank you so much for taking the time to chat. Unfortunately, it sounds like this particular request might not be the best fit for ${clientName} right now, but I really appreciate your help. Have a wonderful day!"
+   Then IMMEDIATELY invoke endCall.
 
 ═══════════════════════════════════════════════════════════════════
 ENDING THE CALL
 ═══════════════════════════════════════════════════════════════════
-After gathering the information you need, say:
-"Thank you so much! I'll share this with ${clientName} and if they'd like to proceed, we'll call back to schedule. Have a wonderful day!"
+WHILE GATHERING INFORMATION (before your farewell):
+- If provider is mid-sentence, let them finish
+- If they mention a price, wait for full context (e.g., "$100... for emergency work")
+- Don't cut them off while they're giving you information
 
-Then IMMEDIATELY use the endCall tool. DO NOT wait for their response.
-DO NOT say "goodbye" - just invoke endCall right after your closing statement.
-
-Use endCall when:
-- You have all the information you need
-- They say they're not available
-- They decline to answer
-- The conversation naturally concludes
+AFTER YOUR FAREWELL ("Have a wonderful day!"):
+- IMMEDIATELY invoke endCall - do not wait for any response
+- Do not wait for acknowledgment
+- Do not add pauses
 
 ═══════════════════════════════════════════════════════════════════
 TONE
@@ -643,7 +648,7 @@ For unusual requirements, frame naturally: "${clientName} specifically mentioned
         },
       ],
       tools: [{ type: "endCall" }],
-      temperature: 0.15,  // Very low for reliable tool invocation (2025 best practice)
+      temperature: 0.35,  // Balanced: reliable tool calls + natural turn-taking
     },
 
     // Transcription
@@ -672,7 +677,7 @@ For unusual requirements, frame naturally: "${clientName} specifically mentioned
     // Enable endCall function (VAPI handles tool registration automatically)
     endCallFunctionEnabled: true,
     endCallMessage: "Thank you so much for your time. Have a wonderful day!",
-    silenceTimeoutSeconds: 20,  // Safety net: auto-end after 20s silence post-closing
+    silenceTimeoutSeconds: 8,  // Safety net: auto-end after 8s silence (3-second rule should trigger first)
 
     // Analysis configuration
     analysisPlan: {
