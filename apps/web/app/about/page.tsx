@@ -87,12 +87,6 @@ export default function AboutPage() {
               description="Used to build capabilities and automation tools directly through the CLI, accelerating our development velocity."
             />
             <TechCard
-              name="Kestra"
-              role="The Orchestrator"
-              icon={<Workflow size={24} />}
-              description="The nervous system of our data. Summarizing impacts and making critical decisions based on real-time system feedback."
-            />
-            <TechCard
               name="Oumi"
               role="The Brain"
               icon={<Brain size={24} />}

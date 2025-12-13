@@ -550,15 +550,24 @@ export default function RequestDetails() {
         recommendationsCheckedRef.current = true;
 
         // Send notification to user if applicable
-        if (latestRequest?.userPhone && qualifiedProviders.length > 0 && !notificationSent) {
-          console.log("[Recommendations] Sending user notification");
+        // Check both context and DB for userPhone (handles race condition on initial load)
+        const effectiveUserPhone = latestRequest?.userPhone || dbRequest?.userPhone;
+        if (!effectiveUserPhone && qualifiedProviders.length > 0) {
+          console.log("[Recommendations] Skipping notification: userPhone missing", {
+            hasLatestRequest: !!latestRequest,
+            latestUserPhone: latestRequest?.userPhone,
+            dbUserPhone: dbRequest?.userPhone,
+          });
+        }
+        if (effectiveUserPhone && qualifiedProviders.length > 0 && !notificationSent) {
+          console.log("[Recommendations] Sending user notification to:", effectiveUserPhone);
           const notifyResult = await notifyUser({
-            userPhone: latestRequest.userPhone,
-            userName: latestRequest.directContactInfo?.name,
+            userPhone: effectiveUserPhone,
+            userName: latestRequest?.directContactInfo?.name,
             serviceRequestId: id,
-            preferredContact: latestRequest.preferredContact || "text",
-            serviceNeeded: latestRequest.title,
-            location: latestRequest.location,
+            preferredContact: latestRequest?.preferredContact || dbRequest?.preferredContact || "text",
+            serviceNeeded: latestRequest?.title || dbRequest?.title || "Service Request",
+            location: latestRequest?.location || dbRequest?.location,
             requestUrl: `${window.location.origin}/request/${id}`,
             providers: qualifiedProviders.slice(0, 3).map((p) => ({
               name: p.providerName,

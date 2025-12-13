@@ -757,13 +757,41 @@ export default async function providerRoutes(fastify: FastifyInstance) {
                 "Kestra batch completed with results in database - waiting for all provider results"
               );
 
-              // Log success to interaction_logs
+              // Determine actual status based on results
+              const totalProviders = validated.providers.length;
+              const errorCount = (batchResult as any).errors?.length || 0;
+              const successCount = (batchResult as any).stats?.completed || 0;
+              const allFailed = errorCount === totalProviders || successCount === 0;
+              const partialSuccess = errorCount > 0 && errorCount < totalProviders;
+
+              // Log actual status to interaction_logs
               await supabase.from("interaction_logs").insert({
                 request_id: validated.serviceRequestId,
-                step_name: "Batch Calls Completed",
-                detail: `All ${validated.providers.length} provider calls completed via Kestra. Results saved to database.`,
-                status: "success",
+                step_name: allFailed ? "Batch Calls Failed" : "Batch Calls Completed",
+                detail: allFailed
+                  ? `All ${totalProviders} provider calls failed. ${(batchResult as any).errors?.[0]?.error || "VAPI API error"}`
+                  : partialSuccess
+                  ? `${successCount}/${totalProviders} calls succeeded. ${errorCount} failed.`
+                  : `All ${totalProviders} provider calls completed successfully.`,
+                status: allFailed ? "error" : partialSuccess ? "warning" : "success",
               });
+
+              // If ALL calls failed, update service request to FAILED immediately
+              if (allFailed && validated.serviceRequestId) {
+                await supabase
+                  .from("service_requests")
+                  .update({
+                    status: "FAILED",
+                    final_outcome: `All provider calls failed: ${(batchResult as any).errors?.[0]?.error || "VAPI API error"}`,
+                  })
+                  .eq("id", validated.serviceRequestId);
+
+                fastify.log.error(
+                  { executionId, errorCount, errors: (batchResult as any).errors },
+                  "All provider calls failed - marked service request as FAILED"
+                );
+                return; // Exit background processing early
+              }
 
               // Step 1: Poll for all providers to have final call_status (max 30 seconds)
               const finalStatuses = ["completed", "failed", "error", "timeout", "no_answer", "voicemail", "busy"];

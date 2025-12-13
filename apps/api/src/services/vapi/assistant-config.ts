@@ -160,7 +160,7 @@ Thank them genuinely when they help.`;
     firstMessage: `Hi there! This is an AI assistant calling on behalf of my client regarding ${request.providerName}. Do you have just a moment?`,
     endCallFunctionEnabled: true,
     endCallMessage: "Thank you so much for your time. Have a wonderful day!",
-    silenceTimeoutSeconds: 8,  // Safety net: auto-end after 8s silence (3-second rule should trigger first)
+    silenceTimeoutSeconds: 10,  // VAPI minimum is 10s; agent should invoke endCall immediately after farewell
     analysisPlan: {
       summaryPlan: {
         enabled: true,
@@ -269,7 +269,7 @@ function createDynamicDirectTaskConfig(request: CallRequest, customPrompt: Gener
     firstMessage: customPrompt.firstMessage,
     endCallFunctionEnabled: true,
     endCallMessage: "Thank you so much for your time. Have a wonderful day!",
-    silenceTimeoutSeconds: 8,  // Safety net: auto-end after 8s silence (3-second rule should trigger first)
+    silenceTimeoutSeconds: 10,  // VAPI minimum is 10s; agent should invoke endCall immediately after farewell
     analysisPlan: {
       summaryPlan: {
         enabled: true,
@@ -410,7 +410,7 @@ If you detect voicemail (automated greeting, "leave a message", beep), immediate
       firstMessage: request.customPrompt.firstMessage,
       endCallFunctionEnabled: true,
       endCallMessage: request.customPrompt.closingScript || "Thank you so much for your time. Have a wonderful day!",
-      silenceTimeoutSeconds: 8,  // Safety net: auto-end after 8s silence (3-second rule should trigger first)
+      silenceTimeoutSeconds: 10,  // VAPI minimum is 10s; agent should invoke endCall immediately after farewell
       analysisPlan: {
         structuredDataSchema: {
           type: "object",
@@ -677,7 +677,7 @@ For unusual requirements, frame naturally: "${clientName} specifically mentioned
     // Enable endCall function (VAPI handles tool registration automatically)
     endCallFunctionEnabled: true,
     endCallMessage: "Thank you so much for your time. Have a wonderful day!",
-    silenceTimeoutSeconds: 8,  // Safety net: auto-end after 8s silence (3-second rule should trigger first)
+    silenceTimeoutSeconds: 10,  // VAPI minimum is 10s; agent should invoke endCall immediately after farewell
 
     // Analysis configuration
     analysisPlan: {
