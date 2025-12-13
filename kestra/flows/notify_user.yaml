@@ -37,7 +37,7 @@ tasks:
     namespaceFiles:
       enabled: true
       include:
-        - scripts/**/*
+        - "scripts/*"
     beforeCommands:
       - npm install twilio
     commands:

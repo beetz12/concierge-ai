@@ -69,7 +69,7 @@ tasks:
         namespaceFiles:
           enabled: true
           include:
-            - scripts/**/*
+            - "scripts/*"
         beforeCommands:
           - npm install @vapi-ai/server-sdk node-fetch
         commands:

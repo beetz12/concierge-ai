@@ -1,5 +1,17 @@
+implement option B from docs/plans/FIX_WEBHOOK_TIMEOUT_AND_FRONTEND_DISPLAY.md
+
+plan tomorrow:
+get full kestra workflow working locally
+
+plan saturday:
+get cloud kestra workflow working
+
+plan sunday:
+final polish and demo video
 # latest tasks
-0. 
+0. find code state for vapi as of 12/10/2025 11:46pm 2outboundPhoneCall
+Assistant
+
 1. Even after the call is successfully terminated, the front-end does not show the recommended providers and displays an error. 
 2. Even at the end of the call, and after saying goodbye the assistant never disconnects 
 3. the assistant is asking too many questions in a row which may be overwhelming. it needs to ask one question at a time. also doesn't mention the customer's name

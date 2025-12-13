@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import "./globals.css";
 import { AppProvider } from "@/lib/providers/AppProvider";
 import Sidebar from "@/components/Sidebar";
+import { Toaster } from "sonner";
 
 export const metadata: Metadata = {
   title: "ConciergeAI - Your AI Receptionist",
@@ -19,6 +20,7 @@ export default function RootLayout({
       <body>
         <AppProvider>
           <Sidebar>{children}</Sidebar>
+          <Toaster position="top-right" theme="dark" richColors closeButton />
         </AppProvider>
       </body>
     </html>

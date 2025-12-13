@@ -107,8 +107,9 @@ let vapiApiClient: VAPIApiClient | null = null;
 let callResultService: CallResultService | null = null;
 
 // Background fetch configuration
-const FETCH_DELAYS_MS = [3000, 5000, 8000]; // Retry delays: 3s, 5s, 8s
-const MAX_FETCH_ATTEMPTS = 3;
+// Increased delays to give VAPI more time to process analysis (typically 20-30s after call ends)
+const FETCH_DELAYS_MS = [5000, 10000, 15000, 20000]; // Retry delays: 5s, 10s, 15s, 20s = 50s total
+const MAX_FETCH_ATTEMPTS = 4;
 
 export default async function vapiWebhookRoutes(fastify: FastifyInstance) {
   // Initialize cache service once

@@ -6,6 +6,7 @@
 import { FastifyInstance } from "fastify";
 import { z } from "zod";
 import { ResearchService } from "../services/research/index.js";
+import { serializeError } from "../utils/error.js";
 import type {
   ResearchResult,
   SystemStatus,
@@ -215,7 +216,7 @@ export default async function workflowRoutes(fastify: FastifyInstance) {
           data: result,
         });
       } catch (error: unknown) {
-        request.log.error({ error }, "Research workflow failed");
+        request.log.error({ error: serializeError(error) }, "Research workflow failed");
 
         // Handle Zod validation errors
         if (error instanceof z.ZodError) {
@@ -293,7 +294,7 @@ export default async function workflowRoutes(fastify: FastifyInstance) {
 
         return reply.send(status);
       } catch (error: unknown) {
-        request.log.error({ error }, "Failed to get workflow system status");
+        request.log.error({ error: serializeError(error) }, "Failed to get workflow system status");
         const errorMessage =
           error instanceof Error ? error.message : "Unknown error";
         return reply.status(500).send({
