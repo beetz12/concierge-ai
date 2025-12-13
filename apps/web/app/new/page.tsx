@@ -97,6 +97,8 @@ export default function NewRequest() {
         createdAt: dbRequest.created_at,
         providersFound: [],
         interactions: [],
+        userPhone: userPhoneValidation.normalized,
+        preferredContact: formData.preferredContact,
       };
 
       addRequest(newRequest);
@@ -203,7 +205,7 @@ export default function NewRequest() {
       const searchLog = {
         timestamp: new Date().toISOString(),
         stepName: "Market Research",
-        detail: `Found ${providers.length} providers using ${workflowResult.method === "kestra" ? "Kestra workflow" : "Direct Gemini"}. ${workflowResult.reasoning || ""}`,
+        detail: `Found ${providers.length} providers in your area. ${workflowResult.reasoning || ""}`,
         status: workflowResult.status === "success" ? "success" : "error",
       } as any;
 
