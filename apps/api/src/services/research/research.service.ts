@@ -39,7 +39,7 @@ export class ResearchService {
         location: request.location,
         serviceRequestId: request.serviceRequestId,
       },
-      "Starting provider research",
+      "Starting provider research"
     );
 
     let result: ResearchResult;
@@ -54,14 +54,14 @@ export class ResearchService {
       } else {
         this.logger.info(
           { method: "direct_gemini" },
-          "Using Direct Gemini for research",
+          "Using Direct Gemini for research"
         );
         result = await this.directClient.research(request);
       }
     } catch (error) {
       this.logger.error(
         { error: serializeError(error), request },
-        "Research failed, attempting fallback",
+        "Research failed, attempting fallback"
       );
 
       // Check if Kestra is explicitly enabled - if so, don't fall back
@@ -71,21 +71,21 @@ export class ResearchService {
       if (kestraEnabled && wasUsingKestra) {
         this.logger.error(
           { error: serializeError(error) },
-          "Kestra failed with KESTRA_ENABLED=true - not falling back to preserve error visibility",
+          "Kestra failed with KESTRA_ENABLED=true - not falling back to preserve error visibility"
         );
         throw error;
       }
 
       // If primary method fails, try the other one
       try {
-        const useKestra = wasUsingKestra;  // Reuse the check we already did
+        const useKestra = wasUsingKestra; // Reuse the check we already did
         if (useKestra) {
           this.logger.warn({}, "Kestra failed, falling back to Direct Gemini");
           result = await this.directClient.research(request);
         } else {
           this.logger.warn(
             {},
-            "Direct Gemini failed, attempting Kestra fallback",
+            "Direct Gemini failed, attempting Kestra fallback"
           );
           const kestraHealthy = await this.kestraClient.healthCheck();
           if (kestraHealthy) {
@@ -103,7 +103,7 @@ export class ResearchService {
       } catch (fallbackError) {
         this.logger.error(
           { error: serializeError(fallbackError) },
-          "Fallback research also failed",
+          "Fallback research also failed"
         );
 
         // Both methods failed
@@ -118,7 +118,11 @@ export class ResearchService {
 
     // Enrich results with additional details (phone numbers, hours, etc.)
     // Skip enrichment for Kestra results - they don't have placeId but already have phone data
-    if (result.status !== "error" && result.providers.length > 0 && result.method !== "kestra") {
+    if (
+      result.status !== "error" &&
+      result.providers.length > 0 &&
+      result.method !== "kestra"
+    ) {
       result = await this.enrichResults(result, request);
     }
 
@@ -154,7 +158,7 @@ export class ResearchService {
         ...result,
         providers: enriched.providers,
         filteredCount: enriched.providers.length,
-        reasoning: `${result.reasoning || ''} | Enriched: ${enriched.stats.enrichedCount}, with phone: ${enriched.stats.withPhoneCount}`,
+        reasoning: `${result.reasoning || ""} | Enriched: ${enriched.stats.enrichedCount}, with phone: ${enriched.stats.withPhoneCount}`,
       };
     } catch (error) {
       this.logger.error(
@@ -188,8 +192,31 @@ export class ResearchService {
   async shouldUseKestra(): Promise<boolean> {
     // Kestra research disabled - always use Direct Gemini API
     // This bypasses all Kestra health checks and polling
-    this.logger.info({}, "Kestra research disabled - using Direct Gemini API");
-    return false;
+    const kestraEnabled = process.env.KESTRA_ENABLED === "true";
+
+    if (!kestraEnabled) {
+      this.logger.debug({}, "Kestra disabled via KESTRA_ENABLED env var");
+      return false;
+    }
+
+    // Check if Kestra URL is configured
+    const kestraUrl = process.env.KESTRA_URL;
+    if (!kestraUrl) {
+      this.logger.debug({}, "Kestra URL not configured");
+      return false;
+    }
+
+    // Check Kestra health
+    try {
+      const healthy = await this.kestraClient.healthCheck();
+      this.logger.debug({ healthy }, "Kestra health check result");
+      return healthy;
+    } catch (error) {
+      // STRICT MODE: Re-throw error so strict mode check can be triggered
+      // This ensures KESTRA_ENABLED=true actually enforces Kestra usage
+      this.logger.error({ error }, "Kestra health check failed");
+      throw error;
+    }
   }
 
   /**
