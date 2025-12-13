@@ -14,6 +14,7 @@ import {
   Clock,
   Zap,
   AlertTriangle,
+  Calendar,
 } from "lucide-react";
 
 interface LiveStatusProps {
@@ -40,6 +41,7 @@ interface LiveStatusProps {
     status: "success" | "warning" | "error" | "info";
   }>;
   providers?: Array<{ callStatus?: string | null }>;
+  hasRecommendations?: boolean;
 }
 
 interface SearchStep {
@@ -57,6 +59,7 @@ const LiveStatus: React.FC<LiveStatusProps> = ({
   providersFound = 0,
   interactions = [],
   providers = [],
+  hasRecommendations = false,
 }) => {
   const getStatusConfig = () => {
     // Null safety: ensure status is a string before calling toLowerCase
@@ -89,6 +92,15 @@ const LiveStatus: React.FC<LiveStatusProps> = ({
           bgColor: "bg-purple-500/20",
           borderColor: "border-purple-500/30",
           label: "Analyzing results...",
+          animated: true,
+        };
+      case "booking":
+        return {
+          icon: Calendar,
+          color: "text-amber-400",
+          bgColor: "bg-amber-500/20",
+          borderColor: "border-amber-500/30",
+          label: "Scheduling appointment...",
           animated: true,
         };
       case "recommended":
@@ -424,38 +436,75 @@ const LiveStatus: React.FC<LiveStatusProps> = ({
     );
   }
 
+  // BOOKING status - show appointment scheduling progress
+  if (safeStatus === "booking") {
+    return (
+      <div className={`px-5 py-4 rounded-xl border bg-amber-500/20 border-amber-500/30 animate-fadeIn`}>
+        <div className="flex items-center gap-3 mb-4">
+          <div className="relative">
+            <Calendar className="w-6 h-6 text-amber-400 animate-pulse" />
+            <Phone className="w-3 h-3 text-amber-300 absolute -top-1 -right-1" />
+          </div>
+          <div>
+            <p className="text-base font-bold text-amber-400">
+              Scheduling Your Appointment
+            </p>
+            <p className="text-xs text-slate-400 mt-0.5">
+              Our AI is calling the provider to book your appointment
+            </p>
+          </div>
+        </div>
+        <div className="space-y-2.5">
+          <div className="flex items-center gap-3">
+            <div className="w-7 h-7 rounded-full flex items-center justify-center border-2 bg-amber-500/20 border-amber-500/50 animate-pulse">
+              <Phone className="w-4 h-4 text-amber-400" />
+            </div>
+            <span className="text-sm text-amber-300 font-medium">
+              Connecting to provider...
+            </span>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   // ANALYZING status - show AI analysis steps
   // Use effectiveDisplayStatus to ensure we only show analysis UI when calls are truly done
-  if (effectiveDisplayStatus === "analyzing") {
+  if (effectiveDisplayStatus === "analyzing" || (safeStatus === "recommended" && !hasRecommendations)) {
     const hasCompletedCalls = interactions.some((i) =>
       (i.stepName || "").includes("Calling") && i.status === "success"
     );
     const isGeneratingRecs = interactions.length > 0;
+
+    // Determine step statuses based on progress
+    // If recommendations exist, all steps are completed
+    // If status is "recommended", recommendations are ready even if not loaded yet
+    const recsReady = hasRecommendations || safeStatus === "recommended";
 
     const analysisSteps: SearchStep[] = [
       {
         id: "collect",
         label: "Collecting call transcripts and data...",
         icon: Phone,
-        status: hasCompletedCalls ? "completed" : "active",
+        status: recsReady || hasCompletedCalls ? "completed" : "active",
       },
       {
         id: "analyze",
         label: "Running Gemini AI analysis on results...",
         icon: BrainCircuit,
-        status: hasCompletedCalls ? "completed" : isGeneratingRecs ? "active" : "pending",
+        status: recsReady ? "completed" : hasCompletedCalls ? "active" : isGeneratingRecs ? "active" : "pending",
       },
       {
         id: "score",
         label: "Scoring providers against criteria...",
         icon: Sparkles,
-        status: hasCompletedCalls ? "active" : "pending",
+        status: recsReady ? "completed" : hasCompletedCalls ? "active" : "pending",
       },
       {
         id: "recommend",
         label: "Generating top 3 recommendations...",
         icon: CheckCircle,
-        status: "pending",
+        status: recsReady ? "completed" : hasCompletedCalls ? "active" : "pending",
       },
     ];
 

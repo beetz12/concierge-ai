@@ -20,27 +20,10 @@ import {
 import { usePhoneValidation } from "@/lib/hooks/usePhoneValidation";
 
 // Environment toggle for live VAPI calls vs simulated calls
+// Note: Test phone substitution is handled by backend (ADMIN_TEST_NUMBER in backend .env)
 const LIVE_CALL_ENABLED =
   process.env.NEXT_PUBLIC_LIVE_CALL_ENABLED === "true";
 
-// Admin test mode: Array of test phone numbers for concurrent testing
-// Format: comma-separated E.164 numbers (e.g., "+13105551234,+13105555678,+13105559012")
-// When set, only calls providers up to the count of test phones available
-const ADMIN_TEST_PHONES_RAW = process.env.NEXT_PUBLIC_ADMIN_TEST_PHONES;
-const ADMIN_TEST_PHONES = ADMIN_TEST_PHONES_RAW
-  ? ADMIN_TEST_PHONES_RAW.split(",").map((p) => p.trim()).filter(Boolean)
-  : [];
-
-// Backward compatibility: single test number (deprecated, use ADMIN_TEST_PHONES instead)
-// Note: Also handles comma-separated values in legacy variable for compatibility
-const ADMIN_TEST_NUMBER_LEGACY = process.env.NEXT_PUBLIC_ADMIN_TEST_NUMBER;
-if (ADMIN_TEST_NUMBER_LEGACY && ADMIN_TEST_PHONES.length === 0) {
-  // Split by comma in case legacy variable contains multiple numbers
-  const legacyNumbers = ADMIN_TEST_NUMBER_LEGACY.split(",").map((p) => p.trim()).filter(Boolean);
-  ADMIN_TEST_PHONES.push(...legacyNumbers);
-}
-
-const isAdminTestMode = ADMIN_TEST_PHONES.length > 0;
 import {
   createServiceRequest,
   updateServiceRequest,
@@ -76,10 +59,11 @@ export default function NewRequest() {
   const userPhoneValidation = usePhoneValidation();
 
   // Form validation - all required fields must be filled
+  // Check clientAddress.formatted for actual address selection (not just the derived location)
   const isFormValid =
     formData.clientName.trim() !== "" &&
     formData.title.trim() !== "" &&
-    formData.location.trim() !== "" &&
+    formData.clientAddress.formatted.trim() !== "" &&
     formData.description.trim() !== "" &&
     userPhoneValidation.isValid;
 
@@ -89,6 +73,8 @@ export default function NewRequest() {
 
     try {
       // Create request in database first to get proper UUID
+      // CRITICAL: Save user_phone and preferred_contact to dedicated columns
+      // (not inside direct_contact_info JSONB) so notification triggers work
       const dbRequest = await createServiceRequest({
         type: "RESEARCH_AND_BOOK",
         title: formData.title,
@@ -96,10 +82,8 @@ export default function NewRequest() {
         location: formData.location,
         criteria: formData.criteria,
         status: "SEARCHING",
-        direct_contact_info: {
-          preferred_contact: formData.preferredContact,
-          user_phone: userPhoneValidation.normalized,
-        },
+        user_phone: userPhoneValidation.normalized,
+        preferred_contact: formData.preferredContact,
       });
 
       const newRequest: ServiceRequest = {
@@ -238,27 +222,16 @@ export default function NewRequest() {
         return;
       }
 
-      // 2. Call Loop - Uses real VAPI when LIVE_CALL_ENABLED=true
+      // 2. Call Loop - Backend handles test mode (ADMIN_TEST_NUMBER in backend .env)
       await updateStatus("CALLING");
       const callLogs = [];
 
-      // In test mode, limit providers to the number of test phones available
-      const providersToCall = isAdminTestMode
-        ? providers.slice(0, ADMIN_TEST_PHONES.length)
-        : providers;
+      // All providers are sent to backend - test phone substitution happens server-side
+      const providersToCall = providers;
 
       console.log(
-        `[Concierge] Starting calls to ${providersToCall.length} providers (LIVE_CALL_ENABLED=${LIVE_CALL_ENABLED}, ADMIN_TEST_MODE=${isAdminTestMode})`,
+        `[Concierge] Starting calls to ${providersToCall.length} providers`,
       );
-
-      if (isAdminTestMode) {
-        console.log(
-          `[Concierge] ADMIN TEST MODE: Will call ${ADMIN_TEST_PHONES.length} provider(s) using test phones: ${ADMIN_TEST_PHONES.join(", ")}`,
-        );
-        console.log(
-          `[Concierge] Phone mapping: ${providersToCall.map((p, i) => `${p.name} → ${ADMIN_TEST_PHONES[i]}`).join(", ")}`,
-        );
-      }
 
       // Generate context-aware prompts with Gemini
       console.log('[Concierge] Generating context-aware prompts with Gemini...');
@@ -282,15 +255,14 @@ export default function NewRequest() {
 
       if (LIVE_CALL_ENABLED) {
         // BATCH CALLING: Call all providers concurrently via batch endpoint
-        // Build provider list with phone numbers (applying test mode substitution)
+        // Build provider list - backend handles test phone substitution
         const batchProviders: Array<{
           name: string;
           phone: string;
           id: string;
-          originalPhone?: string;
         }> = [];
 
-        for (const [providerIndex, provider] of providersToCall.entries()) {
+        for (const provider of providersToCall) {
           if (!provider.phone) {
             console.warn(`[Concierge] Skipping ${provider.name}: no phone number`);
             callLogs.push({
@@ -303,14 +275,11 @@ export default function NewRequest() {
           }
 
           // Normalize phone to E.164 format
-          // In admin test mode, use test phone at same index (1:1 mapping)
-          const phoneToCall = isAdminTestMode
-            ? normalizePhoneNumber(ADMIN_TEST_PHONES[providerIndex]!)
-            : normalizePhoneNumber(provider.phone);
+          const phoneToCall = normalizePhoneNumber(provider.phone);
 
           if (!isValidE164Phone(phoneToCall)) {
             console.warn(
-              `[Concierge] Skipping ${provider.name}: invalid phone ${isAdminTestMode ? ADMIN_TEST_PHONES[providerIndex] : provider.phone} -> ${phoneToCall}`,
+              `[Concierge] Skipping ${provider.name}: invalid phone ${provider.phone} -> ${phoneToCall}`,
             );
             callLogs.push({
               timestamp: new Date().toISOString(),
@@ -325,7 +294,6 @@ export default function NewRequest() {
             name: provider.name,
             phone: phoneToCall,
             id: provider.id,
-            originalPhone: provider.phone,
           });
         }
 
@@ -338,9 +306,8 @@ export default function NewRequest() {
 
         // Make batch call if we have valid providers
         if (batchProviders.length > 0) {
-          const testModeLabel = isAdminTestMode ? " (TEST MODE)" : "";
           console.log(
-            `[Concierge] Starting BATCH call to ${batchProviders.length} providers via /api/v1/providers/batch-call...${testModeLabel}`,
+            `[Concierge] Starting BATCH call to ${batchProviders.length} providers via /api/v1/providers/batch-call-async...`,
           );
           console.log(
             `[Concierge] Providers: ${batchProviders.map(p => `${p.name} @ ${p.phone}`).join(", ")}`,
@@ -438,33 +405,6 @@ export default function NewRequest() {
         }
       }
 
-      // Log skipped providers in test mode (if any were skipped due to test phone limits)
-      if (isAdminTestMode && providers.length > ADMIN_TEST_PHONES.length) {
-        const skippedProviders = providers.slice(ADMIN_TEST_PHONES.length);
-        console.log(
-          `[Concierge] TEST MODE: Skipped ${skippedProviders.length} provider(s) due to test phone limit (${ADMIN_TEST_PHONES.length} test phones available)`
-        );
-
-        // Create info logs for each skipped provider
-        for (const skipped of skippedProviders) {
-          const skipLog = {
-            timestamp: new Date().toISOString(),
-            stepName: `Skipped ${skipped.name}`,
-            detail: `Provider not called due to test mode limit (${ADMIN_TEST_PHONES.length} test phone${ADMIN_TEST_PHONES.length === 1 ? '' : 's'} available)`,
-            status: "info" as const,
-          };
-          callLogs.push(skipLog);
-          console.log(
-            `[Concierge] - ${skipped.name} (Rating: ${skipped.rating || 'N/A'}) - Skipped`
-          );
-        }
-
-        // Update UI with skip logs
-        updateRequest(reqId, {
-          interactions: [searchLog, ...callLogs],
-        });
-      }
-
       // With fire-and-forget batch calling, we don't wait for call results here
       // The request/[id]/page.tsx handles call completion via real-time subscriptions
       // and triggers recommendations when all calls are done
@@ -541,24 +481,6 @@ export default function NewRequest() {
         </p>
       </div>
 
-      {/* Test Mode Banner - Shows when admin test phones are configured */}
-      {isAdminTestMode && (
-        <div className="bg-amber-500/10 border border-amber-500/30 rounded-xl p-4 mb-6" role="alert">
-          <div className="flex items-center gap-3">
-            <div className="w-2 h-2 bg-amber-400 rounded-full animate-pulse" aria-hidden="true" />
-            <div>
-              <p className="text-amber-300 font-semibold text-sm">
-                Test Mode Active
-              </p>
-              <p className="text-amber-200/70 text-xs mt-0.5">
-                Calls will be made to {ADMIN_TEST_PHONES.length} test phone{ADMIN_TEST_PHONES.length !== 1 ? 's' : ''} instead of real providers.
-                {ADMIN_TEST_PHONES.length < 5 && ` Only ${ADMIN_TEST_PHONES.length} provider${ADMIN_TEST_PHONES.length !== 1 ? 's' : ''} will be called.`}
-              </p>
-            </div>
-          </div>
-        </div>
-      )}
-
       <form
         onSubmit={handleSubmit}
         className="bg-surface p-8 rounded-2xl border border-surface-highlight shadow-xl space-y-6"
@@ -604,14 +526,18 @@ export default function NewRequest() {
           <label className="block text-sm font-semibold text-slate-300 mb-2">
             What is your service address?
           </label>
-          <div className="relative">
-            <MapPin className="absolute left-3 top-3.5 w-5 h-5 text-slate-500 z-10" />
+          <div className="relative flex items-center">
+            <MapPin className="absolute left-3 w-5 h-5 text-slate-500 z-10 pointer-events-none" />
             <AddressAutocomplete
               value={formData.clientAddress.formatted}
               onChange={(address) => {
+                // Derive location for backward compatibility
+                // Fall back to formatted address if city/state not available
+                const cityState = [address.city, address.state].filter(Boolean).join(", ");
+                const location = cityState || address.formatted;
                 setFormData({
                   ...formData,
-                  location: `${address.city}, ${address.state}`, // backward compatible
+                  location,
                   clientAddress: address,
                 });
               }}

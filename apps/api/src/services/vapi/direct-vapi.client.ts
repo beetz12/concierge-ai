@@ -189,7 +189,7 @@ export class DirectVapiClient {
    */
   private async waitForWebhookResult(
     callId: string,
-    timeoutMs: number = 300000, // 5 minutes default
+    timeoutMs: number = 90000, // 90 seconds - typical call + analysis takes 60-90s
   ): Promise<CallResult | null> {
     const startTime = Date.now();
     const pollInterval = 2000; // Poll backend cache every 2s
@@ -236,6 +236,24 @@ export class DirectVapiClient {
               { callId, dataStatus: "partial" },
               "Webhook received but enrichment in progress",
             );
+          }
+
+          // Handle failed enrichment - fall back to VAPI polling immediately
+          if (data && data.dataStatus === "fetch_failed") {
+            this.logger.info(
+              { callId, dataStatus: "fetch_failed" },
+              "Webhook enrichment failed, falling back to VAPI polling",
+            );
+            return null; // Triggers VAPI polling fallback
+          }
+
+          // If fetching for too long (stuck), also fall back
+          if (data && data.dataStatus === "fetching" && data.fetchAttempts && data.fetchAttempts > 10) {
+            this.logger.info(
+              { callId, dataStatus: "fetching", attempts: data.fetchAttempts },
+              "Enrichment taking too long, falling back to VAPI polling",
+            );
+            return null; // Triggers VAPI polling fallback
           }
         } else if (response.status === 404) {
           consecutive404Count++;

@@ -242,6 +242,25 @@ export default async function notificationRoutes(fastify: FastifyInstance) {
             });
           }
 
+          // Update database to track notification (CRITICAL: prevents duplicate notifications)
+          await supabase.from("service_requests").update({
+            notification_sent_at: new Date().toISOString(),
+            notification_method: "sms",
+          }).eq("id", validated.serviceRequestId);
+
+          // Log the interaction
+          await supabase.from("interaction_logs").insert({
+            request_id: validated.serviceRequestId,
+            step_name: "User Notification via SMS",
+            detail: `SMS sent successfully via Direct Twilio - Message SID: ${twilioResult.messageSid}`,
+            status: "success",
+          });
+
+          fastify.log.info(
+            { messageSid: twilioResult.messageSid, serviceRequestId: validated.serviceRequestId },
+            "Direct Twilio SMS sent and database updated"
+          );
+
           return reply.send({
             success: true,
             data: {
