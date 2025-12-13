@@ -138,7 +138,7 @@ Thank them genuinely when they help.`;
       provider: "google" as const,
       model: "gemini-2.5-flash",
       messages: [{ role: "system" as const, content: systemPrompt }],
-      tools: [{ type: "endCall", description: "End the phone call. Use this immediately after your closing statement." }],
+      tools: [{ type: "endCall" }],
       temperature: 0.15,  // Very low for reliable tool invocation (2025 best practice)
     },
     transcriber: {
@@ -247,7 +247,7 @@ function createDynamicDirectTaskConfig(request: CallRequest, customPrompt: Gener
       provider: "google" as const,
       model: "gemini-2.5-flash",
       messages: [{ role: "system" as const, content: customPrompt.systemPrompt }],
-      tools: [{ type: "endCall", description: "End the phone call. Use this immediately after your closing statement." }],
+      tools: [{ type: "endCall" }],
       temperature: 0.15,  // Very low for reliable tool invocation (2025 best practice)
     },
     transcriber: {
@@ -383,7 +383,7 @@ If you detect voicemail (automated greeting, "leave a message", beep), immediate
         provider: "google" as const,
         model: "gemini-2.5-flash",
         messages: [{ role: "system" as const, content: enhancedSystemPrompt }],
-        tools: [{ type: "endCall", description: "End the phone call. Use this immediately after your closing statement." }],
+        tools: [{ type: "endCall" }],
         temperature: 0.15,  // Very low for reliable tool invocation (2025 best practice)
       },
       transcriber: {
@@ -642,7 +642,7 @@ For unusual requirements, frame naturally: "${clientName} specifically mentioned
           content: systemPrompt,
         },
       ],
-      tools: [{ type: "endCall", description: "End the phone call. Use this immediately after your closing statement." }],
+      tools: [{ type: "endCall" }],
       temperature: 0.15,  // Very low for reliable tool invocation (2025 best practice)
     },
 

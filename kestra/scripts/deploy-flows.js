@@ -48,6 +48,14 @@ const EXTENSIONS = ['.yaml', '.yml'];
 const FLOWS_DIR = path.join(__dirname, '..', 'flows');
 const PROD_FLOWS_DIR = path.join(__dirname, '..', 'prod_flows');
 const SCRIPTS_DIR = path.join(__dirname);
+const API_DIST_VAPI_DIR = path.join(__dirname, '..', '..', 'apps', 'api', 'dist', 'services', 'vapi');
+
+// Compiled config files that need to be copied to scripts/ for Kestra Cloud
+const REQUIRED_CONFIGS = [
+    'assistant-config.js',
+    'booking-assistant-config.js',
+    'webhook-config.js',
+];
 
 // Transformation pattern for Cloud migration
 const ENVS_PATTERN = /\{\{\s*envs\.(\w+)\s*\}\}/g;
@@ -249,6 +257,50 @@ function transformEnvsToSecrets(filePath) {
     return { transformed: true, secrets: [...new Set(matches)] };
 }
 
+/**
+ * Copy compiled TypeScript config files from apps/api/dist to kestra/scripts
+ * These configs are required by call-provider.js and schedule-booking.js
+ */
+function copyCompiledConfigs(dryRun = false) {
+    const results = {
+        copied: [],
+        missing: [],
+        errors: [],
+    };
+
+    // Check if dist directory exists
+    if (!fs.existsSync(API_DIST_VAPI_DIR)) {
+        return {
+            ...results,
+            errors: [`Dist directory not found: ${API_DIST_VAPI_DIR}`],
+            needsBuild: true,
+        };
+    }
+
+    for (const configFile of REQUIRED_CONFIGS) {
+        const sourcePath = path.join(API_DIST_VAPI_DIR, configFile);
+        const destPath = path.join(SCRIPTS_DIR, configFile);
+
+        if (!fs.existsSync(sourcePath)) {
+            results.missing.push(configFile);
+            continue;
+        }
+
+        if (dryRun) {
+            results.copied.push({ file: configFile, dryRun: true });
+        } else {
+            try {
+                fs.copyFileSync(sourcePath, destPath);
+                results.copied.push({ file: configFile, dryRun: false });
+            } catch (error) {
+                results.errors.push(`Failed to copy ${configFile}: ${error.message}`);
+            }
+        }
+    }
+
+    return results;
+}
+
 function prepareProdFlows(dryRun = false) {
     printSubHeader('Preparing Cloud-ready flows');
 
@@ -359,10 +411,12 @@ function uploadNamespaceFile(filePath, baseDir, options) {
             ? `${url}/api/v1/${options.tenant}/namespaces/${namespace}/files`
             : `${url}/api/v1/namespaces/${namespace}/files`;
 
-        const encodedPath = encodeURIComponent(`/${namespacePath}`);
+        // Path without leading slash (Kestra 2025 best practice)
+        const encodedPath = encodeURIComponent(namespacePath);
         const curlCmd = `curl -s -o /dev/null -w "%{http_code}" -X POST \
             "${apiPath}?path=${encodedPath}" \
             ${authHeader} \
+            -H "Content-Type: multipart/form-data" \
             -F "fileContent=@${filePath}"`;
 
         const result = execSync(curlCmd, { encoding: 'utf-8', timeout: 30000 }).trim();
@@ -775,7 +829,37 @@ async function main() {
         console.log(`    \x1b[32m✓\x1b[0m Connected to Kestra at ${options.url}`);
     }
 
-    // Upload namespace files (scripts)
+    // Copy compiled TypeScript configs to scripts/ (required for Kestra Cloud)
+    printSubHeader('Copying compiled assistant configs');
+    const configResult = copyCompiledConfigs(options.dryRun);
+
+    if (configResult.needsBuild) {
+        console.error(`\n  \x1b[31mERROR: TypeScript not compiled. Run: pnpm --filter api build\x1b[0m`);
+        console.error(`  Missing directory: ${API_DIST_VAPI_DIR}\n`);
+        process.exit(1);
+    }
+
+    if (configResult.missing.length > 0) {
+        console.log(`  \x1b[33m⚠ Missing configs (may need rebuild):\x1b[0m`);
+        configResult.missing.forEach(f => console.log(`    - ${f}`));
+    }
+
+    if (configResult.errors.length > 0) {
+        console.error(`  \x1b[31mErrors:\x1b[0m`);
+        configResult.errors.forEach(e => console.error(`    - ${e}`));
+    }
+
+    if (configResult.copied.length > 0) {
+        if (options.dryRun) {
+            console.log(`    \x1b[36m[Dry-run: would copy ${configResult.copied.length} config file(s)]\x1b[0m`);
+            configResult.copied.forEach(c => console.log(`      - ${c.file}`));
+        } else {
+            console.log(`    \x1b[32m✓\x1b[0m Copied ${configResult.copied.length} config file(s)`);
+            configResult.copied.forEach(c => console.log(`      - ${c.file}`));
+        }
+    }
+
+    // Upload namespace files (scripts + configs)
     printSubHeader(`Uploading namespace files to ${options.namespace}`);
     const namespaceFileResults = uploadNamespaceFiles(SCRIPTS_DIR, options);
     const failedUploads = namespaceFileResults.filter(r => !r.success && !r.dryRun);

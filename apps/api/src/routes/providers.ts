@@ -654,7 +654,37 @@ export default async function providerRoutes(fastify: FastifyInstance) {
     },
     async (request, reply) => {
       try {
-        const validated = batchCallSchema.parse(request.body);
+        let validated = batchCallSchema.parse(request.body);
+
+        // Load test phone configuration from backend environment
+        const adminTestPhonesRaw = process.env.ADMIN_TEST_NUMBER;
+        const adminTestPhones = adminTestPhonesRaw
+          ? adminTestPhonesRaw.split(",").map((p) => p.trim()).filter(Boolean)
+          : [];
+        const isAdminTestMode = adminTestPhones.length > 0;
+
+        // Apply test phone substitution if in test mode
+        if (isAdminTestMode) {
+          request.log.info(
+            { adminTestPhones, providerCount: validated.providers.length },
+            "Test mode active - substituting provider phones with admin test phones"
+          );
+
+          // Limit providers to number of test phones and substitute phone numbers
+          const limitedProviders = validated.providers.slice(0, adminTestPhones.length);
+          validated = {
+            ...validated,
+            providers: limitedProviders.map((p, idx) => ({
+              ...p,
+              phone: adminTestPhones[idx % adminTestPhones.length]!,
+            })),
+          };
+
+          request.log.info(
+            { substitutedProviders: validated.providers.map(p => ({ name: p.name, phone: p.phone })) },
+            "Phone numbers substituted for test mode"
+          );
+        }
 
         // Generate execution ID for tracking
         const executionId = crypto.randomUUID();
@@ -727,14 +757,6 @@ export default async function providerRoutes(fastify: FastifyInstance) {
                 "Kestra batch completed with results in database - waiting for all provider results"
               );
 
-              // Step 1: Update status to ANALYZING
-              await supabase
-                .from("service_requests")
-                .update({
-                  status: "ANALYZING",
-                })
-                .eq("id", validated.serviceRequestId);
-
               // Log success to interaction_logs
               await supabase.from("interaction_logs").insert({
                 request_id: validated.serviceRequestId,
@@ -743,7 +765,7 @@ export default async function providerRoutes(fastify: FastifyInstance) {
                 status: "success",
               });
 
-              // Step 2: Poll for all providers to have final call_status (max 30 seconds)
+              // Step 1: Poll for all providers to have final call_status (max 30 seconds)
               const finalStatuses = ["completed", "failed", "error", "timeout", "no_answer", "voicemail", "busy"];
               let allProvidersComplete = false;
               let pollAttempts = 0;
@@ -792,6 +814,19 @@ export default async function providerRoutes(fastify: FastifyInstance) {
                       totalProviders: providers.length
                     },
                     "All provider calls completed - generating recommendations"
+                  );
+
+                  // Step 2: Update status to ANALYZING (now that we've confirmed all calls completed)
+                  await supabase
+                    .from("service_requests")
+                    .update({
+                      status: "ANALYZING",
+                    })
+                    .eq("id", validated.serviceRequestId);
+
+                  fastify.log.info(
+                    { executionId, serviceRequestId: validated.serviceRequestId },
+                    "Status updated to ANALYZING after confirming all provider calls completed"
                   );
 
                   // Step 3: Transform provider data to CallResult format for recommendations API
@@ -905,8 +940,11 @@ export default async function providerRoutes(fastify: FastifyInstance) {
                       );
                     }
                   } catch (recError) {
+                    // Serialize error properly (Error objects log as {} by default)
+                    const errorMsg = recError instanceof Error ? recError.message : String(recError);
+                    const errorStack = recError instanceof Error ? recError.stack : undefined;
                     fastify.log.error(
-                      { error: recError },
+                      { errorMessage: errorMsg, errorStack },
                       "Error generating recommendations"
                     );
                     // Keep status as ANALYZING so frontend can retry
@@ -918,10 +956,21 @@ export default async function providerRoutes(fastify: FastifyInstance) {
               }
 
               if (!allProvidersComplete) {
-                fastify.log.warn(
+                fastify.log.error(
                   { executionId, pollAttempts, serviceRequestId: validated.serviceRequestId },
-                  "Timed out waiting for all providers to complete - frontend will handle recommendation generation"
+                  "Timed out waiting for all providers to complete - updating status to FAILED"
                 );
+
+                // Update status to FAILED
+                await supabase
+                  .from("service_requests")
+                  .update({
+                    status: "FAILED",
+                    final_outcome: "Provider calls timed out after 30 seconds without completing",
+                  })
+                  .eq("id", validated.serviceRequestId);
+
+                return; // Exit the background process
               }
             }
           } catch (error) {

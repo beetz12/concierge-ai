@@ -29,25 +29,9 @@ import {
 } from "@/lib/actions/service-requests";
 
 // Environment toggle for live VAPI calls vs simulated calls
+// Note: Test phone substitution is handled by backend (ADMIN_TEST_NUMBER in backend .env)
 const LIVE_CALL_ENABLED =
   process.env.NEXT_PUBLIC_LIVE_CALL_ENABLED === "true";
-
-// Admin test mode: Array of test phone numbers for testing
-// For direct tasks, uses the first test phone in the array
-const ADMIN_TEST_PHONES_RAW = process.env.NEXT_PUBLIC_ADMIN_TEST_PHONES;
-const ADMIN_TEST_PHONES = ADMIN_TEST_PHONES_RAW
-  ? ADMIN_TEST_PHONES_RAW.split(",").map((p) => p.trim()).filter(Boolean)
-  : [];
-
-// Backward compatibility: single test number (deprecated)
-const ADMIN_TEST_NUMBER_LEGACY = process.env.NEXT_PUBLIC_ADMIN_TEST_NUMBER;
-if (ADMIN_TEST_NUMBER_LEGACY && ADMIN_TEST_PHONES.length === 0) {
-  ADMIN_TEST_PHONES.push(ADMIN_TEST_NUMBER_LEGACY);
-}
-
-const isAdminTestMode = ADMIN_TEST_PHONES.length > 0;
-// For direct tasks, use the first test phone
-const ADMIN_TEST_NUMBER = ADMIN_TEST_PHONES[0] || null;
 
 export default function DirectTask() {
   const router = useRouter();
@@ -130,11 +114,9 @@ export default function DirectTask() {
 
       if (LIVE_CALL_ENABLED) {
         // Real VAPI calls - requires valid phone number
-        // In admin test mode, override with the test number
         // Phone is already normalized and validated by usePhoneValidation hook
-        const phoneToCall = isAdminTestMode
-          ? normalizePhoneNumber(ADMIN_TEST_NUMBER!)
-          : phone;
+        // Note: Test mode substitution is handled by backend if ADMIN_TEST_NUMBER is set
+        const phoneToCall = phone;
 
         if (!isValidE164Phone(phoneToCall)) {
           console.warn(
@@ -147,9 +129,8 @@ export default function DirectTask() {
             status: "error" as const,
           };
         } else {
-          const testModeLabel = isAdminTestMode ? " (TEST MODE)" : "";
           console.log(
-            `[Direct] Calling ${data.name} at ${phoneToCall} via VAPI...${testModeLabel}`,
+            `[Direct] Calling ${data.name} at ${phoneToCall} via VAPI...`,
           );
 
           // Analyze task with Gemini to generate dynamic prompt

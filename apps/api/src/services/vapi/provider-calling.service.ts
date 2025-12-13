@@ -260,8 +260,12 @@ export class ProviderCallingService {
         "Batch provider calls completed via Direct VAPI",
       );
 
-      // Return BatchCallResult directly - matches OpenAPI schema
-      return batchResult;
+      // Direct VAPI saves results to DB via ConcurrentCallService
+      // Set resultsInDatabase flag to trigger recommendation generation in batch-call-async
+      return {
+        ...batchResult,
+        resultsInDatabase: true,
+      } as BatchCallResult & { resultsInDatabase?: boolean };
     } catch (error) {
       this.logger.error(
         {

@@ -9,6 +9,16 @@ import { KestraClient } from "../services/vapi/kestra.client.js";
 import { createClient as createSupabaseClient } from "@supabase/supabase-js";
 import { DirectTwilioClient } from "../services/notifications/direct-twilio.client.js";
 
+// Configuration for live call vs simulation
+const LIVE_CALL_ENABLED = process.env.LIVE_CALL_ENABLED === "true";
+
+// Parse admin test phones (comma-separated E.164 numbers)
+const ADMIN_TEST_PHONES_RAW = process.env.ADMIN_TEST_PHONES;
+const ADMIN_TEST_PHONES = ADMIN_TEST_PHONES_RAW
+  ? ADMIN_TEST_PHONES_RAW.split(",").map((p) => p.trim()).filter(Boolean)
+  : [];
+const isAdminTestMode = ADMIN_TEST_PHONES.length > 0;
+
 // Zod schema for booking request
 const scheduleBookingSchema = z.object({
   serviceRequestId: z.string().min(1, "Service request ID is required"),
@@ -27,6 +37,343 @@ const scheduleBookingSchema = z.object({
     .optional(),
   location: z.string().optional(),
 });
+
+/**
+ * Helper: Simulate booking and persist to database
+ */
+async function handleSimulatedBooking(
+  validated: z.infer<typeof scheduleBookingSchema>,
+  supabase: any,
+  fastify: FastifyInstance
+) {
+  fastify.log.info(
+    { providerId: validated.providerId },
+    "Simulating booking (LIVE_CALL_ENABLED=false)"
+  );
+
+  // Simulate successful booking
+  const fakeBookingDate = validated.preferredDate || new Date().toISOString().split("T")[0];
+  const fakeBookingTime = validated.preferredTime || "10:00 AM";
+  const fakeConfirmationNumber = `SIMULATED-${Date.now()}`;
+
+  // Update provider record with simulated booking
+  const { error: updateProviderError } = await supabase
+    .from("providers")
+    .update({
+      booking_confirmed: true,
+      booking_date: fakeBookingDate,
+      booking_time: fakeBookingTime,
+      confirmation_number: fakeConfirmationNumber,
+      call_status: "booking_confirmed",
+      last_call_at: new Date().toISOString(),
+      call_transcript: "SIMULATED BOOKING - No actual call made",
+    })
+    .eq("id", validated.providerId);
+
+  if (updateProviderError) {
+    fastify.log.error({ error: updateProviderError }, "Failed to update provider (simulated)");
+    throw updateProviderError;
+  }
+
+  // Update service request to COMPLETED
+  const { error: updateRequestError } = await supabase
+    .from("service_requests")
+    .update({
+      selected_provider_id: validated.providerId,
+      status: "COMPLETED",
+      final_outcome: `Appointment confirmed (SIMULATED) with ${validated.providerName} for ${fakeBookingDate} at ${fakeBookingTime}`,
+    })
+    .eq("id", validated.serviceRequestId);
+
+  if (updateRequestError) {
+    fastify.log.error({ error: updateRequestError }, "Failed to update service request (simulated)");
+    throw updateRequestError;
+  }
+
+  // Log interaction
+  await supabase.from("interaction_logs").insert({
+    request_id: validated.serviceRequestId,
+    step_name: "Booking Confirmed (Simulated)",
+    detail: `SIMULATED booking with ${validated.providerName}. Confirmation: ${fakeConfirmationNumber}`,
+    status: "success",
+  });
+
+  // Send confirmation SMS
+  try {
+    const { data: request } = await supabase
+      .from("service_requests")
+      .select("user_phone, direct_contact_info, client_name")
+      .eq("id", validated.serviceRequestId)
+      .single();
+
+    if (request?.user_phone) {
+      const twilioClient = new DirectTwilioClient(fastify.log);
+
+      if (twilioClient.isAvailable()) {
+        const confirmResult = await twilioClient.sendConfirmation({
+          userPhone: request.user_phone,
+          userName:
+            (request.direct_contact_info as any)?.user_name ||
+            request.client_name ||
+            validated.customerName,
+          providerName: validated.providerName,
+          bookingDate: fakeBookingDate,
+          bookingTime: fakeBookingTime,
+          confirmationNumber: fakeConfirmationNumber,
+          serviceDescription: validated.serviceDescription,
+        });
+
+        if (confirmResult.success) {
+          fastify.log.info({ messageSid: confirmResult.messageSid }, "Confirmation SMS sent (simulated booking)");
+
+          // Update database to track confirmation notification
+          await supabase.from("service_requests").update({
+            notification_sent_at: new Date().toISOString(),
+            notification_method: "sms",
+          }).eq("id", validated.serviceRequestId);
+
+          await supabase.from("interaction_logs").insert({
+            request_id: validated.serviceRequestId,
+            step_name: "Confirmation SMS Sent",
+            detail: `Booking confirmation sent via SMS to ${request.user_phone}`,
+            status: "success",
+          });
+        }
+      }
+    }
+  } catch (notifyError) {
+    fastify.log.error({ error: notifyError }, "Error sending confirmation (simulated)");
+    // Don't fail - notification is best-effort
+  }
+
+  fastify.log.info({ providerId: validated.providerId }, "Simulated booking completed successfully");
+}
+
+/**
+ * Helper: Make real booking call via VAPI
+ */
+async function handleRealBookingCall(
+  validated: z.infer<typeof scheduleBookingSchema>,
+  phoneToCall: string,
+  supabase: any,
+  fastify: FastifyInstance
+) {
+  const callMode = phoneToCall !== validated.providerPhone ? "test" : "production";
+  fastify.log.info(
+    { providerId: validated.providerId, phone: phoneToCall, mode: callMode },
+    `Making real booking call (mode: ${callMode})`
+  );
+
+  // Import booking config and VAPI client
+  const { createBookingAssistantConfig } = await import(
+    "../services/vapi/booking-assistant-config.js"
+  );
+  const { VapiClient } = await import("@vapi-ai/server-sdk");
+  const vapi = new VapiClient({ token: process.env.VAPI_API_KEY! });
+
+  // Create booking assistant configuration
+  const bookingConfig = createBookingAssistantConfig({
+    providerName: validated.providerName,
+    providerPhone: phoneToCall,
+    serviceNeeded: validated.serviceDescription || "service",
+    clientName: validated.customerName,
+    clientPhone: validated.customerPhone,
+    location: validated.location || "",
+    preferredDateTime:
+      validated.preferredDate && validated.preferredTime
+        ? `${validated.preferredDate} at ${validated.preferredTime}`
+        : validated.preferredDate || validated.preferredTime || "as soon as possible",
+    serviceRequestId: validated.serviceRequestId,
+    providerId: validated.providerId,
+  });
+
+  // Build call parameters
+  const callParams: any = {
+    phoneNumberId: process.env.VAPI_PHONE_NUMBER_ID,
+    customer: {
+      number: phoneToCall,
+      name: validated.providerName,
+    },
+    assistant: bookingConfig,
+  };
+
+  // Create the call
+  const callResponse = await vapi.calls.create(callParams);
+
+  // Extract call from response
+  let call: any;
+  if (Array.isArray(callResponse)) {
+    call = callResponse[0];
+  } else if ((callResponse as any).id) {
+    call = callResponse;
+  } else if ((callResponse as any).data?.id) {
+    call = (callResponse as any).data;
+  } else {
+    throw new Error("Unexpected response format from VAPI calls.create");
+  }
+
+  fastify.log.info({ callId: call.id, status: call.status }, "Booking call created, waiting for completion");
+
+  // Poll for completion
+  const maxAttempts = 60;
+  let attempts = 0;
+  let completedCall: any = null;
+
+  while (attempts < maxAttempts) {
+    const callData = await vapi.calls.get({ id: call.id });
+
+    let currentCall: any;
+    if (Array.isArray(callData)) {
+      currentCall = callData[0];
+    } else if ((callData as any).id) {
+      currentCall = callData;
+    } else if ((callData as any).data?.id) {
+      currentCall = (callData as any).data;
+    } else {
+      throw new Error("Unexpected response format from VAPI calls.get");
+    }
+
+    if (!["queued", "ringing", "in-progress"].includes(currentCall.status)) {
+      completedCall = currentCall;
+      break;
+    }
+
+    await new Promise((resolve) => setTimeout(resolve, 5000));
+    attempts++;
+  }
+
+  if (!completedCall) {
+    throw new Error(`Booking call ${call.id} timed out after ${maxAttempts * 5} seconds`);
+  }
+
+  // Extract structured data from call result
+  const analysis = completedCall.analysis || {};
+  const structuredData = analysis.structuredData || {};
+  const bookingConfirmed = structuredData.booking_confirmed || false;
+
+  // Extract transcript
+  const transcript = completedCall.artifact?.transcript || "";
+  const transcriptStr = typeof transcript === "string" ? transcript : JSON.stringify(transcript);
+
+  // Update provider record with booking details
+  const { error: updateProviderError } = await supabase
+    .from("providers")
+    .update({
+      booking_confirmed: bookingConfirmed,
+      booking_date: structuredData.confirmed_date,
+      booking_time: structuredData.confirmed_time,
+      confirmation_number: structuredData.confirmation_number,
+      call_status: bookingConfirmed ? "booking_confirmed" : "booking_failed",
+      last_call_at: new Date().toISOString(),
+      call_transcript: transcriptStr,
+    })
+    .eq("id", validated.providerId);
+
+  if (updateProviderError) {
+    fastify.log.error({ error: updateProviderError }, "Failed to update provider record");
+    throw updateProviderError;
+  }
+
+  // If booking confirmed, update service request
+  if (bookingConfirmed) {
+    const { error: updateRequestError } = await supabase
+      .from("service_requests")
+      .update({
+        selected_provider_id: validated.providerId,
+        status: "COMPLETED",
+        final_outcome: `Appointment confirmed with ${validated.providerName} for ${structuredData.confirmed_date || "TBD"} at ${structuredData.confirmed_time || "TBD"}`,
+      })
+      .eq("id", validated.serviceRequestId);
+
+    if (updateRequestError) {
+      fastify.log.error({ error: updateRequestError }, "Failed to update service request");
+      throw updateRequestError;
+    }
+
+    // Create interaction log
+    await supabase.from("interaction_logs").insert({
+      request_id: validated.serviceRequestId,
+      step_name: "Booking Confirmed",
+      detail: `Successfully booked appointment with ${validated.providerName}. Confirmation: ${structuredData.confirmation_number || "N/A"}`,
+      status: "success",
+    });
+
+    // Send confirmation notification to user
+    try {
+      const { data: request } = await supabase
+        .from("service_requests")
+        .select("user_phone, direct_contact_info, client_name")
+        .eq("id", validated.serviceRequestId)
+        .single();
+
+      if (request?.user_phone) {
+        const twilioClient = new DirectTwilioClient(fastify.log);
+
+        if (twilioClient.isAvailable()) {
+          const confirmResult = await twilioClient.sendConfirmation({
+            userPhone: request.user_phone,
+            userName:
+              (request.direct_contact_info as any)?.user_name ||
+              request.client_name ||
+              validated.customerName,
+            providerName: validated.providerName,
+            bookingDate: structuredData.confirmed_date,
+            bookingTime: structuredData.confirmed_time,
+            confirmationNumber: structuredData.confirmation_number,
+            serviceDescription: validated.serviceDescription,
+          });
+
+          if (confirmResult.success) {
+            fastify.log.info({ messageSid: confirmResult.messageSid }, "Confirmation SMS sent");
+
+            // Update database to track confirmation notification
+            await supabase.from("service_requests").update({
+              notification_sent_at: new Date().toISOString(),
+              notification_method: "sms",
+            }).eq("id", validated.serviceRequestId);
+
+            await supabase.from("interaction_logs").insert({
+              request_id: validated.serviceRequestId,
+              step_name: "Confirmation SMS Sent",
+              detail: `Booking confirmation sent via SMS to ${request.user_phone}`,
+              status: "success",
+            });
+          } else {
+            fastify.log.error({ error: confirmResult.error }, "Confirmation SMS failed");
+          }
+        }
+      }
+    } catch (notifyError) {
+      fastify.log.error({ error: notifyError }, "Error sending confirmation");
+      // Don't fail the booking - confirmation is best-effort
+    }
+  } else {
+    // Booking failed - update status back to RECOMMENDED so user can retry
+    const { error: updateRequestError } = await supabase
+      .from("service_requests")
+      .update({
+        status: "RECOMMENDED",
+      })
+      .eq("id", validated.serviceRequestId);
+
+    if (updateRequestError) {
+      fastify.log.error({ error: updateRequestError }, "Failed to update service request after booking failure");
+    }
+
+    // Log the failure
+    await supabase.from("interaction_logs").insert({
+      request_id: validated.serviceRequestId,
+      step_name: "Booking Failed",
+      detail: `Failed to confirm booking with ${validated.providerName}. Outcome: ${structuredData.call_outcome || "unknown"}`,
+      status: "warning",
+    });
+  }
+
+  fastify.log.info(
+    { providerId: validated.providerId, bookingConfirmed },
+    `Real booking call completed (mode: ${callMode})`
+  );
+}
 
 export default async function bookingRoutes(fastify: FastifyInstance) {
   const kestraClient = new KestraClient(fastify.log);
@@ -345,6 +692,12 @@ export default async function bookingRoutes(fastify: FastifyInstance) {
                       "Confirmation SMS sent"
                     );
 
+                    // Update database to track confirmation notification
+                    await supabase.from("service_requests").update({
+                      notification_sent_at: new Date().toISOString(),
+                      notification_method: "sms",
+                    }).eq("id", validated.serviceRequestId);
+
                     // Log the confirmation
                     await supabase.from("interaction_logs").insert({
                       request_id: validated.serviceRequestId,
@@ -492,6 +845,237 @@ export default async function bookingRoutes(fastify: FastifyInstance) {
 
         const errorMessage =
           error instanceof Error ? error.message : "Unknown error";
+        return reply.status(500).send({
+          success: false,
+          error: errorMessage,
+        });
+      }
+    }
+  );
+
+  /**
+   * POST /api/v1/bookings/schedule-async
+   * Schedule an appointment asynchronously (fire-and-forget)
+   */
+  fastify.post(
+    "/schedule-async",
+    {
+      schema: {
+        tags: ["bookings"],
+        summary: "Schedule an appointment asynchronously",
+        description:
+          "Immediately returns 202 Accepted and processes the booking call in the background. Supports test mode and simulation.",
+        body: {
+          type: "object",
+          required: ["serviceRequestId", "providerId", "providerPhone", "providerName"],
+          properties: {
+            serviceRequestId: {
+              type: "string",
+              description: "ID of the service request",
+            },
+            providerId: {
+              type: "string",
+              description: "ID of the selected provider",
+            },
+            providerPhone: {
+              type: "string",
+              description: "Provider's phone number in E.164 format (+1XXXXXXXXXX)",
+              pattern: "^\\+1\\d{10}$",
+            },
+            providerName: {
+              type: "string",
+              description: "Provider's business name",
+            },
+            serviceDescription: {
+              type: "string",
+              description: "Description of the service being booked",
+            },
+            preferredDate: {
+              type: "string",
+              description: "Customer's preferred appointment date",
+            },
+            preferredTime: {
+              type: "string",
+              description: "Customer's preferred appointment time",
+            },
+            customerName: {
+              type: "string",
+              description: "Customer's name for the appointment",
+            },
+            customerPhone: {
+              type: "string",
+              description: "Customer's callback phone number",
+              pattern: "^\\+1\\d{10}$",
+            },
+            location: {
+              type: "string",
+              description: "Service location/address",
+            },
+          },
+        },
+        response: {
+          202: {
+            type: "object",
+            properties: {
+              success: { type: "boolean" },
+              message: { type: "string" },
+              data: {
+                type: "object",
+                properties: {
+                  serviceRequestId: { type: "string" },
+                  providerId: { type: "string" },
+                  mode: { type: "string" },
+                },
+              },
+            },
+          },
+          400: {
+            type: "object",
+            properties: {
+              success: { type: "boolean" },
+              error: { type: "string" },
+              details: { type: "array" },
+            },
+          },
+          500: {
+            type: "object",
+            properties: {
+              success: { type: "boolean" },
+              error: { type: "string" },
+            },
+          },
+        },
+      },
+    },
+    async (request, reply) => {
+      try {
+        // Validate request body
+        const validated = scheduleBookingSchema.parse(request.body);
+
+        // Create Supabase client for status update
+        const supabase = createSupabaseClient(
+          process.env.SUPABASE_URL!,
+          process.env.SUPABASE_SERVICE_ROLE_KEY!
+        );
+
+        // Immediately update service request status to BOOKING
+        const { error: updateRequestError } = await supabase
+          .from("service_requests")
+          .update({
+            status: "BOOKING",
+            selected_provider_id: validated.providerId,
+          })
+          .eq("id", validated.serviceRequestId);
+
+        if (updateRequestError) {
+          fastify.log.error(
+            { error: updateRequestError },
+            "Failed to update service request status to BOOKING"
+          );
+          return reply.status(500).send({
+            success: false,
+            error: "Failed to initiate booking process",
+          });
+        }
+
+        // Determine booking mode
+        let bookingMode: string;
+        if (LIVE_CALL_ENABLED !== true) {
+          bookingMode = "simulated";
+        } else if (isAdminTestMode) {
+          bookingMode = "test";
+        } else {
+          bookingMode = "production";
+        }
+
+        fastify.log.info(
+          {
+            serviceRequestId: validated.serviceRequestId,
+            providerId: validated.providerId,
+            mode: bookingMode,
+            liveCallEnabled: LIVE_CALL_ENABLED,
+            adminTestMode: isAdminTestMode,
+          },
+          "Async booking initiated - processing in background"
+        );
+
+        // Return 202 Accepted immediately
+        reply.status(202).send({
+          success: true,
+          message: "Booking call initiated and processing in background",
+          data: {
+            serviceRequestId: validated.serviceRequestId,
+            providerId: validated.providerId,
+            mode: bookingMode,
+          },
+        });
+
+        // Process booking in background using setImmediate
+        setImmediate(async () => {
+          try {
+            if (LIVE_CALL_ENABLED !== true) {
+              // Simulate booking
+              await handleSimulatedBooking(validated, supabase, fastify);
+            } else if (isAdminTestMode) {
+              // Use test phone instead of real provider phone
+              const testPhone = ADMIN_TEST_PHONES[0]!; // Safe because isAdminTestMode checks array length
+              fastify.log.info(
+                { testPhone, providerPhone: validated.providerPhone },
+                "Using admin test phone for booking call"
+              );
+              await handleRealBookingCall(validated, testPhone, supabase, fastify);
+            } else {
+              // Use real provider phone
+              await handleRealBookingCall(
+                validated,
+                validated.providerPhone,
+                supabase,
+                fastify
+              );
+            }
+          } catch (backgroundError) {
+            // Log the error and update status back to RECOMMENDED for retry
+            fastify.log.error(
+              { error: backgroundError, serviceRequestId: validated.serviceRequestId },
+              "Background booking process failed"
+            );
+
+            try {
+              // Revert status to RECOMMENDED so user can retry
+              await supabase
+                .from("service_requests")
+                .update({
+                  status: "RECOMMENDED",
+                })
+                .eq("id", validated.serviceRequestId);
+
+              // Log the error
+              await supabase.from("interaction_logs").insert({
+                request_id: validated.serviceRequestId,
+                step_name: "Booking Error",
+                detail: `Background booking failed: ${backgroundError instanceof Error ? backgroundError.message : "Unknown error"}`,
+                status: "error",
+              });
+            } catch (recoveryError) {
+              fastify.log.error(
+                { error: recoveryError },
+                "Failed to revert booking status after error"
+              );
+            }
+          }
+        });
+      } catch (error: unknown) {
+        request.log.error({ error }, "Async booking validation failed");
+
+        if (error instanceof z.ZodError) {
+          return reply.status(400).send({
+            success: false,
+            error: "Validation error",
+            details: error.errors,
+          });
+        }
+
+        const errorMessage = error instanceof Error ? error.message : "Unknown error";
         return reply.status(500).send({
           success: false,
           error: errorMessage,
@@ -696,6 +1280,12 @@ export default async function bookingRoutes(fastify: FastifyInstance) {
                     { messageSid: confirmResult.messageSid },
                     "Confirmation SMS sent via Kestra callback"
                   );
+
+                  // Update database to track confirmation notification
+                  await supabase.from("service_requests").update({
+                    notification_sent_at: new Date().toISOString(),
+                    notification_method: "sms",
+                  }).eq("id", serviceRequestId);
 
                   await supabase.from("interaction_logs").insert({
                     request_id: serviceRequestId,
