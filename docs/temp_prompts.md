@@ -1,3 +1,9 @@
+Okay, great. Now the agent is not cutting off the provider But after the provider says "Have a wonderful day." it's not ending
+ the call. see @docs/transcript.md. Basically, the provider has to say something else after "Have a wonderful day." Before the
+call is actually ended. please Use your specialized multi-agent team to analyze the root cause in parallel with up to 3 agents
+with 90% confidence and implement the 2025 best practice solution. Use perplexity-deep to research if needed. My mortgage
+payment depends on this. If you get this right on the first try, I will tip you $200. ultrathink
+
 Perfect. Please use '/Users/dave/Work/concierge-ai/docs/about.md' and @docs/architecture.md as starting point in helping generate a High-level Description
   of how creating a new request in our app will work. It describe the entire flow from the beginning to the end, up until the user receives confirmation on
   their phone that their appointment has been scheduled. please fill in any missing parts not mentioned in '/Users/dave/Work/concierge-ai/docs/about.md', but
