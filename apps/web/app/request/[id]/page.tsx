@@ -2,8 +2,8 @@
 
 import React, { useEffect, useRef, useState, useCallback } from "react";
 import { useParams } from "next/navigation";
-import Link from "next/link";
 import { useAppContext } from "@/lib/providers/AppProvider";
+import { PageHeader } from "@/components/PageHeader";
 import StatusBadge from "@/components/StatusBadge";
 import LiveStatus from "@/components/LiveStatus";
 import RecommendedProviders from "@/components/RecommendedProviders";
@@ -12,7 +12,6 @@ import ProviderCallSection from "@/components/ProviderCallSection";
 import ProviderDetailPanel from "@/components/ProviderDetailPanel";
 import { toast } from "sonner";
 import {
-  ArrowLeft,
   MapPin,
   User,
   CheckCircle,
@@ -1183,15 +1182,11 @@ export default function RequestDetails() {
   }
 
   return (
-    <div className="max-w-4xl mx-auto pb-10">
-      <Link
-        href="/"
-        className="inline-flex items-center text-slate-500 hover:text-slate-300 mb-6 transition-colors"
-      >
-        <ArrowLeft className="w-4 h-4 mr-2" /> Back to Dashboard
-      </Link>
+    <div className="p-4 md:p-6 space-y-6">
+      <PageHeader />
 
-      {/* Header Card */}
+      <div className="max-w-4xl mx-auto pb-10">
+        {/* Header Card */}
       <div className="bg-surface rounded-2xl border border-surface-highlight shadow-xl p-6 mb-8">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-4">
           <h1 className="text-2xl font-bold text-slate-100">{request.title || request.description || "Service Request"}</h1>
@@ -1508,6 +1503,7 @@ export default function RequestDetails() {
           }}
         />
       )}
+      </div>
     </div>
   );
 }

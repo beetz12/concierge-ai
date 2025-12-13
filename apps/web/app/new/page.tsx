@@ -4,9 +4,34 @@ import React, { useState } from "react";
 import { useRouter } from "next/navigation";
 import { useAppContext } from "@/lib/providers/AppProvider";
 import { RequestStatus, RequestType, ServiceRequest } from "@/lib/types";
-import { Search, MapPin, AlertCircle, Sparkles, User, Phone, MessageSquare, PhoneCall } from "lucide-react";
+import {
+  Search,
+  MapPin,
+  AlertCircle,
+  Sparkles,
+  User,
+  Phone,
+  MessageSquare,
+  PhoneCall,
+} from "lucide-react";
+import { PageHeader } from "@/components/PageHeader";
 import { SegmentedControl } from "@repo/ui/segmented-control";
-import { AddressAutocomplete, type AddressComponents } from "@repo/ui/address-autocomplete";
+import {
+  AddressAutocomplete,
+  type AddressComponents,
+} from "@repo/ui/address-autocomplete";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Switch } from "@/components/ui/switch";
+import { Slider } from "@/components/ui/slider";
 import {
   simulateCall,
   analyzeResearchPrompt,
@@ -21,8 +46,7 @@ import { usePhoneValidation } from "@/lib/hooks/usePhoneValidation";
 
 // Environment toggle for live VAPI calls vs simulated calls
 // Note: Test phone substitution is handled by backend (ADMIN_TEST_NUMBER in backend .env)
-const LIVE_CALL_ENABLED =
-  process.env.NEXT_PUBLIC_LIVE_CALL_ENABLED === "true";
+const LIVE_CALL_ENABLED = process.env.NEXT_PUBLIC_LIVE_CALL_ENABLED === "true";
 
 import {
   createServiceRequest,
@@ -47,7 +71,11 @@ export default function NewRequest() {
       zip: "",
     } as AddressComponents,
     criteria: "",
-    urgency: "within_2_days" as "immediate" | "within_24_hours" | "within_2_days" | "flexible",
+    urgency: "within_2_days" as
+      | "immediate"
+      | "within_24_hours"
+      | "within_2_days"
+      | "flexible",
     minRating: 4.5,
     preferredContact: "text" as "phone" | "text",
   });
@@ -119,7 +147,7 @@ export default function NewRequest() {
     // Helper to update both localStorage and database
     const updateStatus = async (
       status: "SEARCHING" | "CALLING" | "ANALYZING" | "COMPLETED" | "FAILED",
-      extras?: Partial<ServiceRequest>,
+      extras?: Partial<ServiceRequest>
     ) => {
       updateRequest(reqId, { status: status as RequestStatus, ...extras });
       try {
@@ -173,7 +201,7 @@ export default function NewRequest() {
         // Insert into database - returns records with generated UUIDs
         const dbProviders = await addProviders(providerInserts);
         console.log(
-          `[Concierge] Persisted ${dbProviders.length} providers to database with UUIDs`,
+          `[Concierge] Persisted ${dbProviders.length} providers to database with UUIDs`
         );
 
         // Map database records to local format, using database UUIDs as IDs
@@ -187,11 +215,15 @@ export default function NewRequest() {
           placeId: dbp.place_id || undefined, // Keep original Place ID for reference
         }));
       } catch (dbErr) {
-        console.error("[Concierge] Failed to persist providers to database:", dbErr);
+        console.error(
+          "[Concierge] Failed to persist providers to database:",
+          dbErr
+        );
         // Database persistence is critical - without UUIDs, call results can't be saved
         // and real-time subscriptions won't work. Fail with clear error.
         await updateStatus("FAILED", {
-          finalOutcome: "Database error: Unable to save provider information. Please try again.",
+          finalOutcome:
+            "Database error: Unable to save provider information. Please try again.",
         });
         await updateServiceRequest(reqId, {
           status: "FAILED",
@@ -230,11 +262,13 @@ export default function NewRequest() {
       const providersToCall = providers;
 
       console.log(
-        `[Concierge] Starting calls to ${providersToCall.length} providers`,
+        `[Concierge] Starting calls to ${providersToCall.length} providers`
       );
 
       // Generate context-aware prompts with Gemini
-      console.log('[Concierge] Generating context-aware prompts with Gemini...');
+      console.log(
+        "[Concierge] Generating context-aware prompts with Gemini..."
+      );
       let researchPrompt = null;
       try {
         researchPrompt = await analyzeResearchPrompt({
@@ -247,10 +281,15 @@ export default function NewRequest() {
           clientName: data.clientName,
         });
         if (researchPrompt) {
-          console.log(`[Concierge] Generated ${researchPrompt.serviceCategory} prompts for ${data.title}`);
+          console.log(
+            `[Concierge] Generated ${researchPrompt.serviceCategory} prompts for ${data.title}`
+          );
         }
       } catch (error) {
-        console.error('[Concierge] Failed to generate prompts, using defaults:', error);
+        console.error(
+          "[Concierge] Failed to generate prompts, using defaults:",
+          error
+        );
       }
 
       if (LIVE_CALL_ENABLED) {
@@ -264,7 +303,9 @@ export default function NewRequest() {
 
         for (const provider of providersToCall) {
           if (!provider.phone) {
-            console.warn(`[Concierge] Skipping ${provider.name}: no phone number`);
+            console.warn(
+              `[Concierge] Skipping ${provider.name}: no phone number`
+            );
             callLogs.push({
               timestamp: new Date().toISOString(),
               stepName: `Calling ${provider.name}`,
@@ -279,7 +320,7 @@ export default function NewRequest() {
 
           if (!isValidE164Phone(phoneToCall)) {
             console.warn(
-              `[Concierge] Skipping ${provider.name}: invalid phone ${provider.phone} -> ${phoneToCall}`,
+              `[Concierge] Skipping ${provider.name}: invalid phone ${provider.phone} -> ${phoneToCall}`
             );
             callLogs.push({
               timestamp: new Date().toISOString(),
@@ -307,10 +348,10 @@ export default function NewRequest() {
         // Make batch call if we have valid providers
         if (batchProviders.length > 0) {
           console.log(
-            `[Concierge] Starting BATCH call to ${batchProviders.length} providers via /api/v1/providers/batch-call-async...`,
+            `[Concierge] Starting BATCH call to ${batchProviders.length} providers via /api/v1/providers/batch-call-async...`
           );
           console.log(
-            `[Concierge] Providers: ${batchProviders.map(p => `${p.name} @ ${p.phone}`).join(", ")}`,
+            `[Concierge] Providers: ${batchProviders.map((p) => `${p.name} @ ${p.phone}`).join(", ")}`
           );
 
           // FIRE-AND-FORGET: Start batch call without waiting for completion
@@ -336,7 +377,8 @@ export default function NewRequest() {
               ? {
                   systemPrompt: researchPrompt.systemPrompt,
                   firstMessage: researchPrompt.firstMessage,
-                  closingScript: "Thank you so much for your time. Have a wonderful day!",
+                  closingScript:
+                    "Thank you so much for your time. Have a wonderful day!",
                 }
               : undefined,
           };
@@ -350,17 +392,25 @@ export default function NewRequest() {
             .then(async (response) => {
               if (response.status === 202) {
                 const result = await response.json();
-                console.log(`[Concierge] Calls accepted (execution: ${result.data?.executionId}). Providers queued:`, result.data?.providersQueued);
+                console.log(
+                  `[Concierge] Calls accepted (execution: ${result.data?.executionId}). Providers queued:`,
+                  result.data?.providersQueued
+                );
               } else {
                 // API error - update local state immediately (backend may also update via DB)
                 const errorText = await response.text();
-                console.error(`[Concierge] Failed to start async calls: ${response.status} - ${errorText}`);
+                console.error(
+                  `[Concierge] Failed to start async calls: ${response.status} - ${errorText}`
+                );
                 updateRequest(reqId, {
                   status: RequestStatus.FAILED,
                   finalOutcome: `Failed to initiate calls: ${response.status} - ${errorText}`,
                 });
                 // Also try to update database status
-                updateServiceRequest(reqId, { status: "FAILED", final_outcome: `API error: ${response.status}` }).catch(console.error);
+                updateServiceRequest(reqId, {
+                  status: "FAILED",
+                  final_outcome: `API error: ${response.status}`,
+                }).catch(console.error);
               }
             })
             .catch((error) => {
@@ -371,18 +421,23 @@ export default function NewRequest() {
                 finalOutcome: `Network error initiating calls: ${error.message || "Connection failed"}`,
               });
               // Also try to update database status
-              updateServiceRequest(reqId, { status: "FAILED", final_outcome: "Network error" }).catch(console.error);
+              updateServiceRequest(reqId, {
+                status: "FAILED",
+                final_outcome: "Network error",
+              }).catch(console.error);
             });
 
           // Add immediate feedback log - calls are now in progress
           const inProgressLog = {
             timestamp: new Date().toISOString(),
             stepName: "Calling Providers",
-            detail: `Initiated ${batchProviders.length} concurrent call${batchProviders.length > 1 ? 's' : ''}. Results will appear below as each call completes via real-time updates.`,
+            detail: `Initiated ${batchProviders.length} concurrent call${batchProviders.length > 1 ? "s" : ""}. Results will appear below as each call completes via real-time updates.`,
             status: "info" as const,
           };
           callLogs.push(inProgressLog);
-          console.log(`[Concierge] Batch call initiated for ${batchProviders.length} providers - UI will update via real-time subscriptions`);
+          console.log(
+            `[Concierge] Batch call initiated for ${batchProviders.length} providers - UI will update via real-time subscriptions`
+          );
         }
 
         // Update UI with all call results
@@ -395,7 +450,7 @@ export default function NewRequest() {
           const log = await simulateCall(
             provider.name,
             `${data.description}. Criteria: ${data.criteria}`,
-            false,
+            false
           );
           callLogs.push(log);
           updateRequest(reqId, {
@@ -410,13 +465,16 @@ export default function NewRequest() {
       // and triggers recommendations when all calls are done
 
       // Only check for immediate validation errors (skipped providers, invalid phones)
-      const immediateErrors = callLogs.filter((log) =>
-        log.status === "error" && !log.stepName.includes("Calling")
+      const immediateErrors = callLogs.filter(
+        (log) => log.status === "error" && !log.stepName.includes("Calling")
       );
 
-      if (immediateErrors.length > 0 && callLogs.length === immediateErrors.length) {
+      if (
+        immediateErrors.length > 0 &&
+        callLogs.length === immediateErrors.length
+      ) {
         // All logs are errors (e.g., all providers had invalid phones)
-        const outcome = `Could not initiate any calls:\n${immediateErrors.map(e => `- ${e.detail}`).join('\n')}`;
+        const outcome = `Could not initiate any calls:\n${immediateErrors.map((e) => `- ${e.detail}`).join("\n")}`;
         console.log(`[Concierge] Request failed - no valid providers to call`);
 
         updateRequest(reqId, {
@@ -433,7 +491,9 @@ export default function NewRequest() {
 
       // Calls are now running in background
       // Transition to ANALYZING - real-time subscriptions will update as calls complete
-      console.log(`[Concierge] Calls initiated, transitioning to ANALYZING. Real-time will handle results.`);
+      console.log(
+        `[Concierge] Calls initiated, transitioning to ANALYZING. Real-time will handle results.`
+      );
 
       // 3. Transition to ANALYZING - recommendations will be generated
       // when all calls complete (handled by real-time in request/[id]/page.tsx)
@@ -444,7 +504,9 @@ export default function NewRequest() {
         interactions: [searchLog, ...callLogs],
       });
 
-      console.log(`[Concierge] Request ${reqId} now in ANALYZING state. Waiting for calls to complete via real-time.`);
+      console.log(
+        `[Concierge] Request ${reqId} now in ANALYZING state. Waiting for calls to complete via real-time.`
+      );
       // The request/[id]/page.tsx checkAndGenerateRecommendations() will:
       // 1. Detect when all initiated calls have completed
       // 2. Call the /api/v1/providers/recommend endpoint
@@ -469,254 +531,264 @@ export default function NewRequest() {
   };
 
   return (
-    <div className="max-w-2xl mx-auto">
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold text-slate-100 flex items-center gap-3">
-          <Sparkles className="text-primary-400" />
-          New Research Request
-        </h1>
-        <p className="text-slate-400 mt-2">
-          Tell us what you need. We&apos;ll research local providers, call them
-          to verify details, and book the best one.
-        </p>
-      </div>
+    <div className="p-4 md:p-6 space-y-6">
+      <PageHeader
+        title="New Research Request"
+        description="Tell us what you need. We'll research local providers, call them to verify details, and book the best one."
+      />
 
-      <form
-        onSubmit={handleSubmit}
-        className="bg-surface p-8 rounded-2xl border border-surface-highlight shadow-xl space-y-6"
-      >
-        <div>
-          <label className="block text-sm font-semibold text-slate-300 mb-2">
-            Your Name
-          </label>
-          <div className="relative">
-            <User className="absolute left-3 top-3.5 w-5 h-5 text-slate-500" />
-            <input
-              type="text"
-              required
-              placeholder="e.g. John Smith"
-              className="w-full pl-10 pr-4 py-3 rounded-xl border border-surface-highlight focus:border-primary-500 focus:ring-2 focus:ring-primary-500/20 outline-none transition-all bg-abyss text-slate-100 placeholder-slate-600"
-              value={formData.clientName}
-              onChange={(e) => setFormData({ ...formData, clientName: e.target.value })}
-            />
+      <div className="max-w-2xl mx-auto">
+        <form
+          onSubmit={handleSubmit}
+          className="bg-surface p-8 rounded-2xl border border-surface-highlight shadow-xl space-y-6"
+        >
+          <div className="space-y-2">
+            <Label htmlFor="clientName">Your Name</Label>
+            <div className="relative">
+              <User className="absolute left-3 top-3.5 w-5 h-5 text-slate-500 z-10 pointer-events-none" />
+              <Input
+                id="clientName"
+                type="text"
+                required
+                placeholder="e.g. John Smith"
+                className="pl-10"
+                value={formData.clientName}
+                onChange={(e) =>
+                  setFormData({ ...formData, clientName: e.target.value })
+                }
+              />
+            </div>
+            <p className="text-xs text-slate-500">
+              The AI will introduce itself as your personal assistant
+            </p>
           </div>
-          <p className="text-xs text-slate-500 mt-1">The AI will introduce itself as your personal assistant</p>
-        </div>
 
-        <div>
-          <label className="block text-sm font-semibold text-slate-300 mb-2">
-            What service do you need?
-          </label>
-          <div className="relative">
-            <Search className="absolute left-3 top-3.5 w-5 h-5 text-slate-500" />
-            <input
-              type="text"
+          <div className="space-y-2">
+            <Label htmlFor="serviceTitle">What service do you need?</Label>
+            <div className="relative">
+              <Search className="absolute left-3 top-3.5 w-5 h-5 text-slate-500 z-10 pointer-events-none" />
+              <Input
+                id="serviceTitle"
+                type="text"
+                required
+                placeholder="e.g. Emergency Plumber, Dog Walker, Dentist"
+                className="pl-10"
+                value={formData.title}
+                onChange={(e) =>
+                  setFormData({ ...formData, title: e.target.value })
+                }
+              />
+            </div>
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="serviceAddress">
+              What is your service address?
+            </Label>
+            <div className="relative flex items-center">
+              <MapPin className="absolute left-3 w-5 h-5 text-slate-500 z-10 pointer-events-none" />
+              <AddressAutocomplete
+                value={formData.clientAddress.formatted}
+                onChange={(address) => {
+                  // Derive location for backward compatibility
+                  // Fall back to formatted address if city/state not available
+                  const cityState = [address.city, address.state]
+                    .filter(Boolean)
+                    .join(", ");
+                  const location = cityState || address.formatted;
+                  setFormData({
+                    ...formData,
+                    location,
+                    clientAddress: address,
+                  });
+                }}
+                placeholder="Start typing your address..."
+                className="w-full h-10 pl-10 px-3 py-2 rounded-lg border border-surface-highlight focus:border-primary-500 focus:ring-1 focus:ring-primary-500/30 outline-none transition-all bg-abyss text-sm text-slate-100"
+                required
+              />
+            </div>
+            <p className="text-xs text-slate-500">
+              Select from suggestions for accurate address
+            </p>
+          </div>
+
+          <div className="space-y-2">
+            <Label>How Urgent?</Label>
+            <Select
+              value={formData.urgency}
+              onValueChange={(value) =>
+                setFormData({
+                  ...formData,
+                  urgency: value as typeof formData.urgency,
+                })
+              }
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="Select urgency" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="immediate">Immediate (ASAP)</SelectItem>
+                <SelectItem value="within_24_hours">Within 24 hours</SelectItem>
+                <SelectItem value="within_2_days">Within 2 days</SelectItem>
+                <SelectItem value="flexible">Flexible timing</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div className="space-y-3">
+            <Label>Minimum Rating: {formData.minRating.toFixed(1)} stars</Label>
+            <Slider
+              min={0}
+              max={5}
+              step={0.5}
+              value={[formData.minRating]}
+              onValueChange={(value) =>
+                setFormData({ ...formData, minRating: value[0] ?? 4.5 })
+              }
+            />
+            <p className="text-xs text-slate-500">
+              Providers below this rating will be filtered out
+            </p>
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="description">Detailed Description</Label>
+            <Textarea
+              id="description"
               required
-              placeholder="e.g. Emergency Plumber, Dog Walker, Dentist"
-              className="w-full pl-10 pr-4 py-3 rounded-xl border border-surface-highlight focus:border-primary-500 focus:ring-2 focus:ring-primary-500/20 outline-none transition-all bg-abyss text-slate-100 placeholder-slate-600"
-              value={formData.title}
+              rows={4}
+              placeholder="Describe the issue in detail. e.g. I have a leaking toilet in the master bathroom that needs fixing ASAP."
+              value={formData.description}
               onChange={(e) =>
-                setFormData({ ...formData, title: e.target.value })
+                setFormData({ ...formData, description: e.target.value })
               }
             />
           </div>
-        </div>
 
-        <div>
-          <label className="block text-sm font-semibold text-slate-300 mb-2">
-            What is your service address?
-          </label>
-          <div className="relative flex items-center">
-            <MapPin className="absolute left-3 w-5 h-5 text-slate-500 z-10 pointer-events-none" />
-            <AddressAutocomplete
-              value={formData.clientAddress.formatted}
-              onChange={(address) => {
-                // Derive location for backward compatibility
-                // Fall back to formatted address if city/state not available
-                const cityState = [address.city, address.state].filter(Boolean).join(", ");
-                const location = cityState || address.formatted;
-                setFormData({
-                  ...formData,
-                  location,
-                  clientAddress: address,
-                });
-              }}
-              placeholder="Start typing your address..."
-              className="w-full pl-10 pr-4 py-3 rounded-xl border border-surface-highlight focus:border-primary-500 focus:ring-2 focus:ring-primary-500/20 outline-none transition-all bg-abyss text-slate-100 placeholder-slate-600"
-              required
+          {/* Preferred Contact Method */}
+          <div className="space-y-4">
+            <Label>How should we notify you of recommendations?</Label>
+            <br />
+            <SegmentedControl
+              className="mt-2"
+              options={[
+                {
+                  value: "text",
+                  label: "Text (SMS)",
+                  icon: <MessageSquare className="w-5 h-5" />,
+                },
+                {
+                  value: "phone",
+                  label: "Phone Call",
+                  icon: <PhoneCall className="w-5 h-5" />,
+                },
+              ]}
+              value={formData.preferredContact}
+              onChange={(value) =>
+                setFormData({ ...formData, preferredContact: value })
+              }
+              name="preferredContact"
+              aria-label="Preferred contact method"
             />
-          </div>
-          <p className="mt-1 text-xs text-slate-500">
-            Select from suggestions for accurate address
-          </p>
-        </div>
 
-        <div>
-          <label className="block text-sm font-semibold text-slate-300 mb-2">
-            How Urgent?
-          </label>
-          <select
-            value={formData.urgency}
-            onChange={(e) => setFormData({ ...formData, urgency: e.target.value as typeof formData.urgency })}
-            className="w-full px-4 py-3 rounded-xl border border-surface-highlight focus:border-primary-500 focus:ring-2 focus:ring-primary-500/20 outline-none transition-all bg-abyss text-slate-100"
-          >
-            <option value="immediate">Immediate (ASAP)</option>
-            <option value="within_24_hours">Within 24 hours</option>
-            <option value="within_2_days">Within 2 days</option>
-            <option value="flexible">Flexible timing</option>
-          </select>
-        </div>
-
-        <div>
-          <label className="block text-sm font-semibold text-slate-300 mb-2">
-            Minimum Rating: {formData.minRating.toFixed(1)} stars
-          </label>
-          <input
-            type="range"
-            min="0"
-            max="5"
-            step="0.5"
-            value={formData.minRating}
-            onChange={(e) => setFormData({ ...formData, minRating: parseFloat(e.target.value) })}
-            className="w-full h-2 bg-surface-highlight rounded-lg appearance-none cursor-pointer accent-primary-500"
-          />
-          <p className="text-xs text-slate-500 mt-1">Providers below this rating will be filtered out</p>
-        </div>
-
-        <div>
-          <label className="block text-sm font-semibold text-slate-300 mb-2">
-            Detailed Description
-          </label>
-          <textarea
-            required
-            rows={4}
-            placeholder="Describe the issue in detail. e.g. I have a leaking toilet in the master bathroom that needs fixing ASAP."
-            className="w-full px-4 py-3 rounded-xl border border-surface-highlight focus:border-primary-500 focus:ring-2 focus:ring-primary-500/20 outline-none transition-all resize-none bg-abyss text-slate-100 placeholder-slate-600"
-            value={formData.description}
-            onChange={(e) =>
-              setFormData({ ...formData, description: e.target.value })
-            }
-          />
-        </div>
-
-        {/* Preferred Contact Method */}
-        <div className="space-y-4">
-          <label className="block text-sm font-medium text-slate-300">
-            How should we notify you of recommendations?
-          </label>
-          <SegmentedControl
-            options={[
-              { value: "text", label: "Text (SMS)", icon: <MessageSquare className="w-5 h-5" /> },
-              { value: "phone", label: "Phone Call", icon: <PhoneCall className="w-5 h-5" /> },
-            ]}
-            value={formData.preferredContact}
-            onChange={(value) => setFormData({...formData, preferredContact: value})}
-            name="preferredContact"
-            aria-label="Preferred contact method"
-          />
-
-          {/* Phone Number Input */}
-          <div className="relative">
-            <Phone className={`absolute left-3 top-3.5 w-5 h-5 ${userPhoneValidation.error && userPhoneValidation.isTouched ? 'text-red-400' : 'text-slate-500'}`} />
-            <input
-              type="tel"
-              placeholder="Your phone number for notifications"
-              value={userPhoneValidation.value}
-              onChange={userPhoneValidation.onChange}
-              onBlur={userPhoneValidation.onBlur}
-              className={`w-full pl-10 pr-4 py-3 rounded-xl border ${
-                userPhoneValidation.error && userPhoneValidation.isTouched
-                  ? 'border-red-500 focus:border-red-500 focus:ring-red-500/20'
-                  : 'border-surface-highlight focus:border-primary-500 focus:ring-primary-500/20'
-              } focus:ring-2 outline-none transition-all bg-abyss text-slate-100 placeholder-slate-600`}
-            />
-            {userPhoneValidation.error && userPhoneValidation.isTouched && (
-              <p className="text-red-400 text-sm mt-1">{userPhoneValidation.error}</p>
-            )}
-            {userPhoneValidation.isValid && userPhoneValidation.normalized && (
-              <p className="text-emerald-400 text-sm mt-1">Valid: {userPhoneValidation.normalized}</p>
-            )}
-          </div>
-        </div>
-
-        <div>
-          <div className="flex items-center justify-between mb-2">
-            <label className="text-sm font-semibold text-slate-300">
-              Additional Criteria
-            </label>
-            <button
-              type="button"
-              onClick={() => setShowCriteriaInput(!showCriteriaInput)}
-              className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
-                showCriteriaInput ? "bg-primary-600" : "bg-slate-700"
-              }`}
-              role="switch"
-              aria-checked={showCriteriaInput}
-            >
-              <span
-                className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
-                  showCriteriaInput ? "translate-x-6" : "translate-x-1"
+            {/* Phone Number Input */}
+            <div className="relative">
+              <Phone
+                className={`absolute left-3 top-3.5 w-5 h-5 z-10 pointer-events-none ${userPhoneValidation.error && userPhoneValidation.isTouched ? "text-red-400" : "text-slate-500"}`}
+              />
+              <Input
+                type="tel"
+                placeholder="Your phone number for notifications"
+                value={userPhoneValidation.value}
+                onChange={userPhoneValidation.onChange}
+                onBlur={userPhoneValidation.onBlur}
+                className={`pl-10 ${
+                  userPhoneValidation.error && userPhoneValidation.isTouched
+                    ? "border-red-500 focus:border-red-500 focus:ring-red-500/20"
+                    : ""
                 }`}
               />
-            </button>
-          </div>
-          <p className="text-xs text-slate-500 mb-3">
-            Add specific requirements for the AI to ask providers about (e.g., licensing, availability, pricing)
-          </p>
-          {showCriteriaInput && (
-            <>
-              <div className="bg-blue-500/10 border border-blue-500/20 p-4 rounded-xl mb-3 flex items-start gap-3 text-sm text-blue-300">
-                <AlertCircle className="w-5 h-5 shrink-0 text-blue-400" />
-                <p>
-                  The AI will use these criteria when interviewing providers. Be
-                  specific about availability, pricing, or qualifications.
+              {userPhoneValidation.error && userPhoneValidation.isTouched && (
+                <p className="text-red-400 text-sm mt-1">
+                  {userPhoneValidation.error}
                 </p>
-              </div>
-              <input
-                type="text"
-                placeholder="e.g. licensed, accepts new patients, background check required"
-                className="w-full px-4 py-3 rounded-xl border border-surface-highlight focus:border-primary-500 focus:ring-2 focus:ring-primary-500/20 outline-none transition-all bg-abyss text-slate-100 placeholder-slate-600"
-                value={formData.criteria}
-                onChange={(e) =>
-                  setFormData({ ...formData, criteria: e.target.value })
-                }
-              />
-            </>
-          )}
-        </div>
-
-        {/* Error Message */}
-        {submitError && (
-          <div className="bg-red-500/10 border border-red-500/30 text-red-400 px-4 py-3 rounded-xl flex items-start gap-3">
-            <AlertCircle className="w-5 h-5 shrink-0 mt-0.5" />
-            <div className="flex-1">
-              <p className="font-medium">Request Failed</p>
-              <p className="text-sm text-red-400/80 mt-1">{submitError}</p>
+              )}
+              {userPhoneValidation.isValid &&
+                userPhoneValidation.normalized && (
+                  <p className="text-emerald-400 text-sm mt-1">
+                    Valid: {userPhoneValidation.normalized}
+                  </p>
+                )}
             </div>
-            <button
-              type="button"
-              onClick={() => setSubmitError(null)}
-              className="text-red-400/60 hover:text-red-400 transition-colors"
-            >
-              ×
-            </button>
           </div>
-        )}
 
-        <button
-          type="submit"
-          disabled={isSubmitting || !isFormValid}
-          className="w-full py-4 bg-primary-600 hover:bg-primary-500 text-white font-bold rounded-xl shadow-lg shadow-primary-500/20 transition-all transform active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
-        >
-          {isSubmitting ? (
-            <>Processing...</>
-          ) : (
-            <>
-              Start Research & Booking <Sparkles className="w-5 h-5" />
-            </>
+          <div className="space-y-3">
+            <div className="flex items-center justify-between">
+              <Label htmlFor="criteriaSwitch">Additional Criteria</Label>
+              <Switch
+                id="criteriaSwitch"
+                checked={showCriteriaInput}
+                onCheckedChange={setShowCriteriaInput}
+              />
+            </div>
+            <p className="text-xs text-slate-500">
+              Add specific requirements for the AI to ask providers about (e.g.,
+              licensing, availability, pricing)
+            </p>
+            {showCriteriaInput && (
+              <>
+                <div className="bg-blue-500/10 border border-blue-500/20 p-4 rounded-xl flex items-start gap-3 text-sm text-blue-300">
+                  <AlertCircle className="w-5 h-5 shrink-0 text-blue-400" />
+                  <p>
+                    The AI will use these criteria when interviewing providers.
+                    Be specific about availability, pricing, or qualifications.
+                  </p>
+                </div>
+                <Input
+                  type="text"
+                  placeholder="e.g. licensed, accepts new patients, background check required"
+                  value={formData.criteria}
+                  onChange={(e) =>
+                    setFormData({ ...formData, criteria: e.target.value })
+                  }
+                />
+              </>
+            )}
+          </div>
+
+          {/* Error Message */}
+          {submitError && (
+            <div className="bg-red-500/10 border border-red-500/30 text-red-400 px-4 py-3 rounded-xl flex items-start gap-3">
+              <AlertCircle className="w-5 h-5 shrink-0 mt-0.5" />
+              <div className="flex-1">
+                <p className="font-medium">Request Failed</p>
+                <p className="text-sm text-red-400/80 mt-1">{submitError}</p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setSubmitError(null)}
+                className="text-red-400/60 hover:text-red-400 transition-colors"
+              >
+                ×
+              </button>
+            </div>
           )}
-        </button>
-      </form>
+
+          <button
+            type="submit"
+            disabled={isSubmitting || !isFormValid}
+            className="w-full py-4 bg-primary-600 hover:bg-primary-500 text-white font-bold rounded-xl shadow-lg shadow-primary-500/20 transition-all transform active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+          >
+            {isSubmitting ? (
+              <>Processing...</>
+            ) : (
+              <>
+                Start Research & Booking <Sparkles className="w-5 h-5" />
+              </>
+            )}
+          </button>
+        </form>
+      </div>
     </div>
   );
 }
