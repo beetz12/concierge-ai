@@ -4,6 +4,24 @@
 
 The VAPI calling system has undergone significant architectural improvements implementing DRY principles and intelligent call handling:
 
+### Frontend Real-Time Subscription Fixes (December 12, 2025)
+
+**Provider Subscription Event Type Fix**:
+- **Before**: Provider subscription listened only to `UPDATE` events
+- **After**: Provider subscription now listens to `*` (all events including INSERT)
+- **Impact**: Providers now appear immediately after research completes, not just after call updates
+- **File**: `apps/web/app/request/[id]/page.tsx` (line 508)
+
+**Status Timing Fix**:
+- **Before**: Status updated to `ANALYZING` immediately after Kestra execution, before polling confirmed completion
+- **After**: Status updated to `ANALYZING` only after polling confirms all providers have completed calls
+- **Impact**: UI no longer shows "Analyzing..." while calls are still in progress
+- **File**: `apps/api/src/routes/providers.ts` (lines 708-950)
+
+**Timeout Error Handling**:
+- **New**: If polling times out (30 seconds), status is set to `FAILED` with error message
+- **Impact**: Users see accurate status instead of being stuck on intermediate states
+
 ### Key Changes:
 
 1. **Single Source of Truth (DRY Principle)**
@@ -1558,18 +1576,29 @@ POST /batch-call-async (202 Accepted)
            ↓
   Poll DB every 2s for all providers to complete (max 30s)
            ↓
-  Transform provider data → CallResult format
-           ↓
-  Trigger Kestra recommend_providers OR Direct Gemini
-           ↓
-  Update status: ANALYZING → RECOMMENDED
+  ┌─────────────────────────────────────────┐
+  │  If ALL providers complete:             │
+  │    1. Update status → ANALYZING         │
+  │    2. Transform provider data           │
+  │    3. Generate recommendations          │
+  │    4. Update status → RECOMMENDED       │
+  ├─────────────────────────────────────────┤
+  │  If polling TIMES OUT (30s):            │
+  │    Update status → FAILED               │
+  │    Set final_outcome error message      │
+  └─────────────────────────────────────────┘
            ↓
   Supabase Realtime broadcasts to frontend
 ```
 
+**Critical Status Timing (December 2025 Fix)**:
+- Status is updated to `ANALYZING` **only AFTER** polling confirms all providers have completed
+- This prevents the UI from showing "Analyzing..." while calls are still in progress
+- If polling times out after 30 seconds, status is set to `FAILED` with error message
+
 #### Implementation Details
 
-**Location**: `apps/api/src/routes/providers.ts` (lines 708-926)
+**Location**: `apps/api/src/routes/providers.ts` (lines 708-950)
 
 **Trigger Conditions**:
 - Activated when `batchResult.resultsInDatabase === true`
@@ -1577,11 +1606,18 @@ POST /batch-call-async (202 Accepted)
 
 **Key Steps**:
 
-1. **Status Update to ANALYZING** - Immediately updates service request status
-2. **Poll for Completion** - Polls database every 2 seconds (max 15 attempts = 30 seconds)
-3. **Transform Provider Data** - Converts DB provider records to CallResult format
-4. **Generate Recommendations** - Kestra workflow (primary) or Direct Gemini (fallback)
-5. **Status Update to RECOMMENDED** - Only if recommendations generated successfully
+1. **Poll for Completion** - Polls database every 2 seconds (max 15 attempts = 30 seconds)
+2. **Check All Providers Complete** - Waits for all `call_status` to be in final state (completed, failed, error, timeout)
+3. **Status Update to ANALYZING** - **Only after** all providers confirmed complete (December 2025 fix)
+4. **Transform Provider Data** - Converts DB provider records to CallResult format
+5. **Generate Recommendations** - Kestra workflow (primary) or Direct Gemini (fallback)
+6. **Status Update to RECOMMENDED** - Only if recommendations generated successfully
+
+**Timeout Handling**:
+- If polling exhausts 15 attempts (30 seconds) without all providers completing:
+  - Status updated to `FAILED`
+  - `final_outcome` set to "Provider calls timed out after 30 seconds without completing"
+  - Background process exits early
 
 **Benefits**:
 - **Automatic**: No frontend logic to determine when to trigger recommendations
@@ -1635,7 +1671,7 @@ Database Change → PostgreSQL Trigger → pg_notify() → Supabase Realtime Ser
 | Table | Event | Filter | Purpose |
 |-------|-------|--------|---------|
 | `service_requests` | `*` (all) | `id=eq.${id}` | Status changes (ANALYZING → RECOMMENDED) |
-| `providers` | `UPDATE` | `request_id=eq.${id}` | Call results, status updates |
+| `providers` | `*` (all) | `request_id=eq.${id}` | INSERT: new providers from research, UPDATE: call results |
 
 **Code Example**:
 ```typescript
@@ -1651,13 +1687,19 @@ const channel = supabase
     setRealtimeRequest(payload.new);
   })
   .on("postgres_changes", {
-    event: "UPDATE",
+    event: "*",  // Listen to INSERT, UPDATE, DELETE
     schema: "public",
     table: "providers",
     filter: `request_id=eq.${id}`
   }, (payload) => {
-    // Triggers when call_result, call_status updated
-    updateProviderInState(payload.new);
+    // INSERT: New providers added after research completes
+    // UPDATE: Call results saved after VAPI calls complete
+    if (payload.eventType === "INSERT") {
+      // Refetch all providers to ensure correct ordering
+      refetchProviders();
+    } else if (payload.eventType === "UPDATE") {
+      updateProviderInState(payload.new);
+    }
   })
   .subscribe();
 ```

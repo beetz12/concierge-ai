@@ -95,6 +95,7 @@ export interface ServiceRequest {
   };
   preferredContact?: "phone" | "text";
   userPhone?: string;
+  notificationSentAt?: string;
 }
 
 /**

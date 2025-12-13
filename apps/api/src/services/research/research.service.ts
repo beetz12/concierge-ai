@@ -7,6 +7,8 @@
 import { KestraResearchClient } from "./kestra-research.client.js";
 import { DirectResearchClient } from "./direct-research.client.js";
 import { ProviderEnrichmentService } from "./enrichment.service.js";
+import { normalizePhoneToE164 } from "../../utils/phone.js";
+import { serializeError } from "../../utils/error.js";
 import type { ResearchRequest, ResearchResult, SystemStatus } from "./types.js";
 
 interface Logger {
@@ -58,7 +60,7 @@ export class ResearchService {
       }
     } catch (error) {
       this.logger.error(
-        { error, request },
+        { error: serializeError(error), request },
         "Research failed, attempting fallback",
       );
 
@@ -68,7 +70,7 @@ export class ResearchService {
 
       if (kestraEnabled && wasUsingKestra) {
         this.logger.error(
-          { error },
+          { error: serializeError(error) },
           "Kestra failed with KESTRA_ENABLED=true - not falling back to preserve error visibility",
         );
         throw error;
@@ -100,7 +102,7 @@ export class ResearchService {
         }
       } catch (fallbackError) {
         this.logger.error(
-          { error: fallbackError },
+          { error: serializeError(fallbackError) },
           "Fallback research also failed",
         );
 
@@ -115,8 +117,14 @@ export class ResearchService {
     }
 
     // Enrich results with additional details (phone numbers, hours, etc.)
-    if (result.status !== "error" && result.providers.length > 0) {
+    // Skip enrichment for Kestra results - they don't have placeId but already have phone data
+    if (result.status !== "error" && result.providers.length > 0 && result.method !== "kestra") {
       result = await this.enrichResults(result, request);
+    }
+
+    // Normalize phone numbers to E.164 format for VAPI compatibility (applies to all methods)
+    if (result.status !== "error") {
+      result = this.normalizePhoneNumbers(result);
     }
 
     return result;
@@ -150,7 +158,7 @@ export class ResearchService {
       };
     } catch (error) {
       this.logger.error(
-        { error },
+        { error: serializeError(error) },
         "Enrichment failed, returning unenriched results"
       );
       return result;
@@ -158,63 +166,46 @@ export class ResearchService {
   }
 
   /**
+   * Normalize phone numbers to E.164 format for VAPI compatibility
+   * Converts formats like (864) 555-1234 to +18645551234
+   */
+  private normalizePhoneNumbers(result: ResearchResult): ResearchResult {
+    const normalizedProviders = result.providers.map((provider) => ({
+      ...provider,
+      phone: normalizePhoneToE164(provider.phone) || provider.phone,
+    }));
+
+    return {
+      ...result,
+      providers: normalizedProviders,
+    };
+  }
+
+  /**
    * Determine if Kestra should be used for research
+   * NOTE: Kestra research is currently disabled - always use Direct Gemini API
    */
   async shouldUseKestra(): Promise<boolean> {
-    // Check environment variable
-    const kestraEnabled = process.env.KESTRA_ENABLED === "true";
-
-    if (!kestraEnabled) {
-      this.logger.debug({}, "Kestra disabled via KESTRA_ENABLED env var");
-      return false;
-    }
-
-    // Check if Kestra URL is configured
-    const kestraUrl = process.env.KESTRA_URL;
-    if (!kestraUrl) {
-      this.logger.debug({}, "Kestra URL not configured");
-      return false;
-    }
-
-    // Check Kestra health
-    try {
-      const healthy = await this.kestraClient.healthCheck();
-      this.logger.debug({ healthy }, "Kestra health check result");
-      return healthy;
-    } catch (error) {
-      // STRICT MODE: Re-throw error so strict mode check can be triggered
-      // This ensures KESTRA_ENABLED=true actually enforces Kestra usage
-      this.logger.error({ error }, "Kestra health check failed");
-      throw error;
-    }
+    // Kestra research disabled - always use Direct Gemini API
+    // This bypasses all Kestra health checks and polling
+    this.logger.info({}, "Kestra research disabled - using Direct Gemini API");
+    return false;
   }
 
   /**
    * Get system status for diagnostics
+   * NOTE: Kestra research is disabled - always reports direct_gemini
    */
   async getSystemStatus(): Promise<SystemStatus> {
-    const kestraEnabled = process.env.KESTRA_ENABLED === "true";
-    const kestraUrl = process.env.KESTRA_URL || null;
     const geminiConfigured = !!process.env.GEMINI_API_KEY;
 
-    let kestraHealthy = false;
-    if (kestraEnabled && kestraUrl) {
-      try {
-        kestraHealthy = await this.kestraClient.healthCheck();
-      } catch (error) {
-        this.logger.debug({ error }, "Health check failed during status check");
-      }
-    }
-
-    const activeResearchMethod: "kestra" | "direct_gemini" =
-      kestraEnabled && kestraHealthy ? "kestra" : "direct_gemini";
-
+    // Kestra research is disabled - always use Direct Gemini
     return {
-      kestraEnabled,
-      kestraUrl,
-      kestraHealthy,
+      kestraEnabled: false,
+      kestraUrl: null,
+      kestraHealthy: false,
       geminiConfigured,
-      activeResearchMethod,
+      activeResearchMethod: "direct_gemini",
     };
   }
 }

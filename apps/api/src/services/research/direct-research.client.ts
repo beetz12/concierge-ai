@@ -6,6 +6,7 @@
 
 import { GoogleGenAI } from "@google/genai";
 import { GooglePlacesService } from "../places/google-places.service.js";
+import { serializeError } from "../../utils/error.js";
 import type { ResearchRequest, ResearchResult, Provider } from "./types.js";
 
 interface Logger {
@@ -87,7 +88,7 @@ export class DirectResearchClient {
       );
     } catch (error) {
       this.logger.warn(
-        { error },
+        { error: serializeError(error) },
         "Google Places API not available, will use Maps grounding fallback",
       );
     }

@@ -12,6 +12,7 @@ import type {
   KestraExecutionStatus,
   KestraResearchOutput,
 } from "./types.js";
+import { serializeError } from "../../utils/error.js";
 
 interface Logger {
   info: (obj: Record<string, unknown>, msg?: string) => void;
@@ -123,7 +124,7 @@ export class KestraResearchClient {
       });
       return response.status === 200;
     } catch (error) {
-      this.logger.error({ error }, "Kestra health check failed");
+      this.logger.error({ error: serializeError(error) }, "Kestra health check failed");
       return false;
     }
   }
@@ -152,7 +153,7 @@ export class KestraResearchClient {
       return this.parseExecutionResult(finalState, request);
     } catch (error) {
       this.logger.error(
-        { error, service: request.service },
+        { error: serializeError(error), service: request.service },
         "Kestra research flow failed",
       );
       // Throw to surface error when KESTRA_ENABLED=true - let ResearchService handle
@@ -243,6 +244,59 @@ export class KestraResearchClient {
   }
 
   /**
+   * Extract JSON from text that may contain markdown code fences and preamble text
+   * Handles:
+   *   - ```json\n{...}\n```
+   *   - ```\n{...}\n```
+   *   - "Some text...\n\n```json\n{...}\n```"  (text before fence)
+   *   - Raw JSON without fences
+   */
+  private extractJsonFromText(text: string): string {
+    const trimmed = text.trim();
+
+    // Find the start of a JSON code fence (```json or ```)
+    const jsonFenceMatch = trimmed.match(/```(?:json)?\s*\n/);
+    if (jsonFenceMatch && jsonFenceMatch.index !== undefined) {
+      // Extract content after the opening fence
+      const startIndex = jsonFenceMatch.index + jsonFenceMatch[0].length;
+      let content = trimmed.slice(startIndex);
+
+      // Remove closing fence
+      const closingFenceIndex = content.lastIndexOf("```");
+      if (closingFenceIndex !== -1) {
+        content = content.slice(0, closingFenceIndex);
+      }
+
+      return content.trim();
+    }
+
+    // No code fence found - try to extract raw JSON object/array
+    // Look for first { or [ and last } or ]
+    const jsonStartObj = trimmed.indexOf("{");
+    const jsonStartArr = trimmed.indexOf("[");
+    const jsonStart =
+      jsonStartObj === -1
+        ? jsonStartArr
+        : jsonStartArr === -1
+          ? jsonStartObj
+          : Math.min(jsonStartObj, jsonStartArr);
+
+    if (jsonStart !== -1) {
+      const isObject = trimmed[jsonStart] === "{";
+      const jsonEnd = isObject
+        ? trimmed.lastIndexOf("}")
+        : trimmed.lastIndexOf("]");
+
+      if (jsonEnd > jsonStart) {
+        return trimmed.slice(jsonStart, jsonEnd + 1);
+      }
+    }
+
+    // Return as-is if no JSON structure found
+    return trimmed;
+  }
+
+  /**
    * Parse Kestra execution result into ResearchResult format
    */
   private parseExecutionResult(
@@ -252,7 +306,27 @@ export class KestraResearchClient {
     // Kestra outputs are in state.outputs.json (from flow output)
     const rawOutput = state.outputs?.json;
 
+    this.logger.debug(
+      {
+        executionId: state.id,
+        stateStatus: state.state.current,
+        hasOutputs: !!state.outputs,
+        outputKeys: state.outputs ? Object.keys(state.outputs) : [],
+        rawOutputType: typeof rawOutput,
+        rawOutputLength: typeof rawOutput === "string" ? rawOutput.length : 0,
+        rawOutputPreview: typeof rawOutput === "string" ? rawOutput.slice(0, 200) : String(rawOutput),
+      },
+      "Parsing Kestra execution result",
+    );
+
     if (!rawOutput || state.state.current !== "SUCCESS") {
+      this.logger.warn(
+        {
+          rawOutputExists: !!rawOutput,
+          stateStatus: state.state.current,
+        },
+        "Kestra execution has no output or failed",
+      );
       return {
         status: "error",
         method: "kestra",
@@ -264,26 +338,66 @@ export class KestraResearchClient {
       };
     }
 
-    // Parse the JSON output from research flow
-    const parsed: KestraResearchOutput =
-      typeof rawOutput === "string" ? JSON.parse(rawOutput) : rawOutput;
+    try {
+      // Parse the JSON output from research flow
+      // Extract JSON from text that may have preamble text and/or markdown code fences
+      // Gemini often returns: "Here's the list...\n\n```json\n{...}\n```"
+      const cleanOutput = typeof rawOutput === "string"
+        ? this.extractJsonFromText(rawOutput)
+        : rawOutput;
 
-    // Normalize providers
-    const providers: Provider[] = (parsed.providers || []).map((p, index) => ({
-      id: `kestra-${Date.now()}-${index}`,
-      name: p.name,
-      phone: p.phone,
-      rating: p.rating,
-      address: p.address,
-      reason: p.reason,
-      source: "kestra" as const,
-    }));
+      this.logger.debug(
+        {
+          cleanOutputType: typeof cleanOutput,
+          cleanOutputLength: typeof cleanOutput === "string" ? cleanOutput.length : 0,
+          cleanOutputPreview: typeof cleanOutput === "string" ? cleanOutput.slice(0, 200) : String(cleanOutput),
+        },
+        "Extracted JSON from Kestra output",
+      );
 
-    return {
-      status: "success",
-      method: "kestra",
-      providers,
-      reasoning: `Found ${providers.length} providers via Kestra research flow`,
-    };
+      const parsed: KestraResearchOutput =
+        typeof cleanOutput === "string" ? JSON.parse(cleanOutput) : cleanOutput;
+
+      this.logger.debug(
+        {
+          providersCount: parsed.providers?.length || 0,
+          hasProviders: !!parsed.providers,
+          parsedKeys: Object.keys(parsed),
+        },
+        "Parsed Kestra output successfully",
+      );
+
+      // Normalize providers
+      const providers: Provider[] = (parsed.providers || []).map((p, index) => ({
+        id: `kestra-${Date.now()}-${index}`,
+        name: p.name,
+        phone: p.phone,
+        rating: p.rating,
+        address: p.address,
+        reason: p.reason,
+        source: "kestra" as const,
+      }));
+
+      return {
+        status: "success",
+        method: "kestra",
+        providers,
+        reasoning: `Found ${providers.length} providers via Kestra research flow`,
+      };
+    } catch (parseError) {
+      this.logger.error(
+        {
+          error: serializeError(parseError),
+          rawOutputPreview: typeof rawOutput === "string" ? rawOutput.slice(0, 500) : String(rawOutput),
+        },
+        "Failed to parse Kestra execution output",
+      );
+      return {
+        status: "error",
+        method: "kestra",
+        providers: [],
+        error: `Failed to parse Kestra output: ${parseError instanceof Error ? parseError.message : String(parseError)}`,
+      };
+    }
   }
 }
