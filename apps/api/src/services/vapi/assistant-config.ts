@@ -8,6 +8,15 @@ import type { CallRequest } from "./types.js";
 import type { GeneratedPrompt } from "../direct-task/types.js";
 
 /**
+ * Check if advanced screening mode is enabled
+ * When false (default), agent only asks availability + rate for quick demos
+ * When true, agent asks all criteria questions for thorough vetting
+ */
+function isAdvancedScreeningEnabled(): boolean {
+  return process.env.VAPI_ADVANCED_SCREENING === "true";
+}
+
+/**
  * Detects if this is a Direct Task (user wants AI to perform an action)
  * vs a Research & Book request (searching for service providers)
  */
@@ -486,6 +495,7 @@ If you detect voicemail (automated greeting, "leave a message", beep), immediate
   // FALLBACK: Original template-based approach
   const urgencyText = request.urgency.replace(/_/g, " ");
   const clientName = request.clientName || "my client";
+  const advancedScreening = isAdvancedScreeningEnabled();
 
   // Build address section based on what we have
   const addressSection = request.clientAddress
@@ -565,7 +575,7 @@ Standard questions:
      * "December 18th, morning appointment at 9am"
      * "Tomorrow at 10:30am"
 2. Rates: "What would your rate be for this type of work?"
-
+${advancedScreening ? `
 Client-specific requirements (ask about each ONE AT A TIME):
 ${request.userCriteria}
 
@@ -575,7 +585,10 @@ When asking about these requirements, ALWAYS refer to THE SAME PERSON:
 - Keep referring back: "The technician you mentioned - are they also [requirement]?"
 
 DO NOT ask questions that are not in the criteria above.
-DO NOT ask about licensing/certification unless it's in the criteria.
+DO NOT ask about licensing/certification unless it's in the criteria.` : `
+IMPORTANT: This is a quick screening call for a demo.
+DO NOT ask any additional questions beyond availability and rates.
+After getting availability and rate, proceed directly to the closing script.`}
 
 ═══════════════════════════════════════════════════════════════════
 VOICEMAIL / ANSWERING MACHINE DETECTION
@@ -631,7 +644,7 @@ CONVERSATION FLOW
      * DO NOT accept vague answers - ${clientName} needs an exact date and time
 
 3. RATES: "What would your typical rate be?"
-
+${advancedScreening ? `
 4. CLIENT REQUIREMENTS: Ask about each requirement ONE AT A TIME
    - Always reference the SAME person
    - Use phrases like: "And this person - are they also..."
@@ -645,7 +658,10 @@ CONVERSATION FLOW
 
    IF provider is disqualified:
    Say: "Thank you so much for taking the time to chat. Unfortunately, it sounds like this particular request might not be the best fit for ${clientName} right now, but I really appreciate your help. Have a wonderful day!"
-   Then IMMEDIATELY invoke endCall.
+   Then IMMEDIATELY invoke endCall.` : `
+4. CLOSING (IMMEDIATELY after getting rate - DO NOT ask more questions):
+   Say: "Thank you so much for that information! I'll share this with ${clientName} and if they'd like to proceed, they'll reach out to schedule. Have a wonderful day!"
+   Then IMMEDIATELY invoke endCall.`}
 
 ═══════════════════════════════════════════════════════════════════
 ENDING THE CALL - MANDATORY CLOSING SCRIPTS
@@ -654,7 +670,7 @@ WHILE GATHERING INFORMATION (before your farewell):
 - If provider is mid-sentence, let them finish
 - If they mention a price, wait for full context (e.g., "$100... for emergency work")
 - Don't cut them off while they're giving you information
-
+${advancedScreening ? `
 MANDATORY: When ready to end the call, you MUST say one of these EXACT phrases VERBATIM:
 
 IF provider meets ALL criteria, say this EXACT phrase:
@@ -663,7 +679,16 @@ IF provider meets ALL criteria, say this EXACT phrase:
 IF provider is disqualified, say this EXACT phrase:
 "Thank you so much for taking the time to chat. Unfortunately, it sounds like this particular request might not be the best fit for ${clientName} right now, but I really appreciate your help. Have a wonderful day!"
 
-DO NOT paraphrase. DO NOT shorten. Say the COMPLETE phrase, then IMMEDIATELY invoke endCall.
+DO NOT paraphrase. DO NOT shorten. Say the COMPLETE phrase, then IMMEDIATELY invoke endCall.` : `
+MANDATORY: After getting availability and rate, you MUST say this EXACT phrase VERBATIM:
+
+"Thank you so much for that information! I'll share this with ${clientName} and if they'd like to proceed, they'll reach out to schedule. Have a wonderful day!"
+
+CRITICAL RULES:
+- DO NOT ask any additional questions after getting availability and rate
+- Say the EXACT phrase above word-for-word
+- Then IMMEDIATELY invoke endCall
+- DO NOT paraphrase or shorten the closing phrase`}
 
 ═══════════════════════════════════════════════════════════════════
 TONE

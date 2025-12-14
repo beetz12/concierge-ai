@@ -1,4 +1,10 @@
-import "dotenv/config";
+// Load .env file only in development - Railway provides env vars directly
+// This prevents any potential conflicts with Railway's environment injection
+if (process.env.NODE_ENV !== "production") {
+  // Dynamic import to avoid loading dotenv in production
+  await import("dotenv/config");
+}
+
 import Fastify from "fastify";
 import cors from "@fastify/cors";
 import helmet from "@fastify/helmet";
@@ -14,6 +20,78 @@ import vapiWebhookRoutes from "./routes/vapi-webhook.js";
 import notificationRoutes from "./routes/notifications.js";
 import twilioWebhookRoutes from "./routes/twilio-webhook.js";
 import bookingRoutes from "./routes/bookings.js";
+
+// =============================================================================
+// Environment Variable Validation and Logging
+// This runs at startup to catch configuration issues early in Railway
+// =============================================================================
+
+const ENV_VALIDATION = {
+  // Critical - app won't work without these
+  critical: [
+    "SUPABASE_URL",
+    "SUPABASE_SERVICE_ROLE_KEY",
+    "GEMINI_API_KEY",
+  ],
+  // Important for full functionality
+  important: [
+    "VAPI_API_KEY",
+    "VAPI_PHONE_NUMBER_ID",
+  ],
+  // Optional services (Twilio for SMS)
+  optional: [
+    { name: "TWILIO_ACCOUNT_SID", description: "Twilio Account SID for SMS" },
+    { name: "TWILIO_AUTH_TOKEN", description: "Twilio Auth Token for SMS" },
+    { name: "TWILIO_PHONE_NUMBER", alt: "TWILIO_PHONE_NO", description: "Twilio phone number for SMS" },
+  ],
+};
+
+// Log environment configuration at startup
+console.log("=".repeat(60));
+console.log("AI Concierge API - Environment Configuration");
+console.log("=".repeat(60));
+console.log(`NODE_ENV: ${process.env.NODE_ENV || "development"}`);
+console.log(`PORT: ${process.env.PORT || "8000"}`);
+console.log("-".repeat(60));
+
+// Check critical vars
+let criticalMissing = false;
+for (const varName of ENV_VALIDATION.critical) {
+  const exists = !!process.env[varName];
+  console.log(`[CRITICAL] ${varName}: ${exists ? "✓ SET" : "✗ MISSING"}`);
+  if (!exists) criticalMissing = true;
+}
+
+// Check important vars
+for (const varName of ENV_VALIDATION.important) {
+  const exists = !!process.env[varName];
+  console.log(`[IMPORTANT] ${varName}: ${exists ? "✓ SET" : "⚠ MISSING"}`);
+}
+
+// Check optional vars (with alternatives)
+console.log("-".repeat(60));
+console.log("SMS Configuration (Twilio):");
+for (const opt of ENV_VALIDATION.optional) {
+  const primary = process.env[opt.name];
+  const alt = opt.alt ? process.env[opt.alt] : undefined;
+  const exists = !!(primary || alt);
+  const source = primary ? opt.name : alt ? opt.alt : "none";
+  console.log(`  ${opt.name}: ${exists ? `✓ SET (via ${source})` : "✗ MISSING"}`);
+}
+
+console.log("=".repeat(60));
+
+if (criticalMissing) {
+  console.error("ERROR: Critical environment variables are missing!");
+  console.error("The application may not function correctly.");
+  // Don't exit in production - let it run and fail gracefully
+  if (process.env.NODE_ENV !== "production") {
+    console.error("Exiting due to missing critical configuration in development.");
+    process.exit(1);
+  }
+}
+
+// =============================================================================
 
 const server = Fastify({
   logger: {

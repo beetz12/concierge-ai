@@ -2,6 +2,11 @@
  * Direct Twilio Client
  * Makes direct API calls to Twilio without Kestra orchestration
  * Used as fallback when Kestra is unavailable (e.g., in Railway production)
+ *
+ * IMPORTANT: Uses lazy initialization pattern for Railway compatibility.
+ * Environment variables are read at request time, not construction time,
+ * to handle Railway's containerized environment where env vars may not
+ * be available during module initialization.
  */
 
 import twilio from "twilio";
@@ -50,34 +55,97 @@ interface ConfirmationRequest {
   serviceDescription?: string;
 }
 
+/**
+ * Internal configuration interface for lazy-loaded credentials
+ */
+interface TwilioConfig {
+  accountSid: string | undefined;
+  authToken: string | undefined;
+  fromNumber: string;
+  isConfigured: boolean;
+}
+
 export class DirectTwilioClient {
+  // Client is lazily initialized on first use
   private client: twilio.Twilio | null = null;
-  private fromNumber: string;
-  private isConfigured: boolean;
+  private lastConfig: TwilioConfig | null = null;
 
   constructor(private logger: Logger) {
-    const accountSid = process.env.TWILIO_ACCOUNT_SID;
-    const authToken = process.env.TWILIO_AUTH_TOKEN;
-    this.fromNumber = process.env.TWILIO_PHONE_NUMBER || "";
-
-    this.isConfigured = !!(accountSid && authToken && this.fromNumber);
-
-    if (this.isConfigured) {
-      this.client = twilio(accountSid, authToken);
-      this.logger.info({}, "DirectTwilioClient initialized");
-    } else {
-      this.logger.warn(
-        {},
-        "Twilio credentials not configured - SMS sending disabled"
-      );
-    }
+    // NOTE: We intentionally do NOT read env vars here.
+    // This is the lazy initialization pattern for Railway compatibility.
+    // Env vars are read at request time via getConfig().
+    this.logger.debug({}, "DirectTwilioClient constructed (lazy init)");
   }
 
   /**
-   * Check if Twilio is properly configured
+   * Get Twilio configuration from environment variables.
+   * Called at request time to ensure Railway env vars are available.
+   * Supports both TWILIO_PHONE_NUMBER and TWILIO_PHONE_NO for compatibility.
+   */
+  private getConfig(): TwilioConfig {
+    const accountSid = process.env.TWILIO_ACCOUNT_SID;
+    const authToken = process.env.TWILIO_AUTH_TOKEN;
+    // Support both variable names for compatibility
+    const fromNumber = process.env.TWILIO_PHONE_NUMBER || process.env.TWILIO_PHONE_NO || "";
+
+    const isConfigured = !!(accountSid && authToken && fromNumber);
+
+    return {
+      accountSid,
+      authToken,
+      fromNumber,
+      isConfigured,
+    };
+  }
+
+  /**
+   * Get or create Twilio client with current environment configuration.
+   * Uses lazy initialization - client is created on first request.
+   */
+  private getClient(): twilio.Twilio | null {
+    const config = this.getConfig();
+
+    // Log configuration status (helpful for debugging Railway issues)
+    if (!this.lastConfig || this.lastConfig.isConfigured !== config.isConfigured) {
+      this.logger.info(
+        {
+          isConfigured: config.isConfigured,
+          hasAccountSid: !!config.accountSid,
+          hasAuthToken: !!config.authToken,
+          hasFromNumber: !!config.fromNumber,
+          fromNumberSource: process.env.TWILIO_PHONE_NUMBER
+            ? "TWILIO_PHONE_NUMBER"
+            : process.env.TWILIO_PHONE_NO
+              ? "TWILIO_PHONE_NO"
+              : "none",
+        },
+        config.isConfigured
+          ? "DirectTwilioClient: Credentials configured successfully"
+          : "DirectTwilioClient: Missing Twilio credentials"
+      );
+      this.lastConfig = config;
+    }
+
+    if (!config.isConfigured) {
+      return null;
+    }
+
+    // Create client if not exists or if credentials changed
+    if (!this.client) {
+      this.client = twilio(config.accountSid!, config.authToken!);
+      this.logger.info({}, "DirectTwilioClient: Twilio client initialized");
+    }
+
+    return this.client;
+  }
+
+  /**
+   * Check if Twilio is properly configured.
+   * Reads env vars at check time for Railway compatibility.
    */
   isAvailable(): boolean {
-    return this.isConfigured && this.client !== null;
+    const config = this.getConfig();
+    return config.isConfigured;
   }
 
   /**
@@ -86,8 +154,18 @@ export class DirectTwilioClient {
   async sendNotification(
     request: NotificationRequest
   ): Promise<NotificationResult> {
-    if (!this.isAvailable() || !this.client) {
-      this.logger.warn({}, "Twilio not configured, skipping SMS");
+    const config = this.getConfig();
+    const client = this.getClient();
+
+    if (!client || !config.isConfigured) {
+      this.logger.warn(
+        {
+          hasAccountSid: !!config.accountSid,
+          hasAuthToken: !!config.authToken,
+          hasFromNumber: !!config.fromNumber,
+        },
+        "Twilio not configured, skipping SMS"
+      );
       return {
         success: false,
         error: "Twilio not configured",
@@ -111,10 +189,10 @@ export class DirectTwilioClient {
     );
 
     try {
-      const message = await this.client.messages.create({
+      const message = await client.messages.create({
         body: messageBody,
         to: request.userPhone,
-        from: this.fromNumber,
+        from: config.fromNumber,
       });
 
       this.logger.info(
@@ -154,8 +232,18 @@ export class DirectTwilioClient {
   async sendConfirmation(
     request: ConfirmationRequest
   ): Promise<NotificationResult> {
-    if (!this.isAvailable() || !this.client) {
-      this.logger.warn({}, "Twilio not configured, skipping confirmation SMS");
+    const config = this.getConfig();
+    const client = this.getClient();
+
+    if (!client || !config.isConfigured) {
+      this.logger.warn(
+        {
+          hasAccountSid: !!config.accountSid,
+          hasAuthToken: !!config.authToken,
+          hasFromNumber: !!config.fromNumber,
+        },
+        "Twilio not configured, skipping confirmation SMS"
+      );
       return {
         success: false,
         error: "Twilio not configured",
@@ -175,10 +263,10 @@ export class DirectTwilioClient {
     );
 
     try {
-      const message = await this.client.messages.create({
+      const message = await client.messages.create({
         body: messageBody,
         to: request.userPhone,
-        from: this.fromNumber,
+        from: config.fromNumber,
       });
 
       this.logger.info(
