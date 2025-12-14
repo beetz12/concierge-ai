@@ -234,9 +234,12 @@ gmp-basic-place-autocomplete {
   --gmp-border-color: var(--color-surface-highlight) !important;
   --gmp-elevation-shadow: 0 10px 25px rgba(0, 0, 0, 0.6) !important;
 
+  /* Element wrapper - ensure no background bleeds through */
   display: block;
   width: 100%;
   color-scheme: dark;
+  background-color: transparent !important;
+  border: none !important;
 }
 
 /* Style the input inside the shadow DOM using ::part() */
@@ -244,14 +247,54 @@ gmp-place-autocomplete::part(input),
 gmp-basic-place-autocomplete::part(input) {
   background-color: var(--color-abyss) !important;
   color: #f1f5f9 !important;
-  border: none !important;
-  padding: 0.75rem 1rem 0.75rem 2.5rem !important;
+  border: 1px solid var(--color-surface-highlight) !important;
+  border-radius: 0.5rem !important;
+  padding: 0 1rem 0 0 !important;
   font-family: var(--font-family-body) !important;
   font-size: 0.875rem !important;
   outline: none !important;
   width: 100% !important;
   height: 2.5rem !important;
   box-sizing: border-box !important;
+  display: flex !important;
+  align-items: center !important;
+  line-height: 2.5rem !important;
+}
+
+/* Style internal container/wrapper inside shadow DOM */
+gmp-place-autocomplete::part(container),
+gmp-place-autocomplete::part(wrapper),
+gmp-basic-place-autocomplete::part(container),
+gmp-basic-place-autocomplete::part(wrapper) {
+  background-color: transparent !important;
+  border: none !important;
+  height: 2.5rem !important;
+  display: flex !important;
+  align-items: center !important;
+}
+
+/* Text field container - controls the Material Design field wrapper */
+gmp-place-autocomplete::part(text-field),
+gmp-place-autocomplete::part(input-wrapper),
+gmp-basic-place-autocomplete::part(text-field),
+gmp-basic-place-autocomplete::part(input-wrapper) {
+  background-color: transparent !important;
+  border: none !important;
+  height: 2.5rem !important;
+  min-height: 2.5rem !important;
+  max-height: 2.5rem !important;
+  display: flex !important;
+  align-items: center !important;
+  padding: 0 !important;
+  margin: 0 !important;
+}
+
+/* Hide Material Design underline pseudo-elements */
+gmp-place-autocomplete::part(text-field)::before,
+gmp-place-autocomplete::part(text-field)::after,
+gmp-basic-place-autocomplete::part(text-field)::before,
+gmp-basic-place-autocomplete::part(text-field)::after {
+  display: none !important;
 }
 
 gmp-place-autocomplete::part(input)::placeholder,
@@ -338,7 +381,7 @@ gmp-basic-place-autocomplete::part(logo) {
   background-color: var(--color-surface) !important;
 }
 
-/* Focus states */
+/* Focus states - apply focus ring to the input part */
 gmp-place-autocomplete:focus-within,
 gmp-basic-place-autocomplete:focus-within {
   outline: none !important;
@@ -347,7 +390,8 @@ gmp-basic-place-autocomplete:focus-within {
 gmp-place-autocomplete::part(input):focus,
 gmp-basic-place-autocomplete::part(input):focus {
   outline: none !important;
-  box-shadow: none !important;
+  border-color: var(--color-primary-500) !important;
+  box-shadow: 0 0 0 1px rgba(20, 184, 166, 0.3) !important;
 }
 
 /* Container wrapper styling - constrain dropdown width */

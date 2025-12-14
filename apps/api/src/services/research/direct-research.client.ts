@@ -251,7 +251,8 @@ export class DirectResearchClient {
       minReviewCount,
     };
 
-    const filtered = this.filterProviders(providers, criteria);
+    const maxResults = request.maxResults ?? 10;
+    const filtered = this.filterProviders(providers, criteria, maxResults);
 
     // Sort by distance (closest first)
     const sorted = filtered.sort((a, b) => {
@@ -259,25 +260,26 @@ export class DirectResearchClient {
       return a.distance - b.distance;
     });
 
-    // Return top 10
-    const top10 = sorted.slice(0, 10);
+    // Return top results (using maxResults from request)
+    const topResults = sorted.slice(0, maxResults);
 
     this.logger.info(
       {
         totalFound: providers.length,
         afterFilters: filtered.length,
-        returned: top10.length,
+        returned: topResults.length,
+        maxResults,
       },
       "Places API results filtered and sorted",
     );
 
     return {
-      status: top10.length > 0 ? "success" : "error",
+      status: topResults.length > 0 ? "success" : "error",
       method: "google_places",
-      providers: top10,
-      reasoning: `Found ${top10.length} providers via Google Places API (${providers.length} total, ${filtered.length} after filtering)`,
+      providers: topResults,
+      reasoning: `Found ${topResults.length} providers via Google Places API (${providers.length} total, ${filtered.length} after filtering)`,
       totalFound: providers.length,
-      filteredCount: top10.length,
+      filteredCount: topResults.length,
     };
   }
 
@@ -289,6 +291,7 @@ export class DirectResearchClient {
   private filterProviders(
     providers: Provider[],
     criteria: FilterCriteria,
+    maxResults: number = 10,
   ): Provider[] {
     let filtered = [...providers];
     const originalCount = providers.length;
@@ -308,21 +311,21 @@ export class DirectResearchClient {
     }
 
     // FALLBACK: If rating filter removed ALL providers, relax the filter
-    // Return top 10 by rating instead of returning empty array
+    // Return top results by rating instead of returning empty array
     if (filtered.length === 0 && originalCount > 0) {
       this.logger.warn(
-        { minRating: criteria.minRating, originalCount },
+        { minRating: criteria.minRating, originalCount, maxResults },
         "Rating filter removed all providers, using top providers by rating instead",
       );
       // Sort by rating descending and take top providers (even if below threshold)
       filtered = [...providers]
         .filter((p) => p.rating !== undefined)
         .sort((a, b) => (b.rating || 0) - (a.rating || 0))
-        .slice(0, 10);
+        .slice(0, maxResults);
 
       // If still empty (no ratings at all), return original providers
       if (filtered.length === 0) {
-        filtered = [...providers].slice(0, 10);
+        filtered = [...providers].slice(0, maxResults);
       }
     }
 
@@ -335,12 +338,12 @@ export class DirectResearchClient {
       // Fallback if distance filter removed all
       if (filtered.length === 0 && beforeDistance > 0) {
         this.logger.warn(
-          { maxDistance: criteria.maxDistance, beforeDistance },
+          { maxDistance: criteria.maxDistance, beforeDistance, maxResults },
           "Distance filter removed all providers, keeping closest ones",
         );
         filtered = [...providers]
           .sort((a, b) => (a.distance || Infinity) - (b.distance || Infinity))
-          .slice(0, 10);
+          .slice(0, maxResults);
       }
     }
 
@@ -355,12 +358,12 @@ export class DirectResearchClient {
       // Fallback if review filter removed all
       if (filtered.length === 0 && beforeReviews > 0) {
         this.logger.warn(
-          { minReviewCount: criteria.minReviewCount, beforeReviews },
+          { minReviewCount: criteria.minReviewCount, beforeReviews, maxResults },
           "Review count filter removed all providers, keeping most reviewed ones",
         );
         filtered = [...providers]
           .sort((a, b) => (b.reviewCount || 0) - (a.reviewCount || 0))
-          .slice(0, 10);
+          .slice(0, maxResults);
       }
     }
 
@@ -431,7 +434,8 @@ export class DirectResearchClient {
       });
     }
 
-    return this.deduplicateProviders(providers).slice(0, 10);
+    const maxResults = request.maxResults ?? 10;
+    return this.deduplicateProviders(providers).slice(0, maxResults);
   }
 
   /**
@@ -492,7 +496,8 @@ export class DirectResearchClient {
       }
     }
 
-    return this.deduplicateProviders(providers).slice(0, 10);
+    const maxResults = request.maxResults ?? 10;
+    return this.deduplicateProviders(providers).slice(0, maxResults);
   }
 
   /**

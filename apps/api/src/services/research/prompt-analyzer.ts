@@ -14,7 +14,6 @@ export interface ResearchPromptRequest {
   userCriteria: string;
   location: string;
   urgency: string;
-  providerName: string;
   clientName: string;
   clientAddress?: string; // Full street address for service location
 }
@@ -46,7 +45,6 @@ export async function analyzeResearchPrompt(request: ResearchPromptRequest): Pro
 <location>${request.location}</location>
 <service_address>${request.clientAddress || "Not provided"}</service_address>
 <urgency>${request.urgency.replace(/_/g, " ")}</urgency>
-<provider_being_called>${request.providerName}</provider_being_called>
 </context>
 
 <task>
@@ -58,13 +56,14 @@ Write TWO natural, grammatically perfect pieces for a VAPI phone assistant:
    - Ask if they have a moment
    - Should sound warm and human, NOT templated or robotic
    - 2-3 sentences maximum
+   - DO NOT mention a specific provider/business name - the system will handle that
    - Example good: "Hi! I'm David's personal AI assistant. David has been having severe molar pain and needs to see a dentist urgently. Do you have a quick moment?"
    - Example bad: "Hi there! This is David's personal AI assistant calling to check on dentist services. David my molar is killing me."
 
 2. SYSTEM PROMPT (comprehensive instructions for the AI during the call):
    Write this as if you're briefing a skilled human assistant about to make this exact call. Include:
 
-   - WHO: You are [client_name]'s personal AI assistant calling [provider_name]
+   - WHO: You are [client_name]'s personal AI assistant calling a service provider
    - SITUATION: [client_name]'s problem ([problem_description]), timeline ([urgency]), location ([location])
    - WHAT TO ASK (in order):
      * Availability - use correct phrasing based on service type:
@@ -173,7 +172,7 @@ function getDefaultAnalysis(request: ResearchPromptRequest): PromptAnalysisResul
     },
     contextualQuestions: ["Are you available for this type of service?"],
     firstMessage: `Hi! I'm ${clientName}'s personal AI assistant calling about ${request.serviceType} services. Do you have a quick moment?`,
-    systemPrompt: `You are ${clientName}'s personal AI assistant calling ${request.providerName} in ${request.location}.
+    systemPrompt: `You are ${clientName}'s personal AI assistant calling a service provider in ${request.location}.
 
 ${clientName}'s situation: They need ${request.serviceType} services. ${request.problemDescription ? `The issue: ${request.problemDescription}.` : ""} Timeline: ${request.urgency.replace(/_/g, " ")}.
 

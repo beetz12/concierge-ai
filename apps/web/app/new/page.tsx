@@ -284,7 +284,6 @@ export default function NewRequest() {
           userCriteria: data.criteria,
           location: data.location,
           urgency: data.urgency,
-          providerName: providers[0]?.name || "the provider",
           clientName: data.clientName,
           clientAddress: data.clientAddress?.formatted, // Full street address for VAPI
         });
@@ -593,7 +592,7 @@ export default function NewRequest() {
               What is your service address?
             </Label>
             <div className="relative flex items-center">
-              <MapPin className="absolute left-3 w-5 h-5 text-slate-500 z-10 pointer-events-none" />
+              <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-500 z-10 pointer-events-none" />
               <AddressAutocomplete
                 value={formData.clientAddress.formatted}
                 onChange={(address) => {
@@ -610,7 +609,7 @@ export default function NewRequest() {
                   });
                 }}
                 placeholder="Start typing your address..."
-                className="w-full h-10 pl-10 px-3 py-2 rounded-lg border border-surface-highlight focus:border-primary-500 focus:ring-1 focus:ring-primary-500/30 outline-none transition-all bg-abyss text-sm text-slate-100"
+                className="w-full h-10 pl-10 rounded-lg outline-none transition-all text-sm"
                 required
               />
             </div>

@@ -32,7 +32,6 @@ export interface ResearchPromptRequest {
   userCriteria: string;
   location: string;
   urgency: string;
-  providerName: string;
   clientName: string;
   clientAddress?: string;
 }

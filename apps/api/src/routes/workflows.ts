@@ -17,7 +17,7 @@ const researchSchema = z.object({
   service: z.string().min(1, "Service type is required"),
   location: z.string().min(1, "Location is required"),
   daysNeeded: z.number().int().positive().optional().default(2),
-  minRating: z.number().min(0).max(5).optional().default(4.5),
+  minRating: z.number().min(0).max(5).optional().default(4.0),
   maxDistance: z.number().positive().optional().default(25),
   requirePhone: z.boolean().optional().default(true),
   minReviewCount: z.number().int().min(0).optional(),
@@ -74,7 +74,7 @@ export default async function workflowRoutes(fastify: FastifyInstance) {
               description: "Minimum rating requirement (0-5)",
               minimum: 0,
               maximum: 5,
-              default: 4.5,
+              default: 4.0,
             },
             maxDistance: {
               type: "number",
