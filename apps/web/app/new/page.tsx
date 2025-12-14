@@ -112,6 +112,10 @@ export default function NewRequest() {
         status: "SEARCHING",
         user_phone: userPhoneValidation.normalized,
         preferred_contact: formData.preferredContact,
+        direct_contact_info: {
+          user_name: formData.clientName,
+          phone: userPhoneValidation.normalized,
+        },
       });
 
       const newRequest: ServiceRequest = {
@@ -120,11 +124,14 @@ export default function NewRequest() {
         title: formData.title,
         description: formData.description,
         location: formData.location,
+        clientAddress: formData.clientAddress.formatted, // Full street address for booking
         criteria: formData.criteria,
         status: RequestStatus.SEARCHING,
         createdAt: dbRequest.created_at,
         providersFound: [],
         interactions: [],
+        userPhone: userPhoneValidation.normalized,
+        preferredContact: formData.preferredContact,
       };
 
       addRequest(newRequest);
@@ -235,7 +242,7 @@ export default function NewRequest() {
       const searchLog = {
         timestamp: new Date().toISOString(),
         stepName: "Market Research",
-        detail: `Found ${providers.length} providers using ${workflowResult.method === "kestra" ? "Kestra workflow" : "Direct Gemini"}. ${workflowResult.reasoning || ""}`,
+        detail: `Found ${providers.length} providers in your area. ${workflowResult.reasoning || ""}`,
         status: workflowResult.status === "success" ? "success" : "error",
       } as any;
 
@@ -279,6 +286,7 @@ export default function NewRequest() {
           urgency: data.urgency,
           providerName: providers[0]?.name || "the provider",
           clientName: data.clientName,
+          clientAddress: data.clientAddress?.formatted, // Full street address for VAPI
         });
         if (researchPrompt) {
           console.log(

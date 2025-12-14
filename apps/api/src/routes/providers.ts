@@ -14,6 +14,8 @@ import {
 } from "../services/vapi/index.js";
 import type { CallRequest, CallResult } from "../services/vapi/types.js";
 import { RecommendationService } from "../services/recommendations/recommend.service.js";
+import { triggerUserNotification } from "../services/notifications/index.js";
+import { DirectTwilioClient } from "../services/notifications/direct-twilio.client.js";
 
 // Schema for Gemini-generated custom prompts
 const generatedPromptSchema = z.object({
@@ -757,13 +759,41 @@ export default async function providerRoutes(fastify: FastifyInstance) {
                 "Kestra batch completed with results in database - waiting for all provider results"
               );
 
-              // Log success to interaction_logs
+              // Determine actual status based on results
+              const totalProviders = validated.providers.length;
+              const errorCount = (batchResult as any).errors?.length || 0;
+              const successCount = (batchResult as any).stats?.completed || 0;
+              const allFailed = errorCount === totalProviders || successCount === 0;
+              const partialSuccess = errorCount > 0 && errorCount < totalProviders;
+
+              // Log actual status to interaction_logs
               await supabase.from("interaction_logs").insert({
                 request_id: validated.serviceRequestId,
-                step_name: "Batch Calls Completed",
-                detail: `All ${validated.providers.length} provider calls completed via Kestra. Results saved to database.`,
-                status: "success",
+                step_name: allFailed ? "Batch Calls Failed" : "Batch Calls Completed",
+                detail: allFailed
+                  ? `All ${totalProviders} provider calls failed. ${(batchResult as any).errors?.[0]?.error || "VAPI API error"}`
+                  : partialSuccess
+                  ? `${successCount}/${totalProviders} calls succeeded. ${errorCount} failed.`
+                  : `All ${totalProviders} provider calls completed successfully.`,
+                status: allFailed ? "error" : partialSuccess ? "warning" : "success",
               });
+
+              // If ALL calls failed, update service request to FAILED immediately
+              if (allFailed && validated.serviceRequestId) {
+                await supabase
+                  .from("service_requests")
+                  .update({
+                    status: "FAILED",
+                    final_outcome: `All provider calls failed: ${(batchResult as any).errors?.[0]?.error || "VAPI API error"}`,
+                  })
+                  .eq("id", validated.serviceRequestId);
+
+                fastify.log.error(
+                  { executionId, errorCount, errors: (batchResult as any).errors },
+                  "All provider calls failed - marked service request as FAILED"
+                );
+                return; // Exit background processing early
+              }
 
               // Step 1: Poll for all providers to have final call_status (max 30 seconds)
               const finalStatuses = ["completed", "failed", "error", "timeout", "no_answer", "voicemail", "busy"];
@@ -776,7 +806,7 @@ export default async function providerRoutes(fastify: FastifyInstance) {
 
                 const { data: providers, error: fetchError } = await supabase
                   .from("providers")
-                  .select("id, call_status, call_result, name, phone")
+                  .select("id, call_status, call_result, call_summary, name, phone, rating, review_count")
                   .eq("request_id", validated.serviceRequestId);
 
                 if (fetchError) {
@@ -840,15 +870,20 @@ export default async function providerRoutes(fastify: FastifyInstance) {
                   const callResults = completedProviders.map(p => {
                     const callResultData = p.call_result as any;
                     return {
+                      // Provider metadata for scoring
+                      providerId: p.id,
+                      rating: p.rating ?? undefined,
+                      reviewCount: p.review_count ?? undefined,
+                      // Call result data
                       status: p.call_status,
                       callId: callResultData?.callId || "",
-                      callMethod: "kestra" as const,
+                      callMethod: "direct_vapi" as const,
                       duration: callResultData?.duration || 0,
                       endedReason: callResultData?.endedReason || "",
                       transcript: callResultData?.transcript || "",
-                      analysis: callResultData?.analysis || {
-                        summary: callResultData?.analysis?.summary || "",
-                        structuredData: callResultData?.structuredData || {},
+                      analysis: {
+                        summary: p.call_summary || callResultData?.summary || "",
+                        structuredData: callResultData || {},
                         successEvaluation: "",
                       },
                       provider: {
@@ -874,7 +909,7 @@ export default async function providerRoutes(fastify: FastifyInstance) {
                       "Generating recommendations"
                     );
 
-                    let recommendationSuccess = false;
+                    let recommendationResult: Awaited<ReturnType<typeof recommendationService.generateRecommendations>> | null = null;
 
                     if (kestraHealthy) {
                       // Use Kestra workflow
@@ -885,7 +920,7 @@ export default async function providerRoutes(fastify: FastifyInstance) {
                       });
 
                       if (kestraResult.success && kestraResult.recommendations?.recommendations?.length > 0) {
-                        recommendationSuccess = true;
+                        recommendationResult = kestraResult.recommendations;
                         fastify.log.info(
                           { executionId: kestraResult.executionId, recommendationCount: kestraResult.recommendations.recommendations.length },
                           "Kestra recommendations generated successfully"
@@ -899,7 +934,7 @@ export default async function providerRoutes(fastify: FastifyInstance) {
                     }
 
                     // Fallback to Direct Gemini if Kestra unavailable or failed
-                    if (!recommendationSuccess) {
+                    if (!recommendationResult) {
                       const directResult = await recommendationService.generateRecommendations({
                         callResults,
                         originalCriteria: serviceRequest?.criteria || validated.userCriteria || "",
@@ -907,7 +942,7 @@ export default async function providerRoutes(fastify: FastifyInstance) {
                       });
 
                       if (directResult?.recommendations?.length > 0) {
-                        recommendationSuccess = true;
+                        recommendationResult = directResult;
                         fastify.log.info(
                           { recommendationCount: directResult.recommendations.length },
                           "Direct Gemini recommendations generated successfully"
@@ -915,39 +950,164 @@ export default async function providerRoutes(fastify: FastifyInstance) {
                       }
                     }
 
-                    // Step 5: Update status to RECOMMENDED if recommendations were generated
-                    if (recommendationSuccess) {
+                    // Step 5: Store recommendations and update status
+                    if (recommendationResult && recommendationResult.recommendations.length > 0) {
+                      // Store recommendations in database
+                      const { error: updateError } = await supabase
+                        .from("service_requests")
+                        .update({
+                          status: "RECOMMENDED",
+                          recommendations: recommendationResult,
+                        })
+                        .eq("id", validated.serviceRequestId);
+
+                      if (updateError) {
+                        fastify.log.error(
+                          { error: updateError, serviceRequestId: validated.serviceRequestId },
+                          "Failed to store recommendations in database - updating status to FAILED"
+                        );
+                        // Update status to FAILED since we couldn't store recommendations
+                        await supabase
+                          .from("service_requests")
+                          .update({
+                            status: "FAILED",
+                            final_outcome: `Failed to store recommendations: ${updateError.message || "Database error"}`,
+                          })
+                          .eq("id", validated.serviceRequestId);
+
+                        await supabase.from("interaction_logs").insert({
+                          request_id: validated.serviceRequestId,
+                          step_name: "Recommendation Storage Failed",
+                          detail: `Failed to save recommendations to database: ${updateError.message || "Unknown error"}`,
+                          status: "error",
+                        });
+                      } else {
+                        fastify.log.info(
+                          {
+                            executionId,
+                            serviceRequestId: validated.serviceRequestId,
+                            recommendationCount: recommendationResult.recommendations.length,
+                          },
+                          "Recommendations stored in database and status updated to RECOMMENDED"
+                        );
+
+                        await supabase.from("interaction_logs").insert({
+                          request_id: validated.serviceRequestId,
+                          step_name: "Recommendations Generated",
+                          detail: `AI analyzed all call results and generated ${recommendationResult.recommendations.length} provider recommendations.`,
+                          status: "success",
+                        });
+
+                        // Step 6: Send user notification (ONLY if storage succeeded)
+                        if (validated.userPhone && recommendationResult.recommendations.length > 0) {
+                          try {
+                            const notificationResult = await triggerUserNotification(
+                              {
+                                serviceRequestId: validated.serviceRequestId,
+                                userPhone: validated.userPhone,
+                                userName: validated.clientName,
+                                preferredContact: validated.preferredContact || "text",
+                                serviceNeeded: validated.serviceNeeded,
+                                location: validated.location,
+                                providers: recommendationResult.recommendations.slice(0, 3).map((r) => ({
+                                  name: r.providerName,
+                                  earliestAvailability: r.earliestAvailability || "Contact for availability",
+                                  score: r.score,
+                                  rating: r.rating,
+                                  reviewCount: r.reviewCount,
+                                  estimatedRate: r.estimatedRate,
+                                  reasoning: r.reasoning,
+                                })),
+                                overallRecommendation: recommendationResult.overallRecommendation,
+                              },
+                              fastify.log
+                            );
+
+                            if (notificationResult.success) {
+                              fastify.log.info(
+                                {
+                                  serviceRequestId: validated.serviceRequestId,
+                                  method: notificationResult.method,
+                                },
+                                "User notification sent successfully"
+                              );
+
+                              await supabase.from("interaction_logs").insert({
+                                request_id: validated.serviceRequestId,
+                                step_name: "User Notified",
+                                detail: `User notified via ${notificationResult.method} about ${recommendationResult.recommendations.length} recommended providers.`,
+                                status: "success",
+                              });
+                            } else {
+                              fastify.log.warn(
+                                {
+                                  serviceRequestId: validated.serviceRequestId,
+                                  error: notificationResult.error,
+                                },
+                                "User notification failed"
+                              );
+                            }
+                          } catch (notifyError) {
+                            const errorMsg = notifyError instanceof Error ? notifyError.message : String(notifyError);
+                            fastify.log.error(
+                              { error: errorMsg, serviceRequestId: validated.serviceRequestId },
+                              "Error sending user notification"
+                            );
+                            // Don't fail the whole flow if notification fails
+                          }
+                        } else if (!validated.userPhone) {
+                          fastify.log.info(
+                            { serviceRequestId: validated.serviceRequestId },
+                            "Skipping notification - no user phone provided"
+                          );
+                        }
+                      }
+                    } else {
+                      fastify.log.warn(
+                        { executionId, serviceRequestId: validated.serviceRequestId },
+                        "Failed to generate recommendations - updating status to FAILED"
+                      );
+                      // Update status to FAILED when no recommendations generated
                       await supabase
                         .from("service_requests")
-                        .update({ status: "RECOMMENDED" })
+                        .update({
+                          status: "FAILED",
+                          final_outcome: "AI was unable to generate provider recommendations from call results",
+                        })
                         .eq("id", validated.serviceRequestId);
 
                       await supabase.from("interaction_logs").insert({
                         request_id: validated.serviceRequestId,
-                        step_name: "Recommendations Generated",
-                        detail: "AI analyzed all call results and generated provider recommendations.",
-                        status: "success",
+                        step_name: "Recommendation Generation Failed",
+                        detail: "AI analysis completed but no recommendations could be generated from the call results.",
+                        status: "error",
                       });
-
-                      fastify.log.info(
-                        { executionId, serviceRequestId: validated.serviceRequestId },
-                        "Status updated to RECOMMENDED"
-                      );
-                    } else {
-                      fastify.log.warn(
-                        { executionId },
-                        "Failed to generate recommendations - keeping status as ANALYZING"
-                      );
                     }
                   } catch (recError) {
                     // Serialize error properly (Error objects log as {} by default)
                     const errorMsg = recError instanceof Error ? recError.message : String(recError);
                     const errorStack = recError instanceof Error ? recError.stack : undefined;
                     fastify.log.error(
-                      { errorMessage: errorMsg, errorStack },
-                      "Error generating recommendations"
+                      { errorMessage: errorMsg, errorStack, serviceRequestId: validated.serviceRequestId },
+                      "Error generating recommendations - updating status to FAILED"
                     );
-                    // Keep status as ANALYZING so frontend can retry
+                    // Update status to FAILED on exception
+                    if (validated.serviceRequestId) {
+                      await supabase
+                        .from("service_requests")
+                        .update({
+                          status: "FAILED",
+                          final_outcome: `Recommendation generation error: ${errorMsg}`,
+                        })
+                        .eq("id", validated.serviceRequestId);
+
+                      await supabase.from("interaction_logs").insert({
+                        request_id: validated.serviceRequestId,
+                        step_name: "Recommendation Generation Error",
+                        detail: `An error occurred during recommendation generation: ${errorMsg}`,
+                        status: "error",
+                      });
+                    }
                   }
                 } else {
                   // Wait 2 seconds before next poll
@@ -1599,11 +1759,35 @@ export default async function providerRoutes(fastify: FastifyInstance) {
         // Validate request body with Zod
         const validated = bookingSchema.parse(request.body);
 
+        // Load test phone configuration from backend environment (same as research phase)
+        const adminTestPhonesRaw = process.env.ADMIN_TEST_NUMBER;
+        const adminTestPhones = adminTestPhonesRaw
+          ? adminTestPhonesRaw.split(",").map((p) => p.trim()).filter(Boolean)
+          : [];
+        const isAdminTestMode = adminTestPhones.length > 0;
+
+        // Determine the actual phone number to call
+        let phoneToCall = validated.providerPhone;
+        if (isAdminTestMode) {
+          // Use first test phone for booking calls
+          phoneToCall = adminTestPhones[0]!;
+          request.log.info(
+            {
+              originalPhone: validated.providerPhone,
+              testPhone: phoneToCall,
+              providerName: validated.providerName,
+            },
+            "Admin test mode: substituting provider phone with test phone for booking call"
+          );
+        }
+
         request.log.info(
           {
             providerId: validated.providerId,
             providerName: validated.providerName,
             serviceRequestId: validated.serviceRequestId,
+            phoneToCall,
+            isAdminTestMode,
           },
           "Initiating booking call",
         );
@@ -1628,11 +1812,11 @@ export default async function providerRoutes(fastify: FastifyInstance) {
           additionalNotes: validated.additionalNotes,
         });
 
-        // Build call parameters directly
+        // Build call parameters directly (use phoneToCall which may be test phone)
         const callParams: any = {
           phoneNumberId: process.env.VAPI_PHONE_NUMBER_ID,
           customer: {
-            number: validated.providerPhone,
+            number: phoneToCall,
             name: validated.providerName,
           },
           assistant: bookingConfig,
@@ -1643,7 +1827,7 @@ export default async function providerRoutes(fastify: FastifyInstance) {
         const vapi = new VapiClient({ token: process.env.VAPI_API_KEY! });
 
         request.log.info(
-          { provider: validated.providerName, phone: validated.providerPhone },
+          { provider: validated.providerName, phone: phoneToCall, isAdminTestMode },
           "Creating booking call via VAPI",
         );
 
@@ -1710,12 +1894,70 @@ export default async function providerRoutes(fastify: FastifyInstance) {
         // Extract structured data from call result
         const analysis = completedCall.analysis || {};
         const structuredData = analysis.structuredData || {};
-        const bookingConfirmed = structuredData.booking_confirmed || false;
+        let bookingConfirmed = structuredData.booking_confirmed || false;
 
         // Extract transcript
         const transcript = completedCall.artifact?.transcript || "";
         const transcriptStr =
           typeof transcript === "string" ? transcript : JSON.stringify(transcript);
+
+        // Fallback detection: If VAPI didn't detect confirmation but transcript shows agreement
+        if (!bookingConfirmed && transcriptStr) {
+          const transcriptLower = transcriptStr.toLowerCase();
+
+          // Check for date/time agreement patterns in transcript
+          const hasDateTimeAgreement =
+            // Provider offered a time
+            (/i can do|available|works for me|how about|let's do/i.test(transcriptLower) &&
+            // And a day/time was mentioned
+            /(monday|tuesday|wednesday|thursday|friday|saturday|sunday|tomorrow|next week|today)/i.test(transcriptLower) &&
+            /(\d{1,2}(?::\d{2})?\s*(?:am|pm)|morning|afternoon|evening|noon)/i.test(transcriptLower));
+
+          // Check for confirmation patterns
+          const hasConfirmationPattern =
+            /(?:just to confirm|perfect|excellent|great|sounds good|see you|appointment.*(?:set|scheduled|confirmed))/i.test(transcriptLower);
+
+          // Check there's no rejection
+          const hasRejection =
+            /(?:not available|can't help|unavailable|no longer|sorry.*can't|decline)/i.test(transcriptLower);
+
+          if (hasDateTimeAgreement && hasConfirmationPattern && !hasRejection) {
+            request.log.info(
+              {
+                vapiBookingConfirmed: bookingConfirmed,
+                hasDateTimeAgreement,
+                hasConfirmationPattern,
+                hasRejection,
+              },
+              "[Booking] Fallback detection: VAPI missed confirmation, overriding to TRUE based on transcript analysis"
+            );
+            bookingConfirmed = true;
+
+            // Try to extract date/time if VAPI didn't
+            if (!structuredData.confirmed_date) {
+              const dateMatch = transcriptLower.match(/(monday|tuesday|wednesday|thursday|friday|saturday|sunday|tomorrow|next\s+\w+)/i);
+              if (dateMatch) {
+                structuredData.confirmed_date = dateMatch[0].charAt(0).toUpperCase() + dateMatch[0].slice(1);
+              }
+            }
+            if (!structuredData.confirmed_time) {
+              const timeMatch = transcriptLower.match(/(\d{1,2}(?::\d{2})?\s*(?:am|pm))/i);
+              if (timeMatch) {
+                structuredData.confirmed_time = timeMatch[0].toUpperCase();
+              }
+            }
+          }
+        }
+
+        request.log.info(
+          {
+            bookingConfirmed,
+            confirmedDate: structuredData.confirmed_date,
+            confirmedTime: structuredData.confirmed_time,
+            callOutcome: structuredData.call_outcome,
+          },
+          "[Booking] Final booking status after analysis"
+        );
 
         // Update database with booking result
         const { createClient: createSupabaseClient } = await import(
@@ -1747,6 +1989,11 @@ export default async function providerRoutes(fastify: FastifyInstance) {
         }
 
         // If booking confirmed, update service request
+        request.log.info(
+          { bookingConfirmed, serviceRequestId: validated.serviceRequestId },
+          "[Booking] Checking if booking confirmed for SMS notification"
+        );
+
         if (bookingConfirmed) {
           const { error: updateRequestError } = await supabase
             .from("service_requests")
@@ -1771,6 +2018,95 @@ export default async function providerRoutes(fastify: FastifyInstance) {
             detail: `Successfully booked appointment with ${validated.providerName}. Confirmation: ${structuredData.confirmation_number || "N/A"}`,
             status: "success",
           });
+
+          // Send booking confirmation SMS to user
+          request.log.info("[Booking] Starting SMS confirmation process");
+          try {
+            const { data: serviceRequest, error: fetchError } = await supabase
+              .from("service_requests")
+              .select("user_phone, direct_contact_info")
+              .eq("id", validated.serviceRequestId)
+              .single();
+
+            request.log.info(
+              {
+                hasServiceRequest: !!serviceRequest,
+                userPhone: serviceRequest?.user_phone,
+                fetchError: fetchError?.message,
+              },
+              "[Booking] Fetched service request for SMS"
+            );
+
+            if (serviceRequest?.user_phone) {
+              const twilioClient = new DirectTwilioClient(request.log);
+              const isTwilioAvailable = twilioClient.isAvailable();
+
+              request.log.info(
+                { isTwilioAvailable },
+                "[Booking] Twilio client availability check"
+              );
+
+              if (isTwilioAvailable) {
+                const confirmResult = await twilioClient.sendConfirmation({
+                  userPhone: serviceRequest.user_phone,
+                  userName:
+                    (serviceRequest.direct_contact_info as any)?.user_name ||
+                    validated.clientName ||
+                    "Customer",
+                  providerName: validated.providerName,
+                  bookingDate: structuredData.confirmed_date,
+                  bookingTime: structuredData.confirmed_time,
+                  confirmationNumber: structuredData.confirmation_number,
+                  serviceDescription: validated.serviceNeeded,
+                });
+
+                if (confirmResult.success) {
+                  request.log.info(
+                    {
+                      messageSid: confirmResult.messageSid,
+                      userPhone: serviceRequest.user_phone,
+                      providerName: validated.providerName,
+                    },
+                    "[Booking] Confirmation SMS sent to user"
+                  );
+
+                  // Update database to track confirmation notification
+                  await supabase
+                    .from("service_requests")
+                    .update({
+                      notification_sent_at: new Date().toISOString(),
+                      notification_method: "sms",
+                    })
+                    .eq("id", validated.serviceRequestId);
+
+                  await supabase.from("interaction_logs").insert({
+                    request_id: validated.serviceRequestId,
+                    step_name: "Booking Confirmation SMS Sent",
+                    detail: `Booking confirmation sent via SMS to ${serviceRequest.user_phone}. Date: ${structuredData.confirmed_date || "TBD"}, Time: ${structuredData.confirmed_time || "TBD"}`,
+                    status: "success",
+                  });
+                } else {
+                  request.log.error(
+                    { error: confirmResult.error },
+                    "[Booking] Confirmation SMS failed"
+                  );
+                }
+              } else {
+                request.log.warn("[Booking] Twilio client not available for confirmation SMS");
+              }
+            } else {
+              request.log.warn(
+                { serviceRequestId: validated.serviceRequestId },
+                "[Booking] No user phone found for confirmation SMS"
+              );
+            }
+          } catch (notifyError) {
+            request.log.error(
+              { error: notifyError },
+              "[Booking] Error sending confirmation SMS"
+            );
+            // Don't fail the booking - confirmation SMS is best-effort
+          }
         } else {
           // Booking failed - log it
           await supabase.from("interaction_logs").insert({

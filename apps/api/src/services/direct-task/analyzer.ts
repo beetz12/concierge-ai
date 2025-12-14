@@ -93,6 +93,16 @@ Generate strategic guidance as JSON:
   "successCriteria": [2-4 measurable outcomes that define success]
 }
 
+${
+      taskAnalysis.taskType === "schedule_appointment"
+        ? `
+CRITICAL FOR SCHEDULING TASKS:
+- One of the keyGoals MUST be: "Get the SPECIFIC earliest available date and time (exact day + time, not vague timeframes)"
+- One of the talkingPoints MUST be: "If they say something vague like 'two weeks out' or 'next week', ask: 'Which specific day would that be? And what's the earliest time available?'"
+- One of the successCriteria MUST be: "Obtained exact date (e.g., Tuesday, January 15th) and specific time (e.g., 2:00 PM)"`
+        : ""
+    }
+
 Make the talking points SPECIFIC to: "${request.taskDescription}"
 ONLY return valid JSON, no markdown.`;
 

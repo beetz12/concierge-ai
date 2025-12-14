@@ -1,6 +1,12 @@
 /**
  * Provider Recommendation Service
- * Analyzes call results using Gemini 2.5 Flash to recommend top 3 providers
+ * Uses deterministic multi-objective scoring combined with Gemini AI analysis
+ *
+ * Scoring Components (100 points max):
+ * - Conversation Quality: 35 points
+ * - Service Fit: 30 points
+ * - Provider Reputation: 25 points
+ * - Trust Signals: 10 points
  */
 
 import { GoogleGenAI } from "@google/genai";
@@ -9,9 +15,10 @@ import type {
   RecommendationResponse,
   ProviderRecommendation,
   ScoringWeights,
+  CallResultWithMetadata,
 } from "./types.js";
 import { DEFAULT_SCORING_WEIGHTS } from "./types.js";
-import type { CallResult } from "../vapi/types.js";
+import type { StructuredCallData } from "../vapi/types.js";
 
 export class RecommendationService {
   private ai: GoogleGenAI;
@@ -26,11 +33,12 @@ export class RecommendationService {
   }
 
   /**
-   * Generate recommendations from call results
+   * Generate recommendations from call results using deterministic scoring
+   * Combined with Gemini AI for overall recommendation text
    */
   async generateRecommendations(
     request: RecommendationRequest,
-    weights: ScoringWeights = DEFAULT_SCORING_WEIGHTS
+    _weights: ScoringWeights = DEFAULT_SCORING_WEIGHTS
   ): Promise<RecommendationResponse> {
     // Filter out disqualified, unavailable, and failed calls
     const qualifiedResults = this.filterQualifiedProviders(request.callResults);
@@ -40,60 +48,123 @@ export class RecommendationService {
       totalCalls: request.callResults.length,
       qualifiedProviders: qualifiedResults.length,
       disqualifiedProviders: request.callResults.filter(
-        (r) => r.analysis.structuredData.disqualified
+        (r) => r.analysis?.structuredData?.disqualified
       ).length,
-      failedCalls: request.callResults.filter((r) => r.status === "error" || r.status === "timeout").length,
+      failedCalls: request.callResults.filter(
+        (r) => r.status === "error" || r.status === "timeout"
+      ).length,
     };
 
     // Handle edge case: no qualified providers
     if (qualifiedResults.length === 0) {
+      const noAnswerCount = request.callResults.filter((r) => {
+        const callOutcome = r.analysis?.structuredData?.call_outcome;
+        return callOutcome === "no_answer" || callOutcome === "voicemail";
+      }).length;
+
+      let emptyMessage =
+        "Unfortunately, we couldn't find a qualified provider. ";
+      if (noAnswerCount > 0) {
+        emptyMessage += `${noAnswerCount} provider${noAnswerCount > 1 ? "s" : ""} didn't answer our calls. `;
+      }
+      emptyMessage +=
+        "Please review the call logs for details, or try expanding your search criteria.";
+
       return {
         recommendations: [],
-        overallRecommendation:
-          "Unfortunately, none of the providers were qualified based on the criteria. All providers were either unavailable, failed to answer, or did not meet the requirements.",
+        overallRecommendation: emptyMessage,
         analysisNotes:
           "Consider expanding your search criteria or trying additional providers.",
         stats,
       };
     }
 
-    // Use Gemini to analyze and score providers
-    const aiAnalysis = await this.analyzeWithGemini(
-      qualifiedResults,
-      request.originalCriteria,
-      weights
+    // Generate deterministic scores for each qualified provider
+    const scoredProviders = qualifiedResults.map((result) => {
+      const structuredData = result.analysis.structuredData;
+      const score = this.calculateScore(result, structuredData);
+      const reasoning = this.buildReasoning(result, structuredData);
+
+      const recommendation: ProviderRecommendation = {
+        providerId: result.providerId,
+        providerName: result.provider.name,
+        phone: result.provider.phone,
+        rating: result.rating,
+        reviewCount: result.reviewCount,
+        score,
+        reasoning,
+        criteriaMatched: structuredData.all_criteria_met
+          ? ["All criteria met"]
+          : structuredData.call_outcome === "positive"
+            ? ["Positive response"]
+            : [],
+        earliestAvailability:
+          structuredData.earliest_availability || "Contact for availability",
+        estimatedRate: structuredData.estimated_rate || "Quote upon request",
+      };
+
+      return recommendation;
+    });
+
+    // Sort by score descending and take top 3
+    const recommendations = scoredProviders
+      .sort((a, b) => b.score - a.score)
+      .slice(0, 3);
+
+    // Generate overall recommendation text
+    const overallRecommendation = this.buildOverallRecommendation(recommendations);
+
+    // Use Gemini AI for additional analysis notes (optional enhancement)
+    const analysisNotes = await this.generateAnalysisNotes(
+      recommendations,
+      request.originalCriteria
     );
 
     return {
-      ...aiAnalysis,
+      recommendations,
+      overallRecommendation,
+      analysisNotes,
       stats,
     };
   }
 
   /**
-   * Filter to only qualified providers
+   * Filter to only qualified providers (hard filters)
    */
-  private filterQualifiedProviders(callResults: CallResult[]): CallResult[] {
+  private filterQualifiedProviders(
+    callResults: CallResultWithMetadata[]
+  ): CallResultWithMetadata[] {
     return callResults.filter((result) => {
-      const structuredData = result.analysis.structuredData;
+      const structuredData = result.analysis?.structuredData;
 
-      // Filter out disqualified
+      // Require valid structuredData with call_outcome (proves we reached them)
+      if (!structuredData || typeof structuredData !== 'object' || !structuredData.call_outcome) {
+        console.log(`[Filter] Excluding ${result.provider.name}: no/invalid structured data or missing call_outcome`);
+        return false;
+      }
+
+      // Only recommend providers from completed calls
+      // This single check handles error, timeout, voicemail, no_answer, etc.
+      if (result.status !== "completed") {
+        console.log(`[Filter] Excluding ${result.provider.name}: call not completed (status: ${result.status})`);
+        return false;
+      }
+
+      // Filter by call outcome (voicemail/no_answer in structured data)
+      const callOutcome = structuredData.call_outcome;
+      if (
+        callOutcome === "no_answer" ||
+        callOutcome === "voicemail"
+      ) {
+        console.log(`[Filter] Excluding ${result.provider.name}: ${callOutcome}`);
+        return false;
+      }
+
+      // Filter out explicitly disqualified
       if (structuredData.disqualified) {
-        return false;
-      }
-
-      // Filter out unavailable
-      if (structuredData.availability === "unavailable") {
-        return false;
-      }
-
-      // Filter out failed calls
-      if (result.status === "error" || result.status === "timeout") {
-        return false;
-      }
-
-      // Filter out voicemail/no answer
-      if (result.status === "voicemail" || result.status === "no_answer") {
+        console.log(
+          `[Filter] Excluding ${result.provider.name}: disqualified - ${structuredData.disqualification_reason}`
+        );
         return false;
       }
 
@@ -102,166 +173,226 @@ export class RecommendationService {
   }
 
   /**
-   * Use Gemini AI to analyze call results and provide recommendations
+   * Deterministic multi-objective scoring (100 points max)
+   *
+   * Components:
+   * - Conversation Quality: 35 points
+   * - Service Fit: 30 points
+   * - Provider Reputation: 25 points
+   * - Trust Signals: 10 points
    */
-  private async analyzeWithGemini(
-    qualifiedResults: CallResult[],
-    originalCriteria: string,
-    weights: ScoringWeights
-  ): Promise<Omit<RecommendationResponse, "stats">> {
-    const systemInstruction = `You are an expert service provider analyst. Your job is to analyze phone call results and recommend the TOP 3 providers based on multiple factors.
+  private calculateScore(
+    result: CallResultWithMetadata,
+    data: StructuredCallData
+  ): number {
+    let score = 0;
 
-SCORING WEIGHTS:
-- Availability/Urgency (${weights.availabilityUrgency * 100}%): Providers available sooner score higher
-- Rate Competitiveness (${weights.rateCompetitiveness * 100}%): Lower/reasonable rates score higher
-- All Criteria Met (${weights.allCriteriaMet * 100}%): Meeting all client requirements scores highest
-- Call Quality (${weights.callQuality * 100}%): Positive, informative calls score higher
-- Professionalism (${weights.professionalism * 100}%): Professional, clear communication scores higher
-
-EVALUATION GUIDELINES:
-- Availability: Immediate > 24hrs > 2 days > Flexible
-- Rate: Consider competitiveness, clarity, and reasonableness
-- Criteria: Providers meeting ALL criteria score highest
-- Call Quality: Assess how informative and helpful the conversation was
-- Professionalism: Evaluate courtesy, clarity, and responsiveness
-
-Return EXACTLY 3 recommendations (or fewer if less than 3 qualified). Each should have:
-- score: 0-100 (weighted total)
-- reasoning: Clear explanation of why this provider scored as they did
-- criteriaMatched: Array of specific criteria met
-- callQualityScore: 0-100
-- professionalismScore: 0-100
-
-Also provide:
-- overallRecommendation: Which provider to choose and why
-- analysisNotes: Additional insights or considerations`;
-
-    const prompt = `Analyze these call results and recommend the top 3 providers.
-
-ORIGINAL CLIENT CRITERIA:
-${originalCriteria}
-
-CALL RESULTS:
-${JSON.stringify(qualifiedResults, null, 2)}
-
-Return your analysis in this JSON format:
-{
-  "recommendations": [
-    {
-      "providerName": "string",
-      "phone": "string",
-      "score": 95,
-      "reasoning": "Detailed explanation of score",
-      "criteriaMatched": ["criterion1", "criterion2"],
-      "earliestAvailability": "Tomorrow at 2pm",
-      "estimatedRate": "$150/hr",
-      "callQualityScore": 90,
-      "professionalismScore": 95
+    // === CONVERSATION QUALITY (35 points max) ===
+    // Did they actually answer and engage positively?
+    if (data.call_outcome === "positive") {
+      score += 20;
+    } else if (data.call_outcome === "neutral") {
+      score += 10;
     }
-  ],
-  "overallRecommendation": "Provider X is the best choice because...",
-  "analysisNotes": "Additional insights..."
-}`;
+    // Gave specific availability info?
+    if (data.earliest_availability && data.earliest_availability !== "unknown") {
+      score += 8;
+    }
+    // Provided pricing info?
+    if (
+      data.estimated_rate &&
+      data.estimated_rate !== "unknown" &&
+      data.estimated_rate !== "Quote upon request"
+    ) {
+      score += 7;
+    }
+
+    // === SERVICE FIT (30 points max) ===
+    // Meets ALL user requirements?
+    if (data.all_criteria_met) {
+      score += 20;
+    }
+    // Availability status
+    if (data.availability === "available") {
+      score += 7;
+    } else if (data.availability === "callback_requested") {
+      score += 3;
+    }
+    // Found dedicated person with all skills?
+    if (data.single_person_found) {
+      score += 3;
+    }
+
+    // === PROVIDER REPUTATION (25 points max) ===
+    // Google rating (0-20 points based on 5-star scale)
+    const rating = result.rating || 0;
+    if (rating >= 4.5) {
+      score += 20;
+    } else if (rating >= 4.0) {
+      score += 16;
+    } else if (rating >= 3.5) {
+      score += 12;
+    } else if (rating >= 3.0) {
+      score += 8;
+    } else if (rating > 0) {
+      score += 4;
+    }
+    // Review volume (0-5 points) - more reviews = more trust
+    const reviews = result.reviewCount || 0;
+    if (reviews >= 100) {
+      score += 5;
+    } else if (reviews >= 50) {
+      score += 4;
+    } else if (reviews >= 20) {
+      score += 3;
+    } else if (reviews >= 10) {
+      score += 2;
+    } else if (reviews > 0) {
+      score += 1;
+    }
+
+    // === TRUST SIGNALS (10 points max) ===
+    // AI recommended this provider?
+    if (data.recommended) {
+      score += 10;
+    }
+
+    return Math.min(Math.round(score), 100);
+  }
+
+  /**
+   * Build personalized reasoning from actual call data
+   */
+  private buildReasoning(
+    result: CallResultWithMetadata,
+    data: StructuredCallData
+  ): string {
+    const parts: string[] = [];
+
+    // 1. Lead with criteria match (most important to user)
+    if (data.all_criteria_met) {
+      parts.push("✓ Meets all your requirements");
+    } else if (data.call_outcome === "positive") {
+      parts.push("Positive conversation");
+    }
+
+    // 2. Availability specifics (actionable info)
+    if (data.earliest_availability && data.earliest_availability !== "unknown") {
+      parts.push(`Available: ${data.earliest_availability}`);
+    } else if (data.availability === "available") {
+      parts.push("Available now");
+    }
+
+    // 3. Trust signals: Rating + reviews
+    if (result.rating && result.rating >= 3.5) {
+      const reviewText = result.reviewCount
+        ? ` (${result.reviewCount} reviews)`
+        : "";
+      parts.push(`${result.rating}★${reviewText}`);
+    }
+
+    // 4. Pricing transparency
+    if (
+      data.estimated_rate &&
+      data.estimated_rate !== "unknown" &&
+      data.estimated_rate !== "Quote upon request" &&
+      data.estimated_rate !== ""
+    ) {
+      parts.push(`Quoted: ${data.estimated_rate}`);
+    }
+
+    // 5. AI-generated insight from actual conversation (call summary)
+    const summary = result.analysis?.summary;
+    if (summary && summary.length > 10) {
+      // Skip summaries focused on the user's request
+      const isUserFocused =
+        summary.toLowerCase().includes("information gathered for") ||
+        summary.toLowerCase().includes("looking for") ||
+        summary.toLowerCase().includes("here's the summary");
+
+      if (!isUserFocused) {
+        // Extract first meaningful sentence for key insight
+        const sentences = summary
+          .split(/[.!?]+/)
+          .filter((s) => s.trim().length > 10);
+        if (sentences[0]) {
+          const insight = sentences[0].trim();
+          // Avoid duplicating info already shown
+          if (
+            !insight.toLowerCase().includes("available") &&
+            !insight.toLowerCase().includes("rating")
+          ) {
+            parts.push(insight);
+          }
+        }
+      }
+    }
+
+    return parts.length > 0
+      ? parts.join(" • ")
+      : "Provider contacted successfully";
+  }
+
+  /**
+   * Build professional overall recommendation text
+   */
+  private buildOverallRecommendation(
+    recommendations: ProviderRecommendation[]
+  ): string {
+    if (recommendations.length === 0) {
+      return "Unfortunately, we couldn't find a qualified provider. Please review the call logs for details.";
+    }
+
+    const topProvider = recommendations[0]!; // Safe: length > 0
+    const topScore = topProvider.score;
+    const topName = topProvider.providerName;
+
+    if (recommendations.length === 1) {
+      return `Based on our research and phone calls, we recommend **${topName}** (Score: ${topScore}/100). They were the only provider who answered and could meet your needs.`;
+    }
+
+    const scoreDiff = topScore - (recommendations[1]?.score || 0);
+    if (scoreDiff >= 15) {
+      return `Based on our research and phone calls, we strongly recommend **${topName}** (Score: ${topScore}/100). They significantly outperformed other options in availability, service fit, and reputation.`;
+    }
+
+    return `Based on our research and phone calls, we recommend **${topName}** (Score: ${topScore}/100) as your top choice. We've included ${recommendations.length - 1} alternative${recommendations.length > 2 ? "s" : ""} for comparison.`;
+  }
+
+  /**
+   * Generate analysis notes using Gemini AI (optional enhancement)
+   */
+  private async generateAnalysisNotes(
+    recommendations: ProviderRecommendation[],
+    originalCriteria: string
+  ): Promise<string> {
+    if (recommendations.length === 0) {
+      return "No qualified providers to analyze.";
+    }
 
     try {
+      const prompt = `Given these provider recommendations for a service request, provide 1-2 brief analysis notes (max 100 words total) with additional insights:
+
+ORIGINAL CRITERIA: ${originalCriteria}
+
+TOP PROVIDERS:
+${recommendations.map((r, i) => `${i + 1}. ${r.providerName} - Score: ${r.score}/100, ${r.reasoning}`).join("\n")}
+
+Focus on: pricing comparison, timing considerations, or any notable differences. Be concise.`;
+
       const response = await this.ai.models.generateContent({
         model: this.model,
         contents: prompt,
         config: {
-          systemInstruction,
-          responseMimeType: "application/json",
+          maxOutputTokens: 150,
         },
       });
 
-      const data = JSON.parse(this.cleanJson(response.text || "{}"));
-
-      // Validate and ensure we have at most 3 recommendations
-      const recommendations: ProviderRecommendation[] = (
-        data.recommendations || []
-      )
-        .slice(0, 3)
-        .map((rec: any) => ({
-          providerName: rec.providerName || "Unknown",
-          phone: rec.phone || "",
-          score: Math.min(100, Math.max(0, rec.score || 0)),
-          reasoning: rec.reasoning || "No reasoning provided",
-          criteriaMatched: rec.criteriaMatched || [],
-          earliestAvailability: rec.earliestAvailability,
-          estimatedRate: rec.estimatedRate,
-          callQualityScore: Math.min(
-            100,
-            Math.max(0, rec.callQualityScore || 0)
-          ),
-          professionalismScore: Math.min(
-            100,
-            Math.max(0, rec.professionalismScore || 0)
-          ),
-        }));
-
-      // Sort by score descending
-      recommendations.sort((a, b) => b.score - a.score);
-
-      return {
-        recommendations,
-        overallRecommendation:
-          data.overallRecommendation ||
-          "Unable to provide recommendation",
-        analysisNotes: data.analysisNotes || "",
-      };
+      return response.text || "Analysis complete.";
     } catch (error) {
-      console.error("Gemini analysis error:", error);
-
-      // Fallback: Return basic recommendations without AI analysis
-      return this.generateFallbackRecommendations(qualifiedResults);
+      console.error("Error generating analysis notes:", error);
+      return "Recommendations generated using multi-objective scoring based on call quality, service fit, and provider reputation.";
     }
   }
 
-  /**
-   * Fallback recommendations if AI analysis fails
-   */
-  private generateFallbackRecommendations(
-    qualifiedResults: CallResult[]
-  ): Omit<RecommendationResponse, "stats"> {
-    const recommendations: ProviderRecommendation[] = qualifiedResults
-      .slice(0, 3)
-      .map((result, index) => {
-        const structuredData = result.analysis.structuredData;
-        return {
-          providerName: result.provider.name,
-          phone: result.provider.phone,
-          score: 70 - index * 5, // Simple descending score
-          reasoning: `Provider ${index + 1}: ${structuredData.availability === "available" ? "Available" : "Status unclear"}. ${structuredData.all_criteria_met ? "Meets all criteria" : "Some criteria unclear"}.`,
-          criteriaMatched: structuredData.all_criteria_met
-            ? ["Availability confirmed"]
-            : [],
-          earliestAvailability: structuredData.earliest_availability,
-          estimatedRate: structuredData.estimated_rate,
-          callQualityScore: 70,
-          professionalismScore: 70,
-        };
-      });
-
-    return {
-      recommendations,
-      overallRecommendation:
-        "AI analysis unavailable. Providers are listed in order of call success.",
-      analysisNotes:
-        "Recommendations generated using basic filtering. For detailed analysis, please retry.",
-    };
-  }
-
-  /**
-   * Clean JSON response from AI
-   */
-  private cleanJson(text: string): string {
-    if (!text) return "{}";
-
-    // Match JSON object or array
-    const match = text.match(/(\{|\[)[\s\S]*(\}|\])/);
-    if (match) {
-      return match[0];
-    }
-
-    return text.replace(/```json/g, "").replace(/```/g, "").trim();
-  }
 }

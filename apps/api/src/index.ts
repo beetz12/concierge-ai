@@ -2,6 +2,7 @@ import "dotenv/config";
 import Fastify from "fastify";
 import cors from "@fastify/cors";
 import helmet from "@fastify/helmet";
+import formbody from "@fastify/formbody";
 import swagger from "@fastify/swagger";
 import swaggerUi from "@fastify/swagger-ui";
 import supabasePlugin from "./plugins/supabase.js";
@@ -37,6 +38,10 @@ await server.register(cors, {
   origin: corsOrigins.length === 1 ? corsOrigins[0] : corsOrigins,
 });
 await server.register(helmet);
+
+// Register form-urlencoded parser for Twilio webhooks
+// Twilio sends webhook data as application/x-www-form-urlencoded
+await server.register(formbody);
 
 // Register Swagger documentation
 await server.register(swagger, {

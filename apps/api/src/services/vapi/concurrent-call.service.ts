@@ -159,15 +159,33 @@ export class ConcurrentCallService {
           const { success, result, error } = settledResult.value;
 
           if (success && result) {
-            results.push(result);
-            this.logger.debug(
-              {
-                provider: result.provider.name,
-                status: result.status,
-                duration: result.duration,
-              },
-              "Provider call completed",
-            );
+            // Check if the result indicates an API/validation error (not a call outcome)
+            if (result.status === "error" && (!result.callId || result.callId === "")) {
+              // This is an API error (e.g., VAPI validation failed), not a completed call
+              errors.push({
+                provider: result.provider?.name || "Unknown",
+                phone: result.provider?.phone || "Unknown",
+                error: result.error || result.endedReason || "VAPI API error",
+              });
+              this.logger.error(
+                {
+                  provider: result.provider?.name,
+                  error: result.error || result.endedReason,
+                },
+                "VAPI API error - call never initiated",
+              );
+            } else {
+              // Normal call result (completed, no_answer, voicemail, etc.)
+              results.push(result);
+              this.logger.debug(
+                {
+                  provider: result.provider.name,
+                  status: result.status,
+                  duration: result.duration,
+                },
+                "Provider call completed",
+              );
+            }
           } else if (error) {
             errors.push({
               provider: error.provider,

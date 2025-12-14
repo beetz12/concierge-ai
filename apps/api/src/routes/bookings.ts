@@ -13,7 +13,8 @@ import { DirectTwilioClient } from "../services/notifications/direct-twilio.clie
 const LIVE_CALL_ENABLED = process.env.LIVE_CALL_ENABLED === "true";
 
 // Parse admin test phones (comma-separated E.164 numbers)
-const ADMIN_TEST_PHONES_RAW = process.env.ADMIN_TEST_PHONES;
+// Use ADMIN_TEST_NUMBER for consistency with research phase in providers.ts
+const ADMIN_TEST_PHONES_RAW = process.env.ADMIN_TEST_NUMBER;
 const ADMIN_TEST_PHONES = ADMIN_TEST_PHONES_RAW
   ? ADMIN_TEST_PHONES_RAW.split(",").map((p) => p.trim()).filter(Boolean)
   : [];
@@ -36,6 +37,7 @@ const scheduleBookingSchema = z.object({
     .regex(/^\+1\d{10}$/, "Phone must be E.164 format (+1XXXXXXXXXX)")
     .optional(),
   location: z.string().optional(),
+  clientAddress: z.string().optional(), // Full street address for VAPI prompts
 });
 
 /**
@@ -179,6 +181,7 @@ async function handleRealBookingCall(
     clientName: validated.customerName,
     clientPhone: validated.customerPhone,
     location: validated.location || "",
+    clientAddress: validated.clientAddress, // Full street address for VAPI
     preferredDateTime:
       validated.preferredDate && validated.preferredTime
         ? `${validated.preferredDate} at ${validated.preferredTime}`
@@ -524,6 +527,7 @@ export default async function bookingRoutes(fastify: FastifyInstance) {
             clientName: validated.customerName,
             clientPhone: validated.customerPhone,
             location: validated.location || "",
+            clientAddress: validated.clientAddress, // Full street address for VAPI
             preferredDateTime: validated.preferredDate && validated.preferredTime
               ? `${validated.preferredDate} at ${validated.preferredTime}`
               : validated.preferredDate || validated.preferredTime || "as soon as possible",

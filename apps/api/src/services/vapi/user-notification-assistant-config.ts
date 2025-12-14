@@ -9,16 +9,24 @@ export interface UserNotificationRequest {
   userPhone: string;
   userName?: string;
   serviceRequestId: string;
+  serviceNeeded: string;
+  location: string;
+  requestUrl?: string;
+
   recommendations: Array<{
     rank: number;
     providerName: string;
     availability: string;
-    rate?: string;
-    reasoning?: string;
+    // Rich data fields (matching SMS notification quality)
+    rating?: number;           // Google rating (e.g., 4.8)
+    reviewCount?: number;      // Number of reviews
+    estimatedRate?: string;    // e.g., "$85/hour" or "Call for quote"
+    score?: number;            // AI recommendation score (0-100)
+    reasoning?: string;        // Why this provider was recommended
   }>;
-  serviceNeeded: string;
-  location: string;
-  requestUrl?: string;
+
+  /** AI's overall recommendation explaining why top provider was chosen */
+  overallRecommendation?: string;
 }
 
 export interface UserNotificationResult {
@@ -31,66 +39,120 @@ export interface UserNotificationResult {
 }
 
 export function createUserNotificationAssistantConfig(request: UserNotificationRequest) {
-  const { userName, recommendations, serviceNeeded, location, requestUrl } = request;
+  const { userName, recommendations, serviceNeeded, location, overallRecommendation } = request;
 
-  // Build recommendations script
-  const recsScript = recommendations.map((r, i) =>
-    `${i + 1}. ${r.providerName} - Available ${r.availability}${r.rate ? `, ${r.rate}` : ''}`
-  ).join('\n');
+  // Build detailed provider information for the AI's knowledge base
+  const detailedProviderInfo = recommendations.map((r) => {
+    const lines: string[] = [`**${r.providerName}** (Option ${r.rank})`];
+
+    if (r.rating) {
+      let ratingLine = `- Rating: ${r.rating.toFixed(1)} stars`;
+      if (r.reviewCount) {
+        ratingLine += ` from ${r.reviewCount} reviews`;
+      }
+      lines.push(ratingLine);
+    }
+
+    lines.push(`- Availability: ${r.availability}`);
+
+    if (r.estimatedRate) {
+      lines.push(`- Estimated Rate: ${r.estimatedRate}`);
+    }
+
+    if (r.reasoning) {
+      lines.push(`- Why Recommended: ${r.reasoning}`);
+    }
+
+    return lines.join('\n');
+  }).join('\n\n');
+
+  // Build concise spoken summary for reading aloud
+  const spokenSummary = recommendations.map((r) => {
+    let summary = `Option ${r.rank}: ${r.providerName}`;
+    if (r.rating) {
+      summary += ` with ${r.rating.toFixed(1)} stars`;
+      if (r.reviewCount && r.reviewCount > 50) {
+        summary += ` from over ${Math.floor(r.reviewCount / 10) * 10} reviews`;
+      }
+    }
+    summary += `, available ${r.availability}`;
+    if (r.estimatedRate) {
+      summary += `, estimated ${r.estimatedRate}`;
+    }
+    return summary;
+  }).join('. ');
+
+  // Get top provider details for emphasis
+  const topProvider = recommendations[0];
+  const topProviderHighlight = topProvider ?
+    `${topProvider.providerName}${topProvider.rating ? ` (${topProvider.rating.toFixed(1)} stars)` : ''}` :
+    'the first provider';
 
   return {
     name: "AI Concierge - User Notification",
     model: {
       provider: "google" as const,
       model: "gemini-2.0-flash",
-      temperature: 0.15, // Very low for precise selection capture (2025 best practice)
+      temperature: 0.25, // Slightly higher for natural conversation while maintaining accuracy
       tools: [{ type: "endCall", description: "End the phone call. Use this immediately after your closing statement." }],
       messages: [
         {
           role: "system" as const,
-          content: `You are an AI assistant calling to present provider recommendations and capture the user's selection.
+          content: `You are a friendly AI assistant calling to present provider recommendations. You have detailed information about each provider and can answer questions to help the user make an informed decision.
 
-## YOUR TASK
-1. Greet the user warmly
-2. Read the 3 provider recommendations clearly
-3. Ask which one they'd like to book (1, 2, or 3)
-4. Confirm their selection
-5. End the call politely
+## YOUR KNOWLEDGE BASE
 
-## RECOMMENDATIONS TO READ
-${recsScript}
+### Service Request
+- Service Needed: ${serviceNeeded}
+- Location: ${location}
+- Customer: ${userName || 'Customer'}
+
+### Provider Details (in order of recommendation)
+${detailedProviderInfo}
+
+${overallRecommendation ? `### AI Recommendation Summary\n${overallRecommendation}` : ''}
 
 ## CONVERSATION FLOW
 
-**Opening:**
-"Hi ${userName || 'there'}! This is AI Concierge calling about your ${serviceNeeded} request in ${location}. I found 3 great options for you!"
+**1. Opening (warm and informative):**
+"Hi ${userName || 'there'}! This is AI Concierge calling about your ${serviceNeeded} request. Great news - I've researched providers in ${location} and found some excellent options for you!"
 
-**Read Recommendations:**
-Read each provider clearly with their availability.
+**2. Lead with your TOP recommendation:**
+"My top recommendation is ${topProviderHighlight}.${topProvider?.reasoning ? ` ${topProvider.reasoning.split('.')[0]}.` : ''} They're available ${topProvider?.availability || 'soon'}${topProvider?.estimatedRate ? ` and their estimated rate is ${topProvider.estimatedRate}` : ''}."
 
-**Ask for Selection:**
-"Which provider would you like me to book? Just say 1, 2, or 3."
+**3. Briefly mention alternatives:**
+"I also found two other great options: ${recommendations[1]?.providerName || 'a second provider'}${recommendations[1]?.rating ? ` with ${recommendations[1].rating.toFixed(1)} stars` : ''} available ${recommendations[1]?.availability || 'soon'}, and ${recommendations[2]?.providerName || 'a third option'} available ${recommendations[2]?.availability || 'soon'}."
 
-**Handle Response:**
-- If they say a number (1-3): "Great choice! I'll book ${recommendations[0]?.providerName || 'that provider'} for you right away."
-- If unclear: "I didn't catch that. Could you say 1, 2, or 3?"
-- If they want more info: Briefly explain, then ask again
-- If they decline all: "No problem! ${requestUrl ? `You can review them at ${requestUrl}` : 'Feel free to call us back when you decide.'}"
+**4. Invite questions or selection:**
+"Would you like more details about any of these, or are you ready to choose? Just say 1, 2, or 3."
 
-**Closing:**
-"Thanks for using AI Concierge! You'll receive a confirmation shortly. Have a great day!"
-Then IMMEDIATELY invoke the endCall tool. DO NOT wait for their response. DO NOT say "goodbye" - just invoke endCall right after your closing.
+**5. Handle Questions (use your knowledge base):**
+- If asked about ratings/reviews: Share specific numbers from your knowledge
+- If asked about pricing: Give estimated rates, mention if it's competitive
+- If asked "why this one?": Explain the reasoning in a conversational way
+- If asked about availability: Be specific with dates/times
+- After answering, ask: "Does that help? Ready to choose?"
+
+**6. Confirm Selection:**
+When they choose: "Excellent choice! I'll book ${topProvider?.providerName || 'them'} for you right away. You'll receive a confirmation shortly."
+
+**7. Closing:**
+"Thanks for using AI Concierge! Have a wonderful day!"
+Then IMMEDIATELY invoke the endCall tool.
+
+## IMPORTANT GUIDELINES
+1. Be CONVERSATIONAL, not robotic - you're helping with an important decision
+2. Lead with your TOP pick and explain WHY it's best
+3. Answer questions using your knowledge base - be specific with numbers
+4. Create gentle urgency: "availability might change" if they hesitate
+5. If they ask something not in your knowledge: "I don't have that specific detail, but based on my research..."
+6. Keep responses concise - this is a phone call, not a lecture
+7. After confirming selection, end promptly with endCall tool
 
 ## ENDING THE CALL (CRITICAL)
-You have an endCall tool available. You MUST use it to hang up the call.
-After your closing statement, IMMEDIATELY invoke endCall.
-DO NOT wait for them to respond or hang up - YOU end the call.
-
-## IMPORTANT
-- Be concise and clear
-- Don't ramble or over-explain
-- Capture their selection accurately
-- Maximum 2 minutes for the call`
+After your closing statement, IMMEDIATELY invoke the endCall tool.
+DO NOT wait for their response after closing.
+DO NOT say additional goodbyes - just invoke endCall.`
         }
       ]
     },
@@ -100,7 +162,7 @@ DO NOT wait for them to respond or hang up - YOU end the call.
       stability: 0.5,
       similarityBoost: 0.75,
     },
-    firstMessage: `Hi ${userName || 'there'}! This is AI Concierge calling about your ${serviceNeeded} request in ${location}. I found 3 great providers for you! Let me tell you about them.`,
+    firstMessage: `Hi ${userName || 'there'}! This is AI Concierge calling about your ${serviceNeeded} request. Great news - I've researched providers in ${location} and found some excellent options for you!`,
     endCallFunctionEnabled: true,
     endCallMessage: "Thanks for using AI Concierge! Goodbye!",
     silenceTimeoutSeconds: 15,
@@ -115,18 +177,23 @@ DO NOT wait for them to respond or hang up - YOU end the call.
           },
           call_outcome: {
             type: "string",
-            enum: ["selected", "no_selection", "declined_all", "wants_more_time"],
+            enum: ["selected", "no_selection", "declined_all", "wants_callback", "voicemail"],
             description: "The outcome of the notification call",
           },
           user_questions: {
+            type: "array",
+            items: { type: "string" },
+            description: "Questions the user asked about providers (e.g., 'asked about pricing', 'asked why top pick')",
+          },
+          decision_factors: {
             type: "string",
-            description: "Any questions the user asked about the providers",
+            description: "What factors influenced the user's decision (e.g., 'chose based on rating', 'price was main concern')",
           },
         },
         required: ["call_outcome"],
       },
-      successEvaluationPrompt: "Evaluate if the user successfully selected a provider (1, 2, or 3) or expressed a clear preference.",
-      summaryPrompt: "Summarize the user's provider selection and any questions they asked.",
+      successEvaluationPrompt: "Evaluate if the user successfully selected a provider (1, 2, or 3) or expressed a clear preference. Consider the call successful if they made a selection.",
+      summaryPrompt: "Summarize: 1) Which provider was selected (if any), 2) What questions the user asked, 3) What factors influenced their decision.",
     },
   };
 }
