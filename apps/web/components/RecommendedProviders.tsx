@@ -1,7 +1,7 @@
 "use client";
 
 import React from "react";
-import { Star, CheckCircle, Phone, Calendar, Loader2 } from "lucide-react";
+import { Star, CheckCircle, Phone, Calendar, Loader2, Clock } from "lucide-react";
 
 interface Provider {
   providerId: string;
@@ -26,6 +26,12 @@ interface Props {
   bookingComplete?: boolean;
   /** Name of the provider that was booked (for display) */
   bookedProviderName?: string;
+  /** Booked appointment date (e.g., "Tuesday, January 15th, 2025") */
+  bookedAppointmentDate?: string;
+  /** Booked appointment time (e.g., "2:00 PM") */
+  bookedAppointmentTime?: string;
+  /** Booking confirmation number */
+  bookedConfirmationNumber?: string;
 }
 
 const RecommendedProviders: React.FC<Props> = ({
@@ -36,6 +42,9 @@ const RecommendedProviders: React.FC<Props> = ({
   selectedId,
   bookingComplete = false,
   bookedProviderName,
+  bookedAppointmentDate,
+  bookedAppointmentTime,
+  bookedConfirmationNumber,
 }) => {
   const renderStars = (rating: number) => {
     return (
@@ -208,9 +217,34 @@ const RecommendedProviders: React.FC<Props> = ({
               {bookingComplete ? (
                 // Booking complete: Show status badge instead of button
                 provider.providerName === bookedProviderName ? (
-                  <div className="w-full py-3 px-4 rounded-lg font-semibold bg-emerald-600 text-white text-center flex items-center justify-center gap-2">
-                    <CheckCircle className="w-5 h-5" />
-                    Appointment Booked
+                  <div className="w-full rounded-lg bg-emerald-600/20 border border-emerald-500/30 overflow-hidden">
+                    {/* Header */}
+                    <div className="py-3 px-4 bg-emerald-600 text-white text-center flex items-center justify-center gap-2 font-semibold">
+                      <CheckCircle className="w-5 h-5" />
+                      Appointment Booked
+                    </div>
+                    {/* Booking Details */}
+                    {(bookedAppointmentDate || bookedAppointmentTime || bookedConfirmationNumber) && (
+                      <div className="p-4 space-y-2">
+                        {(bookedAppointmentDate || bookedAppointmentTime) && (
+                          <div className="flex items-center gap-2 text-sm">
+                            <Clock className="w-4 h-4 text-emerald-400" />
+                            <span className="text-slate-300">
+                              {bookedAppointmentDate && bookedAppointmentTime
+                                ? `${bookedAppointmentDate} at ${bookedAppointmentTime}`
+                                : bookedAppointmentDate || bookedAppointmentTime}
+                            </span>
+                          </div>
+                        )}
+                        {bookedConfirmationNumber && (
+                          <div className="flex items-center gap-2 text-sm">
+                            <CheckCircle className="w-4 h-4 text-emerald-400" />
+                            <span className="text-slate-400">Confirmation:</span>
+                            <span className="text-slate-300 font-medium">{bookedConfirmationNumber}</span>
+                          </div>
+                        )}
+                      </div>
+                    )}
                   </div>
                 ) : (
                   // Other providers when booking is complete - no action needed

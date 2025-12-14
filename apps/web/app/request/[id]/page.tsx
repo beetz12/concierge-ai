@@ -1268,6 +1268,9 @@ export default function RequestDetails() {
                   onSelect={handleProviderSelect}
                   bookingComplete={isBookingComplete}
                   bookedProviderName={bookedProvider?.name}
+                  bookedAppointmentDate={bookedProvider?.booking_date}
+                  bookedAppointmentTime={bookedProvider?.booking_time}
+                  bookedConfirmationNumber={bookedProvider?.confirmation_number}
                 />
               );
             })()
