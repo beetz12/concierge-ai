@@ -410,10 +410,11 @@ export default function RequestDetails() {
           directContactInfo: (data.direct_contact_info &&
             typeof data.direct_contact_info === "object" &&
             !Array.isArray(data.direct_contact_info) &&
-            "name" in data.direct_contact_info &&
+            ("name" in data.direct_contact_info || "user_name" in data.direct_contact_info) &&
             "phone" in data.direct_contact_info)
             ? {
-                name: String((data.direct_contact_info as any).name || ""),
+                // Support both 'name' (direct task) and 'user_name' (research & book) field names
+                name: String((data.direct_contact_info as any).name || (data.direct_contact_info as any).user_name || ""),
                 phone: String((data.direct_contact_info as any).phone || ""),
               }
             : undefined,
@@ -506,11 +507,27 @@ export default function RequestDetails() {
             }
 
             // Convert DB format to frontend format
-            // IMPORTANT: Preserve existing providersFound and interactions
-            // These are managed by their own real-time subscriptions
+            // IMPORTANT: Preserve existing providersFound, interactions, and directContactInfo
+            // These are managed by their own real-time subscriptions or set during initial load
             setRealtimeRequest((prev) => {
               const existingProviders = prev?.providersFound || localRequest?.providersFound || dbRequest?.providersFound || [];
               const existingInteractions = prev?.interactions || localRequest?.interactions || dbRequest?.interactions || [];
+              // CRITICAL: Preserve directContactInfo - it contains the client name for booking calls
+              const existingDirectContactInfo = prev?.directContactInfo || localRequest?.directContactInfo || dbRequest?.directContactInfo;
+              const existingClientAddress = prev?.clientAddress || localRequest?.clientAddress || dbRequest?.clientAddress;
+
+              // Extract directContactInfo from payload if available (supports both 'name' and 'user_name' fields)
+              const payloadContactInfo = payload.new.direct_contact_info;
+              const newDirectContactInfo = (payloadContactInfo &&
+                typeof payloadContactInfo === "object" &&
+                !Array.isArray(payloadContactInfo) &&
+                ("name" in payloadContactInfo || "user_name" in payloadContactInfo) &&
+                "phone" in payloadContactInfo)
+                ? {
+                    name: String((payloadContactInfo as any).name || (payloadContactInfo as any).user_name || ""),
+                    phone: String((payloadContactInfo as any).phone || ""),
+                  }
+                : existingDirectContactInfo; // Preserve existing if not in payload
 
               const converted: ServiceRequest = {
                 id: payload.new.id,
@@ -519,11 +536,13 @@ export default function RequestDetails() {
                 description: payload.new.description,
                 criteria: payload.new.criteria,
                 location: payload.new.location || undefined,
+                clientAddress: payload.new.client_address || existingClientAddress,
                 status: safeRequestStatus(payload.new.status),
                 createdAt: payload.new.created_at,
                 providersFound: existingProviders,
                 interactions: existingInteractions,
                 finalOutcome: payload.new.final_outcome || undefined,
+                directContactInfo: newDirectContactInfo,
                 userPhone: payload.new.user_phone || undefined,
                 preferredContact: payload.new.preferred_contact as "phone" | "text" | undefined,
                 notificationSentAt: payload.new.notification_sent_at || undefined,
@@ -791,10 +810,11 @@ export default function RequestDetails() {
                   directContactInfo: (data.direct_contact_info &&
                     typeof data.direct_contact_info === "object" &&
                     !Array.isArray(data.direct_contact_info) &&
-                    "name" in data.direct_contact_info &&
+                    ("name" in data.direct_contact_info || "user_name" in data.direct_contact_info) &&
                     "phone" in data.direct_contact_info)
                     ? {
-                        name: String((data.direct_contact_info as any).name || ""),
+                        // Support both 'name' (direct task) and 'user_name' (research & book) field names
+                        name: String((data.direct_contact_info as any).name || (data.direct_contact_info as any).user_name || ""),
                         phone: String((data.direct_contact_info as any).phone || ""),
                       }
                     : undefined,
@@ -1233,11 +1253,24 @@ export default function RequestDetails() {
               loading={true}
             />
           ) : recommendations ? (
-            <RecommendedProviders
-              providers={recommendations.providers}
-              overallRecommendation={recommendations.overallRecommendation}
-              onSelect={handleProviderSelect}
-            />
+            (() => {
+              // Detect if booking is complete
+              const providers = request.providersFound || [];
+              const bookedProvider = request.selectedProvider?.booking_confirmed
+                ? request.selectedProvider
+                : providers.find(p => p.booking_confirmed);
+              const isBookingComplete = !!bookedProvider;
+
+              return (
+                <RecommendedProviders
+                  providers={recommendations.providers}
+                  overallRecommendation={recommendations.overallRecommendation}
+                  onSelect={handleProviderSelect}
+                  bookingComplete={isBookingComplete}
+                  bookedProviderName={bookedProvider?.name}
+                />
+              );
+            })()
           ) : null}
         </div>
       )}

@@ -1,32 +1,38 @@
-AI
-Hi there. I'm Dave's personal AI assistant. Dave is hoping to speak with a financial adviser because he's having some difficult affording his mortgage payments right now. Do you have a quick moment? Great. Thank you.
-
+Hi. This is my client's assistant calling back about the plumber appointment.
+7:23:05 AM(+00:02.37)
 User
 Yes.
 
-AI
-Dave's located in Greenville SC, and he's looking for some help within the next 2 days. I was hoping you could answer a few questions for me. First, what's your earliest available consultation for a new client?
+7:23:10 AM(+00:07.52)
 
+Assistant
+My client would like to book with you for tomorrow, Wednesday, 2 PM. Does that time still work?
+7:23:12 AM(+00:09.30)
 User
-In 2 weeks.
+Yes. It does.
 
-AI
-Okay. So 2 weeks out for the earliest consultation. Got it. My next question is, what would the cost be for an initial consultation regarding mortgage affordability or financial plan?
+7:23:17 AM(+00:14.58)
 
+Assistant
+Perfect. Just to confirm, plumber on Wednesday at 2 PM in Greenville, s for my client. Does that sound correct?
+7:23:20 AM(+00:17.16)
 User
-90 dollars per hour.
+Yes.
 
-AI
-Okay. So it's 90 dollars an hour for the consultation. Does Horizon's wealth match offer specific services or strategies to help clients struggling with mortgage payments.
+7:23:26 AM(+00:22.85)
 
+Assistant
+Is there anything else you need from us before the appointment?
+7:23:28 AM(+00:25.41)
 User
-I will help him come up with a plan. And at the end, will give him the plan.
+No. We're all set.
 
-AI
-Okay. So you'll help him come up with a plan and then provide him with that plan. Can you describe your typical approach or a general strategy for assisting clients with managing their housing related financial challenges?
+7:23:31 AM(+00:28.68)
 
-User
-I will have him list all of his costs and then reduce them and see if he needs to file bankruptcy.
+EndCall
+Completed successfully
+07:23 AM
+7:23:31 AM(+00:29.15)
 
-AI
+Assistant
 Thank you so much for your time. Have a wonderful day.

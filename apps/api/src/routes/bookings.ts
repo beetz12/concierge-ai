@@ -252,11 +252,70 @@ async function handleRealBookingCall(
   // Extract structured data from call result
   const analysis = completedCall.analysis || {};
   const structuredData = analysis.structuredData || {};
-  const bookingConfirmed = structuredData.booking_confirmed || false;
+  let bookingConfirmed = structuredData.booking_confirmed || false;
 
   // Extract transcript
   const transcript = completedCall.artifact?.transcript || "";
   const transcriptStr = typeof transcript === "string" ? transcript : JSON.stringify(transcript);
+
+  // Fallback detection: If VAPI didn't detect confirmation but transcript shows agreement
+  // (Same logic as /api/v1/providers/book for consistency)
+  if (!bookingConfirmed && transcriptStr) {
+    const transcriptLower = transcriptStr.toLowerCase();
+
+    // Check for date/time agreement patterns in transcript
+    const hasDateTimeAgreement =
+      // Provider offered/agreed to a time (including simple "yes" responses)
+      (/i can do|available|works for me|how about|let's do|yes|yeah|yep|sure|that works|sounds good/i.test(transcriptLower) &&
+      // And a day/time was mentioned
+      /(monday|tuesday|wednesday|thursday|friday|saturday|sunday|tomorrow|next week|today|wednesday)/i.test(transcriptLower) &&
+      /(\d{1,2}(?::\d{2})?\s*(?:am|pm)|morning|afternoon|evening|noon)/i.test(transcriptLower));
+
+    // Check for confirmation patterns (also detect when provider says "yes" to confirmation question)
+    const hasConfirmationPattern =
+      /(?:just to confirm|perfect|excellent|great|sounds good|see you|appointment.*(?:set|scheduled|confirmed)|does that sound correct.*yes|we're all set|all set)/i.test(transcriptLower);
+
+    // Check there's no rejection
+    const hasRejection =
+      /(?:not available|can't help|unavailable|no longer|sorry.*can't|decline|can't make it|won't work)/i.test(transcriptLower);
+
+    if (hasDateTimeAgreement && hasConfirmationPattern && !hasRejection) {
+      fastify.log.info(
+        {
+          vapiBookingConfirmed: false,
+          hasDateTimeAgreement,
+          hasConfirmationPattern,
+          hasRejection,
+        },
+        "[Booking] Fallback detection: VAPI missed confirmation, overriding to TRUE based on transcript analysis"
+      );
+      bookingConfirmed = true;
+
+      // Try to extract date/time if VAPI didn't
+      if (!structuredData.confirmed_date) {
+        const dateMatch = transcriptLower.match(/(monday|tuesday|wednesday|thursday|friday|saturday|sunday|tomorrow|next\s+\w+)/i);
+        if (dateMatch) {
+          structuredData.confirmed_date = dateMatch[0].charAt(0).toUpperCase() + dateMatch[0].slice(1);
+        }
+      }
+      if (!structuredData.confirmed_time) {
+        const timeMatch = transcriptLower.match(/(\d{1,2}(?::\d{2})?\s*(?:am|pm))/i);
+        if (timeMatch) {
+          structuredData.confirmed_time = timeMatch[0].toUpperCase();
+        }
+      }
+    }
+  }
+
+  fastify.log.info(
+    {
+      bookingConfirmed,
+      confirmedDate: structuredData.confirmed_date,
+      confirmedTime: structuredData.confirmed_time,
+      callOutcome: structuredData.call_outcome,
+    },
+    "[Booking] Final booking status after analysis"
+  );
 
   // Update provider record with booking details
   const { error: updateProviderError } = await supabase

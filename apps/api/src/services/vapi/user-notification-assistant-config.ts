@@ -94,7 +94,7 @@ export function createUserNotificationAssistantConfig(request: UserNotificationR
       provider: "google" as const,
       model: "gemini-2.0-flash",
       temperature: 0.25, // Slightly higher for natural conversation while maintaining accuracy
-      tools: [{ type: "endCall", description: "End the phone call. Use this immediately after your closing statement." }],
+      tools: [{ type: "endCall" }], // Built-in VAPI tool - description not allowed
       messages: [
         {
           role: "system" as const,

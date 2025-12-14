@@ -249,7 +249,6 @@ export default function DirectTask() {
         description="Give us a contact and a mission. The AI will make the call for you."
       />
 
-      <div className="max-w-2xl mx-auto">
         <form
           onSubmit={handleSubmit}
           className="bg-surface p-8 rounded-2xl border border-surface-highlight shadow-xl space-y-6"
@@ -414,7 +413,6 @@ export default function DirectTask() {
             {isSubmitting ? "Initiating Call..." : "Execute Task"}
           </button>
         </form>
-      </div>
     </div>
   );
 }

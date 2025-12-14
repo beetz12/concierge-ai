@@ -131,3 +131,11 @@ Evaluates the clarity of the README, the quality of the demo video, and how effe
 Shield
 Pro Tip
 Focus on creating a project that not only works well technically but also solves a real problem and provides a great user experience. The best projects often excel in multiple criteria! Assemble your skills and tools to maximize your impact.
+
+# submission
+
+Demo video should include the following: 
+- About the project
+- Tech stack and architecture
+- Demo if possible
+- Learning and growth (optional)
