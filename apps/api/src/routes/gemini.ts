@@ -524,7 +524,7 @@ export default async function geminiRoutes(fastify: FastifyInstance) {
         tags: ["gemini"],
         body: {
           type: "object",
-          required: ["serviceType", "userCriteria", "location", "urgency", "providerName", "clientName"],
+          required: ["serviceType", "location", "urgency", "clientName"],
           properties: {
             serviceType: {
               type: "string",
@@ -536,7 +536,7 @@ export default async function geminiRoutes(fastify: FastifyInstance) {
             },
             userCriteria: {
               type: "string",
-              description: "User's specific requirements and criteria",
+              description: "User's specific requirements and criteria (optional)",
             },
             location: {
               type: "string",
@@ -546,13 +546,13 @@ export default async function geminiRoutes(fastify: FastifyInstance) {
               type: "string",
               description: "Timeline/urgency of the request",
             },
-            providerName: {
-              type: "string",
-              description: "Name of the provider to call",
-            },
             clientName: {
               type: "string",
               description: "Name of the client requesting service",
+            },
+            clientAddress: {
+              type: "string",
+              description: "Full street address for service location (optional)",
             },
           },
         },
