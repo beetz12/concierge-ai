@@ -1,32 +1,33 @@
-AI
-Hi there. I'm Dave's personal AI assistant. Dave is hoping to speak with a financial adviser because he's having some difficult affording his mortgage payments right now. Do you have a quick moment? Great. Thank you.
 
+
+Assistant
+Hi there. This is my client's AI assistant calling back about scheduling the plumber appointment. Do you have just a moment?
+12:02:30 AM(+00:01.97)
 User
-Yes.
+Yes. I do.
 
-AI
-Dave's located in Greenville SC, and he's looking for some help within the next 2 days. I was hoping you could answer a few questions for me. First, what's your earliest available consultation for a new client?
+12:02:36 AM(+00:08.04)
 
+Assistant
+We spoke earlier, and you mentioned you were available tomorrow at 5 PM. I would like to lock in a specific date and time if possible. Would tomorrow at 5 PM work for you?
+12:02:38 AM(+00:10.00)
 User
-In 2 weeks.
+Yes. It does.
 
-AI
-Okay. So 2 weeks out for the earliest consultation. Got it. My next question is, what would the cost be for an initial consultation regarding mortgage affordability or financial plan?
+12:02:48 AM(+00:19.90)
 
+Assistant
+Perfect. Just to confirm, the service is for a plumber, tomorrow at 5 PM in Greenville SC for my client. There anything else you need from us before the appointment?
+12:02:51 AM(+00:22.40)
 User
-90 dollars per hour.
+No. That's it.
 
-AI
-Okay. So it's 90 dollars an hour for the consultation. Does Horizon's wealth match offer specific services or strategies to help clients struggling with mortgage payments.
+12:03:01 AM(+00:32.95)
 
-User
-I will help him come up with a plan. And at the end, will give him the plan.
+EndCall
+Completed successfully
+12:03 AM
+12:03:02 AM(+00:33.42)
 
-AI
-Okay. So you'll help him come up with a plan and then provide him with that plan. Can you describe your typical approach or a general strategy for assisting clients with managing their housing related financial challenges?
-
-User
-I will have him list all of his costs and then reduce them and see if he needs to file bankruptcy.
-
-AI
+Assistant
 Thank you so much for your time. Have a wonderful day.

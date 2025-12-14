@@ -545,7 +545,6 @@ export default function NewRequest() {
         description="Tell us what you need. We'll research local providers, call them to verify details, and book the best one."
       />
 
-      <div className="max-w-2xl mx-auto">
         <form
           onSubmit={handleSubmit}
           className="bg-surface p-8 rounded-2xl border border-surface-highlight shadow-xl space-y-6"
@@ -796,7 +795,6 @@ export default function NewRequest() {
             )}
           </button>
         </form>
-      </div>
     </div>
   );
 }

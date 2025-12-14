@@ -1,3 +1,47 @@
+Thanks, we still have a few more issues. Our vapi assistants seem to
+  behave differently depending on if it was initiated when the user clicks
+  on "Select this provider" from our app vs. when the user sends a text to
+  select a provider. In the latter case, the assistants starts with this:
+  "
+  Assistant
+  Hi there. This is David's AI assistant calling back about scheduling the
+  plumber appointment. Do you have just a moment?
+  12:04:44 AM(+00:02.02)
+  User
+  Yes. I do.
+
+  12:04:51 AM(+00:08.68)
+
+  Assistant
+  We spoke earlier, and you mentioned you were available tomorrow 5 PM. I
+  would like to lock in a specific date and time if possible. Would
+  tomorrow at 5 PM work for you?" and in the first case, the assistant
+  starts with this: " 8 messages selected
+
+  Assistant
+  Hi there. This is my client's AI assistant calling back about scheduling
+  the plumber appointment. Do you have just a moment?
+  12:02:30 AM(+00:01.97)
+  User
+  Yes. I do.
+
+  12:02:36 AM(+00:08.04)
+
+  Assistant
+  We spoke earlier, and you mentioned you were available tomorrow at 5 PM.
+  I would like to lock in a specific date and time if possible. Would
+  tomorrow at 5 PM work for you?
+  12:02:38 AM(+00:10.00)". The issues are: 1. in the first case, the
+  assistant does not mention the client's name and just says - This is my
+  client's AI . 2. Both versions use an unnatural way to ask for the
+  confirmation - "We spoke earlier, and you mentioned you were available
+  tomorrow at 5 PM. I would like to lock in a specific date and time if
+  possible. Would tomorrow at 5 PM work for you?" Since the provider
+  already previously mentioned that they would be available tomorrow at
+  5pm, and the assistant confirmed it, You don't need to ask "I would like
+  to lock in a specific date and time if possible. Would
+    tomorrow at 5 PM work for you".  
+    
 Okay, great. Now the agent is not cutting off the provider But after the provider says "Have a wonderful day." it's not ending
  the call. see @docs/transcript.md. Basically, the provider has to say something else after "Have a wonderful day." Before the
 call is actually ended. please Use your specialized multi-agent team to analyze the root cause in parallel with up to 3 agents

@@ -22,6 +22,10 @@ interface Props {
   onSelect: (provider: Provider) => void;
   loading?: boolean;
   selectedId?: string;
+  /** When true, booking is complete - hide selection buttons */
+  bookingComplete?: boolean;
+  /** Name of the provider that was booked (for display) */
+  bookedProviderName?: string;
 }
 
 const RecommendedProviders: React.FC<Props> = ({
@@ -30,6 +34,8 @@ const RecommendedProviders: React.FC<Props> = ({
   onSelect,
   loading = false,
   selectedId,
+  bookingComplete = false,
+  bookedProviderName,
 }) => {
   const renderStars = (rating: number) => {
     return (
@@ -198,20 +204,36 @@ const RecommendedProviders: React.FC<Props> = ({
               </div>
             )}
 
-              {/* Select Button */}
-              <button
-                onClick={() => onSelect(provider)}
-                disabled={selectedId === provider.providerId}
-                className={`w-full py-3 px-4 rounded-lg font-semibold transition-all duration-200 ${
-                  selectedId === provider.providerId
-                    ? "bg-primary-600 text-white cursor-default"
-                    : "bg-primary-600/10 text-primary-400 border border-primary-500/30 hover:bg-primary-600 hover:text-white hover:shadow-lg hover:shadow-primary-500/20"
-                }`}
-              >
-                {selectedId === provider.providerId
-                  ? "Selected"
-                  : "Select This Provider"}
-              </button>
+              {/* Select Button - Hidden when booking is complete */}
+              {bookingComplete ? (
+                // Booking complete: Show status badge instead of button
+                provider.providerName === bookedProviderName ? (
+                  <div className="w-full py-3 px-4 rounded-lg font-semibold bg-emerald-600 text-white text-center flex items-center justify-center gap-2">
+                    <CheckCircle className="w-5 h-5" />
+                    Appointment Booked
+                  </div>
+                ) : (
+                  // Other providers when booking is complete - no action needed
+                  <div className="w-full py-3 px-4 rounded-lg font-semibold bg-slate-700/50 text-slate-500 text-center cursor-not-allowed">
+                    Another Provider Selected
+                  </div>
+                )
+              ) : (
+                // Normal button when booking not complete
+                <button
+                  onClick={() => onSelect(provider)}
+                  disabled={selectedId === provider.providerId}
+                  className={`w-full py-3 px-4 rounded-lg font-semibold transition-all duration-200 ${
+                    selectedId === provider.providerId
+                      ? "bg-primary-600 text-white cursor-default"
+                      : "bg-primary-600/10 text-primary-400 border border-primary-500/30 hover:bg-primary-600 hover:text-white hover:shadow-lg hover:shadow-primary-500/20"
+                  }`}
+                >
+                  {selectedId === provider.providerId
+                    ? "Selected"
+                    : "Select This Provider"}
+                </button>
+              )}
             </div>
           </div>
         ))}
