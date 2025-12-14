@@ -4,22 +4,36 @@
 
 import type { CallResult } from "../vapi/types.js";
 
+/**
+ * Extended CallResult with provider metadata from database
+ * Used for scoring with Google rating/reviews
+ */
+export interface CallResultWithMetadata extends CallResult {
+  providerId?: string; // Database UUID
+  rating?: number; // Google rating (0-5)
+  reviewCount?: number; // Number of Google reviews
+}
+
 export interface RecommendationRequest {
-  callResults: CallResult[];
+  callResults: CallResultWithMetadata[];
   originalCriteria: string;
   serviceRequestId: string;
 }
 
 export interface ProviderRecommendation {
+  providerId?: string; // Database UUID
   providerName: string;
   phone: string;
-  score: number; // 0-100
-  reasoning: string;
+  rating?: number; // Google rating (0-5)
+  reviewCount?: number; // Number of Google reviews
+  score: number; // 0-100 (multi-objective score)
+  reasoning: string; // Human-readable explanation
   criteriaMatched: string[];
   earliestAvailability?: string;
   estimatedRate?: string;
-  callQualityScore: number; // How well the call went (0-100)
-  professionalismScore: number; // Professionalism assessment (0-100)
+  // Legacy fields (kept for backward compatibility)
+  callQualityScore?: number;
+  professionalismScore?: number;
 }
 
 export interface RecommendationResponse {
