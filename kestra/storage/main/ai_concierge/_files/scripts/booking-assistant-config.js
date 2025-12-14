@@ -165,7 +165,7 @@ Thank them sincerely when they confirm the appointment.`;
         firstMessage: `Hi there! This is ${clientName}'s AI assistant calling back about scheduling the ${request.serviceNeeded} appointment. Do you have just a moment?`,
         // Enable endCall function
         endCallFunctionEnabled: true,
-        endCallMessage: "Thank you so much for your time. Have a wonderful day!",
+        endCallMessage: `Thank you so much for that information! I'll share this with ${clientName} and they'll be in touch. Have a wonderful day!`,
         silenceTimeoutSeconds: 20,
         // Analysis configuration
         analysisPlan: {

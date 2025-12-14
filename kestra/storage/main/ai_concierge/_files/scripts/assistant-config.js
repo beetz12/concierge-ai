@@ -145,7 +145,7 @@ Thank them genuinely when they help.`;
         },
         firstMessage: `Hi there! This is an AI assistant calling on behalf of my client regarding ${request.providerName}. Do you have just a moment?`,
         endCallFunctionEnabled: true,
-        endCallMessage: "Thank you so much for your time. Have a wonderful day!",
+        endCallMessage: "Thank you so much for your help! I'll relay this information to my client and we'll reach back out if they'd like to proceed. Have a wonderful day!",
         silenceTimeoutSeconds: 20, // Safety net: auto-end after 20s silence post-closing
         analysisPlan: {
             summaryPlan: {
@@ -251,7 +251,7 @@ function createDynamicDirectTaskConfig(request, customPrompt) {
         },
         firstMessage: customPrompt.firstMessage,
         endCallFunctionEnabled: true,
-        endCallMessage: "Thank you so much for your time. Have a wonderful day!",
+        endCallMessage: "Thank you so much for your help! I'll relay this information to my client and we'll reach back out if they'd like to proceed. Have a wonderful day!",
         silenceTimeoutSeconds: 20, // Safety net: auto-end after 20s silence post-closing
         analysisPlan: {
             summaryPlan: {
@@ -382,7 +382,7 @@ If you detect voicemail (automated greeting, "leave a message", beep), immediate
             },
             firstMessage: request.customPrompt.firstMessage,
             endCallFunctionEnabled: true,
-            endCallMessage: request.customPrompt.closingScript || "Thank you so much for your time. Have a wonderful day!",
+            endCallMessage: request.customPrompt.closingScript || `Thank you so much for that information! I'll share this with ${clientName} and if they'd like to proceed, they'll reach out to schedule. Have a wonderful day!`,
             silenceTimeoutSeconds: 20, // Safety net: auto-end after 20s silence post-closing
             analysisPlan: {
                 structuredDataSchema: {
@@ -643,7 +643,7 @@ For unusual requirements, frame naturally: "${clientName} specifically mentioned
         })(),
         // Enable endCall function (VAPI handles tool registration automatically)
         endCallFunctionEnabled: true,
-        endCallMessage: "Thank you so much for your time. Have a wonderful day!",
+        endCallMessage: `Thank you so much for that information! I'll share this with ${clientName} and if they'd like to proceed, they'll reach out to schedule. Have a wonderful day!`,
         silenceTimeoutSeconds: 20, // Safety net: auto-end after 20s silence post-closing
         // Analysis configuration
         analysisPlan: {

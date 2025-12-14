@@ -384,8 +384,7 @@ export default function NewRequest() {
               ? {
                   systemPrompt: researchPrompt.systemPrompt,
                   firstMessage: researchPrompt.firstMessage,
-                  closingScript:
-                    "Thank you so much for your time. Have a wonderful day!",
+                  // closingScript is intentionally omitted - backend uses dynamic closing with client name
                 }
               : undefined,
           };
