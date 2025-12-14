@@ -1,43 +1,84 @@
-@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=Inter:wght@400;500;600&display=swap');
+@import url("https://fonts.googleapis.com/css2?family=Google+Sans+Flex:wght@300;400;500;600;700&display=swap");
 @import "tailwindcss";
 
 /* Custom theme extensions */
 @theme {
-  /* Abyssal Mint Palette */
-  --color-abyss: #040B11;
-  --color-surface: #0B1623;
-  --color-surface-hover: #121E2F;
-  --color-surface-highlight: #152336;
-  
+  /* Abyssal Mint Palette - Enhanced Enterprise */
+  --color-abyss: #040b11;
+  --color-surface: #0b1623;
+  --color-surface-hover: #121e2f;
+  --color-surface-highlight: #1a2a3e;
+  --color-surface-elevated: #0f1a28;
+
+  /* Sidebar-specific colors */
+  --color-sidebar: #0a1420;
+  --color-sidebar-foreground: #e2e8f0;
+  --color-sidebar-primary: #14b8a6;
+  --color-sidebar-primary-foreground: #042f2e;
+  --color-sidebar-accent: #152336;
+  --color-sidebar-accent-foreground: #f1f5f9;
+  --color-sidebar-border: #1a2a3e;
+  --color-sidebar-ring: #14b8a6;
+
   /* Re-mapping Primary to Mint/Teal */
-  --color-primary-50: #F0FDFA;
-  --color-primary-100: #CCFBF1;
-  --color-primary-200: #99F6E4;
-  --color-primary-300: #5EEAD4;
-  --color-primary-400: #2DD4BF;
-  --color-primary-500: #14B8A6;
-  --color-primary-600: #0D9488;
-  --color-primary-700: #0F766E;
-  --color-primary-800: #115E59;
-  --color-primary-900: #134E4A;
-  --color-primary-950: #042F2E;
+  --color-primary-50: #f0fdfa;
+  --color-primary-100: #ccfbf1;
+  --color-primary-200: #99f6e4;
+  --color-primary-300: #5eead4;
+  --color-primary-400: #2dd4bf;
+  --color-primary-500: #14b8a6;
+  --color-primary-600: #0d9488;
+  --color-primary-700: #0f766e;
+  --color-primary-800: #115e59;
+  --color-primary-900: #134e4a;
+  --color-primary-950: #042f2e;
 
-  /* Fonts */
-  --font-family-sans: 'Outfit', system-ui, sans-serif;
-  --font-family-body: 'Inter', system-ui, sans-serif;
+  /* Muted colors for subtle UI */
+  --color-muted: #1a2a3e;
+  --color-muted-foreground: #94a3b8;
 
-  --animate-fadeIn: fadeIn 0.5s ease-out;
+  /* Fonts - Google Sans Flex */
+  --font-family-sans:
+    "Google Sans Flex", system-ui, -apple-system, sans-serif;
+  --font-family-body:
+    "Google Sans Flex", system-ui, -apple-system, sans-serif;
+  --default-font-family:
+    "Google Sans Flex", system-ui, -apple-system, sans-serif;
+  --font-family-display:
+    "Google Sans Flex", system-ui, -apple-system, sans-serif;
+
+  /* Sidebar dimensions */
+  --sidebar-width: 16rem;
+  --sidebar-width-mobile: 18rem;
+  --sidebar-width-icon: 4.5rem;
+
+  /* Animation timing */
+  --animate-fadeIn: fadeIn 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  --animate-slideIn: slideIn 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   --animate-shimmer: shimmer 2s infinite;
+  --animate-accordion-down: accordion-down 0.2s ease-out;
+  --animate-accordion-up: accordion-up 0.2s ease-out;
 }
 
 @keyframes fadeIn {
   0% {
     opacity: 0;
-    transform: translateY(10px);
+    transform: translateY(8px);
   }
   100% {
     opacity: 1;
     transform: translateY(0);
+  }
+}
+
+@keyframes slideIn {
+  0% {
+    opacity: 0;
+    transform: translateX(-8px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateX(0);
   }
 }
 
@@ -50,19 +91,37 @@
   }
 }
 
+@keyframes accordion-down {
+  from {
+    height: 0;
+  }
+  to {
+    height: var(--radix-accordion-content-height);
+  }
+}
+
+@keyframes accordion-up {
+  from {
+    height: var(--radix-accordion-content-height);
+  }
+  to {
+    height: 0;
+  }
+}
+
 /* Custom scrollbar */
 ::-webkit-scrollbar {
-  width: 8px;
-  height: 8px;
+  width: 6px;
+  height: 6px;
 }
 
 ::-webkit-scrollbar-track {
-  background: var(--color-abyss);
+  background: transparent;
 }
 
 ::-webkit-scrollbar-thumb {
   background: var(--color-surface-highlight);
-  border-radius: 4px;
+  border-radius: 3px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
@@ -84,7 +143,19 @@ html {
 
 body {
   background-color: var(--color-abyss);
-  color: #F1F5F9; /* Slate-100 */
+  color: #f1f5f9;
+  font-family: var(--font-family-sans);
+  font-feature-settings:
+    "liga" 1,
+    "calt" 1;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Focus ring styles */
+*:focus-visible {
+  outline: 2px solid var(--color-primary-500);
+  outline-offset: 2px;
 }
 
 /* Google Places Autocomplete Dark Theme */
@@ -100,7 +171,7 @@ body {
 
 .pac-item {
   background-color: var(--color-surface);
-  color: #E2E8F0; /* Slate-200 */
+  color: #e2e8f0;
   padding: 10px 12px;
   border-top: 1px solid var(--color-surface-highlight);
   cursor: pointer;
@@ -117,7 +188,7 @@ body {
 }
 
 .pac-item-query {
-  color: #F1F5F9; /* Slate-100 */
+  color: #f1f5f9;
   font-size: 0.9375rem;
 }
 
@@ -139,4 +210,58 @@ body {
 .pac-logo::after {
   filter: brightness(0) invert(1);
   opacity: 0.5;
+}
+
+/* Google Places PlaceAutocompleteElement (2025 API - Shadow DOM) */
+gmp-place-autocomplete {
+  --gmp-mat-color-surface: var(--color-surface);
+  --gmp-mat-color-on-surface: #f1f5f9;
+  --gmp-mat-color-on-surface-variant: #94a3b8;
+  display: block;
+  width: 100%;
+}
+
+/* Style the input inside the shadow DOM using ::part() */
+gmp-place-autocomplete::part(input) {
+  background-color: var(--color-abyss) !important;
+  color: #f1f5f9 !important;
+  border: none !important;
+  padding: 0.75rem 1rem 0.75rem 2.5rem !important;
+  font-family: var(--font-family-body) !important;
+  font-size: 1rem !important;
+  outline: none !important;
+  width: 100% !important;
+}
+
+gmp-place-autocomplete::part(input)::placeholder {
+  color: #64748b !important;
+}
+
+/* Predictions dropdown styling */
+gmp-place-autocomplete::part(predictions) {
+  background-color: var(--color-surface) !important;
+  border: 1px solid var(--color-surface-highlight) !important;
+  border-radius: 0.75rem !important;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.5) !important;
+  margin-top: 4px !important;
+}
+
+gmp-place-autocomplete::part(prediction-item) {
+  background-color: var(--color-surface) !important;
+  color: #e2e8f0 !important;
+  padding: 10px 12px !important;
+}
+
+gmp-place-autocomplete::part(prediction-item):hover,
+gmp-place-autocomplete::part(prediction-item-selected) {
+  background-color: var(--color-surface-hover) !important;
+}
+
+gmp-place-autocomplete::part(prediction-item-main-text) {
+  color: #f1f5f9 !important;
+}
+
+gmp-place-autocomplete::part(prediction-item-match) {
+  color: var(--color-primary-400) !important;
+  font-weight: 600 !important;
 }
