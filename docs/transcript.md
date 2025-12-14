@@ -1,33 +1,38 @@
-
-
-Assistant
-Hi there. This is my client's AI assistant calling back about scheduling the plumber appointment. Do you have just a moment?
-12:02:30 AM(+00:01.97)
+Hi. This is my client's assistant calling back about the plumber appointment.
+7:23:05 AM(+00:02.37)
 User
-Yes. I do.
+Yes.
 
-12:02:36 AM(+00:08.04)
+7:23:10 AM(+00:07.52)
 
 Assistant
-We spoke earlier, and you mentioned you were available tomorrow at 5 PM. I would like to lock in a specific date and time if possible. Would tomorrow at 5 PM work for you?
-12:02:38 AM(+00:10.00)
+My client would like to book with you for tomorrow, Wednesday, 2 PM. Does that time still work?
+7:23:12 AM(+00:09.30)
 User
 Yes. It does.
 
-12:02:48 AM(+00:19.90)
+7:23:17 AM(+00:14.58)
 
 Assistant
-Perfect. Just to confirm, the service is for a plumber, tomorrow at 5 PM in Greenville SC for my client. There anything else you need from us before the appointment?
-12:02:51 AM(+00:22.40)
+Perfect. Just to confirm, plumber on Wednesday at 2 PM in Greenville, s for my client. Does that sound correct?
+7:23:20 AM(+00:17.16)
 User
-No. That's it.
+Yes.
 
-12:03:01 AM(+00:32.95)
+7:23:26 AM(+00:22.85)
+
+Assistant
+Is there anything else you need from us before the appointment?
+7:23:28 AM(+00:25.41)
+User
+No. We're all set.
+
+7:23:31 AM(+00:28.68)
 
 EndCall
 Completed successfully
-12:03 AM
-12:03:02 AM(+00:33.42)
+07:23 AM
+7:23:31 AM(+00:29.15)
 
 Assistant
 Thank you so much for your time. Have a wonderful day.

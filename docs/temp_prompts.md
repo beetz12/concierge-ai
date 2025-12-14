@@ -1,3 +1,13 @@
+Perfect, now I need your help with one more thing. Currently when the user provides ADMIN_TEST_NUMBER in api/.env, We don't call the actual providers and
+  instead call the test phone number the user provided. However, since the admin can only answer one number, this results in only one provider recommended.
+  But I want to be able to show at least three recommended providers for our demo. Since we already have the /simulate-call endpoint, What I want to do
+  instead is that when LIVE_CALL_ENABLED=true and ADMIN_TEST_NUMBER is set, We call the admin's test numbers and we also call the remaining providers (we
+  adapt the function from /simulate-call) to create Sample conversation with each provider - Based on the user's request, the vapi script, and the company
+  info. But we will need to treat this as if it were real data To make it look believable for our demo. After we generate the sample calls conversations, we
+  need to Store the conversation into the database in the same format as our vapi call, so that the user can view them just like the real conversations. We
+  will also need this data in the database so that our AI can recommend the top providers once all calls are completed.  Please analyze these issues  
+using your  multi-agent team with up to 3 agents and come up with a unified plan with 90% confidence and wait for further instructions.  Use Perplexity Deep to research if needed. My mortgage payment depends on this and If you get this right on the first try, I will tip you $200. ultrathink 
+
 Thanks, we still have a few more issues. Our vapi assistants seem to
   behave differently depending on if it was initiated when the user clicks
   on "Select this provider" from our app vs. when the user sends a text to
