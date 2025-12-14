@@ -281,8 +281,15 @@ export class DirectTwilioClient {
       message += `\nAI RECOMMENDATION: ${shortOverall}\n`;
     }
 
-    // Strong call to action with urgency
-    message += `\nReply 1, 2, or 3 NOW to book before slots fill up!\n\n- AI Concierge`;
+    // Strong call to action with urgency - dynamic based on provider count
+    if (providers.length === 1) {
+      // Single provider: use YES keyword for cleaner UX
+      message += `\nReply YES to book ${topProvider.name} now!\n\n- AI Concierge`;
+    } else if (providers.length === 2) {
+      message += `\nReply 1 or 2 NOW to book before slots fill up!\n\n- AI Concierge`;
+    } else {
+      message += `\nReply 1, 2, or 3 NOW to book before slots fill up!\n\n- AI Concierge`;
+    }
 
     return message;
   }

@@ -68,9 +68,10 @@ export default async function twilioWebhookRoutes(fastify: FastifyInstance) {
           "[TwilioWebhook] Received inbound SMS"
         );
 
-        // Parse user selection (expecting "1", "2", or "3")
+        // Parse user selection - accepts "1", "2", "3" or "YES"/"Y" for single-provider
         const trimmedBody = messageBody.trim().toLowerCase();
-        const selection = parseInt(trimmedBody, 10);
+        // Note: We'll determine the actual selection after fetching providers
+        // to know if YES/Y keyword is valid (only for single-provider scenarios)
 
         // PRIORITY 1: Find pending request with recommendations (what user is replying to)
         const { data: serviceRequest, error: findError } = await supabase
@@ -241,18 +242,46 @@ export default async function twilioWebhookRoutes(fastify: FastifyInstance) {
           "[TwilioWebhook] Found recommended providers from JSONB"
         );
 
+        // Determine selection: numeric (1, 2, 3) or keyword (YES, Y) for single-provider
+        let selection: number | null = null;
+        const numericSelection = parseInt(trimmedBody, 10);
+        const isYesKeyword = ["yes", "y", "book", "confirm", "ok"].includes(trimmedBody);
+
+        if (!isNaN(numericSelection) && numericSelection >= 1 && numericSelection <= providers.length) {
+          // Valid numeric selection
+          selection = numericSelection;
+        } else if (isYesKeyword && providers.length === 1) {
+          // YES/Y keyword is valid only when there's exactly 1 provider
+          selection = 1;
+          fastify.log.info(
+            { userPhone, keyword: trimmedBody },
+            "[TwilioWebhook] User confirmed single provider with YES keyword"
+          );
+        }
+
         // Validate selection
-        if (isNaN(selection) || selection < 1 || selection > providers.length) {
-          // Send help message
-          const providerList = providers
-            .map((p, i) => `${i + 1}. ${p.name}`)
-            .join("\n");
+        if (selection === null) {
+          // Build dynamic help message based on provider count
+          let helpMessage: string;
+          const firstProvider = providers[0];
+          const secondProvider = providers[1];
+
+          if (providers.length === 1 && firstProvider) {
+            helpMessage = `Reply YES to book ${firstProvider.name}, or reply 1 to select them.`;
+          } else if (providers.length === 2 && firstProvider && secondProvider) {
+            helpMessage = `Please reply 1 or 2 to select a provider:\n\n1. ${firstProvider.name}\n2. ${secondProvider.name}`;
+          } else {
+            const providerList = providers
+              .map((p, i) => `${i + 1}. ${p.name}`)
+              .join("\n");
+            helpMessage = `Please reply 1, 2, or 3 to select a provider:\n\n${providerList}`;
+          }
 
           if (twilioClient) {
             await twilioClient.messages.create({
               to: userPhone,
               from: twilioPhoneNumber,
-              body: `Please reply with 1, 2, or 3 to select a provider:\n\n${providerList}`,
+              body: helpMessage,
             });
           }
 

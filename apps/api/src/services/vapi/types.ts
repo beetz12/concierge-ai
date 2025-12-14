@@ -26,7 +26,7 @@ export type { GeneratedPrompt } from "../direct-task/types.js";
 export interface CallResult {
   status: "completed" | "timeout" | "error" | "no_answer" | "voicemail";
   callId: string;
-  callMethod: "kestra" | "direct_vapi";
+  callMethod: "kestra" | "direct_vapi" | "simulated";
   duration: number; // minutes
   endedReason: string;
   transcript: string;

@@ -81,17 +81,21 @@ SPEECH RULES
 CONVERSATION FLOW
 ═══════════════════════════════════════════════════════════════════
 
-1. GREETING:
-   "Hi there! This is ${clientName}'s AI assistant calling back about scheduling the ${request.serviceNeeded} appointment. Do you have a moment?"
+1. GREETING (wait for response):
+   "Hi! This is ${clientName}'s assistant calling back about the ${request.serviceNeeded} appointment."
+   Wait for them to acknowledge (e.g., "yes", "hi", "okay").
 
-2. REFERENCE PREVIOUS CALL:
-   "We spoke earlier and you mentioned you were available ${preferredTime}. I'd like to lock in a specific date and time if possible."
+2. PROPOSE THE TIME DIRECTLY:
+   Since the provider already confirmed availability in our previous call, propose directly:
+   "${clientName} would like to book with you for ${preferredTime}. Does that time still work?"
 
-3. SCHEDULE THE APPOINTMENT:
-   - Propose the preferred time: "Would ${preferredTime} work for you?"
-   - If they suggest alternatives, work with them to find a mutually agreeable time
-   - Be flexible and accommodating
-   - Get SPECIFIC: day of week, date, and time (e.g., "Tuesday, January 15th at 2:00 PM")
+   If they confirm (say "yes", "sure", "that works"):
+   → Proceed to step 3 (CONFIRM DETAILS)
+
+   If they say the time no longer works:
+   → Ask: "What time would work better for you?"
+   → Be flexible, work with them to find a new time
+   → Get SPECIFIC: day of week, date, and time (e.g., "Tuesday, January 15th at 2:00 PM")
 
    CRITICAL: DO NOT ACCEPT VAGUE TIMEFRAMES
    If they say things like:
@@ -101,15 +105,19 @@ CONVERSATION FLOW
 
    Always get: Exact day of week + Date + Specific time
 
-4. CONFIRM DETAILS:
-   Once you have a time, confirm:
-   "Perfect! Just to confirm:
-   - Service: ${request.serviceNeeded}
-   - Date and time: [REPEAT THE CONFIRMED DATE/TIME]
-   - Location: ${request.location}
-   - Client: ${clientName}
+3. CONFIRM DETAILS (GET EXPLICIT YES):
+   Once you have confirmed the time, summarize and get explicit confirmation:
+   "Perfect! Just to confirm: ${request.serviceNeeded} on [DATE] at [TIME] in ${request.location} for ${clientName}. Does that sound correct?"
 
-   Is there anything else you need from us before the appointment?"
+   WAIT for their response. They should say "yes", "correct", "that's right", etc.
+   If they say "no" or indicate something is wrong, clarify what needs to be changed.
+
+4. ANYTHING ELSE (SEPARATE QUESTION):
+   ONLY after they confirm the booking details with "yes" or similar, then ask:
+   "Is there anything else you need from us before the appointment?"
+
+   If they say "no" or "that's it" → This means NOTHING ELSE IS NEEDED, the booking is CONFIRMED.
+   If they need something (address, phone, etc.) → Provide what you can, then proceed to closing.
 
 5. CLOSING:
    "Excellent! ${clientName} will see you on [DATE] at [TIME]. Thank you so much for your time!"
@@ -188,8 +196,8 @@ Thank them sincerely when they confirm the appointment.`;
       machineDetectionSpeechEndThreshold: 1200,
     },
 
-    // First message
-    firstMessage: `Hi there! This is ${clientName}'s AI assistant calling back about scheduling the ${request.serviceNeeded} appointment. Do you have just a moment?`,
+    // First message - matches new natural flow (step 1)
+    firstMessage: `Hi! This is ${clientName}'s assistant calling back about the ${request.serviceNeeded} appointment.`,
 
     // Enable endCall function
     endCallFunctionEnabled: true,
@@ -273,19 +281,26 @@ What date and time was confirmed? Any issues or follow-up needed?`,
             role: "system" as const,
             content: `Analyze this booking call transcript carefully.
 
+CRITICAL CONTEXT FOR "NO" RESPONSES:
+- If the AI asked "Does that sound correct?" and provider said "Yes" → CONFIRMED
+- If the AI asked "Is there anything else you need?" and provider said "No" or "That's it" → This means NOTHING ELSE IS NEEDED, NOT a rejection. The booking is CONFIRMED.
+- "No" after "anything else needed?" is POSITIVE - it means they don't need anything else.
+
 IMPORTANT: Set booking_confirmed to TRUE if:
-- The provider agreed to a specific date AND time (e.g., "Tuesday at 9 AM", "next week Monday at 2pm")
-- The AI confirmed the appointment details
-- The provider did NOT decline or say they're unavailable
+- The provider agreed to a specific date AND time (e.g., "Tuesday at 9 AM", "tomorrow at 5 PM")
+- The AI confirmed the appointment details and provider said "yes", "correct", "right", etc.
+- After confirming, provider said "no" to "anything else needed?" (this is GOOD - booking confirmed)
+- The provider did NOT decline the appointment itself
 - The call ended normally (not due to voicemail or error)
 
 Set booking_confirmed to FALSE only if:
-- Provider explicitly said they're unavailable or declined
+- Provider explicitly said they're unavailable or declined THE APPOINTMENT
+- Provider said "no" directly to "Does this sound correct?" or to the date/time itself
 - No specific date/time was agreed upon
 - Call went to voicemail
 - Provider asked to call back later without setting a time
 
-Extract all appointment details. If the provider said a date/time and didn't object, the booking IS confirmed.`,
+Extract all appointment details. Pay close attention to WHICH question "no" is answering.`,
           },
         ],
       },

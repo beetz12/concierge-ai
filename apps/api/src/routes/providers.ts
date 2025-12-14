@@ -13,9 +13,11 @@ import {
   KestraClient,
 } from "../services/vapi/index.js";
 import type { CallRequest, CallResult } from "../services/vapi/types.js";
+import { CallResultService } from "../services/vapi/call-result.service.js";
 import { RecommendationService } from "../services/recommendations/recommend.service.js";
 import { triggerUserNotification } from "../services/notifications/index.js";
 import { DirectTwilioClient } from "../services/notifications/direct-twilio.client.js";
+import { createSimulatedCallService, type SimulatedCallRequest } from "../services/simulation/index.js";
 
 // Schema for Gemini-generated custom prompts
 const generatedPromptSchema = z.object({
@@ -665,26 +667,35 @@ export default async function providerRoutes(fastify: FastifyInstance) {
           : [];
         const isAdminTestMode = adminTestPhones.length > 0;
 
-        // Apply test phone substitution if in test mode
+        // HYBRID MODE: Split providers into real calls (test phones) and simulated calls
+        // This allows demos to show 3+ providers even with limited test phones
+        let simulatedProviders: typeof validated.providers = [];
+
         if (isAdminTestMode) {
           request.log.info(
             { adminTestPhones, providerCount: validated.providers.length },
-            "Test mode active - substituting provider phones with admin test phones"
+            "Hybrid mode active - real calls to test phones + simulated calls for remaining"
           );
 
-          // Limit providers to number of test phones and substitute phone numbers
-          const limitedProviders = validated.providers.slice(0, adminTestPhones.length);
+          // Split: First N providers get real calls, rest get simulated
+          const realCallProviders = validated.providers.slice(0, adminTestPhones.length);
+          simulatedProviders = validated.providers.slice(adminTestPhones.length);
+
+          // Substitute phone numbers for real calls only
           validated = {
             ...validated,
-            providers: limitedProviders.map((p, idx) => ({
+            providers: realCallProviders.map((p, idx) => ({
               ...p,
               phone: adminTestPhones[idx % adminTestPhones.length]!,
             })),
           };
 
           request.log.info(
-            { substitutedProviders: validated.providers.map(p => ({ name: p.name, phone: p.phone })) },
-            "Phone numbers substituted for test mode"
+            {
+              realCallProviders: validated.providers.map(p => ({ name: p.name, phone: p.phone })),
+              simulatedProviders: simulatedProviders.map(p => ({ name: p.name, id: p.id })),
+            },
+            "Hybrid mode: providers split into real and simulated calls"
           );
         }
 
@@ -718,37 +729,108 @@ export default async function providerRoutes(fastify: FastifyInstance) {
           serviceRequestId: validated.serviceRequestId,
         }));
 
-        // Mark all providers as "queued" immediately (triggers real-time)
-        const providerIds = validated.providers.map((p) => p.id).filter(Boolean);
-        if (providerIds.length > 0) {
+        // Mark all providers (real + simulated) as "queued" immediately (triggers real-time)
+        const realProviderIds = validated.providers.map((p) => p.id).filter(Boolean);
+        const simulatedProviderIds = simulatedProviders.map((p) => p.id).filter(Boolean);
+        const allProviderIds = [...realProviderIds, ...simulatedProviderIds];
+
+        if (allProviderIds.length > 0) {
           await supabase
             .from("providers")
             .update({ call_status: "queued" })
-            .in("id", providerIds);
+            .in("id", allProviderIds);
         }
 
         // Log the execution start
+        const totalProviderCount = validated.providers.length + simulatedProviders.length;
         if (validated.serviceRequestId) {
           await supabase.from("interaction_logs").insert({
             request_id: validated.serviceRequestId,
             step_name: "Batch Calls Started",
-            detail: `Queued ${validated.providers.length} providers for calling (execution: ${executionId})`,
+            detail: simulatedProviders.length > 0
+              ? `Queued ${totalProviderCount} providers (${validated.providers.length} real calls + ${simulatedProviders.length} simulated) - execution: ${executionId}`
+              : `Queued ${totalProviderCount} providers for calling (execution: ${executionId})`,
             status: "info",
           });
         }
+
+        // Build simulated call requests
+        const simulatedRequests: SimulatedCallRequest[] = simulatedProviders.map((p) => ({
+          providerName: p.name,
+          providerPhone: p.phone, // Original phone for display
+          providerId: p.id,
+          serviceNeeded: validated.serviceNeeded,
+          userCriteria: validated.userCriteria,
+          problemDescription: validated.problemDescription,
+          clientName: validated.clientName,
+          location: validated.location,
+          clientAddress: validated.clientAddress,
+          urgency: validated.urgency,
+          serviceRequestId: validated.serviceRequestId,
+          // Note: rating/reviewCount not available from input schema, simulation will use defaults
+        }));
 
         // Start background processing - DO NOT AWAIT
         setImmediate(async () => {
           try {
             fastify.log.info({ executionId }, "Background batch call processing started");
 
-            const batchResult = await callingService.callProvidersBatch(requests, {
-              maxConcurrent: validated.maxConcurrent || 5,
-            }) as { success: boolean; resultsInDatabase?: boolean; stats?: { completed?: number } };
+            // Run real VAPI calls and simulated calls in parallel
+            const realCallsPromise = requests.length > 0
+              ? callingService.callProvidersBatch(requests, {
+                  maxConcurrent: validated.maxConcurrent || 5,
+                })
+              : Promise.resolve({ success: true, resultsInDatabase: true, stats: { completed: 0 } });
+
+            // Run simulated calls if any
+            let simulatedResults: CallResult[] = [];
+            if (simulatedRequests.length > 0) {
+              fastify.log.info(
+                { executionId, simulatedCount: simulatedRequests.length },
+                "Starting simulated calls for remaining providers"
+              );
+
+              const simulationService = createSimulatedCallService(fastify.log);
+              const callResultService = new CallResultService(fastify.log);
+
+              // Generate simulated calls
+              const simulationResult = await simulationService.simulateBatch(simulatedRequests, {
+                maxConcurrent: 5,
+              });
+
+              simulatedResults = simulationResult.results;
+
+              // Save simulated results to database
+              for (let i = 0; i < simulatedResults.length; i++) {
+                const result = simulatedResults[i];
+                const request = simulatedRequests[i];
+                if (result && request) {
+                  await callResultService.saveCallResult(result, request);
+                }
+              }
+
+              fastify.log.info(
+                {
+                  executionId,
+                  simulatedTotal: simulationResult.stats.total,
+                  simulatedCompleted: simulationResult.stats.completed,
+                  simulatedFailed: simulationResult.stats.failed,
+                },
+                "Simulated calls completed and saved to database"
+              );
+            }
+
+            // Wait for real calls to complete
+            const batchResult = await realCallsPromise as { success: boolean; resultsInDatabase?: boolean; stats?: { completed?: number } };
 
             fastify.log.info(
-              { executionId, success: batchResult.success, resultsInDatabase: batchResult.resultsInDatabase },
-              "Background batch call processing completed"
+              {
+                executionId,
+                realCallsSuccess: batchResult.success,
+                realCallsInDatabase: batchResult.resultsInDatabase,
+                simulatedCount: simulatedResults.length,
+              },
+              "Background batch call processing completed (real + simulated)"
             );
 
             // If resultsInDatabase flag is set, results were saved via Kestra callbacks
@@ -759,22 +841,24 @@ export default async function providerRoutes(fastify: FastifyInstance) {
                 "Kestra batch completed with results in database - waiting for all provider results"
               );
 
-              // Determine actual status based on results
-              const totalProviders = validated.providers.length;
+              // Determine actual status based on results (real calls only - simulated are always successful)
+              const totalRealProviders = validated.providers.length;
+              const totalAllProviders = validated.providers.length + simulatedRequests.length;
               const errorCount = (batchResult as any).errors?.length || 0;
-              const successCount = (batchResult as any).stats?.completed || 0;
-              const allFailed = errorCount === totalProviders || successCount === 0;
-              const partialSuccess = errorCount > 0 && errorCount < totalProviders;
+              const successCount = ((batchResult as any).stats?.completed || 0) + simulatedResults.length;
+              const allFailed = totalRealProviders > 0 && (errorCount === totalRealProviders || (batchResult as any).stats?.completed === 0);
+              const partialSuccess = errorCount > 0 && errorCount < totalRealProviders;
 
               // Log actual status to interaction_logs
+              const simulatedNote = simulatedResults.length > 0 ? ` (${simulatedResults.length} simulated for demo)` : "";
               await supabase.from("interaction_logs").insert({
                 request_id: validated.serviceRequestId,
                 step_name: allFailed ? "Batch Calls Failed" : "Batch Calls Completed",
                 detail: allFailed
-                  ? `All ${totalProviders} provider calls failed. ${(batchResult as any).errors?.[0]?.error || "VAPI API error"}`
+                  ? `All ${totalRealProviders} real provider calls failed. ${(batchResult as any).errors?.[0]?.error || "VAPI API error"}`
                   : partialSuccess
-                  ? `${successCount}/${totalProviders} calls succeeded. ${errorCount} failed.`
-                  : `All ${totalProviders} provider calls completed successfully.`,
+                  ? `${successCount}/${totalAllProviders} calls succeeded${simulatedNote}. ${errorCount} real calls failed.`
+                  : `All ${totalAllProviders} provider calls completed successfully${simulatedNote}.`,
                 status: allFailed ? "error" : partialSuccess ? "warning" : "success",
               });
 

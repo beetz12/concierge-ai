@@ -20,6 +20,8 @@ import {
   MessageSquare,
   ExternalLink,
   Database,
+  Users,
+  Github,
 } from "lucide-react";
 
 // Dynamic import for FlowCanvas to avoid SSR issues with React Flow
@@ -341,6 +343,82 @@ export default function AboutPage() {
         </div>
       </motion.div>
 
+      {/* Team Section */}
+      <motion.div
+        initial="hidden"
+        whileInView="visible"
+        viewport={{ once: true, margin: "-50px" }}
+        variants={containerVariants}
+        className="max-w-6xl mx-auto px-2 md:px-4 pb-12 md:pb-16"
+      >
+        <motion.div variants={itemVariants} className="text-center mb-6 md:mb-8">
+          <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-surface-highlight border border-primary-500/20 text-primary-400 text-xs md:text-sm font-medium mb-4">
+            <Users size={14} />
+            <span>Team NexAI</span>
+          </div>
+          <h2 className="text-2xl md:text-3xl font-bold mb-2 md:mb-3">
+            Meet the Team
+          </h2>
+          <p className="text-sm md:text-base text-slate-400 max-w-xl mx-auto px-4">
+            Built with passion for the AI Agents Assemble Hackathon
+          </p>
+        </motion.div>
+
+        <div className="flex flex-col sm:flex-row items-center justify-center gap-4 md:gap-6">
+          <motion.a
+            variants={itemVariants}
+            href="https://github.com/beetz12"
+            target="_blank"
+            rel="noopener noreferrer"
+            whileHover={{ y: -5, scale: 1.02 }}
+            whileTap={{ scale: 0.98 }}
+            className="flex items-center gap-4 bg-surface border border-surface-highlight rounded-xl p-4 md:p-5 hover:border-primary-500/30 transition-all duration-300 group cursor-pointer w-full sm:w-auto"
+          >
+            <div className="w-14 h-14 md:w-16 md:h-16 rounded-full bg-gradient-to-br from-primary-500 to-primary-700 flex items-center justify-center text-white text-xl md:text-2xl font-bold shadow-lg group-hover:shadow-primary-500/20 transition-all">
+              D
+            </div>
+            <div className="flex-1">
+              <div className="flex items-center gap-2">
+                <h3 className="text-base md:text-lg font-bold text-slate-100 group-hover:text-primary-300 transition-colors">
+                  David
+                </h3>
+                <ExternalLink className="w-3.5 h-3.5 text-slate-500 opacity-0 group-hover:opacity-100 transition-opacity" />
+              </div>
+              <div className="flex items-center gap-1.5 text-slate-400 text-sm">
+                <Github size={14} />
+                <span>beetz12</span>
+              </div>
+            </div>
+          </motion.a>
+
+          <motion.a
+            variants={itemVariants}
+            href="https://github.com/R-Mohammed-Hasan"
+            target="_blank"
+            rel="noopener noreferrer"
+            whileHover={{ y: -5, scale: 1.02 }}
+            whileTap={{ scale: 0.98 }}
+            className="flex items-center gap-4 bg-surface border border-surface-highlight rounded-xl p-4 md:p-5 hover:border-primary-500/30 transition-all duration-300 group cursor-pointer w-full sm:w-auto"
+          >
+            <div className="w-14 h-14 md:w-16 md:h-16 rounded-full bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center text-white text-xl md:text-2xl font-bold shadow-lg group-hover:shadow-blue-500/20 transition-all">
+              H
+            </div>
+            <div className="flex-1">
+              <div className="flex items-center gap-2">
+                <h3 className="text-base md:text-lg font-bold text-slate-100 group-hover:text-primary-300 transition-colors">
+                  Hasan
+                </h3>
+                <ExternalLink className="w-3.5 h-3.5 text-slate-500 opacity-0 group-hover:opacity-100 transition-opacity" />
+              </div>
+              <div className="flex items-center gap-1.5 text-slate-400 text-sm">
+                <Github size={14} />
+                <span>R-Mohammed-Hasan</span>
+              </div>
+            </div>
+          </motion.a>
+        </div>
+      </motion.div>
+
       {/* CTA */}
       <motion.div
         initial={{ opacity: 0, y: 20 }}
@@ -356,19 +434,32 @@ export default function AboutPage() {
               Ready to see the future?
             </h2>
             <p className="text-sm md:text-base text-slate-400 mb-6 max-w-xl mx-auto">
-              Built for AI Agents Assemble Hackathon. Explore the code.
+              Built for AI Agents Assemble Hackathon. Try it live or explore the code.
             </p>
-            <motion.a
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
-              href="https://github.com/beetz12/concierge-ai"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="inline-flex items-center gap-2 bg-primary-600 hover:bg-primary-500 text-white px-6 py-3 rounded-xl font-semibold text-sm md:text-base transition-all shadow-[0_0_20px_-5px_rgba(45,212,191,0.3)] hover:shadow-[0_0_30px_-5px_rgba(45,212,191,0.5)]"
-            >
-              <Terminal size={18} />
-              View on GitHub
-            </motion.a>
+            <div className="flex flex-col sm:flex-row items-center justify-center gap-3 sm:gap-4">
+              <motion.a
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+                href="https://concierge-ai-web.vercel.app/"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-2 bg-primary-600 hover:bg-primary-500 text-white px-6 py-3 rounded-xl font-semibold text-sm md:text-base transition-all shadow-[0_0_20px_-5px_rgba(45,212,191,0.3)] hover:shadow-[0_0_30px_-5px_rgba(45,212,191,0.5)]"
+              >
+                <Rocket size={18} />
+                Try Live Demo
+              </motion.a>
+              <motion.a
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+                href="https://github.com/beetz12/concierge-ai"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-2 bg-surface-highlight hover:bg-surface-elevated text-slate-100 px-6 py-3 rounded-xl font-semibold text-sm md:text-base transition-all border border-surface-highlight hover:border-primary-500/30"
+              >
+                <Terminal size={18} />
+                View on GitHub
+              </motion.a>
+            </div>
           </div>
         </div>
       </motion.div>

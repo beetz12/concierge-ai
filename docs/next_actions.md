@@ -1,3 +1,19 @@
+next actions: 
+1. demo video
+
+
+current issues:
+If from the page, when I select the provider, it calls the provider but doesn't update the status or send users the confirmation.
+
+In fact, the request details page shows recommendation. 
+
+Even after the front-end shows "Appointment Confirmed!", The user is still able to click "Select this provider." 
+
+twilio:
+After I send a text message to the user with the recommendations, Even if there's only one recommendation, it still asks the user to select one, two, or three. 
+
+
+
 implement option B from docs/plans/FIX_WEBHOOK_TIMEOUT_AND_FRONTEND_DISPLAY.md
 
 plan tomorrow:
@@ -67,4 +83,22 @@ completed
 disqualification logic
 cline CLI scripts
 
+
+
+Future features: 
+1. If the provider says the time is no longer available, then the agent will Ask for the next available time and reach out to the user again to confirm.
+2. Send reminders to the user before the appointment to confirm.
+3. After the appointment is confirmed, allow the user to reschedule the appointment by calling the provider. 
+4. make this work for booking restauraunt reservations
+5. Also read reviews and analyze reviews when determining whether to recommend provider
+6. Find providers from sources other than Google Maps / places
+7. Based on user's request, analyze with gemini and ask the user any additional questions the provider might ask during the call. Then preview a conversation outline with the provider
+8. use gemini live to be more intelligent / personable
+9. show better update UI
+10. allow /direct page to be more useful
+11. allow app to work with automated systems - wait on hold then speak to a human.
+12. Make sure that the user can also be notified of results through phone. 
+13. Provider recommendations are taking a long time. Need to make it faster. 
+14. We only show the call transcripts after all calls are completed. We should show the call transcripts as each one is completed, especially ones that are unanswered. 
+15. 
 

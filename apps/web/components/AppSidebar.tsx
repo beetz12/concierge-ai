@@ -6,7 +6,6 @@ import { motion } from "motion/react";
 import {
   LayoutDashboard,
   PlusCircle,
-  PhoneCall,
   History,
   Info,
   Settings,
@@ -33,7 +32,6 @@ import {
 const navItems = [
   { href: "/", icon: LayoutDashboard, label: "Dashboard" },
   { href: "/new", icon: PlusCircle, label: "New Request" },
-  { href: "/direct", icon: PhoneCall, label: "Direct Task" },
   { href: "/history", icon: History, label: "History" },
   { href: "/about", icon: Info, label: "About" },
 ];

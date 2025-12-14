@@ -1,3 +1,57 @@
+Perfect, now I need your help with one more thing. Currently when the user provides ADMIN_TEST_NUMBER in api/.env, We don't call the actual providers and
+  instead call the test phone number the user provided. However, since the admin can only answer one number, this results in only one provider recommended.
+  But I want to be able to show at least three recommended providers for our demo. Since we already have the /simulate-call endpoint, What I want to do
+  instead is that when LIVE_CALL_ENABLED=true and ADMIN_TEST_NUMBER is set, We call the admin's test numbers and we also call the remaining providers (we
+  adapt the function from /simulate-call) to create Sample conversation with each provider - Based on the user's request, the vapi script, and the company
+  info. But we will need to treat this as if it were real data To make it look believable for our demo. After we generate the sample calls conversations, we
+  need to Store the conversation into the database in the same format as our vapi call, so that the user can view them just like the real conversations. We
+  will also need this data in the database so that our AI can recommend the top providers once all calls are completed.  Please analyze these issues  
+using your  multi-agent team with up to 3 agents and come up with a unified plan with 90% confidence and wait for further instructions.  Use Perplexity Deep to research if needed. My mortgage payment depends on this and If you get this right on the first try, I will tip you $200. ultrathink 
+
+Thanks, we still have a few more issues. Our vapi assistants seem to
+  behave differently depending on if it was initiated when the user clicks
+  on "Select this provider" from our app vs. when the user sends a text to
+  select a provider. In the latter case, the assistants starts with this:
+  "
+  Assistant
+  Hi there. This is David's AI assistant calling back about scheduling the
+  plumber appointment. Do you have just a moment?
+  12:04:44 AM(+00:02.02)
+  User
+  Yes. I do.
+
+  12:04:51 AM(+00:08.68)
+
+  Assistant
+  We spoke earlier, and you mentioned you were available tomorrow 5 PM. I
+  would like to lock in a specific date and time if possible. Would
+  tomorrow at 5 PM work for you?" and in the first case, the assistant
+  starts with this: " 8 messages selected
+
+  Assistant
+  Hi there. This is my client's AI assistant calling back about scheduling
+  the plumber appointment. Do you have just a moment?
+  12:02:30 AM(+00:01.97)
+  User
+  Yes. I do.
+
+  12:02:36 AM(+00:08.04)
+
+  Assistant
+  We spoke earlier, and you mentioned you were available tomorrow at 5 PM.
+  I would like to lock in a specific date and time if possible. Would
+  tomorrow at 5 PM work for you?
+  12:02:38 AM(+00:10.00)". The issues are: 1. in the first case, the
+  assistant does not mention the client's name and just says - This is my
+  client's AI . 2. Both versions use an unnatural way to ask for the
+  confirmation - "We spoke earlier, and you mentioned you were available
+  tomorrow at 5 PM. I would like to lock in a specific date and time if
+  possible. Would tomorrow at 5 PM work for you?" Since the provider
+  already previously mentioned that they would be available tomorrow at
+  5pm, and the assistant confirmed it, You don't need to ask "I would like
+  to lock in a specific date and time if possible. Would
+    tomorrow at 5 PM work for you".  
+    
 Okay, great. Now the agent is not cutting off the provider But after the provider says "Have a wonderful day." it's not ending
  the call. see @docs/transcript.md. Basically, the provider has to say something else after "Have a wonderful day." Before the
 call is actually ended. please Use your specialized multi-agent team to analyze the root cause in parallel with up to 3 agents
