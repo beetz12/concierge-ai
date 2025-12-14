@@ -747,7 +747,7 @@ For unusual requirements, frame naturally: "${clientName} specifically mentioned
 
     // Enable endCall function (VAPI handles tool registration automatically)
     endCallFunctionEnabled: true,
-    endCallMessage: "Thank you so much for your time. Have a wonderful day!",
+    endCallMessage: `Thank you so much for that information! I'll share this with ${clientName} and if they'd like to proceed, they'll reach out to schedule. Have a wonderful day!`,
     silenceTimeoutSeconds: 10,  // VAPI minimum is 10s; agent should invoke endCall immediately after farewell
 
     // Analysis configuration
