@@ -16,6 +16,11 @@ interface Logger {
 interface ProviderRecommendation {
   name: string;
   earliestAvailability: string;
+  score?: number;
+  rating?: number;
+  reviewCount?: number;
+  estimatedRate?: string;
+  reasoning?: string;
 }
 
 interface NotificationRequest {
@@ -23,6 +28,8 @@ interface NotificationRequest {
   userName?: string;
   requestUrl?: string;
   providers: ProviderRecommendation[];
+  /** AI's overall recommendation explaining why top provider was chosen */
+  overallRecommendation?: string;
 }
 
 interface NotificationResult {
@@ -91,7 +98,7 @@ export class DirectTwilioClient {
     const messageBody = this.formatSmsMessage(
       request.userName || "Customer",
       request.providers,
-      request.requestUrl
+      request.overallRecommendation
     );
 
     this.logger.info(
@@ -207,30 +214,75 @@ export class DirectTwilioClient {
 
   /**
    * Format the SMS message with top 3 provider recommendations
+   * Creates an urgent, detailed message that encourages immediate action
    */
   private formatSmsMessage(
     userName: string,
     providers: ProviderRecommendation[],
-    requestUrl?: string
+    overallRecommendation?: string
   ): string {
-    let message = `Hi ${userName}! AI Concierge found your top providers:\n\n`;
-
     if (providers.length === 0) {
-      message += "No providers matched your criteria.\n";
-    } else {
-      providers.slice(0, 3).forEach((provider, index) => {
-        const name = provider.name || "Unknown";
-        const availability =
-          provider.earliestAvailability || "Contact for availability";
-        message += `${index + 1}. ${name} - ${availability}\n`;
+      return `Hi ${userName}, unfortunately no providers matched your criteria. Please try again with different requirements. - AI Concierge`;
+    }
+
+    // Start with urgency
+    let message = `ACTION NEEDED: ${userName}, your AI Concierge found ${providers.length} qualified provider${providers.length > 1 ? "s" : ""}!\n\n`;
+
+    // Feature the top recommendation prominently
+    const topProvider = providers[0]!; // Safe: we checked providers.length > 0 above
+    message += `TOP PICK: ${topProvider.name}\n`;
+
+    // Add rating if available
+    if (topProvider.rating) {
+      const stars = "★".repeat(Math.round(topProvider.rating));
+      message += `${stars} ${topProvider.rating.toFixed(1)}`;
+      if (topProvider.reviewCount) {
+        message += ` (${topProvider.reviewCount} reviews)`;
+      }
+      message += `\n`;
+    }
+
+    // Add availability
+    message += `Available: ${topProvider.earliestAvailability || "Contact for details"}\n`;
+
+    // Add estimated rate if available
+    if (topProvider.estimatedRate) {
+      message += `Est. Rate: ${topProvider.estimatedRate}\n`;
+    }
+
+    // Add AI reasoning for top pick
+    if (topProvider.reasoning) {
+      // Truncate reasoning to keep SMS concise
+      const shortReason = topProvider.reasoning.length > 100
+        ? topProvider.reasoning.substring(0, 97) + "..."
+        : topProvider.reasoning;
+      message += `Why: ${shortReason}\n`;
+    }
+
+    // Add other options if available
+    if (providers.length > 1) {
+      message += `\nOTHER OPTIONS:\n`;
+      providers.slice(1, 3).forEach((provider, index) => {
+        let providerLine = `${index + 2}. ${provider.name}`;
+        if (provider.rating) {
+          providerLine += ` (${provider.rating.toFixed(1)}★)`;
+        }
+        providerLine += ` - ${provider.earliestAvailability || "Contact"}\n`;
+        message += providerLine;
       });
     }
 
-    message += `\nReply 1, 2, or 3 to book`;
-
-    if (requestUrl) {
-      message += `, or visit:\n${requestUrl}`;
+    // Add AI's overall recommendation if available
+    if (overallRecommendation) {
+      // Truncate to keep message manageable
+      const shortOverall = overallRecommendation.length > 120
+        ? overallRecommendation.substring(0, 117) + "..."
+        : overallRecommendation;
+      message += `\nAI RECOMMENDATION: ${shortOverall}\n`;
     }
+
+    // Strong call to action with urgency
+    message += `\nReply 1, 2, or 3 NOW to book before slots fill up!\n\n- AI Concierge`;
 
     return message;
   }

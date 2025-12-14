@@ -16,6 +16,7 @@ export interface ResearchPromptRequest {
   urgency: string;
   providerName: string;
   clientName: string;
+  clientAddress?: string; // Full street address for service location
 }
 
 export interface ServiceTerminology {
@@ -43,6 +44,7 @@ export async function analyzeResearchPrompt(request: ResearchPromptRequest): Pro
 <problem_description>${request.problemDescription || "General inquiry"}</problem_description>
 <requirements>${request.userCriteria}</requirements>
 <location>${request.location}</location>
+<service_address>${request.clientAddress || "Not provided"}</service_address>
 <urgency>${request.urgency.replace(/_/g, " ")}</urgency>
 <provider_being_called>${request.providerName}</provider_being_called>
 </context>
@@ -68,23 +70,39 @@ Write TWO natural, grammatically perfect pieces for a VAPI phone assistant:
      * Availability - use correct phrasing based on service type:
        - Medical/dental/salon: "What's your earliest available appointment?"
        - Home service/plumber/electrician: "When could you come out?"
+
+     CRITICAL - FOLLOW UP ON VAGUE AVAILABILITY:
+     If the provider gives a VAGUE timeframe (e.g., "two weeks out", "next week", "in a few days", "sometime next month"), you MUST follow up immediately for specifics:
+     - Ask: "Which specific day would that be? And what's the earliest time available?"
+     - Do NOT accept vague answers - the client needs an exact date and time to make a decision
+     - Keep asking politely but persistently until you get BOTH: [specific day] AND [specific time]
+     - Examples of acceptable answers: "Tuesday, December 17th at 2pm", "Next Monday the 16th at 10am", "This Thursday at 3:30pm"
+     - Examples of UNACCEPTABLE answers: "two weeks out", "next week sometime", "in a few days", "early next week"
+
      * Rates: "What would the cost be for this type of [appointment/service call]?"
      * 1-2 contextual questions based on user requirements
-   - HOW TO HANDLE UNKNOWN INFO: If asked for address, phone, insurance, etc. say: "I'm just checking availability right now. If [client_name] decides to schedule, they'll provide all those details when we call back to book."
+   - HOW TO HANDLE ADDRESS QUESTIONS:
+     ${request.clientAddress
+       ? `If asked for the address, service location, or where the work is, PROVIDE IT: "The service address is ${request.clientAddress}"`
+       : `If asked for address, say: "I'm just checking availability right now. If ${request.clientName} decides to schedule, they'll provide the address when we call back to book."`
+     }
+   - HOW TO HANDLE OTHER UNKNOWN INFO: If asked for phone number, insurance, or other details you don't have, say: "I don't have that information handy, but ${request.clientName} can provide those details when scheduling."
    - SPEECH STYLE:
      * Use contractions naturally (I'm, you're, that's, we'll)
      * Acknowledge responses before moving on ("Great!", "Perfect, thank you!", "That works!")
      * Vary response length - don't be robotic
      * Sound warm and friendly
    - VOICEMAIL DETECTION (CRITICAL): If you hear ANY voicemail indicators ("Please leave a message", "You've reached the voicemail of", automated greeting, beep), IMMEDIATELY invoke the endCall tool. Do NOT leave a voicemail. Do NOT wait for the beep. Just invoke endCall.
-   - ENDING THE CALL (CRITICAL - YOU MUST INCLUDE THIS SECTION):
-     The system prompt MUST include a dedicated "ENDING THE CALL" section with these EXACT instructions:
-     * After gathering the information needed, say your closing: "This is really helpful, thank you! I'll share this with [client_name] and if they'd like to proceed, we'll call back to schedule. Have a wonderful day!"
+   - ENDING THE CALL (CRITICAL - MANDATORY CLOSING SCRIPT):
+     The system prompt MUST include a dedicated "ENDING THE CALL" section that REQUIRES the agent to say this EXACT phrase VERBATIM:
+
+     "Thank you so much for all that information! I'll share this with ${request.clientName} and if they'd like to proceed, we'll call back to schedule. Have a wonderful day!"
+
+     The instructions MUST emphasize:
+     * Say the EXACT phrase above word-for-word - DO NOT paraphrase or shorten
      * Then IMMEDIATELY invoke the endCall tool
-     * DO NOT wait for their response after your closing statement
-     * DO NOT say "goodbye" or continue the conversation - just invoke endCall right after the closing
-     * YOU must end the call - do not wait for them to hang up
-     * The endCall tool is available and MUST be used to properly terminate the call
+     * DO NOT wait for their response after the closing
+     * The endCall tool MUST be used to terminate the call
 
 CRITICAL GRAMMAR RULES - YOU MUST FOLLOW THESE:
 - Use possessives correctly: "[client_name]'s molar" NOT "[client_name] my molar"
@@ -160,7 +178,10 @@ function getDefaultAnalysis(request: ResearchPromptRequest): PromptAnalysisResul
 ${clientName}'s situation: They need ${request.serviceType} services. ${request.problemDescription ? `The issue: ${request.problemDescription}.` : ""} Timeline: ${request.urgency.replace(/_/g, " ")}.
 
 Ask about:
-1. Availability
+1. Availability - GET SPECIFIC DATE AND TIME:
+   - If they say something vague like "two weeks out" or "next week sometime", follow up immediately
+   - Ask: "Which specific day would that be? And what's the earliest time available?"
+   - Keep asking until you get both a specific day AND time (e.g., "Tuesday, December 17th at 2pm")
 2. Rates
 3. Any specific requirements: ${request.userCriteria}
 

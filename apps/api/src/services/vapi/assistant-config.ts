@@ -107,22 +107,23 @@ CONVERSATION FLOW
    - Get specific commitments (amounts, dates, confirmation numbers)
    - Clarify next steps
 
-5. CLOSING:
-   If successful: "Thank you so much for your help! Just to confirm, [summarize the outcome]. Have a wonderful day!"
-   If unsuccessful: "I understand. I'll relay this information to my client. Thank you for your time."
+5. CLOSING (MANDATORY - SAY EXACT PHRASE):
+   If successful: "Thank you so much for your help! Just to confirm, [summarize the outcome]. I'll relay this to my client and we'll reach back out if they'd like to proceed. Have a wonderful day!"
+   If unsuccessful: "I understand. I'll relay this information to my client. Thank you for your time. Have a wonderful day!"
    Then IMMEDIATELY invoke endCall.
 
 ═══════════════════════════════════════════════════════════════════
-ENDING THE CALL
+ENDING THE CALL - MANDATORY CLOSING SCRIPTS
 ═══════════════════════════════════════════════════════════════════
 WHILE GATHERING INFORMATION (before farewell):
 - If they're mid-sentence or adding details, let them finish
 - Don't cut them off while speaking about prices, availability, etc.
 
-AFTER YOUR FAREWELL ("Have a wonderful day!"):
-- IMMEDIATELY invoke endCall - do not wait for any response
-- Do not wait for acknowledgment
-- Do not add pauses or wait for silence
+MANDATORY: You MUST say your closing phrase VERBATIM as specified above.
+- DO NOT paraphrase or shorten the closing
+- DO NOT skip mentioning that you'll relay info to your client
+- DO NOT skip mentioning you'll reach back out
+- Say the COMPLETE closing phrase, then IMMEDIATELY invoke endCall
 
 ═══════════════════════════════════════════════════════════════════
 TONE
@@ -358,12 +359,30 @@ function createProviderSearchConfig(request: CallRequest) {
 
     const clientName = request.clientName || "my client";
 
+    // Define the EXACT closing phrase that MUST be spoken verbatim
+    const requiredClosingPhrase = `Thank you so much for all that information! I'll share this with ${clientName} and if they'd like to proceed, we'll call back to schedule. Have a wonderful day!`;
+
+    // Build address section for custom prompts (inject even if Gemini prompt exists)
+    const addressInjection = request.clientAddress
+      ? `
+
+═══════════════════════════════════════════════════════════════════
+SERVICE LOCATION (YOU HAVE THIS INFORMATION)
+═══════════════════════════════════════════════════════════════════
+The service address is: ${request.clientAddress}
+
+If the provider asks for the address, service location, or where the work is:
+PROVIDE IT: "The service address is ${request.clientAddress}"
+DO NOT deflect or say you don't have it - you DO have it.
+`
+      : "";
+
     // CRITICAL: Append explicit endCall instructions to ensure reliable call termination
     // This acts as a safety net even if Gemini's generated prompt lacks strong endCall instructions
     const endCallSafetyNet = `
 
 ═══════════════════════════════════════════════════════════════════
-CRITICAL: ENDING THE CALL
+CRITICAL: ENDING THE CALL - REQUIRED CLOSING SCRIPT
 ═══════════════════════════════════════════════════════════════════
 You have an endCall tool available. You MUST use it to hang up the call.
 
@@ -371,14 +390,17 @@ WHILE GATHERING INFORMATION (before farewell):
 - If provider is mid-sentence, let them finish
 - If they mention a price, wait for the full amount (e.g., "$100... for emergency work")
 
-AFTER YOUR FAREWELL ("Have a wonderful day!"):
-- IMMEDIATELY invoke endCall - do not wait for any response
-- Do not wait for acknowledgment
-- Do not add pauses
+MANDATORY CLOSING (YOU MUST SAY THIS EXACT PHRASE VERBATIM):
+When you have gathered the information and are ready to end the call, you MUST say this EXACT phrase word-for-word:
+
+"${requiredClosingPhrase}"
+
+DO NOT paraphrase. DO NOT shorten. DO NOT skip any part of this phrase.
+Say the COMPLETE phrase above, then IMMEDIATELY invoke endCall.
 
 If you detect voicemail (automated greeting, "leave a message", beep), immediately invoke endCall.`;
 
-    const enhancedSystemPrompt = request.customPrompt.systemPrompt + endCallSafetyNet;
+    const enhancedSystemPrompt = request.customPrompt.systemPrompt + addressInjection + endCallSafetyNet;
 
     return {
       name: `Concierge-${Date.now().toString().slice(-8)}`,
@@ -409,7 +431,7 @@ If you detect voicemail (automated greeting, "leave a message", beep), immediate
       },
       firstMessage: request.customPrompt.firstMessage,
       endCallFunctionEnabled: true,
-      endCallMessage: request.customPrompt.closingScript || "Thank you so much for your time. Have a wonderful day!",
+      endCallMessage: request.customPrompt.closingScript || `Thank you so much for all that information! I'll share this with ${clientName} and if they'd like to proceed, we'll call back to schedule. Have a wonderful day!`,
       silenceTimeoutSeconds: 10,  // VAPI minimum is 10s; agent should invoke endCall immediately after farewell
       analysisPlan: {
         structuredDataSchema: {
@@ -417,7 +439,7 @@ If you detect voicemail (automated greeting, "leave a message", beep), immediate
           properties: {
             availability: {
               type: "string",
-              description: "When they're available (specific date/time if given)",
+              description: "When they're available - MUST be a specific date/time (e.g., 'Tuesday at 2pm', 'December 18th at 9am'), NOT vague timeframes like 'two weeks out' or 'next week'",
             },
             estimated_rate: {
               type: "string",
@@ -429,7 +451,7 @@ If you detect voicemail (automated greeting, "leave a message", beep), immediate
             },
             earliest_availability: {
               type: "string",
-              description: "Earliest date/time they can start work",
+              description: "Earliest date/time they can start work - MUST be a specific day and time (e.g., 'Tuesday at 2pm', 'December 18th at 9am'), NOT vague timeframes like 'two weeks out' or 'next week'",
             },
             disqualified: {
               type: "boolean",
@@ -527,6 +549,18 @@ QUESTIONS TO ASK (ONLY THESE - DO NOT INVENT OTHERS)
 Standard questions:
 1. Availability: "Are you available ${urgencyText}?"
    - If YES: "Great! What's your soonest availability? When could you come out?"
+   - CRITICAL: If provider gives a VAGUE timeframe (e.g., "two weeks out", "next week", "in a few days", "sometime next month"):
+     * You MUST ask for the SPECIFIC day: "Could you tell me which specific day that would be?"
+     * Then ask for the SPECIFIC time: "And what's the earliest time slot available on that day?"
+     * DO NOT accept vague answers - the client needs an exact date and time to make a booking decision
+   - Examples of VAGUE answers requiring follow-up:
+     * "Two weeks out" → "Which specific day two weeks from now? And what time?"
+     * "Next week sometime" → "Which day next week? And what's the earliest time?"
+     * "We could probably fit you in soon" → "When exactly? Which day and time?"
+   - Examples of SPECIFIC answers that are acceptable:
+     * "Tuesday at 2pm"
+     * "December 18th, morning appointment at 9am"
+     * "Tomorrow at 10:30am"
 2. Rates: "What would your rate be for this type of work?"
 
 Client-specific requirements (ask about each ONE AT A TIME):
@@ -587,7 +621,11 @@ CONVERSATION FLOW
 2. AVAILABILITY: "${clientName} needs help ${urgencyText}. Are you available?"
    - If NO: Thank them warmly and END THE CALL
    - If YES: "Great! What's your soonest availability? When could you come out?"
-   - Get their specific earliest date/time (e.g., "Tomorrow at 2pm", "Friday morning")
+   - CRITICAL: Get their SPECIFIC earliest date/time (e.g., "Tomorrow at 2pm", "Friday morning at 9am")
+   - If provider gives VAGUE timeframe (e.g., "two weeks out", "next week", "in a few days"):
+     * Ask: "Could you tell me which specific day that would be?"
+     * Then ask: "And what's the earliest time slot available on that day?"
+     * DO NOT accept vague answers - ${clientName} needs an exact date and time
 
 3. RATES: "What would your typical rate be?"
 
@@ -607,17 +645,22 @@ CONVERSATION FLOW
    Then IMMEDIATELY invoke endCall.
 
 ═══════════════════════════════════════════════════════════════════
-ENDING THE CALL
+ENDING THE CALL - MANDATORY CLOSING SCRIPTS
 ═══════════════════════════════════════════════════════════════════
 WHILE GATHERING INFORMATION (before your farewell):
 - If provider is mid-sentence, let them finish
 - If they mention a price, wait for full context (e.g., "$100... for emergency work")
 - Don't cut them off while they're giving you information
 
-AFTER YOUR FAREWELL ("Have a wonderful day!"):
-- IMMEDIATELY invoke endCall - do not wait for any response
-- Do not wait for acknowledgment
-- Do not add pauses
+MANDATORY: When ready to end the call, you MUST say one of these EXACT phrases VERBATIM:
+
+IF provider meets ALL criteria, say this EXACT phrase:
+"Perfect, thank you so much for all that information! I'll share this with ${clientName} and if they'd like to proceed, we'll call back to schedule. Have a wonderful day!"
+
+IF provider is disqualified, say this EXACT phrase:
+"Thank you so much for taking the time to chat. Unfortunately, it sounds like this particular request might not be the best fit for ${clientName} right now, but I really appreciate your help. Have a wonderful day!"
+
+DO NOT paraphrase. DO NOT shorten. Say the COMPLETE phrase, then IMMEDIATELY invoke endCall.
 
 ═══════════════════════════════════════════════════════════════════
 TONE
@@ -687,7 +730,7 @@ For unusual requirements, frame naturally: "${clientName} specifically mentioned
           {
             role: "system" as const,
             content:
-              `Summarize: Was ONE person found with ALL required qualities? What are their rates? What is their soonest/earliest availability (specific date/time)? Does the provider meet all ${clientName}'s requirements?`,
+              `Summarize: Was ONE person found with ALL required qualities? What are their rates? What is their soonest/earliest availability (MUST be specific date AND time, not vague timeframes like 'two weeks out')? Does the provider meet all ${clientName}'s requirements?`,
           },
         ],
       },
@@ -709,7 +752,7 @@ For unusual requirements, frame naturally: "${clientName} specifically mentioned
             earliest_availability: {
               type: "string",
               description:
-                "Specific date/time when provider can come out (e.g., 'Tomorrow at 2pm', 'Friday morning', 'Next Monday')",
+                "Specific date/time when provider can come out (e.g., 'Tomorrow at 2pm', 'Friday morning at 9am', 'Next Monday at 10:30am') - MUST include both day AND time, NOT vague timeframes like 'two weeks out' or 'next week'",
             },
             estimated_rate: {
               type: "string",

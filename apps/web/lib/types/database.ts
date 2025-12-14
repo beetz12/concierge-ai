@@ -932,6 +932,7 @@ export const Constants = {
         "SEARCHING",
         "CALLING",
         "ANALYZING",
+        "RECOMMENDED",
         "BOOKING",
         "COMPLETED",
         "FAILED",

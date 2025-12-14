@@ -136,20 +136,17 @@ export class RecommendationService {
   ): CallResultWithMetadata[] {
     return callResults.filter((result) => {
       const structuredData = result.analysis?.structuredData;
-      if (!structuredData) {
-        console.log(`[Filter] Excluding ${result.provider.name}: no structured data`);
+
+      // Require valid structuredData with call_outcome (proves we reached them)
+      if (!structuredData || typeof structuredData !== 'object' || !structuredData.call_outcome) {
+        console.log(`[Filter] Excluding ${result.provider.name}: no/invalid structured data or missing call_outcome`);
         return false;
       }
 
-      // Filter out failed calls
-      if (result.status === "error" || result.status === "timeout") {
-        console.log(`[Filter] Excluding ${result.provider.name}: call ${result.status}`);
-        return false;
-      }
-
-      // Filter out voicemail/no answer
-      if (result.status === "voicemail" || result.status === "no_answer") {
-        console.log(`[Filter] Excluding ${result.provider.name}: ${result.status}`);
+      // Only recommend providers from completed calls
+      // This single check handles error, timeout, voicemail, no_answer, etc.
+      if (result.status !== "completed") {
+        console.log(`[Filter] Excluding ${result.provider.name}: call not completed (status: ${result.status})`);
         return false;
       }
 
