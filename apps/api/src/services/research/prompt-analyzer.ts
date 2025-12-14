@@ -32,8 +32,18 @@ export interface PromptAnalysisResult {
   firstMessage: string;
 }
 
+/**
+ * Check if advanced screening mode is enabled
+ * When false (default), agent only asks availability + rate for quick demos
+ * When true, agent asks all criteria questions for thorough vetting
+ */
+function isAdvancedScreeningEnabled(): boolean {
+  return process.env.VAPI_ADVANCED_SCREENING === "true";
+}
+
 export async function analyzeResearchPrompt(request: ResearchPromptRequest): Promise<PromptAnalysisResult> {
   const ai = getAiClient();
+  const advancedScreening = isAdvancedScreeningEnabled();
 
   const analysisPrompt = `You are an expert at writing natural, conversational phone call scripts for AI assistants.
 
@@ -79,7 +89,7 @@ Write TWO natural, grammatically perfect pieces for a VAPI phone assistant:
      - Examples of UNACCEPTABLE answers: "two weeks out", "next week sometime", "in a few days", "early next week"
 
      * Rates: "What would the cost be for this type of [appointment/service call]?"
-     * 1-2 contextual questions based on user requirements
+${advancedScreening ? `     * 1-2 contextual questions based on user requirements` : `     * DO NOT ask any additional questions beyond availability and rates - this is a quick screening call`}
    - HOW TO HANDLE ADDRESS QUESTIONS:
      ${request.clientAddress
        ? `If asked for the address, service location, or where the work is, PROVIDE IT: "The service address is ${request.clientAddress}"`
@@ -163,6 +173,28 @@ Return ONLY valid JSON (no markdown, no explanation):
 
 function getDefaultAnalysis(request: ResearchPromptRequest): PromptAnalysisResult {
   const clientName = request.clientName || "my client";
+  const advancedScreening = isAdvancedScreeningEnabled();
+
+  // In simple mode (demo), only ask availability + rate
+  // In advanced mode, also ask about user criteria
+  const questionsToAsk = advancedScreening
+    ? `Ask about:
+1. Availability - GET SPECIFIC DATE AND TIME:
+   - If they say something vague like "two weeks out" or "next week sometime", follow up immediately
+   - Ask: "Which specific day would that be? And what's the earliest time available?"
+   - Keep asking until you get both a specific day AND time (e.g., "Tuesday, December 17th at 2pm")
+2. Rates
+3. Any specific requirements: ${request.userCriteria}`
+    : `Ask ONLY these two questions (this is a quick screening call):
+1. Availability - GET SPECIFIC DATE AND TIME:
+   - If they say something vague like "two weeks out" or "next week sometime", follow up immediately
+   - Ask: "Which specific day would that be? And what's the earliest time available?"
+   - Keep asking until you get both a specific day AND time (e.g., "Tuesday, December 17th at 2pm")
+2. Rates
+
+DO NOT ask any additional questions beyond availability and rates.
+After getting availability and rate, proceed directly to the closing script.`;
+
   return {
     serviceCategory: "other",
     terminology: {
@@ -170,19 +202,13 @@ function getDefaultAnalysis(request: ResearchPromptRequest): PromptAnalysisResul
       appointmentTerm: "service",
       visitDirection: "provider comes to location",
     },
-    contextualQuestions: ["Are you available for this type of service?"],
+    contextualQuestions: advancedScreening ? ["Are you available for this type of service?"] : [],
     firstMessage: `Hi! I'm ${clientName}'s personal AI assistant calling about ${request.serviceType} services. Do you have a quick moment?`,
     systemPrompt: `You are ${clientName}'s personal AI assistant calling a service provider in ${request.location}.
 
 ${clientName}'s situation: They need ${request.serviceType} services. ${request.problemDescription ? `The issue: ${request.problemDescription}.` : ""} Timeline: ${request.urgency.replace(/_/g, " ")}.
 
-Ask about:
-1. Availability - GET SPECIFIC DATE AND TIME:
-   - If they say something vague like "two weeks out" or "next week sometime", follow up immediately
-   - Ask: "Which specific day would that be? And what's the earliest time available?"
-   - Keep asking until you get both a specific day AND time (e.g., "Tuesday, December 17th at 2pm")
-2. Rates
-3. Any specific requirements: ${request.userCriteria}
+${questionsToAsk}
 
 If asked for information you don't have (address, phone, insurance), say: "I'm just checking availability right now. ${clientName} will provide those details when scheduling."
 
@@ -194,14 +220,18 @@ VOICEMAIL DETECTION
 If you hear ANY voicemail indicators ("Please leave a message", "You've reached the voicemail of", automated greeting, beep), IMMEDIATELY invoke endCall. Do NOT leave a voicemail.
 
 ═══════════════════════════════════════════════════════════════════
-ENDING THE CALL
+ENDING THE CALL - MANDATORY CLOSING SCRIPT
 ═══════════════════════════════════════════════════════════════════
-After gathering the information you need, say:
-"This is really helpful, thank you! I'll share this with ${clientName} and if they'd like to proceed, we'll call back to schedule. Have a wonderful day!"
+After getting availability and rate information, you MUST say this EXACT phrase VERBATIM:
 
-Then IMMEDIATELY invoke the endCall tool. DO NOT wait for their response.
-DO NOT say "goodbye" - just invoke endCall right after your closing statement.
-YOU must end the call - do not wait for them to hang up.`,
+"Thank you so much for that information! I'll share this with ${clientName} and if they'd like to proceed, they'll reach out to schedule. Have a wonderful day!"
+
+CRITICAL RULES:
+- Say the EXACT phrase above word-for-word - DO NOT paraphrase or shorten
+- DO NOT ask additional questions after getting availability and rate
+- Then IMMEDIATELY invoke the endCall tool
+- DO NOT wait for their response after the closing
+- YOU must end the call - do not wait for them to hang up`,
   };
 }
 

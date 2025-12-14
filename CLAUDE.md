@@ -134,7 +134,12 @@ VAPI_API_KEY=...
 VAPI_PHONE_NUMBER_ID=...
 VAPI_WEBHOOK_URL=...              # Optional: enables hybrid webhook mode
 BACKEND_URL=http://localhost:8000  # Internal URL for webhook cache polling
+VAPI_ADVANCED_SCREENING=false     # Toggle advanced provider screening (see below)
 ```
+
+**VAPI Screening Modes** (`VAPI_ADVANCED_SCREENING`):
+- `false` (default): **Demo/Simple Mode** - Agent only asks availability + rate, then ends call with proper closing. Ideal for quick demos.
+- `true`: **Advanced Mode** - Agent asks all user criteria questions for thorough provider vetting. Use for production.
 
 **Frontend (`apps/web/.env.local`):**
 

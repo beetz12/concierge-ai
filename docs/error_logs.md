@@ -1,1001 +1,1001 @@
-2025-12-14T17:09:28.344589399Z [inf]            },
-2025-12-14T17:09:28.344596599Z [inf]            "instancePath": "",
-2025-12-14T17:09:28.344598553Z [inf]            "message": "must have required property 'providerName'"
-2025-12-14T17:09:28.344605730Z [inf]            "schemaPath": "#/required",
-2025-12-14T17:09:28.344607801Z [inf]          }
-2025-12-14T17:09:28.344615151Z [inf]            "keyword": "required",
-2025-12-14T17:09:28.344616197Z [inf]        ],
-2025-12-14T17:09:28.344623786Z [inf]            "params": {
-2025-12-14T17:09:28.344624986Z [inf]        "validationContext": "body"
-2025-12-14T17:09:28.344633669Z [inf]              "missingProperty": "providerName"
-2025-12-14T17:09:28.344634233Z [inf]      }
-2025-12-14T17:09:28.344686455Z [inf]                at handler (/app/node_modules/.pnpm/fastify@5.6.2/node_modules/fastify/lib/handle-request.js:69:7)
-2025-12-14T17:09:28.344693313Z [inf]                at onDone (/app/node_modules/.pnpm/fastify@5.6.2/node_modules/fastify/lib/content-type-parser.js:219:5)
-2025-12-14T17:09:28.344699599Z [inf]                at AsyncResource.runInAsyncScope (node:async_hooks:203:9)
-2025-12-14T17:09:28.344706023Z [inf]                at bound (node:async_hooks:235:16)
-2025-12-14T17:09:28.344712458Z [inf]                at Parser.defaultJsonParser [as fn] (/app/node_modules/.pnpm/fastify@5.6.2/node_modules/fastify/lib/content-type-parser.js:307:7)
-2025-12-14T17:09:28.344719022Z [inf]                at IncomingMessage.onEnd (/app/node_modules/.pnpm/fastify@5.6.2/node_modules/fastify/lib/content-type-parser.js:289:27)
-2025-12-14T17:09:28.348408961Z [inf]  [17:09:28 UTC] INFO: Hybrid mode active - real calls to test phones + simulated calls for remaining
-2025-12-14T17:09:28.348416964Z [inf]      reqId: "req-1j"
-2025-12-14T17:09:28.348425521Z [inf]      adminTestPhones: [
-2025-12-14T17:09:28.348434643Z [inf]        "+13106992541"
-2025-12-14T17:09:28.348440337Z [inf]      }
-2025-12-14T17:09:28.348440853Z [inf]          "name": "Forest Kitchen Design",
-2025-12-14T17:09:28.348448268Z [inf]      reqId: "req-1j"
-2025-12-14T17:09:28.348452461Z [inf]      responseTime: 0.9592897891998291
-2025-12-14T17:09:28.348453777Z [inf]          "phone": "+13106992541"
-2025-12-14T17:09:28.348457802Z [inf]      req: {
-2025-12-14T17:09:28.348466261Z [inf]  [17:09:28 UTC] INFO: incoming request
-2025-12-14T17:09:28.348466263Z [inf]        "method": "POST",
-2025-12-14T17:09:28.348469354Z [inf]      ]
-2025-12-14T17:09:28.348474531Z [inf]        "url": "/api/v1/providers/batch-call-async",
-2025-12-14T17:09:28.348479513Z [inf]      providerCount: 10
-2025-12-14T17:09:28.348487413Z [inf]        "host": "api-production-8fe4.up.railway.app",
-2025-12-14T17:09:28.348489293Z [inf]  [17:09:28 UTC] INFO: Hybrid mode: providers split into real and simulated calls
-2025-12-14T17:09:28.348495251Z [inf]        "remoteAddress": "100.64.0.7",
-2025-12-14T17:09:28.348502959Z [inf]        "remotePort": 35424
-2025-12-14T17:09:28.348508075Z [inf]      reqId: "req-1j"
-2025-12-14T17:09:28.348512481Z [inf]      }
-2025-12-14T17:09:28.348517425Z [inf]      realCallProviders: [
-2025-12-14T17:09:28.348527542Z [inf]        {
-2025-12-14T17:09:28.348527835Z [inf]      res: {
-2025-12-14T17:09:28.348528144Z [inf]        }
-2025-12-14T17:09:28.348537315Z [inf]        "statusCode": 400
-2025-12-14T17:09:28.348537930Z [inf]        {
-2025-12-14T17:09:28.348539337Z [inf]      ]
-2025-12-14T17:09:28.348546885Z [inf]      simulatedProviders: [
-2025-12-14T17:09:28.349586698Z [inf]          "name": "Lambert Custom Carpentry",
-2025-12-14T17:09:28.349593831Z [inf]          "id": "6b8b409a-752b-4f36-a6bc-fb9e9c8c67c3"
-2025-12-14T17:09:28.349602083Z [inf]        },
-2025-12-14T17:09:28.349608151Z [inf]        {
-2025-12-14T17:09:28.349614273Z [inf]          "name": "Brightline Painting - Greenville Painting Company",
-2025-12-14T17:09:28.349620361Z [inf]          "id": "8194b5a4-9ee8-41a7-a1e7-a52f6f602f31"
-2025-12-14T17:09:28.349630224Z [inf]        },
-2025-12-14T17:09:28.349637488Z [inf]        {
-2025-12-14T17:09:28.349646257Z [inf]          "name": "Precision Carpentry & Plumbing",
-2025-12-14T17:09:28.349652360Z [inf]          "id": "5917b5f9-96da-40a0-8a90-20d8a5dfd7a4"
-2025-12-14T17:09:28.349658427Z [inf]        },
-2025-12-14T17:09:28.349668493Z [inf]        {
-2025-12-14T17:09:28.349674709Z [inf]          "name": "Hgi Cabinetry",
-2025-12-14T17:09:28.349680756Z [inf]          "id": "b31121ca-d843-4bda-94ff-7fbf6bab2e2a"
-2025-12-14T17:09:28.349687336Z [inf]        },
-2025-12-14T17:09:28.349693641Z [inf]        {
-2025-12-14T17:09:28.349706508Z [inf]          "name": "Dell Builders",
-2025-12-14T17:09:28.349712691Z [inf]          "id": "b3043f83-ffa1-43fc-b037-6be4067b1e63"
-2025-12-14T17:09:28.349719728Z [inf]        },
-2025-12-14T17:09:28.349725771Z [inf]        {
-2025-12-14T17:09:28.349734368Z [inf]          "name": "Home Improvement Greenville SC",
-2025-12-14T17:09:28.349741405Z [inf]          "id": "f381251c-9b63-4ce8-af47-b94fd99fbc4a"
-2025-12-14T17:09:28.349749182Z [inf]        },
-2025-12-14T17:09:28.349759979Z [inf]        {
-2025-12-14T17:09:28.349766076Z [inf]          "name": "New Life Home Services, LLC",
-2025-12-14T17:09:28.349774105Z [inf]          "id": "7b12fac8-233f-4994-8dfc-81944bfb186f"
-2025-12-14T17:09:28.349820780Z [inf]        },
-2025-12-14T17:09:28.349829222Z [inf]        {
-2025-12-14T17:09:28.349837105Z [inf]          "name": "Rockler Woodworking and Hardware - Greenville",
-2025-12-14T17:09:28.349860885Z [inf]          "id": "a650d1a5-3319-4d8b-ab1b-fdd1056cf14a"
-2025-12-14T17:09:28.349867433Z [inf]        },
-2025-12-14T17:09:28.349873608Z [inf]        {
-2025-12-14T17:09:28.349879880Z [inf]          "name": "Woodcraft of Greenville",
-2025-12-14T17:09:28.349886181Z [inf]          "id": "69f75b70-1ee4-4141-bd02-6b8ad472717f"
-2025-12-14T17:09:28.349892473Z [inf]        }
-2025-12-14T17:09:28.349898470Z [inf]      ]
-2025-12-14T17:09:28.349904452Z [inf]  [17:09:28 UTC] INFO: Starting async batch call
-2025-12-14T17:09:28.349910397Z [inf]      executionId: "d80928b0-1f32-4f17-a8a3-d326dfaad3ee"
-2025-12-14T17:09:28.349915442Z [inf]      providerCount: 1
-2025-12-14T17:09:28.595286452Z [inf]  [17:09:28 UTC] INFO: request completed
-2025-12-14T17:09:28.595299896Z [inf]      reqId: "req-1j"
-2025-12-14T17:09:28.595306570Z [inf]      providerId: "8194b5a4-9ee8-41a7-a1e7-a52f6f602f31"
-2025-12-14T17:09:28.595306902Z [inf]  [17:09:28 UTC] INFO: [SimulatedCallService] Generating simulated call
-2025-12-14T17:09:28.595310159Z [inf]      res: {
-2025-12-14T17:09:28.595313836Z [inf]      providerName: "Brightline Painting - Greenville Painting Company"
-2025-12-14T17:09:28.595320106Z [inf]        "statusCode": 202
-2025-12-14T17:09:28.595321349Z [inf]      scenario: "completed"
-2025-12-14T17:09:28.595321367Z [inf]      providerId: "6b8b409a-752b-4f36-a6bc-fb9e9c8c67c3"
-2025-12-14T17:09:28.595329115Z [inf]  [17:09:28 UTC] INFO: [SimulatedCallService] Generating simulated call
-2025-12-14T17:09:28.595330435Z [inf]      }
-2025-12-14T17:09:28.595332579Z [inf]      providerName: "Lambert Custom Carpentry"
-2025-12-14T17:09:28.595337528Z [inf]  [17:09:28 UTC] INFO: Kestra disabled via env var, using direct VAPI
-2025-12-14T17:09:28.595340668Z [inf]      responseTime: 342.42109513282776
-2025-12-14T17:09:28.595345126Z [inf]      scenario: "completed"
-2025-12-14T17:09:28.595349462Z [inf]  [17:09:28 UTC] INFO: Starting simulated calls for remaining providers
-2025-12-14T17:09:28.595350043Z [inf]  [17:09:28 UTC] INFO: Background batch call processing started
-2025-12-14T17:09:28.595357258Z [inf]      executionId: "d80928b0-1f32-4f17-a8a3-d326dfaad3ee"
-2025-12-14T17:09:28.595358477Z [inf]  [17:09:28 UTC] INFO: [SimulatedCallService] Generating simulated call
-2025-12-14T17:09:28.595359460Z [inf]      executionId: "d80928b0-1f32-4f17-a8a3-d326dfaad3ee"
-2025-12-14T17:09:28.595364333Z [inf]      simulatedCount: 9
-2025-12-14T17:09:28.595370406Z [inf]  [17:09:28 UTC] INFO: [SimulatedCallService] Starting batch simulation
-2025-12-14T17:09:28.595380596Z [inf]      count: 9
-2025-12-14T17:09:28.595386595Z [inf]      maxConcurrent: 5
-2025-12-14T17:09:28.595923522Z [inf]      providerId: "5917b5f9-96da-40a0-8a90-20d8a5dfd7a4"
-2025-12-14T17:09:28.595932525Z [inf]      providerName: "Precision Carpentry & Plumbing"
-2025-12-14T17:09:28.595939998Z [inf]      scenario: "completed"
-2025-12-14T17:09:28.595942789Z [inf]      location: "Greenville, SC"
-2025-12-14T17:09:28.595949070Z [inf]  [17:09:28 UTC] INFO: [SimulatedCallService] Generating simulated call
-2025-12-14T17:09:28.595949103Z [inf]  [17:09:28 UTC] INFO: [SimulatedCallService] Generating simulated call
-2025-12-14T17:09:28.595952670Z [inf]      maxConcurrent: 5
-2025-12-14T17:09:28.595953335Z [inf]      urgency: "within_2_days"
-2025-12-14T17:09:28.595957693Z [inf]      providerId: "b31121ca-d843-4bda-94ff-7fbf6bab2e2a"
-2025-12-14T17:09:28.595959145Z [inf]      providerId: "b3043f83-ffa1-43fc-b037-6be4067b1e63"
-2025-12-14T17:09:28.595963327Z [inf]  [17:09:28 UTC] INFO: Processing batch 1/1
-2025-12-14T17:09:28.595965869Z [inf]  [17:09:28 UTC] INFO: Webhook URL configured - using hybrid mode
-2025-12-14T17:09:28.595968450Z [inf]      providerName: "Hgi Cabinetry"
-2025-12-14T17:09:28.595969713Z [inf]      providerName: "Dell Builders"
-2025-12-14T17:09:28.595976309Z [inf]      webhookUrl: "https://api-production-8fe4.up.railway.app/api/v1/vapi/webhook"
-2025-12-14T17:09:28.595979306Z [inf]      scenario: "completed"
-2025-12-14T17:09:28.595984796Z [inf]      scenario: "completed"
-2025-12-14T17:09:28.595985289Z [inf]  [17:09:28 UTC] INFO: Starting batch provider calls
-2025-12-14T17:09:28.595985485Z [inf]  [17:09:28 UTC] INFO: Initiating batch provider calls (single routing decision)
-2025-12-14T17:09:28.595992657Z [inf]      method: "direct_vapi"
-2025-12-14T17:09:28.595994767Z [inf]      totalProviders: 1
-2025-12-14T17:09:28.595997622Z [inf]      providerCount: 1
-2025-12-14T17:09:28.596003161Z [inf]      maxConcurrent: 5
-2025-12-14T17:09:28.596015407Z [inf]      service: "Carpenter"
-2025-12-14T17:09:28.596362595Z [inf]      batch: 1
-2025-12-14T17:09:28.596370397Z [inf]      totalBatches: 1
-2025-12-14T17:09:28.596376905Z [inf]      batchSize: 1
-2025-12-14T17:09:28.596383846Z [inf]      progress: "1/1"
-2025-12-14T17:09:28.596390434Z [inf]  [17:09:28 UTC] INFO: Initiating direct VAPI call
-2025-12-14T17:09:28.596397316Z [inf]      provider: "Forest Kitchen Design"
-2025-12-14T17:09:28.596404314Z [inf]      phone: "+13106992541"
-2025-12-14T17:09:28.596410449Z [inf]      service: "Carpenter"
-2025-12-14T17:09:28.596415898Z [inf]      webhookEnabled: true
-2025-12-14T17:09:29.618878108Z [inf]  [17:09:29 UTC] INFO: VAPI call created
-2025-12-14T17:09:29.618880568Z [inf]      providerId: "3df6608f-fccf-44b1-a0d3-b19f895c5714"
-2025-12-14T17:09:29.618881617Z [inf]        "remoteAddress": "100.64.0.8",
-2025-12-14T17:09:29.618885276Z [inf]      callId: "019b1dd6-b4c4-766a-b238-3e25b077f802"
-2025-12-14T17:09:29.618888919Z [inf]      callId: "019b1dd6-b4c4-766a-b238-3e25b077f802"
-2025-12-14T17:09:29.618892186Z [inf]        "remotePort": 19444
-2025-12-14T17:09:29.618895890Z [inf]  [17:09:29 UTC] INFO: incoming request
-2025-12-14T17:09:29.618897206Z [inf]      status: "queued"
-2025-12-14T17:09:29.618901398Z [inf]      }
-2025-12-14T17:09:29.618904096Z [inf]      reqId: "req-1k"
-2025-12-14T17:09:29.618907330Z [inf]      webhookEnabled: true
-2025-12-14T17:09:29.618908603Z [inf]  [17:09:29 UTC] WARN: Call result not found in cache
-2025-12-14T17:09:29.618913189Z [inf]      req: {
-2025-12-14T17:09:29.618915795Z [inf]      callId: "019b1dd6-b4c4-766a-b238-3e25b077f802"
-2025-12-14T17:09:29.618917962Z [inf]  [17:09:29 UTC] INFO: Provider call marked in_progress
-2025-12-14T17:09:29.618923590Z [inf]        "method": "GET",
-2025-12-14T17:09:29.618923595Z [inf]  [17:09:29 UTC] INFO: request completed
-2025-12-14T17:09:29.618931003Z [inf]      reqId: "req-1k"
-2025-12-14T17:09:29.618931370Z [inf]        "url": "/api/v1/vapi/calls/019b1dd6-b4c4-766a-b238-3e25b077f802",
-2025-12-14T17:09:29.618937097Z [inf]        "host": "api-production-8fe4.up.railway.app",
-2025-12-14T17:09:29.618938557Z [inf]      res: {
-2025-12-14T17:09:29.618943921Z [inf]        "statusCode": 404
-2025-12-14T17:09:29.618950676Z [inf]      }
-2025-12-14T17:09:29.618956820Z [inf]      responseTime: 0.7785899639129639
-2025-12-14T17:09:31.668129392Z [inf]  [17:09:31 UTC] INFO: incoming request
-2025-12-14T17:09:31.668141309Z [inf]      reqId: "req-1l"
-2025-12-14T17:09:31.668150869Z [inf]      req: {
-2025-12-14T17:09:31.668158282Z [inf]        "method": "GET",
-2025-12-14T17:09:31.668163924Z [inf]        "url": "/api/v1/vapi/calls/019b1dd6-b4c4-766a-b238-3e25b077f802",
-2025-12-14T17:09:31.668169999Z [inf]        "host": "api-production-8fe4.up.railway.app",
-2025-12-14T17:09:31.668176942Z [inf]        "remoteAddress": "100.64.0.8",
-2025-12-14T17:09:31.668182809Z [inf]        "remotePort": 19444
-2025-12-14T17:09:31.668187156Z [inf]      }
-2025-12-14T17:09:31.668191876Z [inf]  [17:09:31 UTC] WARN: Call result not found in cache
-2025-12-14T17:09:31.668196083Z [inf]      callId: "019b1dd6-b4c4-766a-b238-3e25b077f802"
-2025-12-14T17:09:31.668199800Z [inf]  [17:09:31 UTC] INFO: request completed
-2025-12-14T17:09:31.668204192Z [inf]      reqId: "req-1l"
-2025-12-14T17:09:31.668208425Z [inf]      res: {
-2025-12-14T17:09:31.668212820Z [inf]        "statusCode": 404
-2025-12-14T17:09:31.668216757Z [inf]      }
-2025-12-14T17:09:31.668221004Z [inf]      responseTime: 0.5289599895477295
-2025-12-14T17:09:33.719500786Z [inf]  [17:09:33 UTC] INFO: request completed
-2025-12-14T17:09:33.719507302Z [inf]      reqId: "req-1m"
-2025-12-14T17:09:33.719511913Z [inf]      res: {
-2025-12-14T17:09:33.719516858Z [inf]        "statusCode": 404
-2025-12-14T17:09:33.719520444Z [inf]  [17:09:33 UTC] INFO: incoming request
-2025-12-14T17:09:33.719522876Z [inf]      }
-2025-12-14T17:09:33.719528818Z [inf]      responseTime: 0.4893040657043457
-2025-12-14T17:09:33.719530031Z [inf]      reqId: "req-1m"
-2025-12-14T17:09:33.719537452Z [inf]      req: {
-2025-12-14T17:09:33.719541575Z [inf]        "method": "GET",
-2025-12-14T17:09:33.719545398Z [inf]        "url": "/api/v1/vapi/calls/019b1dd6-b4c4-766a-b238-3e25b077f802",
-2025-12-14T17:09:33.719549016Z [inf]        "host": "api-production-8fe4.up.railway.app",
-2025-12-14T17:09:33.719552979Z [inf]        "remoteAddress": "100.64.0.8",
-2025-12-14T17:09:33.719557000Z [inf]        "remotePort": 19444
-2025-12-14T17:09:33.719560819Z [inf]      }
-2025-12-14T17:09:33.719564827Z [inf]  [17:09:33 UTC] WARN: Call result not found in cache
-2025-12-14T17:09:33.719568447Z [inf]      callId: "019b1dd6-b4c4-766a-b238-3e25b077f802"
-2025-12-14T17:09:35.777080695Z [inf]  [17:09:35 UTC] INFO: incoming request
-2025-12-14T17:09:35.777090105Z [inf]      reqId: "req-1n"
-2025-12-14T17:09:35.777098161Z [inf]      req: {
-2025-12-14T17:09:35.777105346Z [inf]        "method": "GET",
-2025-12-14T17:09:35.777113033Z [inf]        "url": "/api/v1/vapi/calls/019b1dd6-b4c4-766a-b238-3e25b077f802",
-2025-12-14T17:09:35.777120218Z [inf]        "host": "api-production-8fe4.up.railway.app",
-2025-12-14T17:09:35.777126577Z [inf]        "remoteAddress": "100.64.0.8",
-2025-12-14T17:09:35.777133200Z [inf]        "remotePort": 19444
-2025-12-14T17:09:35.777139785Z [inf]      }
-2025-12-14T17:09:35.777148323Z [inf]  [17:09:35 UTC] WARN: Call result not found in cache
-2025-12-14T17:09:35.777154630Z [inf]      callId: "019b1dd6-b4c4-766a-b238-3e25b077f802"
-2025-12-14T17:09:35.777161175Z [inf]  [17:09:35 UTC] INFO: request completed
-2025-12-14T17:09:35.777174892Z [inf]      reqId: "req-1n"
-2025-12-14T17:09:35.777182177Z [inf]      res: {
-2025-12-14T17:09:35.777188487Z [inf]        "statusCode": 404
-2025-12-14T17:09:35.777194748Z [inf]      }
-2025-12-14T17:09:35.777200930Z [inf]      responseTime: 0.4762380123138428
-2025-12-14T17:09:36.801162957Z [inf]      scenario: "completed"
-2025-12-14T17:09:36.801166193Z [inf]  [17:09:36 UTC] INFO: [SimulatedCallService] Simulation complete
-2025-12-14T17:09:36.801180078Z [inf]      outcome: "positive"
-2025-12-14T17:09:36.801180158Z [inf]      providerId: "b3043f83-ffa1-43fc-b037-6be4067b1e63"
-2025-12-14T17:09:36.801193177Z [inf]      callId: "sim-6d4e634f"
-2025-12-14T17:09:36.801195208Z [inf]      duration: 2.5
-2025-12-14T17:09:36.801204430Z [inf]      scenario: "completed"
-2025-12-14T17:09:36.801208193Z [inf]  [17:09:36 UTC] INFO: VAPI webhook received
-2025-12-14T17:09:36.801215638Z [inf]      outcome: "positive"
-2025-12-14T17:09:36.801221533Z [inf]      type: "status-update"
-2025-12-14T17:09:36.801225873Z [inf]      duration: 3.2
-2025-12-14T17:09:36.801235121Z [inf]  [17:09:36 UTC] INFO: incoming request
-2025-12-14T17:09:36.801237818Z [inf]      callId: "019b1dd6-b4c4-766a-b238-3e25b077f802"
-2025-12-14T17:09:36.801245748Z [inf]      reqId: "req-1o"
-2025-12-14T17:09:36.801251997Z [inf]  [17:09:36 UTC] INFO: request completed
-2025-12-14T17:09:36.801256161Z [inf]      req: {
-2025-12-14T17:09:36.801265862Z [inf]      reqId: "req-1o"
-2025-12-14T17:09:36.801265925Z [inf]        "method": "POST",
-2025-12-14T17:09:36.801280340Z [inf]      res: {
-2025-12-14T17:09:36.801280370Z [inf]        "url": "/api/v1/vapi/webhook",
-2025-12-14T17:09:36.801288965Z [inf]        "host": "api-production-8fe4.up.railway.app",
-2025-12-14T17:09:36.801296056Z [inf]        "remoteAddress": "100.64.0.9",
-2025-12-14T17:09:36.801302840Z [inf]        "remotePort": 21288
-2025-12-14T17:09:36.801310637Z [inf]      }
-2025-12-14T17:09:36.801318582Z [inf]  [17:09:36 UTC] INFO: [SimulatedCallService] Simulation complete
-2025-12-14T17:09:36.801325922Z [inf]      providerId: "6b8b409a-752b-4f36-a6bc-fb9e9c8c67c3"
-2025-12-14T17:09:36.801333550Z [inf]      callId: "sim-f9209cd9"
-2025-12-14T17:09:36.801883340Z [inf]        "statusCode": 200
-2025-12-14T17:09:36.801893500Z [inf]      }
-2025-12-14T17:09:36.801901649Z [inf]      responseTime: 74.5819661617279
-2025-12-14T17:09:37.821411571Z [inf]  [17:09:37 UTC] INFO: [SimulatedCallService] Simulation complete
-2025-12-14T17:09:37.821423924Z [inf]      providerId: "5917b5f9-96da-40a0-8a90-20d8a5dfd7a4"
-2025-12-14T17:09:37.821434036Z [inf]      callId: "sim-aa088143"
-2025-12-14T17:09:37.821441796Z [inf]      scenario: "completed"
-2025-12-14T17:09:37.821447719Z [inf]      outcome: "positive"
-2025-12-14T17:09:37.821453636Z [inf]      duration: 3.1
-2025-12-14T17:09:37.822336059Z [inf]  [17:09:37 UTC] INFO: incoming request
-2025-12-14T17:09:37.822336815Z [inf]      }
-2025-12-14T17:09:37.822346041Z [inf]  [17:09:37 UTC] WARN: Call result not found in cache
-2025-12-14T17:09:37.822347685Z [inf]      reqId: "req-1p"
-2025-12-14T17:09:37.822351799Z [inf]      callId: "019b1dd6-b4c4-766a-b238-3e25b077f802"
-2025-12-14T17:09:37.822355175Z [inf]      req: {
-2025-12-14T17:09:37.822360632Z [inf]  [17:09:37 UTC] INFO: request completed
-2025-12-14T17:09:37.822365342Z [inf]        "method": "GET",
-2025-12-14T17:09:37.822365363Z [inf]      reqId: "req-1p"
-2025-12-14T17:09:37.822371167Z [inf]      res: {
-2025-12-14T17:09:37.822373918Z [inf]        "url": "/api/v1/vapi/calls/019b1dd6-b4c4-766a-b238-3e25b077f802",
-2025-12-14T17:09:37.822376356Z [inf]        "statusCode": 404
-2025-12-14T17:09:37.822381396Z [inf]      }
-2025-12-14T17:09:37.822383310Z [inf]        "host": "api-production-8fe4.up.railway.app",
-2025-12-14T17:09:37.822387013Z [inf]      responseTime: 0.5069808959960938
-2025-12-14T17:09:37.822392056Z [inf]        "remoteAddress": "100.64.0.8",
-2025-12-14T17:09:37.822398044Z [inf]        "remotePort": 19444
-2025-12-14T17:09:40.086254714Z [inf]  [17:09:39 UTC] INFO: [SimulatedCallService] Simulation complete
-2025-12-14T17:09:40.086261574Z [inf]      providerId: "b31121ca-d843-4bda-94ff-7fbf6bab2e2a"
-2025-12-14T17:09:40.086268338Z [inf]      callId: "sim-d21557a1"
-2025-12-14T17:09:40.086272767Z [inf]      scenario: "completed"
-2025-12-14T17:09:40.086278056Z [inf]      outcome: "positive"
-2025-12-14T17:09:40.086282424Z [inf]      duration: 3.8
-2025-12-14T17:09:40.086286594Z [inf]  [17:09:39 UTC] INFO: incoming request
-2025-12-14T17:09:40.086290633Z [inf]      reqId: "req-1q"
-2025-12-14T17:09:40.086294453Z [inf]      req: {
-2025-12-14T17:09:40.086298391Z [inf]        "method": "GET",
-2025-12-14T17:09:40.086302583Z [inf]        "url": "/api/v1/vapi/calls/019b1dd6-b4c4-766a-b238-3e25b077f802",
-2025-12-14T17:09:40.086306442Z [inf]        "host": "api-production-8fe4.up.railway.app",
-2025-12-14T17:09:40.086311139Z [inf]        "remoteAddress": "100.64.0.8",
-2025-12-14T17:09:40.086315864Z [inf]        "remotePort": 19444
-2025-12-14T17:09:40.086320203Z [inf]      }
-2025-12-14T17:09:40.086324144Z [inf]  [17:09:39 UTC] WARN: Call result not found in cache
-2025-12-14T17:09:40.086328012Z [inf]      callId: "019b1dd6-b4c4-766a-b238-3e25b077f802"
-2025-12-14T17:09:40.086331921Z [inf]  [17:09:39 UTC] INFO: request completed
-2025-12-14T17:09:40.086336392Z [inf]      reqId: "req-1q"
-2025-12-14T17:09:40.086339988Z [inf]      res: {
-2025-12-14T17:09:40.086343759Z [inf]        "statusCode": 404
-2025-12-14T17:09:40.086347377Z [inf]      }
-2025-12-14T17:09:40.086351414Z [inf]      responseTime: 0.5338928699493408
-2025-12-14T17:09:42.038982402Z [inf]  [17:09:41 UTC] INFO: [SimulatedCallService] Simulation complete
-2025-12-14T17:09:42.038990103Z [inf]      providerId: "8194b5a4-9ee8-41a7-a1e7-a52f6f602f31"
-2025-12-14T17:09:42.038999470Z [inf]      callId: "sim-1e5a9b33"
-2025-12-14T17:09:42.039006926Z [inf]      scenario: "completed"
-2025-12-14T17:09:42.039015169Z [inf]      outcome: "positive"
-2025-12-14T17:09:42.039022953Z [inf]      duration: 2.7
-2025-12-14T17:09:42.039030709Z [inf]  [17:09:41 UTC] INFO: [SimulatedCallService] Generating simulated call
-2025-12-14T17:09:42.039041419Z [inf]      providerId: "f381251c-9b63-4ce8-af47-b94fd99fbc4a"
-2025-12-14T17:09:42.039048749Z [inf]      providerName: "Home Improvement Greenville SC"
-2025-12-14T17:09:42.039056986Z [inf]      scenario: "no_answer"
-2025-12-14T17:09:42.039064669Z [inf]  [17:09:41 UTC] INFO: [SimulatedCallService] Created no-answer result
-2025-12-14T17:09:42.039073501Z [inf]      providerId: "f381251c-9b63-4ce8-af47-b94fd99fbc4a"
-2025-12-14T17:09:42.039080908Z [inf]      callId: "sim-dd8980ec"
-2025-12-14T17:09:42.039087727Z [inf]      scenario: "no_answer"
-2025-12-14T17:09:42.039095588Z [inf]  [17:09:41 UTC] INFO: [SimulatedCallService] Generating simulated call
-2025-12-14T17:09:42.039102973Z [inf]      providerId: "7b12fac8-233f-4994-8dfc-81944bfb186f"
-2025-12-14T17:09:42.039109989Z [inf]      providerName: "New Life Home Services, LLC"
-2025-12-14T17:09:42.039116633Z [inf]      scenario: "completed"
-2025-12-14T17:09:42.039123421Z [inf]  [17:09:41 UTC] INFO: [SimulatedCallService] Generating simulated call
-2025-12-14T17:09:42.039131855Z [inf]      providerId: "a650d1a5-3319-4d8b-ab1b-fdd1056cf14a"
-2025-12-14T17:09:42.039139122Z [inf]      providerName: "Rockler Woodworking and Hardware - Greenville"
-2025-12-14T17:09:42.039146406Z [inf]      scenario: "completed"
-2025-12-14T17:09:42.039152358Z [inf]  [17:09:41 UTC] INFO: [SimulatedCallService] Generating simulated call
-2025-12-14T17:09:42.039763730Z [inf]      providerId: "69f75b70-1ee4-4141-bd02-6b8ad472717f"
-2025-12-14T17:09:42.039772249Z [inf]      providerName: "Woodcraft of Greenville"
-2025-12-14T17:09:42.039779001Z [inf]      scenario: "completed"
-2025-12-14T17:09:42.039785355Z [inf]  [17:09:41 UTC] INFO: incoming request
-2025-12-14T17:09:42.039792114Z [inf]      reqId: "req-1r"
-2025-12-14T17:09:42.039798862Z [inf]      req: {
-2025-12-14T17:09:42.039805309Z [inf]        "method": "GET",
-2025-12-14T17:09:42.039870158Z [inf]        "url": "/api/v1/vapi/calls/019b1dd6-b4c4-766a-b238-3e25b077f802",
-2025-12-14T17:09:42.039870177Z [inf]      res: {
-2025-12-14T17:09:42.039881371Z [inf]        "statusCode": 404
-2025-12-14T17:09:42.039892451Z [inf]        "host": "api-production-8fe4.up.railway.app",
-2025-12-14T17:09:42.039894083Z [inf]      }
-2025-12-14T17:09:42.039906568Z [inf]      responseTime: 0.5235409736633301
-2025-12-14T17:09:42.039909940Z [inf]        "remoteAddress": "100.64.0.8",
-2025-12-14T17:09:42.039922374Z [inf]        "remotePort": 19444
-2025-12-14T17:09:42.039932123Z [inf]      }
-2025-12-14T17:09:42.039955485Z [inf]  [17:09:41 UTC] WARN: Call result not found in cache
-2025-12-14T17:09:42.039963264Z [inf]      callId: "019b1dd6-b4c4-766a-b238-3e25b077f802"
-2025-12-14T17:09:42.039970782Z [inf]  [17:09:41 UTC] INFO: request completed
-2025-12-14T17:09:42.039979102Z [inf]      reqId: "req-1r"
-2025-12-14T17:09:44.044623241Z [inf]        "remoteAddress": "100.64.0.8",
-2025-12-14T17:09:44.044624322Z [inf]  [17:09:43 UTC] INFO: incoming request
-2025-12-14T17:09:44.044629944Z [inf]      reqId: "req-1s"
-2025-12-14T17:09:44.044633440Z [inf]        "remotePort": 19444
-2025-12-14T17:09:44.044633566Z [inf]        "statusCode": 404
-2025-12-14T17:09:44.044637217Z [inf]      req: {
-2025-12-14T17:09:44.044640973Z [inf]      }
-2025-12-14T17:09:44.044643034Z [inf]      }
-2025-12-14T17:09:44.044643564Z [inf]        "method": "GET",
-2025-12-14T17:09:44.044647414Z [inf]  [17:09:43 UTC] WARN: Call result not found in cache
-2025-12-14T17:09:44.044650180Z [inf]      responseTime: 0.5365040302276611
-2025-12-14T17:09:44.044650367Z [inf]        "url": "/api/v1/vapi/calls/019b1dd6-b4c4-766a-b238-3e25b077f802",
-2025-12-14T17:09:44.044653947Z [inf]      callId: "019b1dd6-b4c4-766a-b238-3e25b077f802"
-2025-12-14T17:09:44.044660302Z [inf]        "host": "api-production-8fe4.up.railway.app",
-2025-12-14T17:09:44.044661558Z [inf]  [17:09:43 UTC] INFO: request completed
-2025-12-14T17:09:44.044671701Z [inf]      reqId: "req-1s"
-2025-12-14T17:09:44.044679549Z [inf]      res: {
-2025-12-14T17:09:46.026107560Z [inf]  [17:09:45 UTC] INFO: incoming request
-2025-12-14T17:09:46.026118172Z [inf]      reqId: "req-1t"
-2025-12-14T17:09:46.026125532Z [inf]      req: {
-2025-12-14T17:09:46.026133725Z [inf]        "method": "GET",
-2025-12-14T17:09:46.026141955Z [inf]        "url": "/api/v1/vapi/calls/019b1dd6-b4c4-766a-b238-3e25b077f802",
-2025-12-14T17:09:46.026149605Z [inf]        "host": "api-production-8fe4.up.railway.app",
-2025-12-14T17:09:46.026156765Z [inf]        "remoteAddress": "100.64.0.8",
-2025-12-14T17:09:46.026163718Z [inf]        "remotePort": 19444
-2025-12-14T17:09:46.026171551Z [inf]      }
-2025-12-14T17:09:46.026179429Z [inf]  [17:09:45 UTC] WARN: Call result not found in cache
-2025-12-14T17:09:46.026186994Z [inf]      callId: "019b1dd6-b4c4-766a-b238-3e25b077f802"
-2025-12-14T17:09:46.026192942Z [inf]  [17:09:45 UTC] INFO: request completed
-2025-12-14T17:09:46.026199151Z [inf]      reqId: "req-1t"
-2025-12-14T17:09:46.026206689Z [inf]      res: {
-2025-12-14T17:09:46.026213788Z [inf]        "statusCode": 404
-2025-12-14T17:09:46.026220966Z [inf]      }
-2025-12-14T17:09:46.026227581Z [inf]      responseTime: 0.572066068649292
-2025-12-14T17:09:48.075552519Z [inf]  [17:09:47 UTC] INFO: incoming request
-2025-12-14T17:09:48.075560824Z [inf]      reqId: "req-1u"
-2025-12-14T17:09:48.075565764Z [inf]      req: {
-2025-12-14T17:09:48.075572266Z [inf]        "method": "GET",
-2025-12-14T17:09:48.075576930Z [inf]        "url": "/api/v1/vapi/calls/019b1dd6-b4c4-766a-b238-3e25b077f802",
-2025-12-14T17:09:48.075581598Z [inf]        "host": "api-production-8fe4.up.railway.app",
-2025-12-14T17:09:48.075585367Z [inf]        "remoteAddress": "100.64.0.8",
-2025-12-14T17:09:48.075589224Z [inf]        "remotePort": 19444
-2025-12-14T17:09:48.075593747Z [inf]      }
-2025-12-14T17:09:48.076562884Z [inf]  [17:09:47 UTC] WARN: Call result not found in cache
-2025-12-14T17:09:48.076568500Z [inf]      callId: "019b1dd6-b4c4-766a-b238-3e25b077f802"
-2025-12-14T17:09:48.076573225Z [inf]  [17:09:47 UTC] INFO: request completed
-2025-12-14T17:09:48.076577703Z [inf]      reqId: "req-1u"
-2025-12-14T17:09:48.076581211Z [inf]      res: {
-2025-12-14T17:09:48.076585054Z [inf]        "statusCode": 404
-2025-12-14T17:09:48.076589665Z [inf]      }
-2025-12-14T17:09:48.076594093Z [inf]      responseTime: 0.4199070930480957
-2025-12-14T17:09:50.135327316Z [inf]  [17:09:49 UTC] INFO: incoming request
-2025-12-14T17:09:50.135336106Z [inf]      reqId: "req-1v"
-2025-12-14T17:09:50.135344531Z [inf]      req: {
-2025-12-14T17:09:50.135353672Z [inf]        "method": "GET",
-2025-12-14T17:09:50.135362008Z [inf]        "url": "/api/v1/vapi/calls/019b1dd6-b4c4-766a-b238-3e25b077f802",
-2025-12-14T17:09:50.135370624Z [inf]        "host": "api-production-8fe4.up.railway.app",
-2025-12-14T17:09:50.135379304Z [inf]        "remoteAddress": "100.64.0.8",
-2025-12-14T17:09:50.135386365Z [inf]        "remotePort": 19444
-2025-12-14T17:09:50.135392502Z [inf]      }
-2025-12-14T17:09:50.135398553Z [inf]  [17:09:49 UTC] WARN: Call result not found in cache
-2025-12-14T17:09:50.135404084Z [inf]      callId: "019b1dd6-b4c4-766a-b238-3e25b077f802"
-2025-12-14T17:09:50.135410178Z [inf]  [17:09:49 UTC] INFO: request completed
-2025-12-14T17:09:50.135415846Z [inf]      reqId: "req-1v"
-2025-12-14T17:09:50.135420959Z [inf]      res: {
-2025-12-14T17:09:50.135427591Z [inf]        "statusCode": 404
-2025-12-14T17:09:50.135435001Z [inf]      }
-2025-12-14T17:09:50.135440829Z [inf]      responseTime: 0.5806319713592529
-2025-12-14T17:09:51.151668662Z [inf]  [17:09:50 UTC] INFO: [SimulatedCallService] Simulation complete
-2025-12-14T17:09:51.151674723Z [inf]      providerId: "a650d1a5-3319-4d8b-ab1b-fdd1056cf14a"
-2025-12-14T17:09:51.151681338Z [inf]      callId: "sim-cddf6279"
-2025-12-14T17:09:51.151688713Z [inf]      scenario: "completed"
-2025-12-14T17:09:51.151695143Z [inf]      outcome: "negative"
-2025-12-14T17:09:51.151702741Z [inf]      duration: 1.8
-2025-12-14T17:09:51.151709650Z [inf]  [17:09:51 UTC] INFO: [SimulatedCallService] Simulation complete
-2025-12-14T17:09:51.151716729Z [inf]      providerId: "69f75b70-1ee4-4141-bd02-6b8ad472717f"
-2025-12-14T17:09:51.151723356Z [inf]      callId: "sim-bc689d4b"
-2025-12-14T17:09:51.151728031Z [inf]      scenario: "completed"
-2025-12-14T17:09:51.151732726Z [inf]      outcome: "positive"
-2025-12-14T17:09:51.151736756Z [inf]      duration: 3.2
-2025-12-14T17:09:51.669341450Z [inf]  [17:09:51 UTC] INFO: incoming request
-2025-12-14T17:09:51.669342170Z [inf]  [17:09:51 UTC] INFO: request completed
-2025-12-14T17:09:51.669349513Z [inf]      reqId: "req-1w"
-2025-12-14T17:09:51.669351011Z [inf]      reqId: "req-1w"
-2025-12-14T17:09:51.669356146Z [inf]      req: {
-2025-12-14T17:09:51.669357433Z [inf]      res: {
-2025-12-14T17:09:51.669361876Z [inf]        "method": "GET",
-2025-12-14T17:09:51.669363283Z [inf]        "statusCode": 404
-2025-12-14T17:09:51.669367549Z [inf]        "url": "/api/v1/vapi/calls/019b1dd6-b4c4-766a-b238-3e25b077f802",
-2025-12-14T17:09:51.669369820Z [inf]      }
-2025-12-14T17:09:51.669373138Z [inf]        "host": "api-production-8fe4.up.railway.app",
-2025-12-14T17:09:51.669375807Z [inf]      responseTime: 0.4912409782409668
-2025-12-14T17:09:51.669378414Z [inf]        "remoteAddress": "100.64.0.8",
-2025-12-14T17:09:51.669382273Z [inf]        "remotePort": 19444
-2025-12-14T17:09:51.669386249Z [inf]      }
-2025-12-14T17:09:51.669390543Z [inf]  [17:09:51 UTC] WARN: Call result not found in cache
-2025-12-14T17:09:51.669394460Z [inf]      callId: "019b1dd6-b4c4-766a-b238-3e25b077f802"
-2025-12-14T17:09:52.196219822Z [inf]  [17:09:52 UTC] INFO: [SimulatedCallService] Simulation complete
-2025-12-14T17:09:52.196219980Z [inf]      noAnswer: 1
-2025-12-14T17:09:52.196229658Z [inf]      failed: 0
-2025-12-14T17:09:52.196230713Z [inf]      providerId: "7b12fac8-233f-4994-8dfc-81944bfb186f"
-2025-12-14T17:09:52.196238849Z [inf]      durationMs: 23503
-2025-12-14T17:09:52.196240790Z [inf]      callId: "sim-a2b16022"
-2025-12-14T17:09:52.196248168Z [inf]      scenario: "completed"
-2025-12-14T17:09:52.196254006Z [inf]      outcome: "positive"
-2025-12-14T17:09:52.196259450Z [inf]      duration: 3
-2025-12-14T17:09:52.196265655Z [inf]  [17:09:52 UTC] INFO: [SimulatedCallService] Batch simulation complete
-2025-12-14T17:09:52.196269794Z [inf]      total: 9
-2025-12-14T17:09:52.196274236Z [inf]      completed: 8
-2025-12-14T17:09:52.196278905Z [inf]      voicemail: 0
-2025-12-14T17:09:52.313176957Z [inf]  [17:09:52 UTC] INFO: Call result saved to database
-2025-12-14T17:09:52.313184538Z [inf]      callId: "sim-f9209cd9"
-2025-12-14T17:09:52.313191757Z [inf]      providerId: "6b8b409a-752b-4f36-a6bc-fb9e9c8c67c3"
-2025-12-14T17:09:52.313197575Z [inf]      serviceRequestId: "1704b050-515e-44d9-b9da-172d419406e2"
-2025-12-14T17:09:52.569340904Z [inf]  [17:09:52 UTC] INFO: Call result saved to database
-2025-12-14T17:09:52.569346769Z [inf]      callId: "sim-1e5a9b33"
-2025-12-14T17:09:52.569351372Z [inf]      providerId: "8194b5a4-9ee8-41a7-a1e7-a52f6f602f31"
-2025-12-14T17:09:52.569357896Z [inf]      serviceRequestId: "1704b050-515e-44d9-b9da-172d419406e2"
-2025-12-14T17:09:52.692961732Z [inf]  [17:09:52 UTC] INFO: Call result saved to database
-2025-12-14T17:09:52.692967961Z [inf]      callId: "sim-aa088143"
-2025-12-14T17:09:52.692972064Z [inf]      providerId: "5917b5f9-96da-40a0-8a90-20d8a5dfd7a4"
-2025-12-14T17:09:52.692977074Z [inf]      serviceRequestId: "1704b050-515e-44d9-b9da-172d419406e2"
-2025-12-14T17:09:52.821650429Z [inf]  [17:09:52 UTC] INFO: Call result saved to database
-2025-12-14T17:09:52.821659775Z [inf]      callId: "sim-d21557a1"
-2025-12-14T17:09:52.821667006Z [inf]      providerId: "b31121ca-d843-4bda-94ff-7fbf6bab2e2a"
-2025-12-14T17:09:52.821673025Z [inf]      serviceRequestId: "1704b050-515e-44d9-b9da-172d419406e2"
-2025-12-14T17:09:53.112721026Z [inf]  [17:09:52 UTC] INFO: Call result saved to database
-2025-12-14T17:09:53.112724801Z [inf]      callId: "sim-6d4e634f"
-2025-12-14T17:09:53.112728799Z [inf]      providerId: "b3043f83-ffa1-43fc-b037-6be4067b1e63"
-2025-12-14T17:09:53.112732439Z [inf]      serviceRequestId: "1704b050-515e-44d9-b9da-172d419406e2"
-2025-12-14T17:09:53.112736651Z [inf]  [17:09:53 UTC] INFO: Call result saved to database
-2025-12-14T17:09:53.112740269Z [inf]      callId: "sim-dd8980ec"
-2025-12-14T17:09:53.112744548Z [inf]      providerId: "f381251c-9b63-4ce8-af47-b94fd99fbc4a"
-2025-12-14T17:09:53.112748980Z [inf]      serviceRequestId: "1704b050-515e-44d9-b9da-172d419406e2"
-2025-12-14T17:09:53.208838485Z [inf]  [17:09:53 UTC] INFO: Call result saved to database
-2025-12-14T17:09:53.208844605Z [inf]      callId: "sim-a2b16022"
-2025-12-14T17:09:53.208849347Z [inf]      providerId: "7b12fac8-233f-4994-8dfc-81944bfb186f"
-2025-12-14T17:09:53.208853967Z [inf]      serviceRequestId: "1704b050-515e-44d9-b9da-172d419406e2"
-2025-12-14T17:09:53.341219960Z [inf]  [17:09:53 UTC] INFO: Call result saved to database
-2025-12-14T17:09:53.341226511Z [inf]      callId: "sim-cddf6279"
-2025-12-14T17:09:53.341232293Z [inf]      providerId: "a650d1a5-3319-4d8b-ab1b-fdd1056cf14a"
-2025-12-14T17:09:53.341236347Z [inf]      serviceRequestId: "1704b050-515e-44d9-b9da-172d419406e2"
-2025-12-14T17:09:53.471503526Z [inf]  [17:09:53 UTC] INFO: Call result saved to database
-2025-12-14T17:09:53.471518114Z [inf]      callId: "sim-bc689d4b"
-2025-12-14T17:09:53.471528739Z [inf]      providerId: "69f75b70-1ee4-4141-bd02-6b8ad472717f"
-2025-12-14T17:09:53.471538425Z [inf]      serviceRequestId: "1704b050-515e-44d9-b9da-172d419406e2"
-2025-12-14T17:09:53.471549105Z [inf]  [17:09:53 UTC] INFO: Simulated calls completed and saved to database
-2025-12-14T17:09:53.471556847Z [inf]      executionId: "d80928b0-1f32-4f17-a8a3-d326dfaad3ee"
-2025-12-14T17:09:53.471562574Z [inf]      simulatedTotal: 9
-2025-12-14T17:09:53.471568871Z [inf]      simulatedCompleted: 8
-2025-12-14T17:09:53.471574667Z [inf]      simulatedFailed: 0
-2025-12-14T17:09:53.728168440Z [inf]  [17:09:53 UTC] INFO: incoming request
-2025-12-14T17:09:53.728168613Z [inf]      callId: "019b1dd6-b4c4-766a-b238-3e25b077f802"
-2025-12-14T17:09:53.728181473Z [inf]      reqId: "req-1x"
-2025-12-14T17:09:53.728181780Z [inf]  [17:09:53 UTC] INFO: request completed
-2025-12-14T17:09:53.728191371Z [inf]      req: {
-2025-12-14T17:09:53.728191553Z [inf]      reqId: "req-1x"
-2025-12-14T17:09:53.728197429Z [inf]      res: {
-2025-12-14T17:09:53.728201731Z [inf]        "method": "GET",
-2025-12-14T17:09:53.728204461Z [inf]        "statusCode": 404
-2025-12-14T17:09:53.728210643Z [inf]        "url": "/api/v1/vapi/calls/019b1dd6-b4c4-766a-b238-3e25b077f802",
-2025-12-14T17:09:53.728210818Z [inf]      }
-2025-12-14T17:09:53.728216790Z [inf]      responseTime: 0.5949211120605469
-2025-12-14T17:09:53.728220513Z [inf]        "host": "api-production-8fe4.up.railway.app",
-2025-12-14T17:09:53.728227697Z [inf]        "remoteAddress": "100.64.0.8",
-2025-12-14T17:09:53.728235028Z [inf]        "remotePort": 19444
-2025-12-14T17:09:53.728242404Z [inf]      }
-2025-12-14T17:09:53.728249877Z [inf]  [17:09:53 UTC] WARN: Call result not found in cache
-2025-12-14T17:09:55.770840430Z [inf]  [17:09:55 UTC] INFO: incoming request
-2025-12-14T17:09:55.770846549Z [inf]      reqId: "req-1y"
-2025-12-14T17:09:55.770850611Z [inf]      req: {
-2025-12-14T17:09:55.770854559Z [inf]        "method": "GET",
-2025-12-14T17:09:55.770858277Z [inf]        "url": "/api/v1/vapi/calls/019b1dd6-b4c4-766a-b238-3e25b077f802",
-2025-12-14T17:09:55.770862308Z [inf]        "host": "api-production-8fe4.up.railway.app",
-2025-12-14T17:09:55.770866512Z [inf]        "remoteAddress": "100.64.0.8",
-2025-12-14T17:09:55.770870709Z [inf]        "remotePort": 19444
-2025-12-14T17:09:55.770875859Z [inf]      }
-2025-12-14T17:09:55.770879732Z [inf]  [17:09:55 UTC] WARN: Call result not found in cache
-2025-12-14T17:09:55.770883105Z [inf]      callId: "019b1dd6-b4c4-766a-b238-3e25b077f802"
-2025-12-14T17:09:55.770887072Z [inf]  [17:09:55 UTC] INFO: request completed
-2025-12-14T17:09:55.770890591Z [inf]      reqId: "req-1y"
-2025-12-14T17:09:55.770894321Z [inf]      res: {
-2025-12-14T17:09:55.770898053Z [inf]        "statusCode": 404
-2025-12-14T17:09:55.770901414Z [inf]      }
-2025-12-14T17:09:55.770905513Z [inf]      responseTime: 0.5668680667877197
-2025-12-14T17:09:57.832061568Z [inf]  [17:09:57 UTC] INFO: incoming request
-2025-12-14T17:09:57.832068382Z [inf]      reqId: "req-1z"
-2025-12-14T17:09:57.832071934Z [inf]      req: {
-2025-12-14T17:09:57.832075764Z [inf]        "method": "GET",
-2025-12-14T17:09:57.832079845Z [inf]        "url": "/api/v1/vapi/calls/019b1dd6-b4c4-766a-b238-3e25b077f802",
-2025-12-14T17:09:57.832083639Z [inf]        "host": "api-production-8fe4.up.railway.app",
-2025-12-14T17:09:57.832088055Z [inf]        "remoteAddress": "100.64.0.8",
-2025-12-14T17:09:57.832093197Z [inf]        "remotePort": 19444
-2025-12-14T17:09:57.832097069Z [inf]      }
-2025-12-14T17:09:57.832100704Z [inf]  [17:09:57 UTC] WARN: Call result not found in cache
-2025-12-14T17:09:57.832104654Z [inf]      callId: "019b1dd6-b4c4-766a-b238-3e25b077f802"
-2025-12-14T17:09:57.832108225Z [inf]  [17:09:57 UTC] INFO: request completed
-2025-12-14T17:09:57.832112037Z [inf]      reqId: "req-1z"
-2025-12-14T17:09:57.832115568Z [inf]      res: {
-2025-12-14T17:09:57.832119304Z [inf]        "statusCode": 404
-2025-12-14T17:09:57.832123055Z [inf]      }
-2025-12-14T17:09:57.832126690Z [inf]      responseTime: 0.47796010971069336
-2025-12-14T17:09:59.876469333Z [inf]  [17:09:59 UTC] INFO: incoming request
-2025-12-14T17:09:59.876471540Z [inf]      reqId: "req-20"
-2025-12-14T17:09:59.876476405Z [inf]      reqId: "req-20"
-2025-12-14T17:09:59.876481567Z [inf]      res: {
-2025-12-14T17:09:59.876481985Z [inf]      req: {
-2025-12-14T17:09:59.876487751Z [inf]        "method": "GET",
-2025-12-14T17:09:59.876489541Z [inf]        "statusCode": 404
-2025-12-14T17:09:59.876493262Z [inf]        "url": "/api/v1/vapi/calls/019b1dd6-b4c4-766a-b238-3e25b077f802",
-2025-12-14T17:09:59.876498567Z [inf]      }
-2025-12-14T17:09:59.876499111Z [inf]        "host": "api-production-8fe4.up.railway.app",
-2025-12-14T17:09:59.876504307Z [inf]        "remoteAddress": "100.64.0.8",
-2025-12-14T17:09:59.876509489Z [inf]      responseTime: 0.543738842010498
-2025-12-14T17:09:59.876510025Z [inf]        "remotePort": 19444
-2025-12-14T17:09:59.876515097Z [inf]      }
-2025-12-14T17:09:59.876519585Z [inf]  [17:09:59 UTC] WARN: Call result not found in cache
-2025-12-14T17:09:59.876524123Z [inf]      callId: "019b1dd6-b4c4-766a-b238-3e25b077f802"
-2025-12-14T17:09:59.876528316Z [inf]  [17:09:59 UTC] INFO: request completed
-2025-12-14T17:10:01.929832495Z [inf]      reqId: "req-21"
-2025-12-14T17:10:01.929841384Z [inf]      res: {
-2025-12-14T17:10:01.929848057Z [inf]        "statusCode": 404
-2025-12-14T17:10:01.929853417Z [inf]      }
-2025-12-14T17:10:01.929859595Z [inf]      responseTime: 1.8495471477508545
-2025-12-14T17:10:01.929903627Z [inf]  [17:10:01 UTC] INFO: incoming request
-2025-12-14T17:10:01.929913272Z [inf]      reqId: "req-21"
-2025-12-14T17:10:01.929923369Z [inf]      req: {
-2025-12-14T17:10:01.929929346Z [inf]        "method": "GET",
-2025-12-14T17:10:01.929935174Z [inf]        "url": "/api/v1/vapi/calls/019b1dd6-b4c4-766a-b238-3e25b077f802",
-2025-12-14T17:10:01.929941574Z [inf]        "host": "api-production-8fe4.up.railway.app",
-2025-12-14T17:10:01.929946187Z [inf]        "remoteAddress": "100.64.0.8",
-2025-12-14T17:10:01.929950834Z [inf]        "remotePort": 19444
-2025-12-14T17:10:01.929955651Z [inf]      }
-2025-12-14T17:10:01.929960514Z [inf]  [17:10:01 UTC] WARN: Call result not found in cache
-2025-12-14T17:10:01.929965454Z [inf]      callId: "019b1dd6-b4c4-766a-b238-3e25b077f802"
-2025-12-14T17:10:01.929969814Z [inf]  [17:10:01 UTC] INFO: request completed
-2025-12-14T17:10:04.096169656Z [inf]  [17:10:03 UTC] INFO: incoming request
-2025-12-14T17:10:04.096180730Z [inf]      responseTime: 0.46138501167297363
-2025-12-14T17:10:04.096186943Z [inf]      reqId: "req-22"
-2025-12-14T17:10:04.096196925Z [inf]      req: {
-2025-12-14T17:10:04.096205358Z [inf]        "method": "GET",
-2025-12-14T17:10:04.096213392Z [inf]        "url": "/api/v1/vapi/calls/019b1dd6-b4c4-766a-b238-3e25b077f802",
-2025-12-14T17:10:04.096221751Z [inf]        "host": "api-production-8fe4.up.railway.app",
-2025-12-14T17:10:04.096230525Z [inf]        "remoteAddress": "100.64.0.8",
-2025-12-14T17:10:04.096240666Z [inf]        "remotePort": 19444
-2025-12-14T17:10:04.096252322Z [inf]      }
-2025-12-14T17:10:04.096262016Z [inf]  [17:10:03 UTC] WARN: Call result not found in cache
-2025-12-14T17:10:04.096272562Z [inf]      callId: "019b1dd6-b4c4-766a-b238-3e25b077f802"
-2025-12-14T17:10:04.096281247Z [inf]  [17:10:03 UTC] INFO: request completed
-2025-12-14T17:10:04.096288407Z [inf]      reqId: "req-22"
-2025-12-14T17:10:04.096294893Z [inf]      res: {
-2025-12-14T17:10:04.096301397Z [inf]        "statusCode": 404
-2025-12-14T17:10:04.096307397Z [inf]      }
-2025-12-14T17:10:06.102486461Z [inf]  [17:10:05 UTC] WARN: Call result not found in cache
-2025-12-14T17:10:06.102499768Z [inf]      callId: "019b1dd6-b4c4-766a-b238-3e25b077f802"
-2025-12-14T17:10:06.102507686Z [inf]  [17:10:05 UTC] INFO: request completed
-2025-12-14T17:10:06.102517072Z [inf]      reqId: "req-23"
-2025-12-14T17:10:06.102524201Z [inf]      res: {
-2025-12-14T17:10:06.102532084Z [inf]        "statusCode": 404
-2025-12-14T17:10:06.102538571Z [inf]      }
-2025-12-14T17:10:06.102545618Z [inf]      responseTime: 0.47312211990356445
-2025-12-14T17:10:06.102608849Z [inf]  [17:10:05 UTC] INFO: incoming request
-2025-12-14T17:10:06.102613346Z [inf]      reqId: "req-23"
-2025-12-14T17:10:06.102617693Z [inf]      req: {
-2025-12-14T17:10:06.102624358Z [inf]        "method": "GET",
-2025-12-14T17:10:06.102629620Z [inf]        "url": "/api/v1/vapi/calls/019b1dd6-b4c4-766a-b238-3e25b077f802",
-2025-12-14T17:10:06.102635085Z [inf]        "host": "api-production-8fe4.up.railway.app",
-2025-12-14T17:10:06.102642061Z [inf]        "remoteAddress": "100.64.0.8",
-2025-12-14T17:10:06.102650301Z [inf]        "remotePort": 19444
-2025-12-14T17:10:06.102658338Z [inf]      }
-2025-12-14T17:10:08.123459890Z [inf]        "method": "GET",
-2025-12-14T17:10:08.123470151Z [inf]        "url": "/api/v1/vapi/calls/019b1dd6-b4c4-766a-b238-3e25b077f802",
-2025-12-14T17:10:08.123477493Z [inf]        "host": "api-production-8fe4.up.railway.app",
-2025-12-14T17:10:08.123484242Z [inf]        "remoteAddress": "100.64.0.8",
-2025-12-14T17:10:08.123491168Z [inf]        "remotePort": 19444
-2025-12-14T17:10:08.123497785Z [inf]      }
-2025-12-14T17:10:08.123504000Z [inf]  [17:10:07 UTC] WARN: Call result not found in cache
-2025-12-14T17:10:08.123510686Z [inf]      callId: "019b1dd6-b4c4-766a-b238-3e25b077f802"
-2025-12-14T17:10:08.123516905Z [inf]  [17:10:07 UTC] INFO: request completed
-2025-12-14T17:10:08.123523448Z [inf]      reqId: "req-24"
-2025-12-14T17:10:08.123529693Z [inf]      res: {
-2025-12-14T17:10:08.123536168Z [inf]        "statusCode": 404
-2025-12-14T17:10:08.123542830Z [inf]      }
-2025-12-14T17:10:08.123550235Z [inf]      responseTime: 0.6024229526519775
-2025-12-14T17:10:08.123550263Z [inf]  [17:10:07 UTC] INFO: incoming request
-2025-12-14T17:10:08.123559811Z [inf]      reqId: "req-24"
-2025-12-14T17:10:08.123569027Z [inf]      req: {
-2025-12-14T17:10:10.139865011Z [inf]      callId: "019b1dd6-b4c4-766a-b238-3e25b077f802"
-2025-12-14T17:10:10.139875815Z [inf]  [17:10:09 UTC] INFO: request completed
-2025-12-14T17:10:10.139883797Z [inf]      reqId: "req-25"
-2025-12-14T17:10:10.139891298Z [inf]      res: {
-2025-12-14T17:10:10.139898718Z [inf]        "statusCode": 404
-2025-12-14T17:10:10.139918250Z [inf]      reqId: "req-25"
-2025-12-14T17:10:10.139924652Z [inf]      }
-2025-12-14T17:10:10.139929541Z [inf]      req: {
-2025-12-14T17:10:10.139937523Z [inf]      responseTime: 0.5175790786743164
-2025-12-14T17:10:10.139939707Z [inf]  [17:10:09 UTC] INFO: incoming request
-2025-12-14T17:10:10.139941965Z [inf]        "method": "GET",
-2025-12-14T17:10:10.139950637Z [inf]        "url": "/api/v1/vapi/calls/019b1dd6-b4c4-766a-b238-3e25b077f802",
-2025-12-14T17:10:10.139957585Z [inf]        "host": "api-production-8fe4.up.railway.app",
-2025-12-14T17:10:10.139964893Z [inf]        "remoteAddress": "100.64.0.8",
-2025-12-14T17:10:10.139973419Z [inf]        "remotePort": 19444
-2025-12-14T17:10:10.139981494Z [inf]      }
-2025-12-14T17:10:10.139991806Z [inf]  [17:10:09 UTC] WARN: Call result not found in cache
-2025-12-14T17:10:12.187854069Z [inf]  [17:10:11 UTC] INFO: incoming request
-2025-12-14T17:10:12.187859458Z [inf]      reqId: "req-26"
-2025-12-14T17:10:12.187864851Z [inf]      req: {
-2025-12-14T17:10:12.187870215Z [inf]        "method": "GET",
-2025-12-14T17:10:12.187875175Z [inf]        "url": "/api/v1/vapi/calls/019b1dd6-b4c4-766a-b238-3e25b077f802",
-2025-12-14T17:10:12.187880076Z [inf]        "host": "api-production-8fe4.up.railway.app",
-2025-12-14T17:10:12.187884975Z [inf]        "remoteAddress": "100.64.0.8",
-2025-12-14T17:10:12.187890407Z [inf]        "remotePort": 19444
-2025-12-14T17:10:12.187897512Z [inf]      }
-2025-12-14T17:10:12.187902696Z [inf]  [17:10:11 UTC] WARN: Call result not found in cache
-2025-12-14T17:10:12.187907813Z [inf]      callId: "019b1dd6-b4c4-766a-b238-3e25b077f802"
-2025-12-14T17:10:12.187913762Z [inf]  [17:10:11 UTC] INFO: request completed
-2025-12-14T17:10:12.187919120Z [inf]      reqId: "req-26"
-2025-12-14T17:10:12.187924858Z [inf]      res: {
-2025-12-14T17:10:12.187930012Z [inf]        "statusCode": 404
-2025-12-14T17:10:12.187935044Z [inf]      }
-2025-12-14T17:10:12.187940264Z [inf]      responseTime: 0.4993290901184082
-2025-12-14T17:10:14.229832836Z [inf]      }
-2025-12-14T17:10:14.229842565Z [inf]  [17:10:13 UTC] INFO: incoming request
-2025-12-14T17:10:14.229845390Z [inf]      responseTime: 0.49287915229797363
-2025-12-14T17:10:14.229847953Z [inf]        "remotePort": 19444
-2025-12-14T17:10:14.229854613Z [inf]      reqId: "req-27"
-2025-12-14T17:10:14.229860623Z [inf]      }
-2025-12-14T17:10:14.229865072Z [inf]      req: {
-2025-12-14T17:10:14.229868498Z [inf]  [17:10:13 UTC] WARN: Call result not found in cache
-2025-12-14T17:10:14.229874194Z [inf]        "method": "GET",
-2025-12-14T17:10:14.229876398Z [inf]      callId: "019b1dd6-b4c4-766a-b238-3e25b077f802"
-2025-12-14T17:10:14.229882473Z [inf]        "url": "/api/v1/vapi/calls/019b1dd6-b4c4-766a-b238-3e25b077f802",
-2025-12-14T17:10:14.229883258Z [inf]  [17:10:13 UTC] INFO: request completed
-2025-12-14T17:10:14.229890452Z [inf]      reqId: "req-27"
-2025-12-14T17:10:14.229891822Z [inf]        "host": "api-production-8fe4.up.railway.app",
-2025-12-14T17:10:14.229897775Z [inf]      res: {
-2025-12-14T17:10:14.229900252Z [inf]        "remoteAddress": "100.64.0.8",
-2025-12-14T17:10:14.229904300Z [inf]        "statusCode": 404
-2025-12-14T17:10:16.278066066Z [inf]  [17:10:15 UTC] INFO: incoming request
-2025-12-14T17:10:16.278070068Z [inf]      responseTime: 0.6022179126739502
-2025-12-14T17:10:16.278074540Z [inf]      callId: "019b1dd6-b4c4-766a-b238-3e25b077f802"
-2025-12-14T17:10:16.278078251Z [inf]      reqId: "req-28"
-2025-12-14T17:10:16.278085317Z [inf]  [17:10:15 UTC] INFO: request completed
-2025-12-14T17:10:16.278087638Z [inf]      req: {
-2025-12-14T17:10:16.278093335Z [inf]      reqId: "req-28"
-2025-12-14T17:10:16.278098334Z [inf]        "method": "GET",
-2025-12-14T17:10:16.278100954Z [inf]      res: {
-2025-12-14T17:10:16.278107537Z [inf]        "url": "/api/v1/vapi/calls/019b1dd6-b4c4-766a-b238-3e25b077f802",
-2025-12-14T17:10:16.278107969Z [inf]        "statusCode": 404
-2025-12-14T17:10:16.278115308Z [inf]      }
-2025-12-14T17:10:16.278117570Z [inf]        "host": "api-production-8fe4.up.railway.app",
-2025-12-14T17:10:16.278125686Z [inf]        "remoteAddress": "100.64.0.8",
-2025-12-14T17:10:16.278133846Z [inf]        "remotePort": 19444
-2025-12-14T17:10:16.278142424Z [inf]      }
-2025-12-14T17:10:16.278150906Z [inf]  [17:10:15 UTC] WARN: Call result not found in cache
-2025-12-14T17:10:18.326818783Z [inf]  [17:10:17 UTC] INFO: incoming request
-2025-12-14T17:10:18.326834425Z [inf]      reqId: "req-29"
-2025-12-14T17:10:18.326843139Z [inf]      req: {
-2025-12-14T17:10:18.326852179Z [inf]        "method": "GET",
-2025-12-14T17:10:18.326860717Z [inf]        "url": "/api/v1/vapi/calls/019b1dd6-b4c4-766a-b238-3e25b077f802",
-2025-12-14T17:10:18.326868221Z [inf]        "host": "api-production-8fe4.up.railway.app",
-2025-12-14T17:10:18.326875164Z [inf]        "remoteAddress": "100.64.0.8",
-2025-12-14T17:10:18.326883007Z [inf]        "remotePort": 19444
-2025-12-14T17:10:18.326890350Z [inf]      }
-2025-12-14T17:10:18.327905451Z [inf]  [17:10:17 UTC] WARN: Call result not found in cache
-2025-12-14T17:10:18.327911175Z [inf]      callId: "019b1dd6-b4c4-766a-b238-3e25b077f802"
-2025-12-14T17:10:18.327917288Z [inf]  [17:10:17 UTC] INFO: request completed
-2025-12-14T17:10:18.327930729Z [inf]      reqId: "req-29"
-2025-12-14T17:10:18.327939674Z [inf]      res: {
-2025-12-14T17:10:18.327945977Z [inf]        "statusCode": 404
-2025-12-14T17:10:18.327952740Z [inf]      }
-2025-12-14T17:10:18.327959200Z [inf]      responseTime: 0.5069770812988281
-2025-12-14T17:10:20.384414987Z [inf]  [17:10:19 UTC] INFO: incoming request
-2025-12-14T17:10:20.384428624Z [inf]      reqId: "req-2a"
-2025-12-14T17:10:20.384439504Z [inf]      req: {
-2025-12-14T17:10:20.384448756Z [inf]        "method": "GET",
-2025-12-14T17:10:20.384456491Z [inf]        "url": "/api/v1/vapi/calls/019b1dd6-b4c4-766a-b238-3e25b077f802",
-2025-12-14T17:10:20.384465324Z [inf]        "host": "api-production-8fe4.up.railway.app",
-2025-12-14T17:10:20.384474756Z [inf]        "remoteAddress": "100.64.0.8",
-2025-12-14T17:10:20.384483317Z [inf]        "remotePort": 19444
-2025-12-14T17:10:20.384489565Z [inf]      }
-2025-12-14T17:10:20.384498317Z [inf]  [17:10:19 UTC] WARN: Call result not found in cache
-2025-12-14T17:10:20.384506388Z [inf]      callId: "019b1dd6-b4c4-766a-b238-3e25b077f802"
-2025-12-14T17:10:20.384513152Z [inf]  [17:10:19 UTC] INFO: request completed
-2025-12-14T17:10:20.384518449Z [inf]      reqId: "req-2a"
-2025-12-14T17:10:20.384524928Z [inf]      res: {
-2025-12-14T17:10:20.384531118Z [inf]        "statusCode": 404
-2025-12-14T17:10:20.384537253Z [inf]      }
-2025-12-14T17:10:20.384544800Z [inf]      responseTime: 0.7275910377502441
-2025-12-14T17:10:22.432518258Z [inf]      }
-2025-12-14T17:10:22.432527504Z [inf]  [17:10:21 UTC] INFO: incoming request
-2025-12-14T17:10:22.432528988Z [inf]      responseTime: 0.4715590476989746
-2025-12-14T17:10:22.432534436Z [inf]      reqId: "req-2b"
-2025-12-14T17:10:22.432539575Z [inf]      req: {
-2025-12-14T17:10:22.432543645Z [inf]        "method": "GET",
-2025-12-14T17:10:22.432547742Z [inf]        "url": "/api/v1/vapi/calls/019b1dd6-b4c4-766a-b238-3e25b077f802",
-2025-12-14T17:10:22.432552913Z [inf]        "host": "api-production-8fe4.up.railway.app",
-2025-12-14T17:10:22.432557343Z [inf]        "remoteAddress": "100.64.0.8",
-2025-12-14T17:10:22.432561724Z [inf]        "remotePort": 19444
-2025-12-14T17:10:22.432565409Z [inf]      }
-2025-12-14T17:10:22.432569717Z [inf]  [17:10:21 UTC] WARN: Call result not found in cache
-2025-12-14T17:10:22.432573961Z [inf]      callId: "019b1dd6-b4c4-766a-b238-3e25b077f802"
-2025-12-14T17:10:22.432578522Z [inf]  [17:10:21 UTC] INFO: request completed
-2025-12-14T17:10:22.432582665Z [inf]      reqId: "req-2b"
-2025-12-14T17:10:22.432586939Z [inf]      res: {
-2025-12-14T17:10:22.432591050Z [inf]        "statusCode": 404
-2025-12-14T17:10:24.496086237Z [inf]  [17:10:23 UTC] INFO: incoming request
-2025-12-14T17:10:24.496095102Z [inf]      reqId: "req-2c"
-2025-12-14T17:10:24.496100472Z [inf]      req: {
-2025-12-14T17:10:24.496104761Z [inf]        "method": "GET",
-2025-12-14T17:10:24.496109321Z [inf]        "url": "/api/v1/vapi/calls/019b1dd6-b4c4-766a-b238-3e25b077f802",
-2025-12-14T17:10:24.496113965Z [inf]        "host": "api-production-8fe4.up.railway.app",
-2025-12-14T17:10:24.496118361Z [inf]        "remoteAddress": "100.64.0.8",
-2025-12-14T17:10:24.496123465Z [inf]        "remotePort": 19444
-2025-12-14T17:10:24.496127497Z [inf]      }
-2025-12-14T17:10:24.496132372Z [inf]  [17:10:23 UTC] WARN: Call result not found in cache
-2025-12-14T17:10:24.496136761Z [inf]      callId: "019b1dd6-b4c4-766a-b238-3e25b077f802"
-2025-12-14T17:10:24.496141281Z [inf]  [17:10:23 UTC] INFO: request completed
-2025-12-14T17:10:24.496145168Z [inf]      reqId: "req-2c"
-2025-12-14T17:10:24.496149447Z [inf]      res: {
-2025-12-14T17:10:24.496153355Z [inf]        "statusCode": 404
-2025-12-14T17:10:24.496157446Z [inf]      }
-2025-12-14T17:10:24.496168627Z [inf]      responseTime: 0.47843098640441895
-2025-12-14T17:10:26.528147319Z [inf]      reqId: "req-2d"
-2025-12-14T17:10:26.528161399Z [inf]      res: {
-2025-12-14T17:10:26.528167353Z [inf]  [17:10:25 UTC] INFO: incoming request
-2025-12-14T17:10:26.528170889Z [inf]        "statusCode": 404
-2025-12-14T17:10:26.528178398Z [inf]      reqId: "req-2d"
-2025-12-14T17:10:26.528179534Z [inf]      }
-2025-12-14T17:10:26.528188171Z [inf]      req: {
-2025-12-14T17:10:26.528190213Z [inf]      responseTime: 0.4128530025482178
-2025-12-14T17:10:26.528194982Z [inf]        "method": "GET",
-2025-12-14T17:10:26.528202167Z [inf]        "url": "/api/v1/vapi/calls/019b1dd6-b4c4-766a-b238-3e25b077f802",
-2025-12-14T17:10:26.528208286Z [inf]        "host": "api-production-8fe4.up.railway.app",
-2025-12-14T17:10:26.528213368Z [inf]        "remoteAddress": "100.64.0.8",
-2025-12-14T17:10:26.528218481Z [inf]        "remotePort": 19444
-2025-12-14T17:10:26.528224097Z [inf]      }
-2025-12-14T17:10:26.528229791Z [inf]  [17:10:25 UTC] WARN: Call result not found in cache
-2025-12-14T17:10:26.528235394Z [inf]      callId: "019b1dd6-b4c4-766a-b238-3e25b077f802"
-2025-12-14T17:10:26.528240118Z [inf]  [17:10:25 UTC] INFO: request completed
-2025-12-14T17:10:28.582904075Z [inf]  [17:10:27 UTC] INFO: incoming request
-2025-12-14T17:10:28.582925373Z [inf]      reqId: "req-2e"
-2025-12-14T17:10:28.582934304Z [inf]  [17:10:27 UTC] WARN: Call result not found in cache
-2025-12-14T17:10:28.582934873Z [inf]      req: {
-2025-12-14T17:10:28.582944102Z [inf]        "method": "GET",
-2025-12-14T17:10:28.582949438Z [inf]        "statusCode": 404
-2025-12-14T17:10:28.582949452Z [inf]      callId: "019b1dd6-b4c4-766a-b238-3e25b077f802"
-2025-12-14T17:10:28.582955004Z [inf]        "url": "/api/v1/vapi/calls/019b1dd6-b4c4-766a-b238-3e25b077f802",
-2025-12-14T17:10:28.582961651Z [inf]  [17:10:27 UTC] INFO: request completed
-2025-12-14T17:10:28.582964436Z [inf]        "host": "api-production-8fe4.up.railway.app",
-2025-12-14T17:10:28.582966567Z [inf]      }
-2025-12-14T17:10:28.582971747Z [inf]  [17:10:27 UTC] INFO: Webhook timeout, falling back to VAPI polling
-2025-12-14T17:10:28.582972291Z [inf]      reqId: "req-2e"
-2025-12-14T17:10:28.582974474Z [inf]        "remoteAddress": "100.64.0.8",
-2025-12-14T17:10:28.582983488Z [inf]      res: {
-2025-12-14T17:10:28.582983763Z [inf]        "remotePort": 19444
-2025-12-14T17:10:28.582987432Z [inf]      responseTime: 0.5127060413360596
-2025-12-14T17:10:28.582992743Z [inf]      callId: "019b1dd6-b4c4-766a-b238-3e25b077f802"
-2025-12-14T17:10:28.582994119Z [inf]      }
-2025-12-14T17:10:28.583000484Z [inf]  [17:10:27 UTC] WARN: Too many consecutive 404s - webhook appears unavailable (is ngrok running?). Falling back to VAPI polling.
-2025-12-14T17:10:28.583011859Z [inf]      callId: "019b1dd6-b4c4-766a-b238-3e25b077f802"
-2025-12-14T17:10:28.583023468Z [inf]      consecutive404Count: 30
-2025-12-14T17:11:08.590494930Z [inf]  [17:10:57 UTC] INFO: incoming request
-2025-12-14T17:11:08.590502997Z [inf]      reqId: "req-2f"
-2025-12-14T17:11:08.590509668Z [inf]      req: {
-2025-12-14T17:11:08.590516212Z [inf]        "method": "POST",
-2025-12-14T17:11:08.590524250Z [inf]        "url": "/api/v1/vapi/webhook",
-2025-12-14T17:11:08.590530876Z [inf]        "host": "api-production-8fe4.up.railway.app",
-2025-12-14T17:11:08.590538287Z [inf]        "remoteAddress": "100.64.0.5",
-2025-12-14T17:11:08.590544646Z [inf]        "remotePort": 33016
-2025-12-14T17:11:08.590550942Z [inf]      }
-2025-12-14T17:11:08.590557520Z [inf]  [17:10:57 UTC] INFO: VAPI webhook received
-2025-12-14T17:11:08.590564418Z [inf]      type: "status-update"
-2025-12-14T17:11:08.590571377Z [inf]      callId: "019b1dd6-b4c4-766a-b238-3e25b077f802"
-2025-12-14T17:11:08.590577943Z [inf]  [17:10:57 UTC] INFO: request completed
-2025-12-14T17:11:08.590585074Z [inf]      reqId: "req-2f"
-2025-12-14T17:11:08.590591585Z [inf]      res: {
-2025-12-14T17:11:08.590599542Z [inf]        "statusCode": 200
-2025-12-14T17:11:08.590606062Z [inf]      }
-2025-12-14T17:11:08.590612958Z [inf]      responseTime: 149.07511806488037
-2025-12-14T17:11:08.590619518Z [inf]  [17:11:01 UTC] INFO: incoming request
-2025-12-14T17:11:08.590625872Z [inf]      reqId: "req-2g"
-2025-12-14T17:11:08.590633310Z [inf]      req: {
-2025-12-14T17:11:08.590640214Z [inf]        "method": "POST",
-2025-12-14T17:11:08.590646825Z [inf]        "url": "/api/v1/vapi/webhook",
-2025-12-14T17:11:08.590653279Z [inf]        "host": "api-production-8fe4.up.railway.app",
-2025-12-14T17:11:08.590661185Z [inf]        "remoteAddress": "100.64.0.5",
-2025-12-14T17:11:08.590668133Z [inf]        "remotePort": 33016
-2025-12-14T17:11:08.590674902Z [inf]      }
-2025-12-14T17:11:08.590681786Z [inf]  [17:11:01 UTC] INFO: VAPI webhook received
-2025-12-14T17:11:08.590689016Z [inf]      type: "end-of-call-report"
-2025-12-14T17:11:08.592140475Z [inf]      callId: "019b1dd6-b4c4-766a-b238-3e25b077f802"
-2025-12-14T17:11:08.592149720Z [inf]  [17:11:01 UTC] INFO: Call result cached (partial), triggering background enrichment
-2025-12-14T17:11:08.592156698Z [inf]      callId: "019b1dd6-b4c4-766a-b238-3e25b077f802"
-2025-12-14T17:11:08.592163195Z [inf]      status: "completed"
-2025-12-14T17:11:08.592169610Z [inf]      duration: 0
-2025-12-14T17:11:08.592176923Z [inf]      cost: 0
-2025-12-14T17:11:08.592184012Z [inf]      dataStatus: "partial"
-2025-12-14T17:11:08.592191240Z [inf]  [17:11:01 UTC] INFO: Waiting before VAPI API fetch
-2025-12-14T17:11:08.592197731Z [inf]      callId: "019b1dd6-b4c4-766a-b238-3e25b077f802"
-2025-12-14T17:11:08.592204574Z [inf]      attempt: 1
-2025-12-14T17:11:08.592212244Z [inf]      delayMs: 5000
-2025-12-14T17:11:08.592219702Z [inf]  [17:11:01 UTC] INFO: request completed
-2025-12-14T17:11:08.592226382Z [inf]      reqId: "req-2g"
-2025-12-14T17:11:08.592232955Z [inf]      res: {
-2025-12-14T17:11:08.592239524Z [inf]        "statusCode": 200
-2025-12-14T17:11:08.592246112Z [inf]      }
-2025-12-14T17:11:08.592253281Z [inf]      responseTime: 225.45393013954163
-2025-12-14T17:11:08.592260319Z [inf]  [17:11:04 UTC] INFO: Waiting for VAPI analysis processing
-2025-12-14T17:11:08.592266859Z [inf]      callId: "019b1dd6-b4c4-766a-b238-3e25b077f802"
-2025-12-14T17:11:08.592273480Z [inf]      delay: 3000
-2025-12-14T17:11:08.592279992Z [inf]      enrichAttempt: 1
-2025-12-14T17:11:08.592286897Z [inf]  [17:11:06 UTC] INFO: Fetching call data from VAPI API
-2025-12-14T17:11:08.592293289Z [inf]      callId: "019b1dd6-b4c4-766a-b238-3e25b077f802"
-2025-12-14T17:11:08.592300623Z [inf]      attempt: 1
-2025-12-14T17:11:08.592307819Z [inf]  [17:11:06 UTC] WARN: VAPI API returned incomplete data, will retry
-2025-12-14T17:11:08.592314742Z [inf]      callId: "019b1dd6-b4c4-766a-b238-3e25b077f802"
-2025-12-14T17:11:08.592703534Z [inf]      attempt: 1
-2025-12-14T17:11:08.592711294Z [inf]  [17:11:06 UTC] INFO: Waiting before VAPI API fetch
-2025-12-14T17:11:08.592717795Z [inf]      callId: "019b1dd6-b4c4-766a-b238-3e25b077f802"
-2025-12-14T17:11:08.592724200Z [inf]      attempt: 2
-2025-12-14T17:11:08.592731102Z [inf]      delayMs: 10000
-2025-12-14T17:11:08.592737700Z [inf]  [17:11:07 UTC] INFO: Waiting for VAPI analysis processing
-2025-12-14T17:11:08.592744007Z [inf]      callId: "019b1dd6-b4c4-766a-b238-3e25b077f802"
-2025-12-14T17:11:08.592750407Z [inf]      delay: 5000
-2025-12-14T17:11:08.592756654Z [inf]      enrichAttempt: 2
-2025-12-14T17:11:13.885313994Z [inf]  [17:11:12 UTC] INFO: Waiting for VAPI analysis processing
-2025-12-14T17:11:13.885324617Z [inf]      callId: "019b1dd6-b4c4-766a-b238-3e25b077f802"
-2025-12-14T17:11:13.885331070Z [inf]      delay: 8000
-2025-12-14T17:11:13.885335639Z [inf]      enrichAttempt: 3
-2025-12-14T17:11:16.938570239Z [inf]  [17:11:16 UTC] INFO: Fetching call data from VAPI API
-2025-12-14T17:11:16.938580155Z [inf]      callId: "019b1dd6-b4c4-766a-b238-3e25b077f802"
-2025-12-14T17:11:16.938585989Z [inf]      attempt: 2
-2025-12-14T17:11:17.451861799Z [inf]  [17:11:17 UTC] WARN: VAPI API returned incomplete data, will retry
-2025-12-14T17:11:17.451867568Z [inf]      callId: "019b1dd6-b4c4-766a-b238-3e25b077f802"
-2025-12-14T17:11:17.451871439Z [inf]      attempt: 2
-2025-12-14T17:11:17.451875414Z [inf]  [17:11:17 UTC] INFO: Waiting before VAPI API fetch
-2025-12-14T17:11:17.451879078Z [inf]      callId: "019b1dd6-b4c4-766a-b238-3e25b077f802"
-2025-12-14T17:11:17.451884258Z [inf]      attempt: 3
-2025-12-14T17:11:17.451888211Z [inf]      delayMs: 15000
-2025-12-14T17:11:21.507164066Z [inf]  [17:11:21 UTC] WARN: Analysis not ready after enrichment attempts, returning partial data
-2025-12-14T17:11:21.507170201Z [inf]      callId: "019b1dd6-b4c4-766a-b238-3e25b077f802"
-2025-12-14T17:11:21.507174976Z [inf]      hasAnalysis: false
-2025-12-14T17:11:21.631650132Z [inf]        "failed": 0,
-2025-12-14T17:11:21.631650189Z [inf]  [17:11:21 UTC] INFO: Call result saved to database
-2025-12-14T17:11:21.631661955Z [inf]      callId: "019b1dd6-b4c4-766a-b238-3e25b077f802"
-2025-12-14T17:11:21.631670049Z [inf]        "timeout": 0,
-2025-12-14T17:11:21.631673924Z [inf]      providerId: "3df6608f-fccf-44b1-a0d3-b19f895c5714"
-2025-12-14T17:11:21.631679435Z [inf]        "noAnswer": 0,
-2025-12-14T17:11:21.631684349Z [inf]      serviceRequestId: "1704b050-515e-44d9-b9da-172d419406e2"
-2025-12-14T17:11:21.631685539Z [inf]        "voicemail": 0,
-2025-12-14T17:11:21.631691413Z [inf]  [17:11:21 UTC] INFO: Batch provider calls completed
-2025-12-14T17:11:21.631691492Z [inf]        "duration": 113058,
-2025-12-14T17:11:21.631697664Z [inf]        "averageCallDuration": 0
-2025-12-14T17:11:21.631697780Z [inf]      total: 1
-2025-12-14T17:11:21.631703192Z [inf]      }
-2025-12-14T17:11:21.631703927Z [inf]      completed: 1
-2025-12-14T17:11:21.631708946Z [inf]      method: "direct_vapi"
-2025-12-14T17:11:21.631709712Z [inf]      failed: 0
-2025-12-14T17:11:21.631714316Z [inf]  [17:11:21 UTC] INFO: Background batch call processing completed (real + simulated)
-2025-12-14T17:11:21.631715652Z [inf]      timeout: 0
-2025-12-14T17:11:21.631719963Z [inf]      noAnswer: 0
-2025-12-14T17:11:21.631723849Z [inf]      voicemail: 0
-2025-12-14T17:11:21.631727786Z [inf]      duration: 113058
-2025-12-14T17:11:21.631733013Z [inf]      averageCallDuration: 0
-2025-12-14T17:11:21.631737750Z [inf]      errorCount: 0
-2025-12-14T17:11:21.631742141Z [inf]      durationSeconds: "113.06"
-2025-12-14T17:11:21.631746185Z [inf]  [17:11:21 UTC] INFO: Batch provider calls completed via Direct VAPI
-2025-12-14T17:11:21.631749889Z [inf]      stats: {
-2025-12-14T17:11:21.631759063Z [inf]        "total": 1,
-2025-12-14T17:11:21.631763385Z [inf]        "completed": 1,
-2025-12-14T17:11:21.632003902Z [inf]      executionId: "d80928b0-1f32-4f17-a8a3-d326dfaad3ee"
-2025-12-14T17:11:21.632010986Z [inf]      realCallsSuccess: true
-2025-12-14T17:11:21.632016521Z [inf]      realCallsInDatabase: true
-2025-12-14T17:11:21.632021627Z [inf]      simulatedCount: 9
-2025-12-14T17:11:21.632027930Z [inf]  [17:11:21 UTC] INFO: Kestra batch completed with results in database - waiting for all provider results
-2025-12-14T17:11:21.632034164Z [inf]      executionId: "d80928b0-1f32-4f17-a8a3-d326dfaad3ee"
-2025-12-14T17:11:21.632040008Z [inf]      serviceRequestId: "1704b050-515e-44d9-b9da-172d419406e2"
-2025-12-14T17:11:21.763525927Z [inf]  [17:11:21 UTC] INFO: All provider calls completed - generating recommendations
-2025-12-14T17:11:21.763531827Z [inf]      executionId: "d80928b0-1f32-4f17-a8a3-d326dfaad3ee"
-2025-12-14T17:11:21.763538081Z [inf]      completedCount: 10
-2025-12-14T17:11:21.763544301Z [inf]      totalProviders: 10
-2025-12-14T17:11:21.774985252Z [inf]  [17:11:21 UTC] INFO: Status updated to ANALYZING after confirming all provider calls completed
-2025-12-14T17:11:21.775006827Z [inf]      executionId: "d80928b0-1f32-4f17-a8a3-d326dfaad3ee"
-2025-12-14T17:11:21.775019823Z [inf]      serviceRequestId: "1704b050-515e-44d9-b9da-172d419406e2"
-2025-12-14T17:11:21.813809978Z [inf]  [Filter] Excluding Home Improvement Greenville SC: call not completed (status: no_answer)
-2025-12-14T17:11:21.813816616Z [inf]  [Filter] Excluding Rockler Woodworking and Hardware - Greenville: disqualified - Provider is a retail hardware store and does not offer carpentry or custom cabinet building services.
-2025-12-14T17:11:21.813821234Z [inf]  [Filter] Excluding Forest Kitchen Design: no/invalid structured data or missing call_outcome
-2025-12-14T17:11:21.838326024Z [inf]  [17:11:21 UTC] INFO: Generating recommendations
-2025-12-14T17:11:21.838334996Z [inf]      kestraEnabled: false
-2025-12-14T17:11:21.838341302Z [inf]      kestraHealthy: false
-2025-12-14T17:11:21.838346194Z [inf]      callResultsCount: 10
-2025-12-14T17:11:23.886628693Z [inf]      serviceRequestId: "1704b050-515e-44d9-b9da-172d419406e2"
-2025-12-14T17:11:23.886636429Z [inf]      error: "Twilio not configured"
-2025-12-14T17:11:23.886653714Z [inf]  [17:11:22 UTC] INFO: Direct Gemini recommendations generated successfully
-2025-12-14T17:11:23.886664822Z [inf]      recommendationCount: 3
-2025-12-14T17:11:23.886672355Z [inf]  [17:11:22 UTC] INFO: Recommendations stored in database and status updated to RECOMMENDED
-2025-12-14T17:11:23.886678897Z [inf]      executionId: "d80928b0-1f32-4f17-a8a3-d326dfaad3ee"
-2025-12-14T17:11:23.886685384Z [inf]      serviceRequestId: "1704b050-515e-44d9-b9da-172d419406e2"
-2025-12-14T17:11:23.886692106Z [inf]      recommendationCount: 3
-2025-12-14T17:11:23.886702525Z [inf]  [17:11:23 UTC] WARN: Twilio credentials not configured - SMS sending disabled
-2025-12-14T17:11:23.886709973Z [inf]  [17:11:23 UTC] WARN: [TriggerNotification] Twilio not available, skipping notification
-2025-12-14T17:11:23.886714818Z [inf]      serviceRequestId: "1704b050-515e-44d9-b9da-172d419406e2"
-2025-12-14T17:11:23.886733580Z [inf]  [17:11:23 UTC] WARN: User notification failed
-2025-12-14T17:11:32.948335755Z [inf]  [17:11:32 UTC] INFO: Fetching call data from VAPI API
-2025-12-14T17:11:32.948344740Z [inf]      callId: "019b1dd6-b4c4-766a-b238-3e25b077f802"
-2025-12-14T17:11:32.948351840Z [inf]      attempt: 3
-2025-12-14T17:11:32.948358162Z [inf]  [17:11:32 UTC] WARN: VAPI API returned incomplete data, will retry
-2025-12-14T17:11:32.948364570Z [inf]      callId: "019b1dd6-b4c4-766a-b238-3e25b077f802"
-2025-12-14T17:11:32.948371551Z [inf]      attempt: 3
-2025-12-14T17:11:32.948380178Z [inf]  [17:11:32 UTC] INFO: Waiting before VAPI API fetch
-2025-12-14T17:11:32.948389607Z [inf]      callId: "019b1dd6-b4c4-766a-b238-3e25b077f802"
-2025-12-14T17:11:32.948395243Z [inf]      attempt: 4
-2025-12-14T17:11:32.948401282Z [inf]      delayMs: 20000
-2025-12-14T17:11:38.010356229Z [inf]  [17:11:37 UTC] INFO: incoming request
-2025-12-14T17:11:38.010361743Z [inf]      reqId: "req-2h"
-2025-12-14T17:11:38.010366486Z [inf]      req: {
-2025-12-14T17:11:38.010366823Z [inf]  [17:11:37 UTC] INFO: Using admin test phone for booking call
-2025-12-14T17:11:38.010371110Z [inf]        "method": "POST",
-2025-12-14T17:11:38.010376545Z [inf]        "url": "/api/v1/bookings/schedule-async",
-2025-12-14T17:11:38.010379789Z [inf]      testPhone: "+13106992541"
-2025-12-14T17:11:38.010381975Z [inf]        "host": "api-production-8fe4.up.railway.app",
-2025-12-14T17:11:38.010386905Z [inf]        "remoteAddress": "100.64.0.6",
-2025-12-14T17:11:38.010390168Z [inf]      providerPhone: "+18646278760"
-2025-12-14T17:11:38.010391739Z [inf]        "remotePort": 30384
-2025-12-14T17:11:38.010396671Z [inf]      }
-2025-12-14T17:11:38.010401631Z [inf]  [17:11:37 UTC] INFO: Async booking initiated - processing in background
-2025-12-14T17:11:38.010403676Z [inf]  [17:11:37 UTC] INFO: Making real booking call (mode: test)
-2025-12-14T17:11:38.010408556Z [inf]      serviceRequestId: "1704b050-515e-44d9-b9da-172d419406e2"
-2025-12-14T17:11:38.010413834Z [inf]      providerId: "69f75b70-1ee4-4141-bd02-6b8ad472717f"
-2025-12-14T17:11:38.010414299Z [inf]      providerId: "69f75b70-1ee4-4141-bd02-6b8ad472717f"
-2025-12-14T17:11:38.010418998Z [inf]      mode: "test"
-2025-12-14T17:11:38.010423421Z [inf]      phone: "+13106992541"
-2025-12-14T17:11:38.010423845Z [inf]      liveCallEnabled: true
-2025-12-14T17:11:38.010428374Z [inf]      adminTestMode: true
-2025-12-14T17:11:38.010432548Z [inf]  [17:11:37 UTC] INFO: request completed
-2025-12-14T17:11:38.010436478Z [inf]      reqId: "req-2h"
-2025-12-14T17:11:38.010440145Z [inf]      res: {
-2025-12-14T17:11:38.010444181Z [inf]        "statusCode": 202
-2025-12-14T17:11:38.010447939Z [inf]      }
-2025-12-14T17:11:38.010452112Z [inf]      responseTime: 67.52710008621216
-2025-12-14T17:11:38.010788513Z [inf]      mode: "test"
-2025-12-14T17:11:39.021264299Z [inf]  [17:11:38 UTC] INFO: Booking call created, waiting for completion
-2025-12-14T17:11:39.021272579Z [inf]      callId: "019b1dd8-adb4-788c-92b1-0cf38ef9e1a5"
-2025-12-14T17:11:39.021278097Z [inf]      status: "queued"
-2025-12-14T17:11:59.005632032Z [inf]  [17:11:52 UTC] INFO: Fetching call data from VAPI API
-2025-12-14T17:11:59.005640065Z [inf]      callId: "019b1dd6-b4c4-766a-b238-3e25b077f802"
-2025-12-14T17:11:59.005647039Z [inf]      attempt: 4
-2025-12-14T17:11:59.005654505Z [inf]  [17:11:53 UTC] WARN: VAPI API returned incomplete data, will retry
-2025-12-14T17:11:59.005661631Z [inf]      callId: "019b1dd6-b4c4-766a-b238-3e25b077f802"
-2025-12-14T17:11:59.005667584Z [inf]      attempt: 4
-2025-12-14T17:11:59.005673013Z [inf]  [17:11:53 UTC] ERROR: Max enrichment attempts reached, keeping partial data
-2025-12-14T17:11:59.005679323Z [inf]      callId: "019b1dd6-b4c4-766a-b238-3e25b077f802"
-2025-12-14T17:12:39.013594895Z [inf]  [17:12:31 UTC] INFO: [Booking] Fallback detection: VAPI missed confirmation, overriding to TRUE based on transcript analysis
-2025-12-14T17:12:39.013601717Z [inf]      vapiBookingConfirmed: false
-2025-12-14T17:12:39.013607167Z [inf]      hasDateTimeAgreement: true
-2025-12-14T17:12:39.013611543Z [inf]      hasConfirmationPattern: true
-2025-12-14T17:12:39.013617776Z [inf]      hasRejection: false
-2025-12-14T17:12:39.013624257Z [inf]  [17:12:31 UTC] INFO: [Booking] Final booking status after analysis
-2025-12-14T17:12:39.013630569Z [inf]      bookingConfirmed: true
-2025-12-14T17:12:39.013636323Z [inf]      confirmedDate: "Tomorrow"
-2025-12-14T17:12:39.013644716Z [inf]      confirmedTime: "1 PM"
-2025-12-14T17:12:39.013652132Z [inf]  [17:12:32 UTC] INFO: Real booking call completed (mode: test)
-2025-12-14T17:12:39.013658306Z [inf]      providerId: "69f75b70-1ee4-4141-bd02-6b8ad472717f"
-2025-12-14T17:12:39.013662867Z [inf]      bookingConfirmed: true
+2025-12-14T17:37:51.758113120Z [inf]        "latitude": 34.8336507,
+2025-12-14T17:37:51.758117548Z [inf]        "longitude": -82.3667811
+2025-12-14T17:37:51.758121998Z [inf]      },
+2025-12-14T17:37:51.758126321Z [inf]      "rating": 4.8,
+2025-12-14T17:37:51.758130760Z [inf]      "googleMapsUri": "https://maps.google.com/?cid=2878467226016055052&g_mp=Cidnb29nbGUubWFwcy5wbGFjZXMudjEuUGxhY2VzLlNlYXJjaFRleHQQAhgEIAA",
+2025-12-14T17:37:51.758136689Z [inf]      "businessStatus": "OPERATIONAL",
+2025-12-14T17:37:51.758140835Z [inf]      "userRatingCount": 71,
+2025-12-14T17:37:51.758144696Z [inf]      "displayName": {
+2025-12-14T17:37:51.758149141Z [inf]        "text": "Precision Carpentry & Plumbing",
+2025-12-14T17:37:51.758154068Z [inf]        "languageCode": "en"
+2025-12-14T17:37:51.758158650Z [inf]      }
+2025-12-14T17:37:51.758163163Z [inf]    },
+2025-12-14T17:37:51.758168395Z [inf]    {
+2025-12-14T17:37:51.758173275Z [inf]      "id": "ChIJty3y2IQuYaURkff2ZDu4VOk",
+2025-12-14T17:37:51.758177830Z [inf]      "formattedAddress": "547 Rutherford Rd, Greenville, SC 29609, USA",
+2025-12-14T17:37:51.758181879Z [inf]      "location": {
+2025-12-14T17:37:51.758186720Z [inf]        "latitude": 34.8746811,
+2025-12-14T17:37:51.758190904Z [inf]        "longitude": -82.3956401
+2025-12-14T17:37:51.758194903Z [inf]      },
+2025-12-14T17:37:51.758200049Z [inf]      "rating": 4.5,
+2025-12-14T17:37:51.758206302Z [inf]      "googleMapsUri": "https://maps.google.com/?cid=16813265874117392273&g_mp=Cidnb29nbGUubWFwcy5wbGFjZXMudjEuUGxhY2VzLlNlYXJjaFRleHQQAhgEIAA",
+2025-12-14T17:37:51.760134613Z [inf]    { name: 'Dell Builders', rating: 5 },
+2025-12-14T17:37:51.760140813Z [inf]    { name: 'Woodcraft of Greenvi', rating: 4.6 },
+2025-12-14T17:37:51.760147043Z [inf]    { name: 'Service Home Pros', rating: 5 },
+2025-12-14T17:37:51.760153592Z [inf]    { name: 'Greenville Woodworke', rating: 4.9 },
+2025-12-14T17:37:51.760160654Z [inf]    { name: 'Rockler Woodworking ', rating: 4.9 },
+2025-12-14T17:37:51.760167113Z [inf]    { name: 'Brightline Painting ', rating: 5 },
+2025-12-14T17:37:51.760172938Z [inf]    { name: 'New Life Home Servic', rating: 5 },
+2025-12-14T17:37:51.760178300Z [inf]    { name: 'J.M.Habitzruther Con', rating: 5 },
+2025-12-14T17:37:51.760185402Z [inf]    { name: 'Home Improvement Gre', rating: 5 },
+2025-12-14T17:37:51.760191721Z [inf]    { name: 'Hgi Cabinetry', rating: 4.9 },
+2025-12-14T17:37:51.760198141Z [inf]    { name: 'Forest Kitchen Desig', rating: 4.9 }
+2025-12-14T17:37:51.760205551Z [inf]  ]
+2025-12-14T17:37:51.760213354Z [inf]  DEBUG Filter result: 13 -> 13 providers after rating filter
+2025-12-14T17:37:51.760219662Z [inf]  Enrichment: 10 with placeId, 0 without
+2025-12-14T17:37:51.760226059Z [inf]  Enriching 10 providers...
+2025-12-14T17:37:51.760233200Z [inf]  Enriching 10 providers in batches of 5...
+2025-12-14T17:37:51.760239117Z [inf]  Successfully enriched 10 providers
+2025-12-14T17:37:51.760247985Z [inf]  Phone filter: 10 with phone, 0 without
+2025-12-14T17:37:51.760254593Z [inf]  Enrichment complete: {
+2025-12-14T17:37:51.760261984Z [inf]    totalInput: 10,
+2025-12-14T17:37:51.760270185Z [inf]    enrichedCount: 10,
+2025-12-14T17:37:51.760277179Z [inf]    withPhoneCount: 10,
+2025-12-14T17:37:51.760283354Z [inf]    skippedNoPlaceId: 0,
+2025-12-14T17:37:51.760289775Z [inf]    durationMs: 474
+2025-12-14T17:37:51.760297319Z [inf]  }
+2025-12-14T17:37:51.760303015Z [inf]  [17:37:46 UTC] INFO: incoming request
+2025-12-14T17:37:51.761615107Z [inf]      reqId: "req-1"
+2025-12-14T17:37:51.761619101Z [inf]      req: {
+2025-12-14T17:37:51.761623044Z [inf]        "method": "POST",
+2025-12-14T17:37:51.761626887Z [inf]        "url": "/api/v1/workflows/research",
+2025-12-14T17:37:51.761630362Z [inf]        "host": "api-production-8fe4.up.railway.app",
+2025-12-14T17:37:51.761634269Z [inf]        "remoteAddress": "100.64.0.2",
+2025-12-14T17:37:51.761638743Z [inf]        "remotePort": 61988
+2025-12-14T17:37:51.761642727Z [inf]      }
+2025-12-14T17:37:51.761647745Z [inf]  [17:37:46 UTC] INFO: Starting provider research
+2025-12-14T17:37:51.761651485Z [inf]      service: "Carpenter"
+2025-12-14T17:37:51.761655236Z [inf]      location: "Greenville, SC"
+2025-12-14T17:37:51.761660072Z [inf]      serviceRequestId: "1d48e402-e390-4917-8dfd-5fc6fd8a81dc"
+2025-12-14T17:37:51.761663943Z [inf]  [17:37:46 UTC] INFO: Using Direct Gemini for research
+2025-12-14T17:37:51.761667939Z [inf]      method: "direct_gemini"
+2025-12-14T17:37:51.761671819Z [inf]  [17:37:46 UTC] INFO: Starting provider research
+2025-12-14T17:37:51.761675574Z [inf]      service: "Carpenter"
+2025-12-14T17:37:51.761679403Z [inf]      location: "Greenville, SC"
+2025-12-14T17:37:51.761683626Z [inf]      hasPlacesAPI: true
+2025-12-14T17:37:51.761687494Z [inf]  [17:37:46 UTC] INFO: Searching with Places API
+2025-12-14T17:37:51.761691253Z [inf]      service: "Carpenter"
+2025-12-14T17:37:51.761695023Z [inf]      location: "Greenville, SC"
+2025-12-14T17:37:51.761701134Z [inf]      minRating: 4.5
+2025-12-14T17:37:51.761706363Z [inf]  [17:37:46 UTC] INFO: Places API search completed
+2025-12-14T17:37:51.761711536Z [inf]      totalFound: 13
+2025-12-14T17:37:51.761716539Z [inf]  [17:37:46 UTC] INFO: Places API results filtered and sorted
+2025-12-14T17:37:51.761721512Z [inf]      totalFound: 13
+2025-12-14T17:37:51.761726774Z [inf]      afterFilters: 13
+2025-12-14T17:37:51.764552176Z [inf]      maxResults: 10
+2025-12-14T17:37:51.764567327Z [inf]  [17:37:47 UTC] INFO: request completed
+2025-12-14T17:37:51.764577044Z [inf]      reqId: "req-1"
+2025-12-14T17:37:51.764589137Z [inf]      res: {
+2025-12-14T17:37:51.764591488Z [inf]      returned: 10
+2025-12-14T17:37:51.764602550Z [inf]        "statusCode": 200
+2025-12-14T17:37:51.764612353Z [inf]      }
+2025-12-14T17:37:51.764625626Z [inf]      }
+2025-12-14T17:37:51.764626192Z [inf]      responseTime: 835.5289077758789
+2025-12-14T17:37:51.764636426Z [inf]  [17:37:48 UTC] INFO: incoming request
+2025-12-14T17:37:51.764644479Z [inf]      reqId: "req-2"
+2025-12-14T17:37:51.764653073Z [inf]      req: {
+2025-12-14T17:37:51.764660051Z [inf]        "method": "POST",
+2025-12-14T17:37:51.764669061Z [inf]        "url": "/api/v1/gemini/analyze-research-prompt",
+2025-12-14T17:37:51.764679441Z [inf]        "host": "api-production-8fe4.up.railway.app",
+2025-12-14T17:37:51.764687182Z [inf]        "remoteAddress": "100.64.0.3",
+2025-12-14T17:37:51.764698590Z [inf]        "remotePort": 33536
+2025-12-14T17:38:11.247893868Z [inf]  [AssistantConfig] Using Gemini-generated customPrompt
+2025-12-14T17:38:11.247900419Z [inf]  [AssistantConfig] Using Gemini-generated customPrompt
+2025-12-14T17:38:11.247905313Z [inf]  [17:38:03 UTC] INFO: request completed
+2025-12-14T17:38:11.247910371Z [inf]      reqId: "req-2"
+2025-12-14T17:38:11.247914717Z [inf]      res: {
+2025-12-14T17:38:11.247918852Z [inf]        "statusCode": 200
+2025-12-14T17:38:11.247922788Z [inf]      }
+2025-12-14T17:38:11.247927550Z [inf]      responseTime: 15193.012577056885
+2025-12-14T17:38:11.247932265Z [inf]  [17:38:03 UTC] INFO: incoming request
+2025-12-14T17:38:11.247938105Z [inf]      reqId: "req-3"
+2025-12-14T17:38:11.247942650Z [inf]      req: {
+2025-12-14T17:38:11.247946837Z [inf]        "method": "POST",
+2025-12-14T17:38:11.247950612Z [inf]        "url": "/api/v1/providers/batch-call-async",
+2025-12-14T17:38:11.247954766Z [inf]        "host": "api-production-8fe4.up.railway.app",
+2025-12-14T17:38:11.247958752Z [inf]        "remoteAddress": "100.64.0.2",
+2025-12-14T17:38:11.247963548Z [inf]        "remotePort": 61988
+2025-12-14T17:38:11.247967394Z [inf]      }
+2025-12-14T17:38:11.247971229Z [inf]  [17:38:03 UTC] INFO: Hybrid mode active - real calls to test phones + simulated calls for remaining
+2025-12-14T17:38:11.247975408Z [inf]      reqId: "req-3"
+2025-12-14T17:38:11.247979645Z [inf]      adminTestPhones: [
+2025-12-14T17:38:11.247983262Z [inf]        "+13106992541"
+2025-12-14T17:38:11.247987249Z [inf]      ]
+2025-12-14T17:38:11.247990798Z [inf]      providerCount: 10
+2025-12-14T17:38:11.247994673Z [inf]  [17:38:03 UTC] INFO: Hybrid mode: providers split into real and simulated calls
+2025-12-14T17:38:11.247999281Z [inf]      reqId: "req-3"
+2025-12-14T17:38:11.248003225Z [inf]      realCallProviders: [
+2025-12-14T17:38:11.248006850Z [inf]        {
+2025-12-14T17:38:11.248010619Z [inf]          "name": "Forest Kitchen Design",
+2025-12-14T17:38:11.250889156Z [inf]          "phone": "+13106992541"
+2025-12-14T17:38:11.250895845Z [inf]        }
+2025-12-14T17:38:11.250901476Z [inf]      ]
+2025-12-14T17:38:11.250907147Z [inf]      simulatedProviders: [
+2025-12-14T17:38:11.250913302Z [inf]        {
+2025-12-14T17:38:11.250918465Z [inf]          "name": "Lambert Custom Carpentry",
+2025-12-14T17:38:11.250925244Z [inf]          "id": "d7a092e0-64f0-4b91-af99-52513e90e691"
+2025-12-14T17:38:11.250931276Z [inf]        },
+2025-12-14T17:38:11.250936857Z [inf]        {
+2025-12-14T17:38:11.250942124Z [inf]          "name": "Brightline Painting - Greenville Painting Company",
+2025-12-14T17:38:11.250948750Z [inf]          "id": "27fec0e4-df88-470d-a84f-6a46859210f0"
+2025-12-14T17:38:11.250954483Z [inf]        },
+2025-12-14T17:38:11.250959814Z [inf]        {
+2025-12-14T17:38:11.250965666Z [inf]          "name": "Precision Carpentry & Plumbing",
+2025-12-14T17:38:11.250971348Z [inf]          "id": "4ebbe424-c7dc-423e-90dc-7619138a064e"
+2025-12-14T17:38:11.250978138Z [inf]        },
+2025-12-14T17:38:11.250985510Z [inf]        {
+2025-12-14T17:38:11.250991250Z [inf]          "name": "Hgi Cabinetry",
+2025-12-14T17:38:11.250996274Z [inf]          "id": "092b5ac7-59e8-48fc-977f-717d5da434a3"
+2025-12-14T17:38:11.251002342Z [inf]        },
+2025-12-14T17:38:11.251008646Z [inf]        {
+2025-12-14T17:38:11.251016758Z [inf]          "name": "Dell Builders",
+2025-12-14T17:38:11.251023745Z [inf]          "id": "61d337f5-0c49-4844-8916-a5aea631627e"
+2025-12-14T17:38:11.251030094Z [inf]        },
+2025-12-14T17:38:11.251036511Z [inf]        {
+2025-12-14T17:38:11.251042612Z [inf]          "name": "Home Improvement Greenville SC",
+2025-12-14T17:38:11.251050122Z [inf]          "id": "3941fa5f-9196-40b5-80dd-7362776f5abf"
+2025-12-14T17:38:11.251056339Z [inf]        },
+2025-12-14T17:38:11.251062303Z [inf]        {
+2025-12-14T17:38:11.253497272Z [inf]      responseTime: 480.97696685791016
+2025-12-14T17:38:11.253505931Z [inf]  [17:38:04 UTC] INFO: Background batch call processing started
+2025-12-14T17:38:11.253513446Z [inf]      executionId: "a7c43c2a-8f6f-4d68-8aff-5ba5017d3832"
+2025-12-14T17:38:11.253521796Z [inf]  [17:38:04 UTC] INFO: Kestra disabled via env var, using direct VAPI
+2025-12-14T17:38:11.253521969Z [inf]          "name": "New Life Home Services, LLC",
+2025-12-14T17:38:11.253531371Z [inf]  [17:38:04 UTC] INFO: Starting simulated calls for remaining providers
+2025-12-14T17:38:11.253542021Z [inf]          "id": "f5a29c7a-9042-488c-88da-99c56cefb1e1"
+2025-12-14T17:38:11.253542616Z [inf]      executionId: "a7c43c2a-8f6f-4d68-8aff-5ba5017d3832"
+2025-12-14T17:38:11.253544369Z [inf]          "name": "Woodcraft of Greenville",
+2025-12-14T17:38:11.253553592Z [inf]        },
+2025-12-14T17:38:11.253556895Z [inf]          "id": "4ba5399d-f042-4186-bbb9-4d75e09e0c88"
+2025-12-14T17:38:11.253563774Z [inf]        {
+2025-12-14T17:38:11.253564133Z [inf]        }
+2025-12-14T17:38:11.253572125Z [inf]      ]
+2025-12-14T17:38:11.253573684Z [inf]          "name": "Rockler Woodworking and Hardware - Greenville",
+2025-12-14T17:38:11.253581795Z [inf]  [17:38:03 UTC] INFO: Starting async batch call
+2025-12-14T17:38:11.253584153Z [inf]          "id": "858dabb9-2dd8-4ef2-901b-4eb890e20824"
+2025-12-14T17:38:11.253589326Z [inf]      executionId: "a7c43c2a-8f6f-4d68-8aff-5ba5017d3832"
+2025-12-14T17:38:11.253593714Z [inf]        },
+2025-12-14T17:38:11.253596410Z [inf]      providerCount: 1
+2025-12-14T17:38:11.253603844Z [inf]  [17:38:04 UTC] INFO: request completed
+2025-12-14T17:38:11.253605493Z [inf]        {
+2025-12-14T17:38:11.253610356Z [inf]      reqId: "req-3"
+2025-12-14T17:38:11.253616472Z [inf]      res: {
+2025-12-14T17:38:11.253621100Z [inf]        "statusCode": 202
+2025-12-14T17:38:11.253626101Z [inf]      }
+2025-12-14T17:38:11.255101327Z [inf]      simulatedCount: 9
+2025-12-14T17:38:11.255110352Z [inf]  [17:38:04 UTC] INFO: [SimulatedCallService] Starting batch simulation
+2025-12-14T17:38:11.255114606Z [inf]  [17:38:04 UTC] INFO: [SimulatedCallService] Generating simulated call
+2025-12-14T17:38:11.255118137Z [inf]      count: 9
+2025-12-14T17:38:11.255123645Z [inf]      maxConcurrent: 5
+2025-12-14T17:38:11.255131092Z [inf]      providerId: "4ebbe424-c7dc-423e-90dc-7619138a064e"
+2025-12-14T17:38:11.255132315Z [inf]  [17:38:04 UTC] INFO: [SimulatedCallService] Generating simulated call
+2025-12-14T17:38:11.255142858Z [inf]      providerId: "d7a092e0-64f0-4b91-af99-52513e90e691"
+2025-12-14T17:38:11.255145954Z [inf]      providerName: "Precision Carpentry & Plumbing"
+2025-12-14T17:38:11.255150218Z [inf]      providerName: "Lambert Custom Carpentry"
+2025-12-14T17:38:11.255158956Z [inf]      scenario: "voicemail"
+2025-12-14T17:38:11.255160190Z [inf]      scenario: "voicemail"
+2025-12-14T17:38:11.255173386Z [inf]  [17:38:04 UTC] INFO: [SimulatedCallService] Created voicemail result
+2025-12-14T17:38:11.255174836Z [inf]  [17:38:04 UTC] INFO: [SimulatedCallService] Created voicemail result
+2025-12-14T17:38:11.255185792Z [inf]      providerId: "d7a092e0-64f0-4b91-af99-52513e90e691"
+2025-12-14T17:38:11.255187473Z [inf]      providerId: "4ebbe424-c7dc-423e-90dc-7619138a064e"
+2025-12-14T17:38:11.255193113Z [inf]      callId: "sim-e662bc54"
+2025-12-14T17:38:11.255198894Z [inf]      callId: "sim-87e32063"
+2025-12-14T17:38:11.255205153Z [inf]      scenario: "voicemail"
+2025-12-14T17:38:11.255211022Z [inf]  [17:38:04 UTC] INFO: [SimulatedCallService] Generating simulated call
+2025-12-14T17:38:11.255215925Z [inf]      providerId: "27fec0e4-df88-470d-a84f-6a46859210f0"
+2025-12-14T17:38:11.255221306Z [inf]      providerName: "Brightline Painting - Greenville Painting Company"
+2025-12-14T17:38:11.255225837Z [inf]      scenario: "completed"
+2025-12-14T17:38:11.257678003Z [inf]      scenario: "voicemail"
+2025-12-14T17:38:11.257690561Z [inf]      location: "Greenville, SC"
+2025-12-14T17:38:11.257694207Z [inf]  [17:38:04 UTC] INFO: [SimulatedCallService] Generating simulated call
+2025-12-14T17:38:11.257703127Z [inf]      providerId: "092b5ac7-59e8-48fc-977f-717d5da434a3"
+2025-12-14T17:38:11.257713828Z [inf]      providerName: "Hgi Cabinetry"
+2025-12-14T17:38:11.257718662Z [inf]      providerName: "Dell Builders"
+2025-12-14T17:38:11.257722896Z [inf]      scenario: "no_answer"
+2025-12-14T17:38:11.257734903Z [inf]  [17:38:04 UTC] INFO: [SimulatedCallService] Created no-answer result
+2025-12-14T17:38:11.257738764Z [inf]      scenario: "completed"
+2025-12-14T17:38:11.257744726Z [inf]      providerId: "092b5ac7-59e8-48fc-977f-717d5da434a3"
+2025-12-14T17:38:11.257755605Z [inf]  [17:38:04 UTC] INFO: Initiating batch provider calls (single routing decision)
+2025-12-14T17:38:11.257756147Z [inf]      callId: "sim-acb832d3"
+2025-12-14T17:38:11.257767686Z [inf]      scenario: "no_answer"
+2025-12-14T17:38:11.257771234Z [inf]      method: "direct_vapi"
+2025-12-14T17:38:11.257777164Z [inf]  [17:38:04 UTC] INFO: [SimulatedCallService] Generating simulated call
+2025-12-14T17:38:11.257787377Z [inf]      providerCount: 1
+2025-12-14T17:38:11.257789022Z [inf]      providerId: "61d337f5-0c49-4844-8916-a5aea631627e"
+2025-12-14T17:38:11.257799096Z [inf]      maxConcurrent: 5
+2025-12-14T17:38:11.257807344Z [inf]  [17:38:04 UTC] INFO: Webhook URL configured - using hybrid mode
+2025-12-14T17:38:11.257814933Z [inf]      webhookUrl: "https://api-production-8fe4.up.railway.app/api/v1/vapi/webhook"
+2025-12-14T17:38:11.257828041Z [inf]  [17:38:04 UTC] INFO: Starting batch provider calls
+2025-12-14T17:38:11.257838947Z [inf]      totalProviders: 1
+2025-12-14T17:38:11.257848880Z [inf]      maxConcurrent: 5
+2025-12-14T17:38:11.257863350Z [inf]      service: "Carpenter"
+2025-12-14T17:38:11.261084841Z [inf]      urgency: "within_2_days"
+2025-12-14T17:38:11.261094927Z [inf]      service: "Carpenter"
+2025-12-14T17:38:11.261098533Z [inf]  [17:38:04 UTC] INFO: Processing batch 1/1
+2025-12-14T17:38:11.261107232Z [inf]      webhookEnabled: true
+2025-12-14T17:38:11.261110066Z [inf]      batch: 1
+2025-12-14T17:38:11.261120564Z [inf]  [17:38:06 UTC] INFO: VAPI call created
+2025-12-14T17:38:11.261120992Z [inf]      totalBatches: 1
+2025-12-14T17:38:11.261132902Z [inf]      batchSize: 1
+2025-12-14T17:38:11.261133759Z [inf]      callId: "019b1df0-ea01-7ffa-bb3b-5f5ccfb2200b"
+2025-12-14T17:38:11.261140353Z [inf]      progress: "1/1"
+2025-12-14T17:38:11.261149866Z [inf]      status: "queued"
+2025-12-14T17:38:11.261154321Z [inf]  [17:38:04 UTC] INFO: Initiating direct VAPI call
+2025-12-14T17:38:11.261163218Z [inf]      webhookEnabled: true
+2025-12-14T17:38:11.261165960Z [inf]      provider: "Forest Kitchen Design"
+2025-12-14T17:38:11.261174985Z [inf]      phone: "+13106992541"
+2025-12-14T17:38:11.261176645Z [inf]  [17:38:06 UTC] INFO: Provider call marked in_progress
+2025-12-14T17:38:11.261184239Z [inf]      providerId: "ca3e72e8-afd6-42fc-b0a7-c9ae014f9a37"
+2025-12-14T17:38:11.261189908Z [inf]      callId: "019b1df0-ea01-7ffa-bb3b-5f5ccfb2200b"
+2025-12-14T17:38:11.261196909Z [inf]  [17:38:07 UTC] INFO: incoming request
+2025-12-14T17:38:11.261203518Z [inf]      reqId: "req-4"
+2025-12-14T17:38:11.261210501Z [inf]      req: {
+2025-12-14T17:38:11.261218841Z [inf]        "method": "GET",
+2025-12-14T17:38:11.261226145Z [inf]        "url": "/api/v1/vapi/calls/019b1df0-ea01-7ffa-bb3b-5f5ccfb2200b",
+2025-12-14T17:38:11.261232741Z [inf]        "host": "api-production-8fe4.up.railway.app",
+2025-12-14T17:38:11.261242610Z [inf]        "remoteAddress": "100.64.0.4",
+2025-12-14T17:38:11.261252860Z [inf]        "remotePort": 46560
+2025-12-14T17:38:11.261264629Z [inf]      }
+2025-12-14T17:38:11.262709476Z [inf]      reqId: "req-5"
+2025-12-14T17:38:11.262718316Z [inf]      req: {
+2025-12-14T17:38:11.262728097Z [inf]  [17:38:07 UTC] WARN: Call result not found in cache
+2025-12-14T17:38:11.262737613Z [inf]      callId: "019b1df0-ea01-7ffa-bb3b-5f5ccfb2200b"
+2025-12-14T17:38:11.262744690Z [inf]  [17:38:07 UTC] INFO: request completed
+2025-12-14T17:38:11.262750917Z [inf]      reqId: "req-4"
+2025-12-14T17:38:11.262757603Z [inf]      res: {
+2025-12-14T17:38:11.262782199Z [inf]        "statusCode": 404
+2025-12-14T17:38:11.262789991Z [inf]      }
+2025-12-14T17:38:11.262797620Z [inf]      responseTime: 2.5036582946777344
+2025-12-14T17:38:11.262804090Z [inf]  [17:38:09 UTC] INFO: incoming request
+2025-12-14T17:38:11.262988116Z [inf]        "method": "GET",
+2025-12-14T17:38:11.262998382Z [inf]        "url": "/api/v1/vapi/calls/019b1df0-ea01-7ffa-bb3b-5f5ccfb2200b",
+2025-12-14T17:38:11.263006599Z [inf]        "host": "api-production-8fe4.up.railway.app",
+2025-12-14T17:38:11.263013565Z [inf]        "remoteAddress": "100.64.0.4",
+2025-12-14T17:38:11.263021107Z [inf]        "remotePort": 46560
+2025-12-14T17:38:11.263028560Z [inf]      }
+2025-12-14T17:38:11.263035337Z [inf]  [17:38:09 UTC] WARN: Call result not found in cache
+2025-12-14T17:38:11.263042663Z [inf]      callId: "019b1df0-ea01-7ffa-bb3b-5f5ccfb2200b"
+2025-12-14T17:38:11.263049854Z [inf]  [17:38:09 UTC] INFO: request completed
+2025-12-14T17:38:11.263058428Z [inf]      reqId: "req-5"
+2025-12-14T17:38:11.263065198Z [inf]      res: {
+2025-12-14T17:38:11.263071525Z [inf]        "statusCode": 404
+2025-12-14T17:38:11.263077860Z [inf]      }
+2025-12-14T17:38:11.263084001Z [inf]      responseTime: 0.5819816589355469
+2025-12-14T17:38:11.826980297Z [inf]        "url": "/api/v1/vapi/calls/019b1df0-ea01-7ffa-bb3b-5f5ccfb2200b",
+2025-12-14T17:38:11.827014081Z [inf]  [17:38:11 UTC] INFO: incoming request
+2025-12-14T17:38:11.827050899Z [inf]      reqId: "req-6"
+2025-12-14T17:38:11.827059441Z [inf]        "host": "api-production-8fe4.up.railway.app",
+2025-12-14T17:38:11.827063938Z [inf]      req: {
+2025-12-14T17:38:11.827074099Z [inf]        "remoteAddress": "100.64.0.4",
+2025-12-14T17:38:11.827074587Z [inf]        "method": "GET",
+2025-12-14T17:38:11.827082548Z [inf]        "remotePort": 46560
+2025-12-14T17:38:11.827088691Z [inf]      }
+2025-12-14T17:38:11.827094924Z [inf]  [17:38:11 UTC] WARN: Call result not found in cache
+2025-12-14T17:38:11.827101030Z [inf]      callId: "019b1df0-ea01-7ffa-bb3b-5f5ccfb2200b"
+2025-12-14T17:38:11.827108345Z [inf]  [17:38:11 UTC] INFO: request completed
+2025-12-14T17:38:11.827113817Z [inf]      reqId: "req-6"
+2025-12-14T17:38:11.827120425Z [inf]      res: {
+2025-12-14T17:38:11.827126901Z [inf]        "statusCode": 404
+2025-12-14T17:38:11.827133732Z [inf]      }
+2025-12-14T17:38:11.827324518Z [inf]      responseTime: 0.8078823089599609
+2025-12-14T17:38:13.828687459Z [inf]      req: {
+2025-12-14T17:38:13.828693607Z [inf]        "method": "GET",
+2025-12-14T17:38:13.828705456Z [inf]        "url": "/api/v1/vapi/calls/019b1df0-ea01-7ffa-bb3b-5f5ccfb2200b",
+2025-12-14T17:38:13.828707864Z [inf]  [17:38:13 UTC] INFO: incoming request
+2025-12-14T17:38:13.828717387Z [inf]        "host": "api-production-8fe4.up.railway.app",
+2025-12-14T17:38:13.828717642Z [inf]      reqId: "req-7"
+2025-12-14T17:38:13.828724964Z [inf]        "remoteAddress": "100.64.0.4",
+2025-12-14T17:38:13.828916123Z [inf]        "remotePort": 46560
+2025-12-14T17:38:13.828924679Z [inf]      }
+2025-12-14T17:38:13.831801491Z [inf]  [17:38:13 UTC] WARN: Call result not found in cache
+2025-12-14T17:38:13.831811511Z [inf]      callId: "019b1df0-ea01-7ffa-bb3b-5f5ccfb2200b"
+2025-12-14T17:38:13.831817422Z [inf]  [17:38:13 UTC] INFO: request completed
+2025-12-14T17:38:13.831823690Z [inf]      reqId: "req-7"
+2025-12-14T17:38:13.831829732Z [inf]      res: {
+2025-12-14T17:38:13.831839191Z [inf]        "statusCode": 404
+2025-12-14T17:38:13.831847910Z [inf]      }
+2025-12-14T17:38:13.831855307Z [inf]      responseTime: 0.7091884613037109
+2025-12-14T17:38:13.831867305Z [inf]  [17:38:13 UTC] INFO: incoming request
+2025-12-14T17:38:13.831875215Z [inf]      reqId: "req-8"
+2025-12-14T17:38:13.831880268Z [inf]      req: {
+2025-12-14T17:38:13.831885367Z [inf]        "method": "POST",
+2025-12-14T17:38:13.832239206Z [inf]        "url": "/api/v1/vapi/webhook",
+2025-12-14T17:38:13.832244309Z [inf]        "host": "api-production-8fe4.up.railway.app",
+2025-12-14T17:38:13.832295011Z [inf]        "remoteAddress": "100.64.0.5",
+2025-12-14T17:38:13.832302634Z [inf]        "remotePort": 62058
+2025-12-14T17:38:13.832308853Z [inf]      }
+2025-12-14T17:38:13.832315894Z [inf]  [17:38:13 UTC] INFO: VAPI webhook received
+2025-12-14T17:38:13.832321933Z [inf]      type: "status-update"
+2025-12-14T17:38:13.832710197Z [inf]      callId: "019b1df0-ea01-7ffa-bb3b-5f5ccfb2200b"
+2025-12-14T17:38:13.832716689Z [inf]  [17:38:13 UTC] INFO: request completed
+2025-12-14T17:38:13.832722790Z [inf]      reqId: "req-8"
+2025-12-14T17:38:13.832728238Z [inf]      res: {
+2025-12-14T17:38:13.832733735Z [inf]        "statusCode": 200
+2025-12-14T17:38:13.832739581Z [inf]      }
+2025-12-14T17:38:13.832751218Z [inf]      responseTime: 69.05164909362793
+2025-12-14T17:38:14.095128359Z [inf]  [17:38:13 UTC] INFO: [SimulatedCallService] Simulation complete
+2025-12-14T17:38:14.095137588Z [inf]      providerId: "61d337f5-0c49-4844-8916-a5aea631627e"
+2025-12-14T17:38:14.095143742Z [inf]      callId: "sim-d7f62d81"
+2025-12-14T17:38:14.095149580Z [inf]      scenario: "completed"
+2025-12-14T17:38:14.095155715Z [inf]      outcome: "positive"
+2025-12-14T17:38:14.095161942Z [inf]      duration: 3.2
+2025-12-14T17:38:15.124243553Z [inf]  [17:38:15 UTC] INFO: incoming request
+2025-12-14T17:38:15.124255990Z [inf]      reqId: "req-9"
+2025-12-14T17:38:15.124261887Z [inf]      req: {
+2025-12-14T17:38:15.124269264Z [inf]        "method": "GET",
+2025-12-14T17:38:15.124277131Z [inf]        "url": "/api/v1/vapi/calls/019b1df0-ea01-7ffa-bb3b-5f5ccfb2200b",
+2025-12-14T17:38:15.124283188Z [inf]        "host": "api-production-8fe4.up.railway.app",
+2025-12-14T17:38:15.124288516Z [inf]        "remoteAddress": "100.64.0.4",
+2025-12-14T17:38:15.124294008Z [inf]        "remotePort": 46560
+2025-12-14T17:38:15.124298905Z [inf]      }
+2025-12-14T17:38:15.124304518Z [inf]  [17:38:15 UTC] WARN: Call result not found in cache
+2025-12-14T17:38:15.124310728Z [inf]      callId: "019b1df0-ea01-7ffa-bb3b-5f5ccfb2200b"
+2025-12-14T17:38:15.124316827Z [inf]  [17:38:15 UTC] INFO: request completed
+2025-12-14T17:38:15.124323343Z [inf]      reqId: "req-9"
+2025-12-14T17:38:15.124329372Z [inf]      res: {
+2025-12-14T17:38:15.124334566Z [inf]        "statusCode": 404
+2025-12-14T17:38:15.124340897Z [inf]      }
+2025-12-14T17:38:15.124346600Z [inf]      responseTime: 0.866424560546875
+2025-12-14T17:38:15.810360381Z [inf]      providerId: "27fec0e4-df88-470d-a84f-6a46859210f0"
+2025-12-14T17:38:15.810371736Z [inf]      callId: "sim-730712fd"
+2025-12-14T17:38:15.810380343Z [inf]      scenario: "completed"
+2025-12-14T17:38:15.810388194Z [inf]      outcome: "positive"
+2025-12-14T17:38:15.810395899Z [inf]      duration: 3.5
+2025-12-14T17:38:15.810474361Z [inf]  [17:38:15 UTC] INFO: [SimulatedCallService] Simulation complete
+2025-12-14T17:38:15.894967227Z [inf]  [17:38:15 UTC] INFO: [SimulatedCallService] Generating simulated call
+2025-12-14T17:38:15.894972000Z [inf]      providerId: "3941fa5f-9196-40b5-80dd-7362776f5abf"
+2025-12-14T17:38:15.894976642Z [inf]      providerName: "Home Improvement Greenville SC"
+2025-12-14T17:38:15.894980736Z [inf]      scenario: "completed"
+2025-12-14T17:38:15.894984716Z [inf]  [17:38:15 UTC] INFO: [SimulatedCallService] Generating simulated call
+2025-12-14T17:38:15.894988754Z [inf]      providerId: "f5a29c7a-9042-488c-88da-99c56cefb1e1"
+2025-12-14T17:38:15.894992578Z [inf]      providerName: "New Life Home Services, LLC"
+2025-12-14T17:38:15.894996759Z [inf]      scenario: "completed"
+2025-12-14T17:38:15.895000695Z [inf]  [17:38:15 UTC] INFO: [SimulatedCallService] Generating simulated call
+2025-12-14T17:38:15.895016041Z [inf]      providerId: "858dabb9-2dd8-4ef2-901b-4eb890e20824"
+2025-12-14T17:38:15.895020314Z [inf]      providerName: "Rockler Woodworking and Hardware - Greenville"
+2025-12-14T17:38:15.895024206Z [inf]      scenario: "no_answer"
+2025-12-14T17:38:15.895029165Z [inf]  [17:38:15 UTC] INFO: [SimulatedCallService] Created no-answer result
+2025-12-14T17:38:15.895033177Z [inf]      providerId: "858dabb9-2dd8-4ef2-901b-4eb890e20824"
+2025-12-14T17:38:15.895037027Z [inf]      callId: "sim-de2b1724"
+2025-12-14T17:38:15.895040627Z [inf]      scenario: "no_answer"
+2025-12-14T17:38:15.895044746Z [inf]  [17:38:15 UTC] INFO: [SimulatedCallService] Generating simulated call
+2025-12-14T17:38:15.895048634Z [inf]      providerId: "4ba5399d-f042-4186-bbb9-4d75e09e0c88"
+2025-12-14T17:38:15.895053238Z [inf]      providerName: "Woodcraft of Greenville"
+2025-12-14T17:38:15.895057174Z [inf]      scenario: "voicemail"
+2025-12-14T17:38:15.895061528Z [inf]  [17:38:15 UTC] INFO: [SimulatedCallService] Created voicemail result
+2025-12-14T17:38:15.895067072Z [inf]      providerId: "4ba5399d-f042-4186-bbb9-4d75e09e0c88"
+2025-12-14T17:38:15.896700365Z [inf]      callId: "sim-3dff8c46"
+2025-12-14T17:38:15.896705108Z [inf]      scenario: "voicemail"
+2025-12-14T17:38:17.943758125Z [inf]  [17:38:17 UTC] INFO: incoming request
+2025-12-14T17:38:17.943768505Z [inf]      reqId: "req-a"
+2025-12-14T17:38:17.943774484Z [inf]      req: {
+2025-12-14T17:38:17.943779511Z [inf]        "method": "GET",
+2025-12-14T17:38:17.943784782Z [inf]        "url": "/api/v1/vapi/calls/019b1df0-ea01-7ffa-bb3b-5f5ccfb2200b",
+2025-12-14T17:38:17.943790155Z [inf]        "host": "api-production-8fe4.up.railway.app",
+2025-12-14T17:38:17.943795067Z [inf]        "remoteAddress": "100.64.0.4",
+2025-12-14T17:38:17.943799889Z [inf]        "remotePort": 46560
+2025-12-14T17:38:17.943804956Z [inf]      }
+2025-12-14T17:38:17.943810642Z [inf]  [17:38:17 UTC] WARN: Call result not found in cache
+2025-12-14T17:38:17.943821063Z [inf]      callId: "019b1df0-ea01-7ffa-bb3b-5f5ccfb2200b"
+2025-12-14T17:38:17.943826124Z [inf]  [17:38:17 UTC] INFO: request completed
+2025-12-14T17:38:17.943831094Z [inf]      reqId: "req-a"
+2025-12-14T17:38:17.943835889Z [inf]      res: {
+2025-12-14T17:38:17.943842598Z [inf]        "statusCode": 404
+2025-12-14T17:38:17.943852398Z [inf]      }
+2025-12-14T17:38:17.943860530Z [inf]      responseTime: 0.6945819854736328
+2025-12-14T17:38:19.995420929Z [inf]  [17:38:19 UTC] INFO: incoming request
+2025-12-14T17:38:19.995428208Z [inf]      reqId: "req-b"
+2025-12-14T17:38:19.995433293Z [inf]      req: {
+2025-12-14T17:38:19.995437602Z [inf]        "method": "GET",
+2025-12-14T17:38:19.995442757Z [inf]        "url": "/api/v1/vapi/calls/019b1df0-ea01-7ffa-bb3b-5f5ccfb2200b",
+2025-12-14T17:38:19.995446922Z [inf]        "host": "api-production-8fe4.up.railway.app",
+2025-12-14T17:38:19.995450967Z [inf]        "remoteAddress": "100.64.0.4",
+2025-12-14T17:38:19.995455020Z [inf]        "remotePort": 46560
+2025-12-14T17:38:19.995458532Z [inf]      }
+2025-12-14T17:38:19.995463814Z [inf]  [17:38:19 UTC] WARN: Call result not found in cache
+2025-12-14T17:38:19.995467635Z [inf]      callId: "019b1df0-ea01-7ffa-bb3b-5f5ccfb2200b"
+2025-12-14T17:38:19.995471336Z [inf]  [17:38:19 UTC] INFO: request completed
+2025-12-14T17:38:19.995476698Z [inf]      reqId: "req-b"
+2025-12-14T17:38:19.995480739Z [inf]      res: {
+2025-12-14T17:38:19.995484577Z [inf]        "statusCode": 404
+2025-12-14T17:38:19.995488386Z [inf]      }
+2025-12-14T17:38:19.995492523Z [inf]      responseTime: 0.7291946411132812
+2025-12-14T17:38:22.051216554Z [inf]  [17:38:21 UTC] INFO: incoming request
+2025-12-14T17:38:22.051224672Z [inf]      reqId: "req-c"
+2025-12-14T17:38:22.051231083Z [inf]      req: {
+2025-12-14T17:38:22.051237386Z [inf]        "method": "GET",
+2025-12-14T17:38:22.051244771Z [inf]        "url": "/api/v1/vapi/calls/019b1df0-ea01-7ffa-bb3b-5f5ccfb2200b",
+2025-12-14T17:38:22.051251540Z [inf]        "host": "api-production-8fe4.up.railway.app",
+2025-12-14T17:38:22.051257600Z [inf]        "remoteAddress": "100.64.0.4",
+2025-12-14T17:38:22.051264934Z [inf]        "remotePort": 46560
+2025-12-14T17:38:22.051271790Z [inf]      }
+2025-12-14T17:38:22.051280511Z [inf]  [17:38:21 UTC] WARN: Call result not found in cache
+2025-12-14T17:38:22.051287798Z [inf]      callId: "019b1df0-ea01-7ffa-bb3b-5f5ccfb2200b"
+2025-12-14T17:38:22.051294133Z [inf]  [17:38:21 UTC] INFO: request completed
+2025-12-14T17:38:22.051300872Z [inf]      reqId: "req-c"
+2025-12-14T17:38:22.051306802Z [inf]      res: {
+2025-12-14T17:38:22.051321885Z [inf]        "statusCode": 404
+2025-12-14T17:38:22.051328686Z [inf]      }
+2025-12-14T17:38:22.051336073Z [inf]      responseTime: 0.6823272705078125
+2025-12-14T17:38:23.073900990Z [inf]  [17:38:23 UTC] INFO: incoming request
+2025-12-14T17:38:23.073907633Z [inf]      reqId: "req-d"
+2025-12-14T17:38:23.073913302Z [inf]      req: {
+2025-12-14T17:38:23.073920945Z [inf]        "method": "GET",
+2025-12-14T17:38:23.073925860Z [inf]        "url": "/api/v1/vapi/calls/019b1df0-ea01-7ffa-bb3b-5f5ccfb2200b",
+2025-12-14T17:38:23.073931827Z [inf]        "host": "api-production-8fe4.up.railway.app",
+2025-12-14T17:38:23.073936374Z [inf]        "remoteAddress": "100.64.0.4",
+2025-12-14T17:38:23.073941180Z [inf]        "remotePort": 46560
+2025-12-14T17:38:23.073946951Z [inf]      }
+2025-12-14T17:38:23.073952415Z [inf]  [17:38:23 UTC] WARN: Call result not found in cache
+2025-12-14T17:38:23.073958243Z [inf]      callId: "019b1df0-ea01-7ffa-bb3b-5f5ccfb2200b"
+2025-12-14T17:38:23.073963823Z [inf]  [17:38:23 UTC] INFO: request completed
+2025-12-14T17:38:23.073968643Z [inf]      reqId: "req-d"
+2025-12-14T17:38:23.073974988Z [inf]      res: {
+2025-12-14T17:38:23.073980213Z [inf]        "statusCode": 404
+2025-12-14T17:38:23.073993991Z [inf]      }
+2025-12-14T17:38:23.073999491Z [inf]      responseTime: 0.7231121063232422
+2025-12-14T17:38:25.126337118Z [inf]  [17:38:25 UTC] INFO: incoming request
+2025-12-14T17:38:25.126342809Z [inf]      reqId: "req-e"
+2025-12-14T17:38:25.126348373Z [inf]      req: {
+2025-12-14T17:38:25.126353608Z [inf]        "method": "GET",
+2025-12-14T17:38:25.126360957Z [inf]        "url": "/api/v1/vapi/calls/019b1df0-ea01-7ffa-bb3b-5f5ccfb2200b",
+2025-12-14T17:38:25.126369497Z [inf]        "host": "api-production-8fe4.up.railway.app",
+2025-12-14T17:38:25.126374966Z [inf]        "remoteAddress": "100.64.0.4",
+2025-12-14T17:38:25.126390704Z [inf]        "remotePort": 46560
+2025-12-14T17:38:25.126396493Z [inf]      }
+2025-12-14T17:38:25.126413880Z [inf]  [17:38:25 UTC] WARN: Call result not found in cache
+2025-12-14T17:38:25.126419708Z [inf]      callId: "019b1df0-ea01-7ffa-bb3b-5f5ccfb2200b"
+2025-12-14T17:38:25.126427313Z [inf]  [17:38:25 UTC] INFO: request completed
+2025-12-14T17:38:25.126432322Z [inf]      reqId: "req-e"
+2025-12-14T17:38:25.126438257Z [inf]      res: {
+2025-12-14T17:38:25.126442651Z [inf]        "statusCode": 404
+2025-12-14T17:38:25.126446669Z [inf]      }
+2025-12-14T17:38:25.126452852Z [inf]      responseTime: 1.2404060363769531
+2025-12-14T17:38:27.188201669Z [inf]  [17:38:26 UTC] INFO: [SimulatedCallService] Simulation complete
+2025-12-14T17:38:27.188206052Z [inf]      providerId: "f5a29c7a-9042-488c-88da-99c56cefb1e1"
+2025-12-14T17:38:27.188210052Z [inf]      callId: "sim-ec064b7c"
+2025-12-14T17:38:27.188214248Z [inf]      scenario: "completed"
+2025-12-14T17:38:27.188219111Z [inf]      outcome: "positive"
+2025-12-14T17:38:27.188222920Z [inf]      duration: 2.5
+2025-12-14T17:38:27.188229352Z [inf]  [17:38:27 UTC] INFO: incoming request
+2025-12-14T17:38:27.188234663Z [inf]      reqId: "req-f"
+2025-12-14T17:38:27.188238466Z [inf]      req: {
+2025-12-14T17:38:27.188242177Z [inf]        "method": "GET",
+2025-12-14T17:38:27.188246188Z [inf]        "url": "/api/v1/vapi/calls/019b1df0-ea01-7ffa-bb3b-5f5ccfb2200b",
+2025-12-14T17:38:27.188250186Z [inf]        "host": "api-production-8fe4.up.railway.app",
+2025-12-14T17:38:27.188254035Z [inf]        "remoteAddress": "100.64.0.4",
+2025-12-14T17:38:27.188257796Z [inf]        "remotePort": 46560
+2025-12-14T17:38:27.188261420Z [inf]      }
+2025-12-14T17:38:27.188265897Z [inf]  [17:38:27 UTC] WARN: Call result not found in cache
+2025-12-14T17:38:27.188270921Z [inf]      callId: "019b1df0-ea01-7ffa-bb3b-5f5ccfb2200b"
+2025-12-14T17:38:27.188274706Z [inf]  [17:38:27 UTC] INFO: request completed
+2025-12-14T17:38:27.188279627Z [inf]      reqId: "req-f"
+2025-12-14T17:38:27.188283452Z [inf]      res: {
+2025-12-14T17:38:27.188287317Z [inf]        "statusCode": 404
+2025-12-14T17:38:27.188291050Z [inf]      }
+2025-12-14T17:38:27.188294755Z [inf]      responseTime: 0.5927810668945312
+2025-12-14T17:38:28.203903897Z [inf]  [17:38:28 UTC] INFO: [SimulatedCallService] Simulation complete
+2025-12-14T17:38:28.203913883Z [inf]      providerId: "3941fa5f-9196-40b5-80dd-7362776f5abf"
+2025-12-14T17:38:28.203919887Z [inf]      callId: "sim-0bc755c3"
+2025-12-14T17:38:28.203925470Z [inf]      scenario: "completed"
+2025-12-14T17:38:28.203930756Z [inf]      outcome: "positive"
+2025-12-14T17:38:28.203936832Z [inf]      duration: 3.7
+2025-12-14T17:38:28.203942322Z [inf]  [17:38:28 UTC] INFO: [SimulatedCallService] Batch simulation complete
+2025-12-14T17:38:28.203948319Z [inf]      total: 9
+2025-12-14T17:38:28.203956365Z [inf]      completed: 4
+2025-12-14T17:38:28.203962275Z [inf]      voicemail: 3
+2025-12-14T17:38:28.203967711Z [inf]      noAnswer: 2
+2025-12-14T17:38:28.203973405Z [inf]      failed: 0
+2025-12-14T17:38:28.203981763Z [inf]      durationMs: 23991
+2025-12-14T17:38:28.920409573Z [inf]      callId: "sim-730712fd"
+2025-12-14T17:38:28.920417166Z [inf]      providerId: "27fec0e4-df88-470d-a84f-6a46859210f0"
+2025-12-14T17:38:28.920428473Z [inf]      serviceRequestId: "1d48e402-e390-4917-8dfd-5fc6fd8a81dc"
+2025-12-14T17:38:28.920436325Z [inf]  [17:38:28 UTC] INFO: Call result saved to database
+2025-12-14T17:38:28.920442712Z [inf]      callId: "sim-87e32063"
+2025-12-14T17:38:28.920448424Z [inf]      providerId: "4ebbe424-c7dc-423e-90dc-7619138a064e"
+2025-12-14T17:38:28.920455158Z [inf]      serviceRequestId: "1d48e402-e390-4917-8dfd-5fc6fd8a81dc"
+2025-12-14T17:38:28.920460444Z [inf]  [17:38:28 UTC] INFO: Call result saved to database
+2025-12-14T17:38:28.920479883Z [inf]      callId: "sim-acb832d3"
+2025-12-14T17:38:28.920488836Z [inf]      providerId: "092b5ac7-59e8-48fc-977f-717d5da434a3"
+2025-12-14T17:38:28.920496968Z [inf]      serviceRequestId: "1d48e402-e390-4917-8dfd-5fc6fd8a81dc"
+2025-12-14T17:38:28.920502592Z [inf]  [17:38:28 UTC] INFO: Call result saved to database
+2025-12-14T17:38:28.920508259Z [inf]      callId: "sim-d7f62d81"
+2025-12-14T17:38:28.920522560Z [inf]  [17:38:28 UTC] INFO: Call result saved to database
+2025-12-14T17:38:28.920530271Z [inf]      callId: "sim-e662bc54"
+2025-12-14T17:38:28.920536247Z [inf]      providerId: "d7a092e0-64f0-4b91-af99-52513e90e691"
+2025-12-14T17:38:28.920541796Z [inf]      serviceRequestId: "1d48e402-e390-4917-8dfd-5fc6fd8a81dc"
+2025-12-14T17:38:28.920550138Z [inf]  [17:38:28 UTC] INFO: Call result saved to database
+2025-12-14T17:38:28.920718710Z [inf]      providerId: "61d337f5-0c49-4844-8916-a5aea631627e"
+2025-12-14T17:38:28.920730447Z [inf]      serviceRequestId: "1d48e402-e390-4917-8dfd-5fc6fd8a81dc"
+2025-12-14T17:38:29.005221587Z [inf]  [17:38:28 UTC] INFO: Call result saved to database
+2025-12-14T17:38:29.005230160Z [inf]      callId: "sim-0bc755c3"
+2025-12-14T17:38:29.005236730Z [inf]      providerId: "3941fa5f-9196-40b5-80dd-7362776f5abf"
+2025-12-14T17:38:29.005243051Z [inf]      serviceRequestId: "1d48e402-e390-4917-8dfd-5fc6fd8a81dc"
+2025-12-14T17:38:29.134537066Z [inf]  [17:38:29 UTC] INFO: incoming request
+2025-12-14T17:38:29.134544671Z [inf]      reqId: "req-g"
+2025-12-14T17:38:29.134549975Z [inf]      req: {
+2025-12-14T17:38:29.134554964Z [inf]        "method": "GET",
+2025-12-14T17:38:29.134563437Z [inf]        "url": "/api/v1/vapi/calls/019b1df0-ea01-7ffa-bb3b-5f5ccfb2200b",
+2025-12-14T17:38:29.134568091Z [inf]        "host": "api-production-8fe4.up.railway.app",
+2025-12-14T17:38:29.134572652Z [inf]        "remoteAddress": "100.64.0.4",
+2025-12-14T17:38:29.134578103Z [inf]        "remotePort": 46560
+2025-12-14T17:38:29.134585510Z [inf]      }
+2025-12-14T17:38:29.137525556Z [inf]  [17:38:29 UTC] WARN: Call result not found in cache
+2025-12-14T17:38:29.137536987Z [inf]      callId: "019b1df0-ea01-7ffa-bb3b-5f5ccfb2200b"
+2025-12-14T17:38:29.137567229Z [inf]  [17:38:29 UTC] INFO: request completed
+2025-12-14T17:38:29.137573143Z [inf]      reqId: "req-g"
+2025-12-14T17:38:29.137578718Z [inf]      res: {
+2025-12-14T17:38:29.137584701Z [inf]        "statusCode": 404
+2025-12-14T17:38:29.137589792Z [inf]      }
+2025-12-14T17:38:29.137594785Z [inf]      responseTime: 0.7638015747070312
+2025-12-14T17:38:29.169903646Z [inf]  [17:38:29 UTC] INFO: Call result saved to database
+2025-12-14T17:38:29.169915769Z [inf]      callId: "sim-ec064b7c"
+2025-12-14T17:38:29.169921563Z [inf]      providerId: "f5a29c7a-9042-488c-88da-99c56cefb1e1"
+2025-12-14T17:38:29.169927689Z [inf]      serviceRequestId: "1d48e402-e390-4917-8dfd-5fc6fd8a81dc"
+2025-12-14T17:38:29.296228936Z [inf]  [17:38:29 UTC] INFO: Call result saved to database
+2025-12-14T17:38:29.296234837Z [inf]      callId: "sim-de2b1724"
+2025-12-14T17:38:29.296239210Z [inf]      providerId: "858dabb9-2dd8-4ef2-901b-4eb890e20824"
+2025-12-14T17:38:29.296243352Z [inf]      serviceRequestId: "1d48e402-e390-4917-8dfd-5fc6fd8a81dc"
+2025-12-14T17:38:29.807299886Z [inf]      simulatedTotal: 9
+2025-12-14T17:38:29.807308686Z [inf]      simulatedCompleted: 4
+2025-12-14T17:38:29.807316366Z [inf]      simulatedFailed: 0
+2025-12-14T17:38:29.807377767Z [inf]  [17:38:29 UTC] INFO: Call result saved to database
+2025-12-14T17:38:29.807383610Z [inf]      callId: "sim-3dff8c46"
+2025-12-14T17:38:29.807390304Z [inf]      providerId: "4ba5399d-f042-4186-bbb9-4d75e09e0c88"
+2025-12-14T17:38:29.807396559Z [inf]      serviceRequestId: "1d48e402-e390-4917-8dfd-5fc6fd8a81dc"
+2025-12-14T17:38:29.807401641Z [inf]  [17:38:29 UTC] INFO: Simulated calls completed and saved to database
+2025-12-14T17:38:29.807408236Z [inf]      executionId: "a7c43c2a-8f6f-4d68-8aff-5ba5017d3832"
+2025-12-14T17:38:31.837056531Z [inf]      }
+2025-12-14T17:38:31.837058100Z [inf]        "statusCode": 404
+2025-12-14T17:38:31.837065671Z [inf]      }
+2025-12-14T17:38:31.837072504Z [inf]  [17:38:31 UTC] WARN: Call result not found in cache
+2025-12-14T17:38:31.837080302Z [inf]      callId: "019b1df0-ea01-7ffa-bb3b-5f5ccfb2200b"
+2025-12-14T17:38:31.837080855Z [inf]      responseTime: 0.8125286102294922
+2025-12-14T17:38:31.837087171Z [inf]  [17:38:31 UTC] INFO: request completed
+2025-12-14T17:38:31.837098339Z [inf]      reqId: "req-h"
+2025-12-14T17:38:31.837104833Z [inf]      res: {
+2025-12-14T17:38:31.837122649Z [inf]      reqId: "req-h"
+2025-12-14T17:38:31.837124499Z [inf]      req: {
+2025-12-14T17:38:31.837132228Z [inf]        "method": "GET",
+2025-12-14T17:38:31.837135695Z [inf]        "remoteAddress": "100.64.0.4",
+2025-12-14T17:38:31.837137128Z [inf]  [17:38:31 UTC] INFO: incoming request
+2025-12-14T17:38:31.837140566Z [inf]        "remotePort": 46560
+2025-12-14T17:38:31.837144265Z [inf]        "url": "/api/v1/vapi/calls/019b1df0-ea01-7ffa-bb3b-5f5ccfb2200b",
+2025-12-14T17:38:31.837152054Z [inf]        "host": "api-production-8fe4.up.railway.app",
+2025-12-14T17:38:33.861869039Z [inf]        "host": "api-production-8fe4.up.railway.app",
+2025-12-14T17:38:33.861870785Z [inf]        "url": "/api/v1/vapi/calls/019b1df0-ea01-7ffa-bb3b-5f5ccfb2200b",
+2025-12-14T17:38:33.861872932Z [inf]      req: {
+2025-12-14T17:38:33.861881357Z [inf]        "remoteAddress": "100.64.0.4",
+2025-12-14T17:38:33.861884057Z [inf]  [17:38:33 UTC] INFO: incoming request
+2025-12-14T17:38:33.861887437Z [inf]        "method": "GET",
+2025-12-14T17:38:33.861891163Z [inf]        "statusCode": 404
+2025-12-14T17:38:33.861893346Z [inf]        "remotePort": 46560
+2025-12-14T17:38:33.861898459Z [inf]      reqId: "req-i"
+2025-12-14T17:38:33.861903235Z [inf]      }
+2025-12-14T17:38:33.861905434Z [inf]      callId: "019b1df0-ea01-7ffa-bb3b-5f5ccfb2200b"
+2025-12-14T17:38:33.861910199Z [inf]      reqId: "req-i"
+2025-12-14T17:38:33.861912080Z [inf]  [17:38:33 UTC] WARN: Call result not found in cache
+2025-12-14T17:38:33.861915401Z [inf]  [17:38:33 UTC] INFO: request completed
+2025-12-14T17:38:33.861920733Z [inf]      res: {
+2025-12-14T17:38:33.861921663Z [inf]      responseTime: 1.0596046447753906
+2025-12-14T17:38:33.861936404Z [inf]      }
+2025-12-14T17:38:35.904661104Z [inf]        "url": "/api/v1/vapi/calls/019b1df0-ea01-7ffa-bb3b-5f5ccfb2200b",
+2025-12-14T17:38:35.904668024Z [inf]        "host": "api-production-8fe4.up.railway.app",
+2025-12-14T17:38:35.904675383Z [inf]        "remoteAddress": "100.64.0.4",
+2025-12-14T17:38:35.904682765Z [inf]        "remotePort": 46560
+2025-12-14T17:38:35.904689287Z [inf]      }
+2025-12-14T17:38:35.904700176Z [inf]  [17:38:35 UTC] WARN: Call result not found in cache
+2025-12-14T17:38:35.904710282Z [inf]      callId: "019b1df0-ea01-7ffa-bb3b-5f5ccfb2200b"
+2025-12-14T17:38:35.904711559Z [inf]      res: {
+2025-12-14T17:38:35.904711720Z [inf]  [17:38:35 UTC] INFO: incoming request
+2025-12-14T17:38:35.904719969Z [inf]  [17:38:35 UTC] INFO: request completed
+2025-12-14T17:38:35.904722438Z [inf]      reqId: "req-j"
+2025-12-14T17:38:35.904722505Z [inf]        "statusCode": 404
+2025-12-14T17:38:35.904730919Z [inf]      req: {
+2025-12-14T17:38:35.904731160Z [inf]      reqId: "req-j"
+2025-12-14T17:38:35.904733338Z [inf]      }
+2025-12-14T17:38:35.904738025Z [inf]        "method": "GET",
+2025-12-14T17:38:35.904741738Z [inf]      responseTime: 1.774038314819336
+2025-12-14T17:38:37.923029328Z [inf]  [17:38:37 UTC] INFO: incoming request
+2025-12-14T17:38:37.923033586Z [inf]      reqId: "req-k"
+2025-12-14T17:38:37.923037734Z [inf]      req: {
+2025-12-14T17:38:37.923041791Z [inf]        "method": "GET",
+2025-12-14T17:38:37.923045911Z [inf]        "url": "/api/v1/vapi/calls/019b1df0-ea01-7ffa-bb3b-5f5ccfb2200b",
+2025-12-14T17:38:37.923051047Z [inf]        "host": "api-production-8fe4.up.railway.app",
+2025-12-14T17:38:37.923055843Z [inf]        "remoteAddress": "100.64.0.4",
+2025-12-14T17:38:37.923060031Z [inf]        "remotePort": 46560
+2025-12-14T17:38:37.923064869Z [inf]      }
+2025-12-14T17:38:37.923071314Z [inf]  [17:38:37 UTC] WARN: Call result not found in cache
+2025-12-14T17:38:37.923075227Z [inf]      callId: "019b1df0-ea01-7ffa-bb3b-5f5ccfb2200b"
+2025-12-14T17:38:37.923080226Z [inf]  [17:38:37 UTC] INFO: request completed
+2025-12-14T17:38:37.923084815Z [inf]      reqId: "req-k"
+2025-12-14T17:38:37.923089274Z [inf]      res: {
+2025-12-14T17:38:37.923094320Z [inf]        "statusCode": 404
+2025-12-14T17:38:37.923099020Z [inf]      }
+2025-12-14T17:38:37.923103902Z [inf]      responseTime: 0.9876804351806641
+2025-12-14T17:38:39.898652116Z [inf]  [17:38:39 UTC] INFO: incoming request
+2025-12-14T17:38:39.898656888Z [inf]      reqId: "req-l"
+2025-12-14T17:38:39.898662373Z [inf]      req: {
+2025-12-14T17:38:39.898666603Z [inf]        "method": "GET",
+2025-12-14T17:38:39.898670819Z [inf]        "url": "/api/v1/vapi/calls/019b1df0-ea01-7ffa-bb3b-5f5ccfb2200b",
+2025-12-14T17:38:39.898679120Z [inf]        "host": "api-production-8fe4.up.railway.app",
+2025-12-14T17:38:39.898683199Z [inf]        "remoteAddress": "100.64.0.4",
+2025-12-14T17:38:39.898687732Z [inf]        "remotePort": 46560
+2025-12-14T17:38:39.898692256Z [inf]      }
+2025-12-14T17:38:39.898696855Z [inf]  [17:38:39 UTC] WARN: Call result not found in cache
+2025-12-14T17:38:39.898701330Z [inf]      callId: "019b1df0-ea01-7ffa-bb3b-5f5ccfb2200b"
+2025-12-14T17:38:39.898705748Z [inf]  [17:38:39 UTC] INFO: request completed
+2025-12-14T17:38:39.898710477Z [inf]      reqId: "req-l"
+2025-12-14T17:38:39.898714705Z [inf]      res: {
+2025-12-14T17:38:39.898718695Z [inf]        "statusCode": 404
+2025-12-14T17:38:39.898723322Z [inf]      }
+2025-12-14T17:38:39.898726889Z [inf]      responseTime: 0.5598545074462891
+2025-12-14T17:38:41.881505988Z [inf]  [17:38:41 UTC] INFO: incoming request
+2025-12-14T17:38:41.881515904Z [inf]      reqId: "req-m"
+2025-12-14T17:38:41.881523489Z [inf]      req: {
+2025-12-14T17:38:41.881532084Z [inf]        "method": "GET",
+2025-12-14T17:38:41.881571701Z [inf]      reqId: "req-m"
+2025-12-14T17:38:41.881581513Z [inf]      res: {
+2025-12-14T17:38:41.881589586Z [inf]        "statusCode": 404
+2025-12-14T17:38:41.881598059Z [inf]      }
+2025-12-14T17:38:41.881650640Z [inf]        "url": "/api/v1/vapi/calls/019b1df0-ea01-7ffa-bb3b-5f5ccfb2200b",
+2025-12-14T17:38:41.881658684Z [inf]        "host": "api-production-8fe4.up.railway.app",
+2025-12-14T17:38:41.881665635Z [inf]        "remoteAddress": "100.64.0.4",
+2025-12-14T17:38:41.881671044Z [inf]        "remotePort": 46560
+2025-12-14T17:38:41.881676697Z [inf]      }
+2025-12-14T17:38:41.881687924Z [inf]  [17:38:41 UTC] WARN: Call result not found in cache
+2025-12-14T17:38:41.881693151Z [inf]      callId: "019b1df0-ea01-7ffa-bb3b-5f5ccfb2200b"
+2025-12-14T17:38:41.881699080Z [inf]  [17:38:41 UTC] INFO: request completed
+2025-12-14T17:38:41.881731949Z [inf]      responseTime: 0.58489990234375
+2025-12-14T17:38:44.049503848Z [inf]        "remotePort": 46560
+2025-12-14T17:38:44.049511569Z [inf]  [17:38:43 UTC] INFO: incoming request
+2025-12-14T17:38:44.049514052Z [inf]        "method": "GET",
+2025-12-14T17:38:44.049514341Z [inf]      }
+2025-12-14T17:38:44.049526236Z [inf]  [17:38:43 UTC] WARN: Call result not found in cache
+2025-12-14T17:38:44.049526348Z [inf]      reqId: "req-n"
+2025-12-14T17:38:44.049530951Z [inf]        "url": "/api/v1/vapi/calls/019b1df0-ea01-7ffa-bb3b-5f5ccfb2200b",
+2025-12-14T17:38:44.049536672Z [inf]      req: {
+2025-12-14T17:38:44.049540342Z [inf]        "host": "api-production-8fe4.up.railway.app",
+2025-12-14T17:38:44.049549073Z [inf]      callId: "019b1df0-ea01-7ffa-bb3b-5f5ccfb2200b"
+2025-12-14T17:38:44.049555315Z [inf]      res: {
+2025-12-14T17:38:44.049559355Z [inf]        "remoteAddress": "100.64.0.4",
+2025-12-14T17:38:44.049562958Z [inf]  [17:38:43 UTC] INFO: request completed
+2025-12-14T17:38:44.049570133Z [inf]      reqId: "req-n"
+2025-12-14T17:38:44.049580109Z [inf]        "statusCode": 404
+2025-12-14T17:38:44.049730531Z [inf]      }
+2025-12-14T17:38:44.055068987Z [inf]      responseTime: 0.7035694122314453
+2025-12-14T17:38:45.947588572Z [inf]  [17:38:45 UTC] INFO: incoming request
+2025-12-14T17:38:45.947597561Z [inf]      reqId: "req-o"
+2025-12-14T17:38:45.947604177Z [inf]      req: {
+2025-12-14T17:38:45.947609099Z [inf]        "method": "GET",
+2025-12-14T17:38:45.947613333Z [inf]        "url": "/api/v1/vapi/calls/019b1df0-ea01-7ffa-bb3b-5f5ccfb2200b",
+2025-12-14T17:38:45.947617482Z [inf]        "host": "api-production-8fe4.up.railway.app",
+2025-12-14T17:38:45.947621784Z [inf]        "remoteAddress": "100.64.0.4",
+2025-12-14T17:38:45.947626128Z [inf]        "remotePort": 46560
+2025-12-14T17:38:45.947631372Z [inf]      }
+2025-12-14T17:38:45.947637694Z [inf]  [17:38:45 UTC] WARN: Call result not found in cache
+2025-12-14T17:38:45.947643352Z [inf]      callId: "019b1df0-ea01-7ffa-bb3b-5f5ccfb2200b"
+2025-12-14T17:38:45.947649863Z [inf]  [17:38:45 UTC] INFO: request completed
+2025-12-14T17:38:45.947656461Z [inf]      reqId: "req-o"
+2025-12-14T17:38:45.947662965Z [inf]      res: {
+2025-12-14T17:38:45.947669872Z [inf]        "statusCode": 404
+2025-12-14T17:38:45.947676391Z [inf]      }
+2025-12-14T17:38:45.947683862Z [inf]      responseTime: 0.7921085357666016
+2025-12-14T17:38:47.953515669Z [inf]  [17:38:47 UTC] INFO: incoming request
+2025-12-14T17:38:47.953522491Z [inf]      reqId: "req-p"
+2025-12-14T17:38:47.953527364Z [inf]      req: {
+2025-12-14T17:38:47.953539987Z [inf]        "method": "GET",
+2025-12-14T17:38:47.953548055Z [inf]        "url": "/api/v1/vapi/calls/019b1df0-ea01-7ffa-bb3b-5f5ccfb2200b",
+2025-12-14T17:38:47.953554705Z [inf]        "host": "api-production-8fe4.up.railway.app",
+2025-12-14T17:38:47.953560834Z [inf]        "remoteAddress": "100.64.0.4",
+2025-12-14T17:38:47.953567348Z [inf]        "remotePort": 46560
+2025-12-14T17:38:47.953579833Z [inf]      }
+2025-12-14T17:38:47.953586823Z [inf]  [17:38:47 UTC] WARN: Call result not found in cache
+2025-12-14T17:38:47.953593262Z [inf]      callId: "019b1df0-ea01-7ffa-bb3b-5f5ccfb2200b"
+2025-12-14T17:38:47.953600580Z [inf]  [17:38:47 UTC] INFO: request completed
+2025-12-14T17:38:47.953609337Z [inf]      reqId: "req-p"
+2025-12-14T17:38:47.953617523Z [inf]      res: {
+2025-12-14T17:38:47.953625188Z [inf]        "statusCode": 404
+2025-12-14T17:38:47.953631213Z [inf]      }
+2025-12-14T17:38:47.953639095Z [inf]      responseTime: 0.6505069732666016
+2025-12-14T17:38:49.948251943Z [inf]  [17:38:49 UTC] INFO: incoming request
+2025-12-14T17:38:49.948257170Z [inf]      reqId: "req-q"
+2025-12-14T17:38:49.948262429Z [inf]      req: {
+2025-12-14T17:38:49.948267805Z [inf]        "method": "GET",
+2025-12-14T17:38:49.948273411Z [inf]        "url": "/api/v1/vapi/calls/019b1df0-ea01-7ffa-bb3b-5f5ccfb2200b",
+2025-12-14T17:38:49.948279605Z [inf]        "host": "api-production-8fe4.up.railway.app",
+2025-12-14T17:38:49.948285503Z [inf]        "remoteAddress": "100.64.0.4",
+2025-12-14T17:38:49.948290637Z [inf]        "remotePort": 46560
+2025-12-14T17:38:49.948295504Z [inf]      }
+2025-12-14T17:38:49.948300699Z [inf]  [17:38:49 UTC] WARN: Call result not found in cache
+2025-12-14T17:38:49.948307166Z [inf]      callId: "019b1df0-ea01-7ffa-bb3b-5f5ccfb2200b"
+2025-12-14T17:38:49.948313297Z [inf]  [17:38:49 UTC] INFO: request completed
+2025-12-14T17:38:49.948319585Z [inf]      reqId: "req-q"
+2025-12-14T17:38:49.948324343Z [inf]      res: {
+2025-12-14T17:38:49.948329264Z [inf]        "statusCode": 404
+2025-12-14T17:38:49.948336339Z [inf]      }
+2025-12-14T17:38:49.948346357Z [inf]      responseTime: 0.9034690856933594
+2025-12-14T17:38:51.985578179Z [inf]  [17:38:51 UTC] INFO: incoming request
+2025-12-14T17:38:51.985586561Z [inf]      reqId: "req-r"
+2025-12-14T17:38:51.985591398Z [inf]      req: {
+2025-12-14T17:38:51.985596136Z [inf]        "method": "GET",
+2025-12-14T17:38:51.985601318Z [inf]        "url": "/api/v1/vapi/calls/019b1df0-ea01-7ffa-bb3b-5f5ccfb2200b",
+2025-12-14T17:38:51.985606409Z [inf]        "host": "api-production-8fe4.up.railway.app",
+2025-12-14T17:38:51.985611579Z [inf]        "remoteAddress": "100.64.0.4",
+2025-12-14T17:38:51.985617012Z [inf]        "remotePort": 46560
+2025-12-14T17:38:51.985623526Z [inf]      }
+2025-12-14T17:38:51.985630263Z [inf]  [17:38:51 UTC] WARN: Call result not found in cache
+2025-12-14T17:38:51.985635172Z [inf]      callId: "019b1df0-ea01-7ffa-bb3b-5f5ccfb2200b"
+2025-12-14T17:38:51.985640729Z [inf]  [17:38:51 UTC] INFO: request completed
+2025-12-14T17:38:51.985645608Z [inf]      reqId: "req-r"
+2025-12-14T17:38:51.985650916Z [inf]      res: {
+2025-12-14T17:38:51.985655545Z [inf]        "statusCode": 404
+2025-12-14T17:38:51.985662164Z [inf]      }
+2025-12-14T17:38:51.985667023Z [inf]      responseTime: 0.6723403930664062
+2025-12-14T17:38:54.037288834Z [inf]  [17:38:53 UTC] INFO: incoming request
+2025-12-14T17:38:54.037294734Z [inf]      reqId: "req-s"
+2025-12-14T17:38:54.037300941Z [inf]      req: {
+2025-12-14T17:38:54.037307162Z [inf]        "method": "GET",
+2025-12-14T17:38:54.037312928Z [inf]        "url": "/api/v1/vapi/calls/019b1df0-ea01-7ffa-bb3b-5f5ccfb2200b",
+2025-12-14T17:38:54.037318436Z [inf]        "host": "api-production-8fe4.up.railway.app",
+2025-12-14T17:38:54.037324163Z [inf]        "remoteAddress": "100.64.0.4",
+2025-12-14T17:38:54.037329462Z [inf]        "remotePort": 46560
+2025-12-14T17:38:54.037338169Z [inf]      }
+2025-12-14T17:38:54.037344878Z [inf]  [17:38:53 UTC] WARN: Call result not found in cache
+2025-12-14T17:38:54.037350973Z [inf]      callId: "019b1df0-ea01-7ffa-bb3b-5f5ccfb2200b"
+2025-12-14T17:38:54.037357472Z [inf]  [17:38:53 UTC] INFO: request completed
+2025-12-14T17:38:54.037363502Z [inf]      reqId: "req-s"
+2025-12-14T17:38:54.037371202Z [inf]      res: {
+2025-12-14T17:38:54.037377019Z [inf]        "statusCode": 404
+2025-12-14T17:38:54.037382603Z [inf]      }
+2025-12-14T17:38:54.037387557Z [inf]      responseTime: 0.5673713684082031
+2025-12-14T17:38:56.088533013Z [inf]  [17:38:55 UTC] INFO: incoming request
+2025-12-14T17:38:56.088545366Z [inf]      reqId: "req-t"
+2025-12-14T17:38:56.088550994Z [inf]      req: {
+2025-12-14T17:38:56.088556363Z [inf]        "method": "GET",
+2025-12-14T17:38:56.088561867Z [inf]        "url": "/api/v1/vapi/calls/019b1df0-ea01-7ffa-bb3b-5f5ccfb2200b",
+2025-12-14T17:38:56.088567387Z [inf]        "host": "api-production-8fe4.up.railway.app",
+2025-12-14T17:38:56.088572468Z [inf]        "remoteAddress": "100.64.0.4",
+2025-12-14T17:38:56.088577179Z [inf]        "remotePort": 46560
+2025-12-14T17:38:56.088582757Z [inf]      }
+2025-12-14T17:38:56.088588225Z [inf]  [17:38:55 UTC] WARN: Call result not found in cache
+2025-12-14T17:38:56.088592639Z [inf]      callId: "019b1df0-ea01-7ffa-bb3b-5f5ccfb2200b"
+2025-12-14T17:38:56.088597241Z [inf]  [17:38:55 UTC] INFO: request completed
+2025-12-14T17:38:56.088602117Z [inf]      reqId: "req-t"
+2025-12-14T17:38:56.088606534Z [inf]      res: {
+2025-12-14T17:38:56.088611637Z [inf]        "statusCode": 404
+2025-12-14T17:38:56.088616138Z [inf]      }
+2025-12-14T17:38:56.088620738Z [inf]      responseTime: 0.6267566680908203
+2025-12-14T17:38:58.139580757Z [inf]  [17:38:57 UTC] INFO: incoming request
+2025-12-14T17:38:58.139596275Z [inf]      reqId: "req-u"
+2025-12-14T17:38:58.139605272Z [inf]      req: {
+2025-12-14T17:38:58.139611487Z [inf]        "method": "GET",
+2025-12-14T17:38:58.139619363Z [inf]        "url": "/api/v1/vapi/calls/019b1df0-ea01-7ffa-bb3b-5f5ccfb2200b",
+2025-12-14T17:38:58.139625962Z [inf]        "host": "api-production-8fe4.up.railway.app",
+2025-12-14T17:38:58.139632221Z [inf]        "remoteAddress": "100.64.0.4",
+2025-12-14T17:38:58.139638905Z [inf]        "remotePort": 46560
+2025-12-14T17:38:58.139644931Z [inf]      }
+2025-12-14T17:38:58.142106876Z [inf]  [17:38:57 UTC] WARN: Call result not found in cache
+2025-12-14T17:38:58.142117221Z [inf]      callId: "019b1df0-ea01-7ffa-bb3b-5f5ccfb2200b"
+2025-12-14T17:38:58.142124270Z [inf]  [17:38:57 UTC] INFO: request completed
+2025-12-14T17:38:58.142130459Z [inf]      reqId: "req-u"
+2025-12-14T17:38:58.142137153Z [inf]      res: {
+2025-12-14T17:38:58.142143697Z [inf]        "statusCode": 404
+2025-12-14T17:38:58.142149230Z [inf]      }
+2025-12-14T17:38:58.142154568Z [inf]      responseTime: 0.7465114593505859
+2025-12-14T17:38:59.167468554Z [inf]  [17:38:59 UTC] INFO: incoming request
+2025-12-14T17:38:59.167469311Z [inf]      responseTime: 0.7767467498779297
+2025-12-14T17:38:59.167479541Z [inf]      reqId: "req-v"
+2025-12-14T17:38:59.167485473Z [inf]      req: {
+2025-12-14T17:38:59.167491285Z [inf]        "method": "GET",
+2025-12-14T17:38:59.167497016Z [inf]        "url": "/api/v1/vapi/calls/019b1df0-ea01-7ffa-bb3b-5f5ccfb2200b",
+2025-12-14T17:38:59.167502607Z [inf]        "host": "api-production-8fe4.up.railway.app",
+2025-12-14T17:38:59.167507768Z [inf]        "remoteAddress": "100.64.0.4",
+2025-12-14T17:38:59.167512590Z [inf]        "remotePort": 46560
+2025-12-14T17:38:59.167518933Z [inf]      }
+2025-12-14T17:38:59.167524508Z [inf]  [17:38:59 UTC] WARN: Call result not found in cache
+2025-12-14T17:38:59.167529742Z [inf]      callId: "019b1df0-ea01-7ffa-bb3b-5f5ccfb2200b"
+2025-12-14T17:38:59.167535258Z [inf]  [17:38:59 UTC] INFO: request completed
+2025-12-14T17:38:59.167540761Z [inf]      reqId: "req-v"
+2025-12-14T17:38:59.167571270Z [inf]      res: {
+2025-12-14T17:38:59.167575929Z [inf]        "statusCode": 404
+2025-12-14T17:38:59.167580516Z [inf]      }
+2025-12-14T17:39:01.225643695Z [inf]  [17:39:01 UTC] INFO: incoming request
+2025-12-14T17:39:01.225653261Z [inf]      reqId: "req-w"
+2025-12-14T17:39:01.225660336Z [inf]      req: {
+2025-12-14T17:39:01.225666465Z [inf]        "method": "GET",
+2025-12-14T17:39:01.225673442Z [inf]        "url": "/api/v1/vapi/calls/019b1df0-ea01-7ffa-bb3b-5f5ccfb2200b",
+2025-12-14T17:39:01.225679306Z [inf]        "host": "api-production-8fe4.up.railway.app",
+2025-12-14T17:39:01.225685706Z [inf]        "remoteAddress": "100.64.0.4",
+2025-12-14T17:39:01.225692446Z [inf]        "remotePort": 46560
+2025-12-14T17:39:01.225700219Z [inf]      }
+2025-12-14T17:39:01.225706258Z [inf]  [17:39:01 UTC] WARN: Call result not found in cache
+2025-12-14T17:39:01.225712381Z [inf]      callId: "019b1df0-ea01-7ffa-bb3b-5f5ccfb2200b"
+2025-12-14T17:39:01.225718511Z [inf]  [17:39:01 UTC] INFO: request completed
+2025-12-14T17:39:01.225724656Z [inf]      reqId: "req-w"
+2025-12-14T17:39:01.225730469Z [inf]      res: {
+2025-12-14T17:39:01.225736666Z [inf]        "statusCode": 404
+2025-12-14T17:39:01.225742885Z [inf]      }
+2025-12-14T17:39:01.225749164Z [inf]      responseTime: 0.8084220886230469
+2025-12-14T17:39:03.270212192Z [inf]  [17:39:03 UTC] INFO: incoming request
+2025-12-14T17:39:03.270223975Z [inf]      reqId: "req-x"
+2025-12-14T17:39:03.270231791Z [inf]      req: {
+2025-12-14T17:39:03.270265990Z [inf]        "method": "GET",
+2025-12-14T17:39:03.270274537Z [inf]        "url": "/api/v1/vapi/calls/019b1df0-ea01-7ffa-bb3b-5f5ccfb2200b",
+2025-12-14T17:39:03.270293765Z [inf]        "host": "api-production-8fe4.up.railway.app",
+2025-12-14T17:39:03.270301042Z [inf]        "remoteAddress": "100.64.0.4",
+2025-12-14T17:39:03.270307724Z [inf]        "remotePort": 46560
+2025-12-14T17:39:03.270315225Z [inf]      }
+2025-12-14T17:39:03.270322456Z [inf]  [17:39:03 UTC] WARN: Call result not found in cache
+2025-12-14T17:39:03.270332682Z [inf]      callId: "019b1df0-ea01-7ffa-bb3b-5f5ccfb2200b"
+2025-12-14T17:39:03.270339784Z [inf]  [17:39:03 UTC] INFO: request completed
+2025-12-14T17:39:03.270346338Z [inf]      reqId: "req-x"
+2025-12-14T17:39:03.270352455Z [inf]      res: {
+2025-12-14T17:39:03.270361412Z [inf]        "statusCode": 404
+2025-12-14T17:39:03.270367420Z [inf]      }
+2025-12-14T17:39:03.270373691Z [inf]      responseTime: 0.5725822448730469
+2025-12-14T17:39:05.325201054Z [inf]  [17:39:05 UTC] INFO: Webhook timeout, falling back to VAPI polling
+2025-12-14T17:39:05.325213834Z [inf]      callId: "019b1df0-ea01-7ffa-bb3b-5f5ccfb2200b"
+2025-12-14T17:39:05.325230024Z [inf]  [17:39:05 UTC] INFO: incoming request
+2025-12-14T17:39:05.325237371Z [inf]      reqId: "req-y"
+2025-12-14T17:39:05.325243783Z [inf]      req: {
+2025-12-14T17:39:05.325252640Z [inf]        "method": "GET",
+2025-12-14T17:39:05.325259047Z [inf]        "url": "/api/v1/vapi/calls/019b1df0-ea01-7ffa-bb3b-5f5ccfb2200b",
+2025-12-14T17:39:05.325265625Z [inf]        "host": "api-production-8fe4.up.railway.app",
+2025-12-14T17:39:05.325271881Z [inf]        "remoteAddress": "100.64.0.4",
+2025-12-14T17:39:05.325278350Z [inf]        "remotePort": 46560
+2025-12-14T17:39:05.325284835Z [inf]      }
+2025-12-14T17:39:05.325291440Z [inf]  [17:39:05 UTC] WARN: Call result not found in cache
+2025-12-14T17:39:05.325297544Z [inf]      callId: "019b1df0-ea01-7ffa-bb3b-5f5ccfb2200b"
+2025-12-14T17:39:05.325303648Z [inf]  [17:39:05 UTC] INFO: request completed
+2025-12-14T17:39:05.325309409Z [inf]      reqId: "req-y"
+2025-12-14T17:39:05.325315455Z [inf]      res: {
+2025-12-14T17:39:05.325321592Z [inf]        "statusCode": 404
+2025-12-14T17:39:05.325327626Z [inf]      }
+2025-12-14T17:39:05.325333719Z [inf]      responseTime: 0.5939216613769531
+2025-12-14T17:39:05.325357326Z [inf]  [17:39:05 UTC] WARN: Too many consecutive 404s - webhook appears unavailable (is ngrok running?). Falling back to VAPI polling.
+2025-12-14T17:39:05.325365013Z [inf]      callId: "019b1df0-ea01-7ffa-bb3b-5f5ccfb2200b"
+2025-12-14T17:39:05.325371030Z [inf]      consecutive404Count: 30
+2025-12-14T17:39:35.325861974Z [inf]  [17:39:31 UTC] INFO: incoming request
+2025-12-14T17:39:35.325872461Z [inf]      reqId: "req-10"
+2025-12-14T17:39:35.325877899Z [inf]      req: {
+2025-12-14T17:39:35.325882535Z [inf]        "method": "POST",
+2025-12-14T17:39:35.325887641Z [inf]        "url": "/api/v1/vapi/webhook",
+2025-12-14T17:39:35.325893103Z [inf]        "host": "api-production-8fe4.up.railway.app",
+2025-12-14T17:39:35.325897767Z [inf]        "remoteAddress": "100.64.0.7",
+2025-12-14T17:39:35.325902155Z [inf]        "remotePort": 57870
+2025-12-14T17:39:35.325906946Z [inf]      }
+2025-12-14T17:39:35.325912133Z [inf]  [17:39:31 UTC] INFO: VAPI webhook received
+2025-12-14T17:39:35.325916640Z [inf]      type: "end-of-call-report"
+2025-12-14T17:39:35.325936238Z [inf]  [17:39:25 UTC] INFO: incoming request
+2025-12-14T17:39:35.325945526Z [inf]      reqId: "req-z"
+2025-12-14T17:39:35.325967956Z [inf]      req: {
+2025-12-14T17:39:35.325973060Z [inf]        "method": "POST",
+2025-12-14T17:39:35.325979598Z [inf]        "url": "/api/v1/vapi/webhook",
+2025-12-14T17:39:35.325986433Z [inf]        "host": "api-production-8fe4.up.railway.app",
+2025-12-14T17:39:35.325993466Z [inf]        "remoteAddress": "100.64.0.6",
+2025-12-14T17:39:35.325999606Z [inf]        "remotePort": 30428
+2025-12-14T17:39:35.326006157Z [inf]      }
+2025-12-14T17:39:35.326012272Z [inf]  [17:39:25 UTC] INFO: VAPI webhook received
+2025-12-14T17:39:35.326018342Z [inf]      type: "status-update"
+2025-12-14T17:39:35.326025125Z [inf]      callId: "019b1df0-ea01-7ffa-bb3b-5f5ccfb2200b"
+2025-12-14T17:39:35.326031310Z [inf]  [17:39:25 UTC] INFO: request completed
+2025-12-14T17:39:35.326037227Z [inf]      reqId: "req-z"
+2025-12-14T17:39:35.326043438Z [inf]      res: {
+2025-12-14T17:39:35.326049576Z [inf]        "statusCode": 200
+2025-12-14T17:39:35.326055329Z [inf]      }
+2025-12-14T17:39:35.326062385Z [inf]      responseTime: 68.53667831420898
+2025-12-14T17:39:35.328340334Z [inf]      callId: "019b1df0-ea01-7ffa-bb3b-5f5ccfb2200b"
+2025-12-14T17:39:35.328352107Z [inf]  [17:39:31 UTC] INFO: Call result cached (partial), triggering background enrichment
+2025-12-14T17:39:35.328359821Z [inf]      callId: "019b1df0-ea01-7ffa-bb3b-5f5ccfb2200b"
+2025-12-14T17:39:35.328366616Z [inf]      status: "completed"
+2025-12-14T17:39:35.328373186Z [inf]      duration: 0
+2025-12-14T17:39:35.328379572Z [inf]      cost: 0
+2025-12-14T17:39:35.328384659Z [inf]      dataStatus: "partial"
+2025-12-14T17:39:35.328395884Z [inf]  [17:39:31 UTC] INFO: Waiting before VAPI API fetch
+2025-12-14T17:39:35.328404474Z [inf]      callId: "019b1df0-ea01-7ffa-bb3b-5f5ccfb2200b"
+2025-12-14T17:39:35.328409966Z [inf]      attempt: 1
+2025-12-14T17:39:35.328414362Z [inf]      delayMs: 5000
+2025-12-14T17:39:35.328419533Z [inf]  [17:39:31 UTC] INFO: request completed
+2025-12-14T17:39:35.328425598Z [inf]      reqId: "req-10"
+2025-12-14T17:39:35.328430982Z [inf]      res: {
+2025-12-14T17:39:35.328437310Z [inf]        "statusCode": 200
+2025-12-14T17:39:35.328444525Z [inf]      }
+2025-12-14T17:39:35.328450110Z [inf]      responseTime: 137.29002952575684
+2025-12-14T17:39:35.328457009Z [inf]  [Filter] Excluding Lambert Custom Carpentry: call not completed (status: voicemail)
+2025-12-14T17:39:35.328463700Z [inf]  [Filter] Excluding Precision Carpentry & Plumbing: call not completed (status: voicemail)
+2025-12-14T17:39:35.328469889Z [inf]  [Filter] Excluding Hgi Cabinetry: call not completed (status: no_answer)
+2025-12-14T17:39:35.328474648Z [inf]  [Filter] Excluding Rockler Woodworking and Hardware - Greenville: call not completed (status: no_answer)
+2025-12-14T17:39:35.328479185Z [inf]  [Filter] Excluding Woodcraft of Greenville: call not completed (status: voicemail)
+2025-12-14T17:39:35.328484897Z [inf]  [17:39:32 UTC] INFO: Call data complete, returning
+2025-12-14T17:39:35.328489131Z [inf]      callId: "019b1df0-ea01-7ffa-bb3b-5f5ccfb2200b"
+2025-12-14T17:39:35.331396932Z [inf]      errorCount: 0
+2025-12-14T17:39:35.331397226Z [inf]      enrichAttempt: 0
+2025-12-14T17:39:35.331407654Z [inf]  [17:39:33 UTC] INFO: Call result saved to database
+2025-12-14T17:39:35.331409930Z [inf]      durationSeconds: "88.96"
+2025-12-14T17:39:35.331416621Z [inf]      callId: "019b1df0-ea01-7ffa-bb3b-5f5ccfb2200b"
+2025-12-14T17:39:35.331418685Z [inf]  [17:39:33 UTC] INFO: Batch provider calls completed via Direct VAPI
+2025-12-14T17:39:35.331425063Z [inf]      providerId: "ca3e72e8-afd6-42fc-b0a7-c9ae014f9a37"
+2025-12-14T17:39:35.331426175Z [inf]      stats: {
+2025-12-14T17:39:35.331434007Z [inf]      serviceRequestId: "1d48e402-e390-4917-8dfd-5fc6fd8a81dc"
+2025-12-14T17:39:35.331435419Z [inf]        "total": 1,
+2025-12-14T17:39:35.331442752Z [inf]        "completed": 1,
+2025-12-14T17:39:35.331444434Z [inf]  [17:39:33 UTC] INFO: Batch provider calls completed
+2025-12-14T17:39:35.331451104Z [inf]        "failed": 0,
+2025-12-14T17:39:35.331452332Z [inf]      total: 1
+2025-12-14T17:39:35.331459030Z [inf]        "timeout": 0,
+2025-12-14T17:39:35.331460979Z [inf]      completed: 1
+2025-12-14T17:39:35.331467260Z [inf]      failed: 0
+2025-12-14T17:39:35.331469506Z [inf]        "noAnswer": 0,
+2025-12-14T17:39:35.331472679Z [inf]      timeout: 0
+2025-12-14T17:39:35.331478498Z [inf]        "voicemail": 0,
+2025-12-14T17:39:35.331478745Z [inf]      noAnswer: 0
+2025-12-14T17:39:35.331487975Z [inf]      voicemail: 0
+2025-12-14T17:39:35.331488168Z [inf]        "duration": 88960,
+2025-12-14T17:39:35.331494552Z [inf]      duration: 88960
+2025-12-14T17:39:35.331497282Z [inf]        "averageCallDuration": 0
+2025-12-14T17:39:35.331501174Z [inf]      averageCallDuration: 0
+2025-12-14T17:39:35.331505218Z [inf]      }
+2025-12-14T17:39:35.331515723Z [inf]      method: "direct_vapi"
+2025-12-14T17:39:35.331521381Z [inf]  [17:39:33 UTC] INFO: Background batch call processing completed (real + simulated)
+2025-12-14T17:39:35.333578037Z [inf]      serviceRequestId: "1d48e402-e390-4917-8dfd-5fc6fd8a81dc"
+2025-12-14T17:39:35.333586387Z [inf]      executionId: "a7c43c2a-8f6f-4d68-8aff-5ba5017d3832"
+2025-12-14T17:39:35.333590224Z [inf]  [17:39:33 UTC] INFO: Generating recommendations
+2025-12-14T17:39:35.333597278Z [inf]      realCallsSuccess: true
+2025-12-14T17:39:35.333598660Z [inf]      kestraEnabled: false
+2025-12-14T17:39:35.333605707Z [inf]      realCallsInDatabase: true
+2025-12-14T17:39:35.333606998Z [inf]      kestraHealthy: false
+2025-12-14T17:39:35.333612701Z [inf]      simulatedCount: 9
+2025-12-14T17:39:35.333614789Z [inf]      callResultsCount: 10
+2025-12-14T17:39:35.333619380Z [inf]  [17:39:33 UTC] INFO: Kestra batch completed with results in database - waiting for all provider results
+2025-12-14T17:39:35.333624468Z [inf]      executionId: "a7c43c2a-8f6f-4d68-8aff-5ba5017d3832"
+2025-12-14T17:39:35.333631026Z [inf]      serviceRequestId: "1d48e402-e390-4917-8dfd-5fc6fd8a81dc"
+2025-12-14T17:39:35.333632583Z [inf]  [17:39:34 UTC] INFO: Direct Gemini recommendations generated successfully
+2025-12-14T17:39:35.333637530Z [inf]  [17:39:33 UTC] INFO: All provider calls completed - generating recommendations
+2025-12-14T17:39:35.333642646Z [inf]      recommendationCount: 3
+2025-12-14T17:39:35.333647350Z [inf]      executionId: "a7c43c2a-8f6f-4d68-8aff-5ba5017d3832"
+2025-12-14T17:39:35.333650608Z [inf]  [17:39:34 UTC] INFO: Recommendations stored in database and status updated to RECOMMENDED
+2025-12-14T17:39:35.333655370Z [inf]      completedCount: 10
+2025-12-14T17:39:35.333657614Z [inf]      executionId: "a7c43c2a-8f6f-4d68-8aff-5ba5017d3832"
+2025-12-14T17:39:35.333661581Z [inf]      totalProviders: 10
+2025-12-14T17:39:35.333666797Z [inf]  [17:39:33 UTC] INFO: Status updated to ANALYZING after confirming all provider calls completed
+2025-12-14T17:39:35.333672279Z [inf]      executionId: "a7c43c2a-8f6f-4d68-8aff-5ba5017d3832"
+2025-12-14T17:39:35.336433969Z [inf]      serviceRequestId: "1d48e402-e390-4917-8dfd-5fc6fd8a81dc"
+2025-12-14T17:39:35.336440337Z [inf]      recommendationCount: 3
+2025-12-14T17:39:35.336444789Z [inf]  [17:39:34 UTC] WARN: Twilio credentials not configured - SMS sending disabled
+2025-12-14T17:39:35.336449112Z [inf]  [17:39:34 UTC] WARN: [TriggerNotification] Twilio not available, skipping notification
+2025-12-14T17:39:35.336455406Z [inf]      serviceRequestId: "1d48e402-e390-4917-8dfd-5fc6fd8a81dc"
+2025-12-14T17:39:35.336460031Z [inf]  [17:39:34 UTC] WARN: User notification failed
+2025-12-14T17:39:35.336464839Z [inf]      serviceRequestId: "1d48e402-e390-4917-8dfd-5fc6fd8a81dc"
+2025-12-14T17:39:35.336469845Z [inf]      error: "Twilio not configured"
+2025-12-14T17:39:37.045784611Z [inf]      providerId: "ca3e72e8-afd6-42fc-b0a7-c9ae014f9a37"
+2025-12-14T17:39:37.045793930Z [inf]      serviceRequestId: "1d48e402-e390-4917-8dfd-5fc6fd8a81dc"
+2025-12-14T17:39:37.045808033Z [inf]      status: "completed"
+2025-12-14T17:39:37.045813190Z [inf]      meetsRequirements: true
+2025-12-14T17:39:37.045828058Z [inf]      transcriptLength: 1070
+2025-12-14T17:39:37.045833721Z [inf]      hasSummary: true
+2025-12-14T17:39:37.045838952Z [inf]      dataStatus: "complete"
+2025-12-14T17:39:37.045840049Z [inf]  [17:39:36 UTC] INFO: Fetching call data from VAPI API
+2025-12-14T17:39:37.045844671Z [inf]  [17:39:36 UTC] INFO: Persisting call result to database
+2025-12-14T17:39:37.045850768Z [inf]      callId: "019b1df0-ea01-7ffa-bb3b-5f5ccfb2200b"
+2025-12-14T17:39:37.045852210Z [inf]      callId: "019b1df0-ea01-7ffa-bb3b-5f5ccfb2200b"
+2025-12-14T17:39:37.045860545Z [inf]      attempt: 1
+2025-12-14T17:39:37.045869794Z [inf]  [17:39:36 UTC] INFO: Call data enriched successfully from VAPI API
+2025-12-14T17:39:37.045876696Z [inf]      callId: "019b1df0-ea01-7ffa-bb3b-5f5ccfb2200b"
+2025-12-14T17:39:37.045880533Z [inf]      earliestAvailability: "tomorrow afternoon at 4 PM"
+2025-12-14T17:39:37.045888608Z [inf]  [17:39:36 UTC] INFO: Call result saved to database
+2025-12-14T17:39:37.045895062Z [inf]      callId: "019b1df0-ea01-7ffa-bb3b-5f5ccfb2200b"
+2025-12-14T17:39:37.045901709Z [inf]      providerId: "ca3e72e8-afd6-42fc-b0a7-c9ae014f9a37"
+2025-12-14T17:39:37.045906574Z [inf]      serviceRequestId: "1d48e402-e390-4917-8dfd-5fc6fd8a81dc"
+2025-12-14T17:39:37.045911701Z [inf]  [17:39:36 UTC] INFO: Call result persisted to database successfully
+2025-12-14T17:39:37.045916958Z [inf]      callId: "019b1df0-ea01-7ffa-bb3b-5f5ccfb2200b"

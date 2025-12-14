@@ -1,38 +1,46 @@
-Hi. This is my client's assistant calling back about the plumber appointment.
-7:23:05 AM(+00:02.37)
+Hi. Is this Forest Kitchen Design? I'm John's personal AI assistant. John is looking to have a custom cabinet built and needs a carpenter to come out. Do you have a quick moment?
+12:38:15 PM(+00:02.39)
 User
-Yes.
+Yes. I do.
 
-7:23:10 AM(+00:07.52)
+12:38:25 PM(+00:12.34)
 
 Assistant
-My client would like to book with you for tomorrow, Wednesday, 2 PM. Does that time still work?
-7:23:12 AM(+00:09.30)
+Great. First, I was wondering, when could you come to 1 23 Bennett Street, Greenville? S c 2 9 6 0 1? John's hoping to have this done within the next 2 days if possible.
+12:38:27 PM(+00:14.76)
 User
-Yes. It does.
+We can come out tomorrow afternoon at 4 PM
 
-7:23:17 AM(+00:14.58)
+12:38:38 PM(+00:25.21)
 
 Assistant
-Perfect. Just to confirm, plumber on Wednesday at 2 PM in Greenville, s for my client. Does that sound correct?
-7:23:20 AM(+00:17.16)
+Perfect. Thank you. So that's tomorrow at 4 PM, next what would the cost be for this type of service call?
+12:38:43 PM(+00:30.82)
 User
-Yes.
+It's 85 dollars for the consultation. Then we quote the project.
 
-7:23:26 AM(+00:22.85)
+12:38:50 PM(+00:37.10)
 
 Assistant
-Is there anything else you need from us before the appointment?
-7:23:28 AM(+00:25.41)
+Got it. 85 dollars for the consultation, and then you'll quote the project. That makes sense. Could you tell me a little about your process for custom cabinet projects?
+12:38:55 PM(+00:42.45)
 User
-No. We're all set.
+Yes. We will discuss everything on-site.
 
-7:23:31 AM(+00:28.68)
+12:39:05 PM(+00:52.31)
+
+Assistant
+Okay. So you'll discuss everything on-site during the consultation. And do you offer design consultations, or can John provide his own design?
+12:39:09 PM(+00:56.29)
+User
+John can provide his own design.
+
+12:39:19 PM(+01:05.74)
 
 EndCall
 Completed successfully
-07:23 AM
-7:23:31 AM(+00:29.15)
+12:39 PM
+12:39:20 PM(+01:06.91)
 
 Assistant
 Thank you so much for your time. Have a wonderful day.
