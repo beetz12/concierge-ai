@@ -76,8 +76,8 @@ const analyzeResearchPromptSchema = z.object({
   userCriteria: z.string().default(""), // Optional - empty string allowed
   location: z.string().min(1, "Location is required"),
   urgency: z.string().min(1, "Urgency is required"),
-  providerName: z.string().min(1, "Provider name is required"),
   clientName: z.string().min(1, "Client name is required"),
+  clientAddress: z.string().optional(), // Full street address for service location
 });
 
 export default async function geminiRoutes(fastify: FastifyInstance) {
@@ -606,8 +606,8 @@ export default async function geminiRoutes(fastify: FastifyInstance) {
           userCriteria: body.userCriteria,
           location: body.location,
           urgency: body.urgency,
-          providerName: body.providerName,
           clientName: body.clientName,
+          clientAddress: body.clientAddress,
         });
         return result;
       } catch (error: any) {

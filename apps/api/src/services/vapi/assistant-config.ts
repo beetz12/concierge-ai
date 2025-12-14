@@ -429,7 +429,10 @@ If you detect voicemail (automated greeting, "leave a message", beep), immediate
         machineDetectionSpeechThreshold: 2500, // Min 1000ms per VAPI API
         machineDetectionSpeechEndThreshold: 1200, // Min 1000ms per VAPI API
       },
-      firstMessage: request.customPrompt.firstMessage,
+      // Inject provider name as a natural question before the Gemini-generated greeting
+      // This ensures each provider is greeted by their actual name
+      // We remove any leading "Hi!" from the custom prompt to avoid "Hi! Hi!" duplication
+      firstMessage: `Hi, is this ${request.providerName}? ${request.customPrompt.firstMessage.replace(/^Hi!?\s*/i, '')}`,
       endCallFunctionEnabled: true,
       endCallMessage: request.customPrompt.closingScript || `Thank you so much for all that information! I'll share this with ${clientName} and if they'd like to proceed, we'll call back to schedule. Have a wonderful day!`,
       silenceTimeoutSeconds: 10,  // VAPI minimum is 10s; agent should invoke endCall immediately after farewell
@@ -709,12 +712,12 @@ For unusual requirements, frame naturally: "${clientName} specifically mentioned
       machineDetectionSpeechEndThreshold: 1200,
     },
 
-    // First message
+    // First message - includes provider name for proper greeting
     firstMessage: (() => {
       const problemText = request.problemDescription
         ? ` ${clientName} ${request.problemDescription}.`
         : "";
-      return `Hi there! This is ${clientName}'s personal AI assistant calling to check on ${request.serviceNeeded} services.${problemText} Do you have just a quick moment?`;
+      return `Hi, is this ${request.providerName}? This is ${clientName}'s personal AI assistant calling to check on ${request.serviceNeeded} services.${problemText} Do you have just a quick moment?`;
     })(),
 
     // Enable endCall function (VAPI handles tool registration automatically)

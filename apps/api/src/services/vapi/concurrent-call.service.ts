@@ -5,6 +5,7 @@
  */
 
 import { DirectVapiClient } from "./direct-vapi.client.js";
+import { CallResultService } from "./call-result.service.js";
 import type { CallRequest, CallResult, GeneratedPrompt } from "./types.js";
 
 interface Logger {
@@ -67,9 +68,11 @@ export interface ConcurrentCallResult {
 
 export class ConcurrentCallService {
   private directClient: DirectVapiClient;
+  private callResultService: CallResultService;
 
   constructor(private logger: Logger) {
     this.directClient = new DirectVapiClient(logger);
+    this.callResultService = new CallResultService(logger);
   }
 
   /**
@@ -135,6 +138,11 @@ export class ConcurrentCallService {
       const batchPromises = batch.map(async (request) => {
         try {
           const result = await this.directClient.initiateCall(request);
+
+          // Save result to database (handles deduplication via ON CONFLICT)
+          // Critical: This ensures call results are persisted even when webhooks fail
+          await this.callResultService.saveCallResult(result, request);
+
           return { success: true, result };
         } catch (error) {
           const errorMessage =

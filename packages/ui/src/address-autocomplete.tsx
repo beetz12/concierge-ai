@@ -189,6 +189,10 @@ export function AddressAutocomplete({
 
         element.style.display = "block";
         element.style.width = "100%";
+        element.style.height = "2.5rem";
+        element.style.backgroundColor = "transparent";
+        element.style.border = "none";
+        element.style.outline = "none";
 
         // 2025 API uses gmp-select event, fallback to gmp-placeselect for compatibility
         element.addEventListener("gmp-select", handlePlaceSelect as EventListener);
@@ -266,5 +270,5 @@ export function AddressAutocomplete({
     );
   }
 
-  return <div ref={containerRef} className={`relative ${className}`} style={{ position: 'relative' }} />;
+  return <div ref={containerRef} className={`relative ${className}`} style={{ position: 'relative', height: '2.5rem' }} />;
 }
