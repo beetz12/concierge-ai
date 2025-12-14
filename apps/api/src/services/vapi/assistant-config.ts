@@ -169,7 +169,7 @@ Thank them genuinely when they help.`;
     },
     firstMessage: `Hi there! This is an AI assistant calling on behalf of my client regarding ${request.providerName}. Do you have just a moment?`,
     endCallFunctionEnabled: true,
-    endCallMessage: "Thank you so much for your time. Have a wonderful day!",
+    endCallMessage: "Thank you so much for your help! I'll relay this information to my client and we'll reach back out if they'd like to proceed. Have a wonderful day!",
     silenceTimeoutSeconds: 10,  // VAPI minimum is 10s; agent should invoke endCall immediately after farewell
     analysisPlan: {
       summaryPlan: {
@@ -278,7 +278,7 @@ function createDynamicDirectTaskConfig(request: CallRequest, customPrompt: Gener
     },
     firstMessage: customPrompt.firstMessage,
     endCallFunctionEnabled: true,
-    endCallMessage: "Thank you so much for your time. Have a wonderful day!",
+    endCallMessage: "Thank you so much for your help! I'll relay this information to my client and we'll reach back out if they'd like to proceed. Have a wonderful day!",
     silenceTimeoutSeconds: 10,  // VAPI minimum is 10s; agent should invoke endCall immediately after farewell
     analysisPlan: {
       summaryPlan: {
