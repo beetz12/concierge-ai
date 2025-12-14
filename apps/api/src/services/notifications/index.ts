@@ -15,3 +15,9 @@ export type {
   UserNotificationRequest,
   UserNotificationResult,
 } from "../vapi/user-notification-assistant-config.js";
+
+export { triggerUserNotification } from "./trigger-notification.js";
+export type {
+  TriggerNotificationParams,
+  TriggerNotificationResult,
+} from "./trigger-notification.js";
