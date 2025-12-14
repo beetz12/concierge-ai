@@ -72,7 +72,7 @@ export default async function twilioWebhookRoutes(fastify: FastifyInstance) {
         const trimmedBody = messageBody.trim().toLowerCase();
         const selection = parseInt(trimmedBody, 10);
 
-        // Find the user's most recent service request with recommendations
+        // PRIORITY 1: Find pending request with recommendations (what user is replying to)
         const { data: serviceRequest, error: findError } = await supabase
           .from("service_requests")
           .select(`
@@ -86,14 +86,89 @@ export default async function twilioWebhookRoutes(fastify: FastifyInstance) {
           `)
           .eq("user_phone", userPhone)
           .in("status", ["RECOMMENDED", "BOOKING", "CALLING", "ANALYZING"])
+          .not("recommendations", "is", null)
           .order("created_at", { ascending: false })
           .limit(1)
           .single();
 
+        // If no pending request with recommendations, check for completed booking
         if (findError || !serviceRequest) {
+          // PRIORITY 2: Check for recently completed booking
+          const { data: completedRequest } = await supabase
+            .from("service_requests")
+            .select(`
+              id,
+              title,
+              status,
+              final_outcome,
+              selected_provider_id,
+              providers!service_requests_selected_provider_id_fkey (
+                name,
+                booking_date,
+                booking_time
+              )
+            `)
+            .eq("user_phone", userPhone)
+            .eq("status", "COMPLETED")
+            .order("created_at", { ascending: false })
+            .limit(1)
+            .single();
+
+          if (completedRequest) {
+            fastify.log.info(
+              { userPhone, serviceRequestId: completedRequest.id },
+              "[TwilioWebhook] No pending request - found completed booking"
+            );
+
+            // Extract provider info from the join
+            const provider = completedRequest.providers as any;
+            const providerName = provider?.name || "your selected provider";
+            const bookingDate = provider?.booking_date || "";
+            const bookingTime = provider?.booking_time || "";
+
+            // Build confirmation message
+            let confirmationMsg = `Great news! Your appointment is already confirmed with ${providerName}.`;
+            if (bookingDate || bookingTime) {
+              confirmationMsg += ` Scheduled for ${bookingDate || "TBD"}${bookingTime ? ` at ${bookingTime}` : ""}.`;
+            }
+            if (completedRequest.final_outcome) {
+              confirmationMsg = completedRequest.final_outcome;
+            }
+            confirmationMsg += " Thank you for using AI Concierge!";
+
+            fastify.log.info(
+              { userPhone, message: confirmationMsg, twilioPhoneNumber, hasTwilioClient: !!twilioClient },
+              "[TwilioWebhook] Sending already-confirmed message"
+            );
+
+            if (twilioClient) {
+              try {
+                const sentMessage = await twilioClient.messages.create({
+                  to: userPhone,
+                  from: twilioPhoneNumber,
+                  body: confirmationMsg,
+                });
+                fastify.log.info(
+                  { messageSid: sentMessage.sid, status: sentMessage.status },
+                  "[TwilioWebhook] Already-confirmed SMS sent successfully"
+                );
+              } catch (smsError) {
+                fastify.log.error(
+                  { error: smsError instanceof Error ? smsError.message : smsError },
+                  "[TwilioWebhook] Failed to send already-confirmed SMS"
+                );
+              }
+            } else {
+              fastify.log.warn("[TwilioWebhook] Twilio client not available for already-confirmed message");
+            }
+
+            return reply.type("text/xml").send("<Response></Response>");
+          }
+
+          // PRIORITY 3: No pending or completed requests found
           fastify.log.warn(
             { userPhone, error: findError },
-            "[TwilioWebhook] No pending service request found for user"
+            "[TwilioWebhook] No pending or completed service request found for user"
           );
 
           // Send helpful response
@@ -101,12 +176,20 @@ export default async function twilioWebhookRoutes(fastify: FastifyInstance) {
             await twilioClient.messages.create({
               to: userPhone,
               from: twilioPhoneNumber,
-              body: "Hi! We couldn't find a pending request. Visit concierge.ai to start a new search.",
+              body: "Hi! We couldn't find an active request. Visit concierge.ai to start a new search.",
             });
+          } else {
+            fastify.log.warn("[TwilioWebhook] Twilio client not available");
           }
 
           return reply.type("text/xml").send("<Response></Response>");
         }
+
+        // Found pending request with recommendations - continue processing selection
+        fastify.log.info(
+          { userPhone, serviceRequestId: serviceRequest.id, status: serviceRequest.status },
+          "[TwilioWebhook] Found pending request with recommendations"
+        );
 
         // Extract providers from the recommendations JSONB field
         // This contains the AI-ranked top providers that were sent in the SMS
@@ -136,8 +219,8 @@ export default async function twilioWebhookRoutes(fastify: FastifyInstance) {
 
         if (providers.length === 0) {
           fastify.log.warn(
-            { serviceRequestId: serviceRequest.id },
-            "[TwilioWebhook] No recommendations found for service request"
+            { serviceRequestId: serviceRequest.id, recommendationsData },
+            "[TwilioWebhook] Service request has recommendations field but no providers in array"
           );
 
           if (twilioClient) {
@@ -146,6 +229,8 @@ export default async function twilioWebhookRoutes(fastify: FastifyInstance) {
               from: twilioPhoneNumber,
               body: "We're still researching providers for you. Please wait for our recommendations.",
             });
+          } else {
+            fastify.log.warn("[TwilioWebhook] Twilio client not available");
           }
 
           return reply.type("text/xml").send("<Response></Response>");
@@ -268,7 +353,7 @@ export default async function twilioWebhookRoutes(fastify: FastifyInstance) {
               providerPhone: phoneToCall, // Use test phone or real phone
               providerName: selectedProvider.name,
               serviceNeeded: fullRequest.title || fullRequest.description || 'service',
-              clientName: fullRequest.direct_contact_info?.user_name || fullRequest.client_name || 'Customer',
+              clientName: (fullRequest.direct_contact_info as any)?.user_name || 'Customer',
               clientPhone: fullRequest.user_phone,
               location: fullRequest.location || '',
               preferredDateTime: selectedProvider.earliest_availability || '',

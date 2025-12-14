@@ -84,6 +84,10 @@ export default function NewRequest() {
         status: "SEARCHING",
         user_phone: userPhoneValidation.normalized,
         preferred_contact: formData.preferredContact,
+        direct_contact_info: {
+          user_name: formData.clientName,
+          phone: userPhoneValidation.normalized,
+        },
       });
 
       const newRequest: ServiceRequest = {
@@ -92,6 +96,7 @@ export default function NewRequest() {
         title: formData.title,
         description: formData.description,
         location: formData.location,
+        clientAddress: formData.clientAddress.formatted, // Full street address for booking
         criteria: formData.criteria,
         status: RequestStatus.SEARCHING,
         createdAt: dbRequest.created_at,
