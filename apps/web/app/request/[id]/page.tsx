@@ -913,6 +913,7 @@ export default function RequestDetails() {
           customerName: request.directContactInfo?.name,
           customerPhone: request.userPhone,
           location: request.location,
+          clientAddress: request.clientAddress, // Full street address for booking
         }),
       });
 

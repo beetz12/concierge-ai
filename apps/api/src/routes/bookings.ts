@@ -37,6 +37,7 @@ const scheduleBookingSchema = z.object({
     .regex(/^\+1\d{10}$/, "Phone must be E.164 format (+1XXXXXXXXXX)")
     .optional(),
   location: z.string().optional(),
+  clientAddress: z.string().optional(), // Full street address for VAPI prompts
 });
 
 /**
@@ -180,6 +181,7 @@ async function handleRealBookingCall(
     clientName: validated.customerName,
     clientPhone: validated.customerPhone,
     location: validated.location || "",
+    clientAddress: validated.clientAddress, // Full street address for VAPI
     preferredDateTime:
       validated.preferredDate && validated.preferredTime
         ? `${validated.preferredDate} at ${validated.preferredTime}`
@@ -525,6 +527,7 @@ export default async function bookingRoutes(fastify: FastifyInstance) {
             clientName: validated.customerName,
             clientPhone: validated.customerPhone,
             location: validated.location || "",
+            clientAddress: validated.clientAddress, // Full street address for VAPI
             preferredDateTime: validated.preferredDate && validated.preferredTime
               ? `${validated.preferredDate} at ${validated.preferredTime}`
               : validated.preferredDate || validated.preferredTime || "as soon as possible",

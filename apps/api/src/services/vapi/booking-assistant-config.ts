@@ -48,7 +48,7 @@ INFORMATION YOU CAN PROVIDE
 ═══════════════════════════════════════════════════════════════════
 ${request.clientName ? `Client name: ${request.clientName}` : "Client name: Available upon scheduling"}
 ${request.clientPhone ? `Client callback number: ${request.clientPhone}` : "Client will provide contact details directly"}
-${request.clientAddress ? `If asked for the address: "The service address is ${request.clientAddress}"` : `CRITICAL: You do NOT have the street address. If asked: "${clientName} will provide their exact address when the technician arrives."`}
+${request.clientAddress ? `If asked for the address, PROVIDE IT IMMEDIATELY: "The service address is ${request.clientAddress}"` : `If asked for the address: "I don't have the exact street address right now, but the service area is ${request.location}. ${clientName} will confirm the precise address with you directly."`}
 
 If they ask for information you don't have (like payment method, etc.):
 "${clientName} will provide those details directly when you arrive for the appointment.
@@ -111,10 +111,7 @@ CONVERSATION FLOW
 
    Is there anything else you need from us before the appointment?"
 
-5. GET CONFIRMATION NUMBER (if applicable):
-   "Do you have a confirmation number or reference number I can give ${clientName}?"
-
-6. CLOSING:
+5. CLOSING:
    "Excellent! ${clientName} will see you on [DATE] at [TIME]. Thank you so much for your time!"
    Then IMMEDIATELY invoke endCall.
 
@@ -207,7 +204,7 @@ Thank them sincerely when they confirm the appointment.`;
           {
             role: "system" as const,
             content: `Summarize the appointment booking call. Was an appointment successfully scheduled?
-What date and time was confirmed? Was a confirmation number provided? Any issues or follow-up needed?`,
+What date and time was confirmed? Any issues or follow-up needed?`,
           },
         ],
       },
@@ -220,21 +217,21 @@ What date and time was confirmed? Was a confirmation number provided? Any issues
             booking_confirmed: {
               type: "boolean",
               description:
-                "Was the appointment successfully scheduled and confirmed?",
+                "Set to TRUE if a specific date and time were agreed upon by both parties, even without explicit 'confirmed' word. Set to FALSE only if provider declined, was unavailable, or no date/time was agreed upon.",
             },
             confirmed_date: {
               type: "string",
               description:
-                "The confirmed appointment date (e.g., 'Tuesday, January 15th, 2025')",
+                "The confirmed appointment date (e.g., 'Tuesday, January 15th, 2025' or 'next Tuesday')",
             },
             confirmed_time: {
               type: "string",
-              description: "The confirmed appointment time (e.g., '2:00 PM')",
+              description: "The confirmed appointment time (e.g., '2:00 PM' or '9 AM')",
             },
             confirmation_number: {
               type: "string",
               description:
-                "Confirmation or reference number provided by the provider (if any)",
+                "Confirmation or reference number if provider voluntarily offered one. Usually empty - do not ask for this.",
             },
             contact_name: {
               type: "string",
@@ -274,8 +271,21 @@ What date and time was confirmed? Was a confirmation number provided? Any issues
         messages: [
           {
             role: "system" as const,
-            content: `Analyze this booking call. Was the appointment successfully confirmed?
-Extract all relevant appointment details including date, time, confirmation number, and any next steps.`,
+            content: `Analyze this booking call transcript carefully.
+
+IMPORTANT: Set booking_confirmed to TRUE if:
+- The provider agreed to a specific date AND time (e.g., "Tuesday at 9 AM", "next week Monday at 2pm")
+- The AI confirmed the appointment details
+- The provider did NOT decline or say they're unavailable
+- The call ended normally (not due to voicemail or error)
+
+Set booking_confirmed to FALSE only if:
+- Provider explicitly said they're unavailable or declined
+- No specific date/time was agreed upon
+- Call went to voicemail
+- Provider asked to call back later without setting a time
+
+Extract all appointment details. If the provider said a date/time and didn't object, the booking IS confirmed.`,
           },
         ],
       },

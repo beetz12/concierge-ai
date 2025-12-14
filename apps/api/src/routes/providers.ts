@@ -15,6 +15,7 @@ import {
 import type { CallRequest, CallResult } from "../services/vapi/types.js";
 import { RecommendationService } from "../services/recommendations/recommend.service.js";
 import { triggerUserNotification } from "../services/notifications/index.js";
+import { DirectTwilioClient } from "../services/notifications/direct-twilio.client.js";
 
 // Schema for Gemini-generated custom prompts
 const generatedPromptSchema = z.object({
@@ -1893,12 +1894,70 @@ export default async function providerRoutes(fastify: FastifyInstance) {
         // Extract structured data from call result
         const analysis = completedCall.analysis || {};
         const structuredData = analysis.structuredData || {};
-        const bookingConfirmed = structuredData.booking_confirmed || false;
+        let bookingConfirmed = structuredData.booking_confirmed || false;
 
         // Extract transcript
         const transcript = completedCall.artifact?.transcript || "";
         const transcriptStr =
           typeof transcript === "string" ? transcript : JSON.stringify(transcript);
+
+        // Fallback detection: If VAPI didn't detect confirmation but transcript shows agreement
+        if (!bookingConfirmed && transcriptStr) {
+          const transcriptLower = transcriptStr.toLowerCase();
+
+          // Check for date/time agreement patterns in transcript
+          const hasDateTimeAgreement =
+            // Provider offered a time
+            (/i can do|available|works for me|how about|let's do/i.test(transcriptLower) &&
+            // And a day/time was mentioned
+            /(monday|tuesday|wednesday|thursday|friday|saturday|sunday|tomorrow|next week|today)/i.test(transcriptLower) &&
+            /(\d{1,2}(?::\d{2})?\s*(?:am|pm)|morning|afternoon|evening|noon)/i.test(transcriptLower));
+
+          // Check for confirmation patterns
+          const hasConfirmationPattern =
+            /(?:just to confirm|perfect|excellent|great|sounds good|see you|appointment.*(?:set|scheduled|confirmed))/i.test(transcriptLower);
+
+          // Check there's no rejection
+          const hasRejection =
+            /(?:not available|can't help|unavailable|no longer|sorry.*can't|decline)/i.test(transcriptLower);
+
+          if (hasDateTimeAgreement && hasConfirmationPattern && !hasRejection) {
+            request.log.info(
+              {
+                vapiBookingConfirmed: bookingConfirmed,
+                hasDateTimeAgreement,
+                hasConfirmationPattern,
+                hasRejection,
+              },
+              "[Booking] Fallback detection: VAPI missed confirmation, overriding to TRUE based on transcript analysis"
+            );
+            bookingConfirmed = true;
+
+            // Try to extract date/time if VAPI didn't
+            if (!structuredData.confirmed_date) {
+              const dateMatch = transcriptLower.match(/(monday|tuesday|wednesday|thursday|friday|saturday|sunday|tomorrow|next\s+\w+)/i);
+              if (dateMatch) {
+                structuredData.confirmed_date = dateMatch[0].charAt(0).toUpperCase() + dateMatch[0].slice(1);
+              }
+            }
+            if (!structuredData.confirmed_time) {
+              const timeMatch = transcriptLower.match(/(\d{1,2}(?::\d{2})?\s*(?:am|pm))/i);
+              if (timeMatch) {
+                structuredData.confirmed_time = timeMatch[0].toUpperCase();
+              }
+            }
+          }
+        }
+
+        request.log.info(
+          {
+            bookingConfirmed,
+            confirmedDate: structuredData.confirmed_date,
+            confirmedTime: structuredData.confirmed_time,
+            callOutcome: structuredData.call_outcome,
+          },
+          "[Booking] Final booking status after analysis"
+        );
 
         // Update database with booking result
         const { createClient: createSupabaseClient } = await import(
@@ -1930,6 +1989,11 @@ export default async function providerRoutes(fastify: FastifyInstance) {
         }
 
         // If booking confirmed, update service request
+        request.log.info(
+          { bookingConfirmed, serviceRequestId: validated.serviceRequestId },
+          "[Booking] Checking if booking confirmed for SMS notification"
+        );
+
         if (bookingConfirmed) {
           const { error: updateRequestError } = await supabase
             .from("service_requests")
@@ -1954,6 +2018,95 @@ export default async function providerRoutes(fastify: FastifyInstance) {
             detail: `Successfully booked appointment with ${validated.providerName}. Confirmation: ${structuredData.confirmation_number || "N/A"}`,
             status: "success",
           });
+
+          // Send booking confirmation SMS to user
+          request.log.info("[Booking] Starting SMS confirmation process");
+          try {
+            const { data: serviceRequest, error: fetchError } = await supabase
+              .from("service_requests")
+              .select("user_phone, direct_contact_info")
+              .eq("id", validated.serviceRequestId)
+              .single();
+
+            request.log.info(
+              {
+                hasServiceRequest: !!serviceRequest,
+                userPhone: serviceRequest?.user_phone,
+                fetchError: fetchError?.message,
+              },
+              "[Booking] Fetched service request for SMS"
+            );
+
+            if (serviceRequest?.user_phone) {
+              const twilioClient = new DirectTwilioClient(request.log);
+              const isTwilioAvailable = twilioClient.isAvailable();
+
+              request.log.info(
+                { isTwilioAvailable },
+                "[Booking] Twilio client availability check"
+              );
+
+              if (isTwilioAvailable) {
+                const confirmResult = await twilioClient.sendConfirmation({
+                  userPhone: serviceRequest.user_phone,
+                  userName:
+                    (serviceRequest.direct_contact_info as any)?.user_name ||
+                    validated.clientName ||
+                    "Customer",
+                  providerName: validated.providerName,
+                  bookingDate: structuredData.confirmed_date,
+                  bookingTime: structuredData.confirmed_time,
+                  confirmationNumber: structuredData.confirmation_number,
+                  serviceDescription: validated.serviceNeeded,
+                });
+
+                if (confirmResult.success) {
+                  request.log.info(
+                    {
+                      messageSid: confirmResult.messageSid,
+                      userPhone: serviceRequest.user_phone,
+                      providerName: validated.providerName,
+                    },
+                    "[Booking] Confirmation SMS sent to user"
+                  );
+
+                  // Update database to track confirmation notification
+                  await supabase
+                    .from("service_requests")
+                    .update({
+                      notification_sent_at: new Date().toISOString(),
+                      notification_method: "sms",
+                    })
+                    .eq("id", validated.serviceRequestId);
+
+                  await supabase.from("interaction_logs").insert({
+                    request_id: validated.serviceRequestId,
+                    step_name: "Booking Confirmation SMS Sent",
+                    detail: `Booking confirmation sent via SMS to ${serviceRequest.user_phone}. Date: ${structuredData.confirmed_date || "TBD"}, Time: ${structuredData.confirmed_time || "TBD"}`,
+                    status: "success",
+                  });
+                } else {
+                  request.log.error(
+                    { error: confirmResult.error },
+                    "[Booking] Confirmation SMS failed"
+                  );
+                }
+              } else {
+                request.log.warn("[Booking] Twilio client not available for confirmation SMS");
+              }
+            } else {
+              request.log.warn(
+                { serviceRequestId: validated.serviceRequestId },
+                "[Booking] No user phone found for confirmation SMS"
+              );
+            }
+          } catch (notifyError) {
+            request.log.error(
+              { error: notifyError },
+              "[Booking] Error sending confirmation SMS"
+            );
+            // Don't fail the booking - confirmation SMS is best-effort
+          }
         } else {
           // Booking failed - log it
           await supabase.from("interaction_logs").insert({
