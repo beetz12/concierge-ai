@@ -805,7 +805,7 @@ export default async function providerRoutes(fastify: FastifyInstance) {
 
                 const { data: providers, error: fetchError } = await supabase
                   .from("providers")
-                  .select("id, call_status, call_result, name, phone, rating, review_count")
+                  .select("id, call_status, call_result, call_summary, name, phone, rating, review_count")
                   .eq("request_id", validated.serviceRequestId);
 
                 if (fetchError) {
@@ -880,9 +880,9 @@ export default async function providerRoutes(fastify: FastifyInstance) {
                       duration: callResultData?.duration || 0,
                       endedReason: callResultData?.endedReason || "",
                       transcript: callResultData?.transcript || "",
-                      analysis: callResultData?.analysis || {
-                        summary: callResultData?.analysis?.summary || "",
-                        structuredData: callResultData?.structuredData || {},
+                      analysis: {
+                        summary: p.call_summary || callResultData?.summary || "",
+                        structuredData: callResultData || {},
                         successEvaluation: "",
                       },
                       provider: {
@@ -963,8 +963,23 @@ export default async function providerRoutes(fastify: FastifyInstance) {
                       if (updateError) {
                         fastify.log.error(
                           { error: updateError, serviceRequestId: validated.serviceRequestId },
-                          "Failed to store recommendations in database"
+                          "Failed to store recommendations in database - updating status to FAILED"
                         );
+                        // Update status to FAILED since we couldn't store recommendations
+                        await supabase
+                          .from("service_requests")
+                          .update({
+                            status: "FAILED",
+                            final_outcome: `Failed to store recommendations: ${updateError.message || "Database error"}`,
+                          })
+                          .eq("id", validated.serviceRequestId);
+
+                        await supabase.from("interaction_logs").insert({
+                          request_id: validated.serviceRequestId,
+                          step_name: "Recommendation Storage Failed",
+                          detail: `Failed to save recommendations to database: ${updateError.message || "Unknown error"}`,
+                          status: "error",
+                        });
                       } else {
                         fastify.log.info(
                           {
@@ -974,87 +989,124 @@ export default async function providerRoutes(fastify: FastifyInstance) {
                           },
                           "Recommendations stored in database and status updated to RECOMMENDED"
                         );
-                      }
 
-                      await supabase.from("interaction_logs").insert({
-                        request_id: validated.serviceRequestId,
-                        step_name: "Recommendations Generated",
-                        detail: `AI analyzed all call results and generated ${recommendationResult.recommendations.length} provider recommendations.`,
-                        status: "success",
-                      });
+                        await supabase.from("interaction_logs").insert({
+                          request_id: validated.serviceRequestId,
+                          step_name: "Recommendations Generated",
+                          detail: `AI analyzed all call results and generated ${recommendationResult.recommendations.length} provider recommendations.`,
+                          status: "success",
+                        });
 
-                      // Step 6: Send user notification (if userPhone provided)
-                      if (validated.userPhone && recommendationResult.recommendations.length > 0) {
-                        try {
-                          const notificationResult = await triggerUserNotification(
-                            {
-                              serviceRequestId: validated.serviceRequestId,
-                              userPhone: validated.userPhone,
-                              userName: validated.clientName,
-                              preferredContact: validated.preferredContact || "text",
-                              serviceNeeded: validated.serviceNeeded,
-                              location: validated.location,
-                              providers: recommendationResult.recommendations.slice(0, 3).map((r) => ({
-                                name: r.providerName,
-                                earliestAvailability: r.earliestAvailability || "Contact for availability",
-                              })),
-                            },
-                            fastify.log
-                          );
-
-                          if (notificationResult.success) {
-                            fastify.log.info(
+                        // Step 6: Send user notification (ONLY if storage succeeded)
+                        if (validated.userPhone && recommendationResult.recommendations.length > 0) {
+                          try {
+                            const notificationResult = await triggerUserNotification(
                               {
                                 serviceRequestId: validated.serviceRequestId,
-                                method: notificationResult.method,
+                                userPhone: validated.userPhone,
+                                userName: validated.clientName,
+                                preferredContact: validated.preferredContact || "text",
+                                serviceNeeded: validated.serviceNeeded,
+                                location: validated.location,
+                                providers: recommendationResult.recommendations.slice(0, 3).map((r) => ({
+                                  name: r.providerName,
+                                  earliestAvailability: r.earliestAvailability || "Contact for availability",
+                                  score: r.score,
+                                  rating: r.rating,
+                                  reviewCount: r.reviewCount,
+                                  estimatedRate: r.estimatedRate,
+                                  reasoning: r.reasoning,
+                                })),
+                                overallRecommendation: recommendationResult.overallRecommendation,
                               },
-                              "User notification sent successfully"
+                              fastify.log
                             );
 
-                            await supabase.from("interaction_logs").insert({
-                              request_id: validated.serviceRequestId,
-                              step_name: "User Notified",
-                              detail: `User notified via ${notificationResult.method} about ${recommendationResult.recommendations.length} recommended providers.`,
-                              status: "success",
-                            });
-                          } else {
-                            fastify.log.warn(
-                              {
-                                serviceRequestId: validated.serviceRequestId,
-                                error: notificationResult.error,
-                              },
-                              "User notification failed"
+                            if (notificationResult.success) {
+                              fastify.log.info(
+                                {
+                                  serviceRequestId: validated.serviceRequestId,
+                                  method: notificationResult.method,
+                                },
+                                "User notification sent successfully"
+                              );
+
+                              await supabase.from("interaction_logs").insert({
+                                request_id: validated.serviceRequestId,
+                                step_name: "User Notified",
+                                detail: `User notified via ${notificationResult.method} about ${recommendationResult.recommendations.length} recommended providers.`,
+                                status: "success",
+                              });
+                            } else {
+                              fastify.log.warn(
+                                {
+                                  serviceRequestId: validated.serviceRequestId,
+                                  error: notificationResult.error,
+                                },
+                                "User notification failed"
+                              );
+                            }
+                          } catch (notifyError) {
+                            const errorMsg = notifyError instanceof Error ? notifyError.message : String(notifyError);
+                            fastify.log.error(
+                              { error: errorMsg, serviceRequestId: validated.serviceRequestId },
+                              "Error sending user notification"
                             );
+                            // Don't fail the whole flow if notification fails
                           }
-                        } catch (notifyError) {
-                          const errorMsg = notifyError instanceof Error ? notifyError.message : String(notifyError);
-                          fastify.log.error(
-                            { error: errorMsg, serviceRequestId: validated.serviceRequestId },
-                            "Error sending user notification"
+                        } else if (!validated.userPhone) {
+                          fastify.log.info(
+                            { serviceRequestId: validated.serviceRequestId },
+                            "Skipping notification - no user phone provided"
                           );
-                          // Don't fail the whole flow if notification fails
                         }
-                      } else if (!validated.userPhone) {
-                        fastify.log.info(
-                          { serviceRequestId: validated.serviceRequestId },
-                          "Skipping notification - no user phone provided"
-                        );
                       }
                     } else {
                       fastify.log.warn(
-                        { executionId },
-                        "Failed to generate recommendations - keeping status as ANALYZING"
+                        { executionId, serviceRequestId: validated.serviceRequestId },
+                        "Failed to generate recommendations - updating status to FAILED"
                       );
+                      // Update status to FAILED when no recommendations generated
+                      await supabase
+                        .from("service_requests")
+                        .update({
+                          status: "FAILED",
+                          final_outcome: "AI was unable to generate provider recommendations from call results",
+                        })
+                        .eq("id", validated.serviceRequestId);
+
+                      await supabase.from("interaction_logs").insert({
+                        request_id: validated.serviceRequestId,
+                        step_name: "Recommendation Generation Failed",
+                        detail: "AI analysis completed but no recommendations could be generated from the call results.",
+                        status: "error",
+                      });
                     }
                   } catch (recError) {
                     // Serialize error properly (Error objects log as {} by default)
                     const errorMsg = recError instanceof Error ? recError.message : String(recError);
                     const errorStack = recError instanceof Error ? recError.stack : undefined;
                     fastify.log.error(
-                      { errorMessage: errorMsg, errorStack },
-                      "Error generating recommendations"
+                      { errorMessage: errorMsg, errorStack, serviceRequestId: validated.serviceRequestId },
+                      "Error generating recommendations - updating status to FAILED"
                     );
-                    // Keep status as ANALYZING so frontend can retry
+                    // Update status to FAILED on exception
+                    if (validated.serviceRequestId) {
+                      await supabase
+                        .from("service_requests")
+                        .update({
+                          status: "FAILED",
+                          final_outcome: `Recommendation generation error: ${errorMsg}`,
+                        })
+                        .eq("id", validated.serviceRequestId);
+
+                      await supabase.from("interaction_logs").insert({
+                        request_id: validated.serviceRequestId,
+                        step_name: "Recommendation Generation Error",
+                        detail: `An error occurred during recommendation generation: ${errorMsg}`,
+                        status: "error",
+                      });
+                    }
                   }
                 } else {
                   // Wait 2 seconds before next poll
@@ -1706,11 +1758,35 @@ export default async function providerRoutes(fastify: FastifyInstance) {
         // Validate request body with Zod
         const validated = bookingSchema.parse(request.body);
 
+        // Load test phone configuration from backend environment (same as research phase)
+        const adminTestPhonesRaw = process.env.ADMIN_TEST_NUMBER;
+        const adminTestPhones = adminTestPhonesRaw
+          ? adminTestPhonesRaw.split(",").map((p) => p.trim()).filter(Boolean)
+          : [];
+        const isAdminTestMode = adminTestPhones.length > 0;
+
+        // Determine the actual phone number to call
+        let phoneToCall = validated.providerPhone;
+        if (isAdminTestMode) {
+          // Use first test phone for booking calls
+          phoneToCall = adminTestPhones[0]!;
+          request.log.info(
+            {
+              originalPhone: validated.providerPhone,
+              testPhone: phoneToCall,
+              providerName: validated.providerName,
+            },
+            "Admin test mode: substituting provider phone with test phone for booking call"
+          );
+        }
+
         request.log.info(
           {
             providerId: validated.providerId,
             providerName: validated.providerName,
             serviceRequestId: validated.serviceRequestId,
+            phoneToCall,
+            isAdminTestMode,
           },
           "Initiating booking call",
         );
@@ -1735,11 +1811,11 @@ export default async function providerRoutes(fastify: FastifyInstance) {
           additionalNotes: validated.additionalNotes,
         });
 
-        // Build call parameters directly
+        // Build call parameters directly (use phoneToCall which may be test phone)
         const callParams: any = {
           phoneNumberId: process.env.VAPI_PHONE_NUMBER_ID,
           customer: {
-            number: validated.providerPhone,
+            number: phoneToCall,
             name: validated.providerName,
           },
           assistant: bookingConfig,
@@ -1750,7 +1826,7 @@ export default async function providerRoutes(fastify: FastifyInstance) {
         const vapi = new VapiClient({ token: process.env.VAPI_API_KEY! });
 
         request.log.info(
-          { provider: validated.providerName, phone: validated.providerPhone },
+          { provider: validated.providerName, phone: phoneToCall, isAdminTestMode },
           "Creating booking call via VAPI",
         );
 

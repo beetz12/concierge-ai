@@ -1,66 +1,32 @@
+AI
+Hi there. I'm Dave's personal AI assistant. Dave is hoping to speak with a financial adviser because he's having some difficult affording his mortgage payments right now. Do you have a quick moment? Great. Thank you.
 
-
-Assistant
-Hi there. I'm Jack's personal AI assistant. Jack is looking to get a ceiling fan installed at his home and asked me to call around for him. Do you have a quick moment?
-10:49:49 AM(+00:02.36)
 User
-Yes. I do.
+Yes.
 
-10:49:58 AM(+00:10.98)
+AI
+Dave's located in Greenville SC, and he's looking for some help within the next 2 days. I was hoping you could answer a few questions for me. First, what's your earliest available consultation for a new client?
 
-Assistant
-Great. I was wondering when you might be able to come out to Greenville SC to install a ceiling fan.
-10:50:00 AM(+00:13.09)
 User
-Uh, I can do it Monday. Around
+In 2 weeks.
 
-10:50:07 AM(+00:20.04)
+AI
+Okay. So 2 weeks out for the earliest consultation. Got it. My next question is, what would the cost be for an initial consultation regarding mortgage affordability or financial plan?
 
-Assistant
-Perfect.
-10:50:10 AM(+00:22.96)
 User
-10 o'clock.
+90 dollars per hour.
 
-10:50:10 AM(+00:22.99)
+AI
+Okay. So it's 90 dollars an hour for the consultation. Does Horizon's wealth match offer specific services or strategies to help clients struggling with mortgage payments.
 
-Assistant
-Perfect. Thank you. And what would the cost be for this type of service call?
-10:50:12 AM(+00:25.51)
 User
-Alright, Crystal. It'll be 8 250 dollars.
+I will help him come up with a plan. And at the end, will give him the plan.
 
-10:50:15 AM(+00:27.36)
+AI
+Okay. So you'll help him come up with a plan and then provide him with that plan. Can you describe your typical approach or a general strategy for assisting clients with managing their housing related financial challenges?
 
-Assistant
-Okay. And what does that include?
-10:50:22 AM(+00:34.69)
 User
-Includes the install.
+I will have him list all of his costs and then reduce them and see if he needs to file bankruptcy.
 
-10:50:26 AM(+00:38.91)
-
-Assistant
-Okay. So that's just for labor to install it. Does that include any parts or anything like that?
-10:50:29 AM(+00:42.26)
-User
-No. The customer will have to provide the fan.
-
-10:50:36 AM(+00:48.36)
-
-Assistant
-Okay. Got it. This is really helpful. Thank you. I'll share this with Jack. And if he'd like to proceed, we'll call back to schedule. Have a wonderful day.
-10:50:39 AM(+00:52.12)
-
-EndCall
-Completed successfully
-10:50 AM
-10:50:52 AM(+01:05.52)
-User
-Okay.
-
-10:50:53 AM(+01:06.17)
-
-Assistant
+AI
 Thank you so much for your time. Have a wonderful day.
-10:50:54 AM(+01:07.02)

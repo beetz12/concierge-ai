@@ -20,7 +20,14 @@ export interface TriggerNotificationParams {
   providers: Array<{
     name: string;
     earliestAvailability: string;
+    score?: number;
+    rating?: number;
+    reviewCount?: number;
+    estimatedRate?: string;
+    reasoning?: string;
   }>;
+  /** AI's overall recommendation explaining why top provider was chosen */
+  overallRecommendation?: string;
 }
 
 export interface TriggerNotificationResult {
@@ -176,7 +183,15 @@ async function sendVapiNotification(
         rank: index + 1,
         providerName: p.name,
         availability: p.earliestAvailability,
+        // Pass all rich data for detailed phone notification
+        rating: p.rating,
+        reviewCount: p.reviewCount,
+        estimatedRate: p.estimatedRate,
+        score: p.score,
+        reasoning: p.reasoning,
       })),
+      // Pass overall AI recommendation
+      overallRecommendation: params.overallRecommendation,
     });
 
     if (result.success) {
@@ -224,9 +239,6 @@ async function sendSmsNotification(
   }
 
   try {
-    const frontendUrl = process.env.FRONTEND_URL || "http://localhost:3000";
-    const requestUrl = `${frontendUrl}/request/${params.serviceRequestId}`;
-
     logger.info(
       {
         userPhone: params.userPhone,
@@ -242,8 +254,14 @@ async function sendSmsNotification(
       providers: params.providers.map((p) => ({
         name: p.name,
         earliestAvailability: p.earliestAvailability,
+        score: p.score,
+        rating: p.rating,
+        reviewCount: p.reviewCount,
+        estimatedRate: p.estimatedRate,
+        reasoning: p.reasoning,
       })),
-      requestUrl,
+      overallRecommendation: params.overallRecommendation,
+      // Note: URL removed per user request - frontend URL doesn't work in SMS
     });
 
     return {

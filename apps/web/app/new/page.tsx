@@ -247,6 +247,7 @@ export default function NewRequest() {
           urgency: data.urgency,
           providerName: providers[0]?.name || "the provider",
           clientName: data.clientName,
+          clientAddress: data.clientAddress?.formatted, // Full street address for VAPI
         });
         if (researchPrompt) {
           console.log(`[Concierge] Generated ${researchPrompt.serviceCategory} prompts for ${data.title}`);

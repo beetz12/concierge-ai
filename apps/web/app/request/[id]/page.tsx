@@ -288,6 +288,11 @@ export default function RequestDetails() {
         );
       } else {
         console.log("[Recommendations] No recommendations in database yet, status:", data?.status);
+        // 2025 Best Practice: Mark as checked even if no recommendations found
+        // This prevents infinite polling loops - we've checked, we're done
+        // Real-time subscription will notify us when recommendations arrive
+        setRecommendationsChecked(true);
+        recommendationsCheckedRef.current = true;
       }
 
       setRecommendationsLoading(false);
@@ -815,45 +820,48 @@ export default function RequestDetails() {
   }, [request?.interactions.length]);
 
   // Check for recommendations when status changes to ANALYZING, RECOMMENDED, or COMPLETED
-  // 2025 best practice: Also retry if checked but no recommendations yet
+  // 2025 best practice: Check ONCE when status matches, real-time subscription handles updates
   useEffect(() => {
     if (
       request &&
       (request.status === RequestStatus.ANALYZING ||
         request.status === RequestStatus.RECOMMENDED ||
         request.status === RequestStatus.COMPLETED) &&
-      !recommendationsLoading
-    ) {
-      // Allow retry if: not checked yet, OR checked but no recommendations
-      const shouldCheck = !recommendationsChecked || (!recommendations && recommendationsChecked);
-      if (shouldCheck) {
-        console.log(
-          `[useEffect] Status is ${request.status}, checking for recommendations...`
-        );
-        checkAndGenerateRecommendations();
-      }
-    }
-  }, [request?.status, recommendationsChecked, recommendationsLoading, recommendations, checkAndGenerateRecommendations]);
-
-  // Fallback: Poll for recommendations if subscription doesn't fire
-  // This handles race conditions where JSONB updates don't trigger real-time subscriptions
-  // 2025 best practice: Also retry if checked but no recommendations yet
-  useEffect(() => {
-    const shouldPoll = (
-      (request?.status === RequestStatus.ANALYZING ||
-        request?.status === RequestStatus.RECOMMENDED) &&
       !recommendationsLoading &&
-      (!recommendationsChecked || !recommendations)
+      !recommendationsChecked // Only check if we haven't checked yet
+    ) {
+      console.log(
+        `[useEffect] Status is ${request.status}, checking for recommendations...`
+      );
+      checkAndGenerateRecommendations();
+    }
+  }, [request?.status, recommendationsChecked, recommendationsLoading, checkAndGenerateRecommendations]);
+
+  // Fallback: Single delayed check for recommendations if initial check found nothing
+  // This handles race conditions where backend is still processing when page loads
+  // 2025 best practice: Only poll ONCE after 5s, don't create infinite retry loop
+  useEffect(() => {
+    // Only poll if:
+    // 1. Status is ANALYZING (still processing) - NOT for RECOMMENDED/COMPLETED
+    // 2. We've already checked once but found nothing
+    // 3. We don't have recommendations yet
+    const shouldPoll = (
+      request?.status === RequestStatus.ANALYZING &&
+      !recommendationsLoading &&
+      recommendationsChecked && // Already checked once
+      !recommendations // But didn't find any
     );
 
     if (shouldPoll) {
       const pollTimer = setTimeout(() => {
-        console.log("[Fallback] Polling for recommendations after 5s");
-        checkAndGenerateRecommendations();
+        console.log("[Fallback] Single retry after 5s for ANALYZING status");
+        // Reset checked flag to allow ONE more check
+        setRecommendationsChecked(false);
+        recommendationsCheckedRef.current = false;
       }, 5000);
       return () => clearTimeout(pollTimer);
     }
-  }, [request?.status, recommendationsChecked, recommendationsLoading, recommendations, checkAndGenerateRecommendations]);
+  }, [request?.status, recommendationsChecked, recommendationsLoading, recommendations]);
 
   // Handler for provider selection
   const handleProviderSelect = (provider: {

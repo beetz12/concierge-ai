@@ -13,7 +13,8 @@ import { DirectTwilioClient } from "../services/notifications/direct-twilio.clie
 const LIVE_CALL_ENABLED = process.env.LIVE_CALL_ENABLED === "true";
 
 // Parse admin test phones (comma-separated E.164 numbers)
-const ADMIN_TEST_PHONES_RAW = process.env.ADMIN_TEST_PHONES;
+// Use ADMIN_TEST_NUMBER for consistency with research phase in providers.ts
+const ADMIN_TEST_PHONES_RAW = process.env.ADMIN_TEST_NUMBER;
 const ADMIN_TEST_PHONES = ADMIN_TEST_PHONES_RAW
   ? ADMIN_TEST_PHONES_RAW.split(",").map((p) => p.trim()).filter(Boolean)
   : [];
