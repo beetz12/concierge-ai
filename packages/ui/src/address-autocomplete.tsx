@@ -266,5 +266,5 @@ export function AddressAutocomplete({
     );
   }
 
-  return <div ref={containerRef} className={className} />;
+  return <div ref={containerRef} className={`relative ${className}`} style={{ position: 'relative' }} />;
 }
