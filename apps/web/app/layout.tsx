@@ -1,7 +1,9 @@
 import type { Metadata } from "next";
 import "./globals.css";
 import { AppProvider } from "@/lib/providers/AppProvider";
-import Sidebar from "@/components/Sidebar";
+import { AppSidebar } from "@/components/AppSidebar";
+import { MobileHeader } from "@/components/MobileHeader";
+import { SidebarProvider, SidebarInset } from "@/components/ui/sidebar";
 import { Toaster } from "sonner";
 
 export const metadata: Metadata = {
@@ -17,9 +19,17 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <body>
+      <body className="overflow-hidden">
         <AppProvider>
-          <Sidebar>{children}</Sidebar>
+          <SidebarProvider defaultOpen={true}>
+            <AppSidebar />
+            <SidebarInset className="flex flex-col min-h-svh max-h-svh overflow-hidden">
+              <MobileHeader />
+              <main className="flex-1 overflow-y-auto">
+                {children}
+              </main>
+            </SidebarInset>
+          </SidebarProvider>
           <Toaster position="top-right" theme="dark" richColors closeButton />
         </AppProvider>
       </body>

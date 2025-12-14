@@ -1,6 +1,7 @@
 import React from "react";
 import Link from "next/link";
 import StatusBadge from "@/components/StatusBadge";
+import { PageHeader } from "@/components/PageHeader";
 import { Calendar, MapPin, AlertCircle, CheckCircle, XCircle } from "lucide-react";
 import { getServiceRequests } from "@/lib/supabase/queries";
 import type { RequestStatus } from "@/lib/types";
@@ -24,10 +25,11 @@ export default async function RequestHistory() {
   );
 
   return (
-    <div>
-      <h1 className="text-3xl font-bold text-slate-100 mb-8">
-        Request History
-      </h1>
+    <div className="p-4 md:p-6 space-y-6">
+      <PageHeader
+        title="Request History"
+        description="View and track all your service requests"
+      />
 
       {/* Error State */}
       {fetchError && (

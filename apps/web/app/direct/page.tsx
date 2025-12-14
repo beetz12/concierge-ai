@@ -9,13 +9,20 @@ import {
   RequestType,
   ServiceRequest,
 } from "@/lib/types";
-import { Phone, User, MessageSquare, PhoneCall, AlertCircle } from "lucide-react";
+import {
+  Phone,
+  User,
+  MessageSquare,
+  PhoneCall,
+  AlertCircle,
+} from "lucide-react";
+import { PageHeader } from "@/components/PageHeader";
 import { SegmentedControl } from "@repo/ui/segmented-control";
 import { usePhoneValidation } from "@/lib/hooks/usePhoneValidation";
-import {
-  simulateCall,
-  analyzeDirectTask,
-} from "@/lib/services/geminiService";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { simulateCall, analyzeDirectTask } from "@/lib/services/geminiService";
 import {
   callProviderLive,
   callResponseToInteractionLog,
@@ -30,8 +37,7 @@ import {
 
 // Environment toggle for live VAPI calls vs simulated calls
 // Note: Test phone substitution is handled by backend (ADMIN_TEST_NUMBER in backend .env)
-const LIVE_CALL_ENABLED =
-  process.env.NEXT_PUBLIC_LIVE_CALL_ENABLED === "true";
+const LIVE_CALL_ENABLED = process.env.NEXT_PUBLIC_LIVE_CALL_ENABLED === "true";
 
 export default function DirectTask() {
   const router = useRouter();
@@ -89,14 +95,22 @@ export default function DirectTask() {
         createdAt: dbRequest.created_at,
         providersFound: [],
         interactions: [],
-        directContactInfo: { name: formData.name, phone: phoneValidation.normalized || phoneValidation.value },
+        directContactInfo: {
+          name: formData.name,
+          phone: phoneValidation.normalized || phoneValidation.value,
+        },
       };
 
       addRequest(newRequest);
       router.push(`/request/${newRequest.id}`);
 
       // Run Direct Process (pass normalized phone from validation)
-      runDirectTask(newRequest.id, formData, phoneValidation.normalized, newRequest);
+      runDirectTask(
+        newRequest.id,
+        formData,
+        phoneValidation.normalized,
+        newRequest
+      );
     } catch (error) {
       console.error("Failed to create request:", error);
       setIsSubmitting(false);
@@ -107,7 +121,7 @@ export default function DirectTask() {
     reqId: string,
     data: typeof formData,
     phone: string,
-    request: ServiceRequest,
+    request: ServiceRequest
   ) => {
     try {
       let log: InteractionLog;
@@ -119,9 +133,7 @@ export default function DirectTask() {
         const phoneToCall = phone;
 
         if (!isValidE164Phone(phoneToCall)) {
-          console.warn(
-            `[Direct] Invalid phone number: ${phoneToCall}`,
-          );
+          console.warn(`[Direct] Invalid phone number: ${phoneToCall}`);
           log = {
             timestamp: new Date().toISOString(),
             stepName: `Calling ${data.name}`,
@@ -130,7 +142,7 @@ export default function DirectTask() {
           };
         } else {
           console.log(
-            `[Direct] Calling ${data.name} at ${phoneToCall} via VAPI...`,
+            `[Direct] Calling ${data.name} at ${phoneToCall} via VAPI...`
           );
 
           // Analyze task with Gemini to generate dynamic prompt
@@ -138,17 +150,15 @@ export default function DirectTask() {
           const taskAnalysis = await analyzeDirectTask(
             data.task,
             data.name,
-            phoneToCall,
+            phoneToCall
           );
 
           if (taskAnalysis) {
             console.log(
-              `[Direct] Task analyzed: ${taskAnalysis.taskAnalysis.taskType} (${taskAnalysis.taskAnalysis.difficulty})`,
+              `[Direct] Task analyzed: ${taskAnalysis.taskAnalysis.taskType} (${taskAnalysis.taskAnalysis.difficulty})`
             );
           } else {
-            console.log(
-              `[Direct] Task analysis failed, using default prompt`,
-            );
+            console.log(`[Direct] Task analysis failed, using default prompt`);
           }
 
           // Make real VAPI call with dynamic prompt (if available)
@@ -181,9 +191,7 @@ export default function DirectTask() {
             console.error("[Direct] Failed to save interaction log:", dbErr);
           }
 
-          console.log(
-            `[Direct] Call to ${data.name} completed: ${log.status}`,
-          );
+          console.log(`[Direct] Call to ${data.name} completed: ${log.status}`);
         }
       } else {
         // Simulated calls via Gemini (existing behavior)
@@ -235,160 +243,178 @@ export default function DirectTask() {
   };
 
   return (
-    <div className="max-w-2xl mx-auto">
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold text-slate-100 flex items-center gap-3">
-          <PhoneCall className="text-primary-400" />
-          Direct Task
-        </h1>
-        <p className="text-slate-400 mt-2">
-          Give us a contact and a mission. The AI will make the call for you.
-        </p>
-      </div>
+    <div className="p-4 md:p-6 space-y-6">
+      <PageHeader
+        title="Direct Task"
+        description="Give us a contact and a mission. The AI will make the call for you."
+      />
 
-      <form
-        onSubmit={handleSubmit}
-        className="bg-surface p-8 rounded-2xl border border-surface-highlight shadow-xl space-y-6"
-      >
-        <div className="mb-6">
-          <label className="block text-sm font-semibold text-slate-300 mb-2">
-            Your Name
-          </label>
-          <div className="relative">
-            <User className="absolute left-3 top-3.5 w-5 h-5 text-slate-500" />
-            <input
-              type="text"
-              required
-              placeholder="e.g. John Smith"
-              className="w-full pl-10 pr-4 py-3 rounded-xl border border-surface-highlight focus:border-primary-500 focus:ring-2 focus:ring-primary-500/20 outline-none transition-all bg-abyss text-slate-100 placeholder-slate-600"
-              value={formData.clientName}
-              onChange={(e) => setFormData({ ...formData, clientName: e.target.value })}
-            />
-          </div>
-          <p className="text-xs text-slate-500 mt-1">The AI will introduce itself as your personal assistant</p>
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <div>
-            <label className="block text-sm font-semibold text-slate-300 mb-2">
-              Contact Name
-            </label>
+      <div className="max-w-2xl mx-auto">
+        <form
+          onSubmit={handleSubmit}
+          className="bg-surface p-8 rounded-2xl border border-surface-highlight shadow-xl space-y-6"
+        >
+          <div className="space-y-2 mb-6">
+            <Label htmlFor="clientName">Your Name</Label>
             <div className="relative">
-              <User className="absolute left-3 top-3.5 w-5 h-5 text-slate-500" />
-              <input
+              <User className="absolute left-3 top-3.5 w-5 h-5 text-slate-500 z-10 pointer-events-none" />
+              <Input
+                id="clientName"
                 type="text"
                 required
-                placeholder="e.g. Dr. Smith"
-                className="w-full pl-10 pr-4 py-3 rounded-xl border border-surface-highlight focus:border-primary-500 focus:ring-2 focus:ring-primary-500/20 outline-none transition-all bg-abyss text-slate-100 placeholder-slate-600"
-                value={formData.name}
+                placeholder="e.g. John Smith"
+                className="pl-10"
+                value={formData.clientName}
                 onChange={(e) =>
-                  setFormData({ ...formData, name: e.target.value })
+                  setFormData({ ...formData, clientName: e.target.value })
+                }
+              />
+            </div>
+            <p className="text-xs text-slate-500">
+              The AI will introduce itself as your personal assistant
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="space-y-2">
+              <Label htmlFor="contactName">Contact Name</Label>
+              <div className="relative">
+                <User className="absolute left-3 top-3.5 w-5 h-5 text-slate-500 z-10 pointer-events-none" />
+                <Input
+                  id="contactName"
+                  type="text"
+                  required
+                  placeholder="e.g. Dr. Smith"
+                  className="pl-10"
+                  value={formData.name}
+                  onChange={(e) =>
+                    setFormData({ ...formData, name: e.target.value })
+                  }
+                />
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="contactPhone">Phone Number</Label>
+              <div className="relative">
+                <Phone
+                  className={`absolute left-3 top-3.5 w-5 h-5 z-10 pointer-events-none ${phoneValidation.error ? "text-red-400" : "text-slate-500"}`}
+                />
+                <Input
+                  id="contactPhone"
+                  type="tel"
+                  required
+                  placeholder="(555) 123-4567"
+                  className={`pl-10 ${
+                    phoneValidation.error
+                      ? "border-red-500 focus:border-red-500 focus:ring-red-500/20"
+                      : ""
+                  }`}
+                  value={phoneValidation.value}
+                  onChange={phoneValidation.onChange}
+                  onBlur={phoneValidation.onBlur}
+                />
+              </div>
+              {phoneValidation.error && (
+                <p className="text-xs text-red-400 mt-1.5 flex items-center gap-1">
+                  <AlertCircle className="w-3.5 h-3.5" />
+                  {phoneValidation.error}
+                </p>
+              )}
+              {!phoneValidation.error &&
+                phoneValidation.value &&
+                phoneValidation.isValid && (
+                  <p className="text-xs text-emerald-400 mt-1.5">
+                    Valid: {phoneValidation.normalized}
+                  </p>
+                )}
+            </div>
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="task">What should the AI do?</Label>
+            <div className="relative">
+              <MessageSquare className="absolute left-3 top-3.5 w-5 h-5 text-slate-500 z-10 pointer-events-none" />
+              <Textarea
+                id="task"
+                required
+                rows={4}
+                placeholder="e.g. Call to reschedule my appointment to next Tuesday afternoon."
+                className="pl-10"
+                value={formData.task}
+                onChange={(e) =>
+                  setFormData({ ...formData, task: e.target.value })
                 }
               />
             </div>
           </div>
 
-          <div>
-            <label className="block text-sm font-semibold text-slate-300 mb-2">
-              Phone Number
-            </label>
-            <div className="relative">
-              <Phone className={`absolute left-3 top-3.5 w-5 h-5 ${phoneValidation.error ? "text-red-400" : "text-slate-500"}`} />
-              <input
-                type="tel"
-                required
-                placeholder="(555) 123-4567"
-                className={`w-full pl-10 pr-4 py-3 rounded-xl border outline-none transition-all bg-abyss text-slate-100 placeholder-slate-600 ${
-                  phoneValidation.error
-                    ? "border-red-500 focus:border-red-500 focus:ring-2 focus:ring-red-500/20"
-                    : "border-surface-highlight focus:border-primary-500 focus:ring-2 focus:ring-primary-500/20"
-                }`}
-                value={phoneValidation.value}
-                onChange={phoneValidation.onChange}
-                onBlur={phoneValidation.onBlur}
-              />
-            </div>
-            {phoneValidation.error && (
-              <p className="text-xs text-red-400 mt-1.5 flex items-center gap-1">
-                <AlertCircle className="w-3.5 h-3.5" />
-                {phoneValidation.error}
-              </p>
-            )}
-            {!phoneValidation.error && phoneValidation.value && phoneValidation.isValid && (
-              <p className="text-xs text-emerald-400 mt-1.5">
-                Valid: {phoneValidation.normalized}
-              </p>
-            )}
-          </div>
-        </div>
-
-        <div>
-          <label className="block text-sm font-semibold text-slate-300 mb-2">
-            What should the AI do?
-          </label>
-          <div className="relative">
-            <MessageSquare className="absolute left-3 top-3.5 w-5 h-5 text-slate-500" />
-            <textarea
-              required
-              rows={4}
-              placeholder="e.g. Call to reschedule my appointment to next Tuesday afternoon."
-              className="w-full pl-10 pr-4 py-3 rounded-xl border border-surface-highlight focus:border-primary-500 focus:ring-2 focus:ring-primary-500/20 outline-none transition-all resize-none bg-abyss text-slate-100 placeholder-slate-600"
-              value={formData.task}
-              onChange={(e) =>
-                setFormData({ ...formData, task: e.target.value })
+          {/* Preferred Contact Method */}
+          <div className="space-y-4">
+            <Label>How should we notify you of the result?</Label>
+            <br />
+            <SegmentedControl
+              className="mt-2"
+              options={[
+                {
+                  value: "text",
+                  label: "Text (SMS)",
+                  icon: <MessageSquare className="w-5 h-5" />,
+                },
+                {
+                  value: "phone",
+                  label: "Phone Call",
+                  icon: <PhoneCall className="w-5 h-5" />,
+                },
+              ]}
+              value={formData.preferredContact}
+              onChange={(value) =>
+                setFormData({ ...formData, preferredContact: value })
               }
+              name="preferredContact"
+              aria-label="Preferred contact method"
             />
+
+            {/* Phone Number Input */}
+            <div className="relative">
+              <Phone
+                className={`absolute left-3 top-3.5 w-5 h-5 z-10 pointer-events-none ${userPhoneValidation.error && userPhoneValidation.isTouched ? "text-red-400" : "text-slate-500"}`}
+              />
+              <Input
+                type="tel"
+                placeholder="Your phone number for notifications"
+                value={userPhoneValidation.value}
+                onChange={userPhoneValidation.onChange}
+                onBlur={userPhoneValidation.onBlur}
+                className={`pl-10 ${
+                  userPhoneValidation.error && userPhoneValidation.isTouched
+                    ? "border-red-500 focus:border-red-500 focus:ring-red-500/20"
+                    : ""
+                }`}
+              />
+              {userPhoneValidation.error && userPhoneValidation.isTouched && (
+                <p className="text-red-400 text-sm mt-1">
+                  {userPhoneValidation.error}
+                </p>
+              )}
+              {userPhoneValidation.isValid &&
+                userPhoneValidation.normalized && (
+                  <p className="text-emerald-400 text-sm mt-1">
+                    Valid: {userPhoneValidation.normalized}
+                  </p>
+                )}
+            </div>
           </div>
-        </div>
 
-        {/* Preferred Contact Method */}
-        <div className="space-y-4">
-          <label className="block text-sm font-medium text-slate-300">
-            How should we notify you of the result?
-          </label>
-          <SegmentedControl
-            options={[
-              { value: "text", label: "Text (SMS)", icon: <MessageSquare className="w-5 h-5" /> },
-              { value: "phone", label: "Phone Call", icon: <PhoneCall className="w-5 h-5" /> },
-            ]}
-            value={formData.preferredContact}
-            onChange={(value) => setFormData({...formData, preferredContact: value})}
-            name="preferredContact"
-            aria-label="Preferred contact method"
-          />
-
-          {/* Phone Number Input */}
-          <div className="relative">
-            <Phone className={`absolute left-3 top-3.5 w-5 h-5 ${userPhoneValidation.error && userPhoneValidation.isTouched ? 'text-red-400' : 'text-slate-500'}`} />
-            <input
-              type="tel"
-              placeholder="Your phone number for notifications"
-              value={userPhoneValidation.value}
-              onChange={userPhoneValidation.onChange}
-              onBlur={userPhoneValidation.onBlur}
-              className={`w-full pl-10 pr-4 py-3 rounded-xl border ${
-                userPhoneValidation.error && userPhoneValidation.isTouched
-                  ? 'border-red-500 focus:border-red-500 focus:ring-red-500/20'
-                  : 'border-surface-highlight focus:border-primary-500 focus:ring-primary-500/20'
-              } focus:ring-2 outline-none transition-all bg-abyss text-slate-100 placeholder-slate-600`}
-            />
-            {userPhoneValidation.error && userPhoneValidation.isTouched && (
-              <p className="text-red-400 text-sm mt-1">{userPhoneValidation.error}</p>
-            )}
-            {userPhoneValidation.isValid && userPhoneValidation.normalized && (
-              <p className="text-emerald-400 text-sm mt-1">Valid: {userPhoneValidation.normalized}</p>
-            )}
-          </div>
-        </div>
-
-        <button
-          type="submit"
-          disabled={isSubmitting || !isFormValid}
-          className="w-full py-4 bg-primary-600 hover:bg-primary-500 text-white font-bold rounded-xl shadow-lg shadow-primary-500/20 transition-all transform active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
-        >
-          {isSubmitting ? "Initiating Call..." : "Execute Task"}
-        </button>
-      </form>
+          <button
+            type="submit"
+            disabled={isSubmitting || !isFormValid}
+            className="w-full py-4 bg-primary-600 hover:bg-primary-500 text-white font-bold rounded-xl shadow-lg shadow-primary-500/20 transition-all transform active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+          >
+            {isSubmitting ? "Initiating Call..." : "Execute Task"}
+          </button>
+        </form>
+      </div>
     </div>
   );
 }
