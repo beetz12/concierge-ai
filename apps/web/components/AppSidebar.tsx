@@ -12,6 +12,7 @@ import {
   Sparkles,
   ChevronLeft,
   X,
+  Home,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -30,7 +31,8 @@ import {
 } from "@/components/ui/sidebar";
 
 const navItems = [
-  { href: "/", icon: LayoutDashboard, label: "Dashboard" },
+  { href: "/", icon: Home, label: "Home" },
+  { href: "/dashboard", icon: LayoutDashboard, label: "Dashboard" },
   { href: "/new", icon: PlusCircle, label: "New Request" },
   { href: "/history", icon: History, label: "History" },
   { href: "/about", icon: Info, label: "About" },

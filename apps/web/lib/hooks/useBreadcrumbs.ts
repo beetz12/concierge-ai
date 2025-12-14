@@ -10,7 +10,8 @@ export interface BreadcrumbItem {
 }
 
 const routeLabels: Record<string, string> = {
-  "": "Dashboard",
+  "": "Home",
+  dashboard: "Dashboard",
   new: "New Request",
   direct: "Direct Task",
   history: "History",
@@ -25,16 +26,16 @@ export function useBreadcrumbs(): BreadcrumbItem[] {
   return useMemo(() => {
     const segments = pathname.split("/").filter(Boolean);
 
-    // Always start with Dashboard
+    // Always start with Home
     const breadcrumbs: BreadcrumbItem[] = [
       {
-        label: "Dashboard",
+        label: "Home",
         href: "/",
         isCurrentPage: pathname === "/",
       },
     ];
 
-    // If we're on the dashboard, just return it
+    // If we're on the home page, just return it
     if (segments.length === 0) {
       return breadcrumbs;
     }

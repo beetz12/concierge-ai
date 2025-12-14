@@ -213,55 +213,185 @@ body {
 }
 
 /* Google Places PlaceAutocompleteElement (2025 API - Shadow DOM) */
-gmp-place-autocomplete {
-  --gmp-mat-color-surface: var(--color-surface);
-  --gmp-mat-color-on-surface: #f1f5f9;
-  --gmp-mat-color-on-surface-variant: #94a3b8;
+gmp-place-autocomplete,
+gmp-basic-place-autocomplete {
+  /* Material Design custom properties for dark theme */
+  --gmp-mat-color-surface: var(--color-surface) !important;
+  --gmp-mat-color-on-surface: #f1f5f9 !important;
+  --gmp-mat-color-on-surface-variant: #94a3b8 !important;
+  --gmp-mat-color-surface-container: var(--color-surface) !important;
+  --gmp-mat-color-surface-container-high: var(--color-surface-hover) !important;
+  --gmp-mat-color-surface-container-highest: var(--color-surface-highlight) !important;
+  --gmp-mat-color-outline: var(--color-surface-highlight) !important;
+  --gmp-mat-color-outline-variant: var(--color-surface-highlight) !important;
+  --gmp-mat-color-primary: var(--color-primary-500) !important;
+  --gmp-mat-color-on-primary: #042f2e !important;
+
+  /* Additional theme variables */
+  --gmp-input-bg: var(--color-abyss) !important;
+  --gmp-text-color: #f1f5f9 !important;
+  --gmp-suggestion-bg: var(--color-surface) !important;
+  --gmp-border-color: var(--color-surface-highlight) !important;
+  --gmp-elevation-shadow: 0 10px 25px rgba(0, 0, 0, 0.6) !important;
+
   display: block;
   width: 100%;
+  color-scheme: dark;
 }
 
 /* Style the input inside the shadow DOM using ::part() */
-gmp-place-autocomplete::part(input) {
+gmp-place-autocomplete::part(input),
+gmp-basic-place-autocomplete::part(input) {
   background-color: var(--color-abyss) !important;
   color: #f1f5f9 !important;
   border: none !important;
   padding: 0.75rem 1rem 0.75rem 2.5rem !important;
   font-family: var(--font-family-body) !important;
-  font-size: 1rem !important;
+  font-size: 0.875rem !important;
   outline: none !important;
   width: 100% !important;
+  height: 2.5rem !important;
+  box-sizing: border-box !important;
 }
 
-gmp-place-autocomplete::part(input)::placeholder {
+gmp-place-autocomplete::part(input)::placeholder,
+gmp-basic-place-autocomplete::part(input)::placeholder {
   color: #64748b !important;
 }
 
-/* Predictions dropdown styling */
-gmp-place-autocomplete::part(predictions) {
+/* Predictions dropdown/list styling */
+gmp-place-autocomplete::part(predictions),
+gmp-place-autocomplete::part(list),
+gmp-place-autocomplete::part(panel),
+gmp-basic-place-autocomplete::part(predictions),
+gmp-basic-place-autocomplete::part(list),
+gmp-basic-place-autocomplete::part(panel) {
   background-color: var(--color-surface) !important;
   border: 1px solid var(--color-surface-highlight) !important;
   border-radius: 0.75rem !important;
-  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.5) !important;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.6) !important;
   margin-top: 4px !important;
+  max-width: 100% !important;
+  overflow: hidden !important;
 }
 
-gmp-place-autocomplete::part(prediction-item) {
+/* List items styling - multiple possible part names */
+gmp-place-autocomplete::part(prediction-item),
+gmp-place-autocomplete::part(list-item),
+gmp-place-autocomplete::part(option),
+gmp-basic-place-autocomplete::part(prediction-item),
+gmp-basic-place-autocomplete::part(list-item),
+gmp-basic-place-autocomplete::part(option) {
   background-color: var(--color-surface) !important;
   color: #e2e8f0 !important;
   padding: 10px 12px !important;
 }
 
 gmp-place-autocomplete::part(prediction-item):hover,
-gmp-place-autocomplete::part(prediction-item-selected) {
+gmp-place-autocomplete::part(prediction-item-selected),
+gmp-place-autocomplete::part(list-item):hover,
+gmp-place-autocomplete::part(list-item-selected),
+gmp-place-autocomplete::part(option):hover,
+gmp-place-autocomplete::part(option-selected),
+gmp-basic-place-autocomplete::part(prediction-item):hover,
+gmp-basic-place-autocomplete::part(list-item):hover,
+gmp-basic-place-autocomplete::part(option):hover {
   background-color: var(--color-surface-hover) !important;
 }
 
-gmp-place-autocomplete::part(prediction-item-main-text) {
+gmp-place-autocomplete::part(prediction-item-main-text),
+gmp-place-autocomplete::part(main-text),
+gmp-basic-place-autocomplete::part(prediction-item-main-text),
+gmp-basic-place-autocomplete::part(main-text) {
   color: #f1f5f9 !important;
 }
 
-gmp-place-autocomplete::part(prediction-item-match) {
+gmp-place-autocomplete::part(prediction-item-match),
+gmp-place-autocomplete::part(match),
+gmp-basic-place-autocomplete::part(prediction-item-match),
+gmp-basic-place-autocomplete::part(match) {
   color: var(--color-primary-400) !important;
   font-weight: 600 !important;
+}
+
+/* Secondary text (city, state) */
+gmp-place-autocomplete::part(secondary-text),
+gmp-place-autocomplete::part(prediction-item-secondary-text),
+gmp-basic-place-autocomplete::part(secondary-text) {
+  color: #94a3b8 !important;
+}
+
+/* Icon styling */
+gmp-place-autocomplete::part(icon),
+gmp-place-autocomplete::part(place-icon),
+gmp-basic-place-autocomplete::part(icon) {
+  filter: brightness(0) invert(1) !important;
+  opacity: 0.7 !important;
+}
+
+/* Google logo at bottom */
+gmp-place-autocomplete::part(logo),
+gmp-place-autocomplete::part(attribution),
+gmp-basic-place-autocomplete::part(logo) {
+  filter: brightness(0) invert(1) !important;
+  opacity: 0.5 !important;
+  background-color: var(--color-surface) !important;
+}
+
+/* Focus states */
+gmp-place-autocomplete:focus-within,
+gmp-basic-place-autocomplete:focus-within {
+  outline: none !important;
+}
+
+gmp-place-autocomplete::part(input):focus,
+gmp-basic-place-autocomplete::part(input):focus {
+  outline: none !important;
+  box-shadow: none !important;
+}
+
+/* Container wrapper styling - constrain dropdown width */
+div:has(> gmp-place-autocomplete),
+div:has(> gmp-basic-place-autocomplete) {
+  position: relative;
+  overflow: visible;
+}
+
+/* Google Material overlay/portal styling (dropdown rendered outside shadow DOM) */
+.gmp-overlay,
+.gmp-panel,
+.gmp-suggestion-panel,
+[class*="gmp-"] {
+  color-scheme: dark !important;
+}
+
+/* Target any Google Material popover/overlay containers */
+div[style*="position: absolute"][style*="z-index"] {
+  color-scheme: dark;
+}
+
+/* Material Design 3 menu surface dark theme */
+.md3-menu-surface,
+.mdc-menu-surface,
+[class*="mdc-menu"],
+[class*="mat-mdc"] {
+  background-color: var(--color-surface) !important;
+  color: #f1f5f9 !important;
+  border: 1px solid var(--color-surface-highlight) !important;
+  border-radius: 0.75rem !important;
+}
+
+.md3-list-item,
+.mdc-deprecated-list-item,
+[class*="mdc-list-item"],
+[class*="mat-option"] {
+  background-color: var(--color-surface) !important;
+  color: #e2e8f0 !important;
+}
+
+.md3-list-item:hover,
+.mdc-deprecated-list-item:hover,
+[class*="mdc-list-item"]:hover,
+[class*="mat-option"]:hover {
+  background-color: var(--color-surface-hover) !important;
 }

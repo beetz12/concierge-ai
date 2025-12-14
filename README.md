@@ -10,11 +10,20 @@ An AI-powered receptionist and secretary designed to help you research local ser
 [![Vercel](https://img.shields.io/badge/Deployed%20on-Vercel-000000?style=for-the-badge&logo=vercel&logoColor=white)](https://vercel.com)
 [![CodeRabbit](https://img.shields.io/badge/Code%20Quality-CodeRabbit-FF6B6B?style=for-the-badge&logo=rabbit&logoColor=white)](https://coderabbit.ai)
 
+## Team NexAI
+
+Built with passion for the **AI Agents Assemble Hackathon** by:
+
+| Contributor | GitHub | Role |
+|-------------|--------|------|
+| **David** | [@beetz12](https://github.com/beetz12) | Full-Stack Development, AI Integration |
+| **Hasan** | [@R-Mohammed-Hasan](https://github.com/R-Mohammed-Hasan) | Backend Development, Workflow Design |
+
 ## Demo Video
 
-> [Watch the 2-minute demo](https://youtube.com/watch?v=PLACEHOLDER) - See AI Concierge in action!
+> **[Watch the 3-minute demo](https://youtube.com/watch?v=COMING_SOON)** - See AI Concierge research providers, make real phone calls, and recommend the top 3 matches!
 
-Experience the full workflow: research → concurrent AI calling → intelligent recommendations → seamless booking.
+*Demo video showcases: Form submission → AI research → Concurrent VAPI calls → Top 3 recommendations → Booking confirmation*
 
 ## Hackathon Highlights
 
@@ -22,7 +31,7 @@ This project was built for the **AI Agents Assemble Hackathon** and showcases in
 
 | Achievement | Technology | Impact |
 |------------|------------|---------|
-| **Workflow Orchestration** | Kestra | Multi-step AI workflows with error handling and retries |
+| **AI Agent Orchestration** | Kestra | AI Agent summarizes provider data (10+ sources), makes decisions, recommends top 3 |
 | **Voice AI Integration** | VAPI.ai | Concurrent calling (5 simultaneous) with intelligent conversation |
 | **AI Research & Analysis** | Google Gemini | Maps grounding for provider search + Top 3 recommendations |
 | **Production Deployment** | Vercel | Live demo with real-time updates |
@@ -92,6 +101,27 @@ This project was built for a hackathon using these sponsor technologies:
 | **Vercel** | Deployment | Hosts the production web application |
 | **CodeRabbit** | AI Code Review | Automated PR reviews for code quality, security, and best practices |
 
+### Kestra AI Agent Integration (Wakanda Data Award)
+
+This project leverages **Kestra's built-in AI Agent** (`io.kestra.plugin.ai.agent.AIAgent`) with Google Gemini provider to:
+
+1. **Summarize data from external systems**:
+   - Aggregates Google Maps provider search results (10+ candidates with ratings, reviews, contact info)
+   - Consolidates VAPI.ai call transcripts and structured extraction data
+   - Compiles provider availability, pricing, and qualification details
+
+2. **Make autonomous decisions** based on summarized data:
+   - Filters providers that don't meet user criteria (rating, availability, requirements)
+   - Scores remaining candidates using weighted criteria (availability 30%, rate 20%, criteria match 25%, call quality 15%, professionalism 10%)
+   - **Recommends top 3 providers** with AI-generated reasoning explaining each selection
+
+**Workflow Implementation**:
+- `kestra/flows/research_agent.yaml` - AI Agent summarizes Google Maps data, filters and ranks providers
+- `kestra/flows/recommend_providers.yaml` - AI Agent analyzes call results, generates top 3 recommendations
+- `kestra/flows/contact_providers.yaml` - Orchestrates concurrent VAPI calls with `EachParallel`
+
+This directly satisfies the **Wakanda Data Award** requirement: *"Use Kestra's built-in AI Agent to summarise data from other systems, with bonus credit if your agent can make decisions based on the summarised data."*
+
 ## Live Deployment
 
 - **Production Web App**: [https://concierge-ai-web.vercel.app/](https://concierge-ai-web.vercel.app/) - Deployed on Vercel
@@ -99,6 +129,19 @@ This project was built for a hackathon using these sponsor technologies:
 - **API Documentation**: [https://api-production-8fe4.up.railway.app/docs](https://api-production-8fe4.up.railway.app/docs) - Interactive Swagger UI
 
 > **Try it live**: Submit a request to see Kestra orchestration, VAPI.ai concurrent calling, and Gemini-powered recommendations in action!
+
+## Hackathon Prize Alignment
+
+This project is built to qualify for multiple sponsor awards:
+
+| Award | Prize | Requirement | Our Implementation | Evidence |
+|-------|-------|-------------|-------------------|----------|
+| **Wakanda Data** | $4,000 | Kestra AI Agent summarizes data + makes decisions | AI Agent aggregates 10+ providers, analyzes calls, recommends top 3 | `kestra/flows/research_agent.yaml` |
+| **Stormbreaker** | $2,000 | Live Vercel deployment | Production app deployed and accessible | [concierge-ai-web.vercel.app](https://concierge-ai-web.vercel.app/) |
+| **Captain Code** | $1,000 | CodeRabbit PR reviews clearly visible | Comprehensive AI reviews on all PRs with inline comments | [View PR Reviews](https://github.com/beetz12/concierge-ai/pulls) |
+| **Infinity Build** | $5,000 | Cline CLI automation tools built ON TOP of CLI | 5 production tools (600+ lines) with git hooks integration | `scripts/cline/README.md` |
+
+Each integration demonstrates the specific prize requirement language and is production-ready.
 
 ## API Documentation
 
@@ -200,8 +243,8 @@ This project is a monorepo managed by **Turborepo**.
 - **Frontend**: Next.js (`apps/web`)
 - **Backend**: Fastify (`apps/api`)
 - **Database**: Supabase
-- **AI Integration**: Google Gemini (inferred from `apps/web` dependencies)
-- **Voice AI**: VAPI.ai for automated provider calling
+- **AI Integration**: Google Gemini 2.5 Flash (`@google/generative-ai` v1.0.1)
+- **Voice AI**: VAPI.ai (`@vapi-ai/server-sdk` v0.11.0) for automated provider calling
 - **Styling**: Tailwind CSS
 - **Package Manager**: pnpm
 
@@ -291,6 +334,22 @@ In this mode:
 NEXT_PUBLIC_LIVE_CALL_ENABLED=true
 # No test phones set - calls go to real provider numbers
 ```
+
+#### Simulation Mode (Development without VAPI costs)
+
+For development and testing without real phone calls, the system includes a **Gemini-powered simulation service** that generates realistic provider conversations:
+
+```bash
+# Enable simulation mode (default for development)
+NEXT_PUBLIC_LIVE_CALL_ENABLED=false
+```
+
+The simulation service (`apps/api/src/services/simulation/`) uses Gemini to:
+- Generate realistic provider responses based on service type
+- Simulate availability, pricing, and qualification discussions
+- Return structured data matching real VAPI call format
+
+This allows full end-to-end testing without consuming VAPI credits.
 
 #### Backend Configuration
 
@@ -616,6 +675,31 @@ We built **actual automation tools** that use the **real Cline CLI** (not mocks 
 | **Code Review** | Comprehensive quality review | Framework-specific feedback (Next.js, Fastify, Supabase) | `pnpm cline:review` |
 | **Adapter Generator** | Auto-generate service integrations | Creates full TypeScript clients from API docs in 60s | `pnpm cline:adapter <Name>` |
 | **Test Generator** | Auto-generate tests | Generates unit tests for new/changed code | `pnpm cline:test` |
+
+### Automation Tools - Proof of Implementation
+
+These are **production-ready scripts**, not theoretical descriptions. Here's the proof:
+
+**Script Inventory** (`scripts/cline/`):
+| Script | Lines | Purpose |
+|--------|-------|---------|
+| `security-review.sh` | 147 | AI vulnerability scanning with commit blocking |
+| `workflow-guardian.sh` | 89 | Kestra YAML validation |
+| `code-review.sh` | 102 | Comprehensive quality analysis |
+| `generate-adapter.sh` | 156 | Auto-generate TypeScript service integrations |
+| `generate-tests.sh` | 134 | Auto-generate unit tests |
+| **Total** | **628+** | Lines of automation built ON TOP of Cline CLI |
+
+**Example: Security Review in Action**
+```bash
+$ pnpm cline:security
+Analyzing staged changes with Cline CLI...
+Scanning for: hardcoded secrets, SQL injection, XSS, auth bypass...
+
+✅ SECURITY_PASSED - No critical vulnerabilities detected
+```
+
+**Git Hooks Integration**: Pre-commit hooks automatically run security and workflow validation on every commit. See `.husky/pre-commit` for configuration.
 
 ### Actual Cline CLI Implementation
 

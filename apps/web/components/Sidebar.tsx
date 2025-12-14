@@ -12,6 +12,7 @@ import {
   Menu,
   X,
   Info,
+  Home,
 } from "lucide-react";
 
 const Sidebar: React.FC<{ children: React.ReactNode }> = ({ children }) => {
@@ -19,7 +20,8 @@ const Sidebar: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const pathname = usePathname();
 
   const navItems = [
-    { href: "/", icon: LayoutDashboard, label: "Dashboard" },
+    { href: "/", icon: Home, label: "Home" },
+    { href: "/dashboard", icon: LayoutDashboard, label: "Dashboard" },
     { href: "/new", icon: PlusCircle, label: "New Request" },
     { href: "/direct", icon: PhoneCall, label: "Direct Task" },
     { href: "/history", icon: History, label: "History" },

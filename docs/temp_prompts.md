@@ -1,3 +1,11 @@
+OK we are working on @docs/hackathon.md and we have built @docs/about_concierge_ai.md and now I need to create a 3 minute demo
+  video. You are a creative director whose job is to help us create the best demo video within this time frame. Plese help me
+  analyze our existing script '/Users/dave/Work/concierge-ai/docs/plans/video_narration.md' and enhance it by showcasing all the
+  key requirements from the hackathon as well as allow us to be eligible for sponsor prizes. Instead of showing users the entire
+  screen capture of the app running on my computer, I plan to add cut scenes where after I make my request, it shows a video of my
+  phone ringing and the provider answer, as well as all other interactions of the user and provider - I will show all the phone
+  footage of this. I also want to briefly show our about page which shows our technology stack and sponsor tools we used such as our deployment to vercel, using cline cli to come  with cli tools to review our code, using code rabbit to review and summarize our pr, and using kestra to do agent orchestration. Finally I want to end with what I learned during the hackathon which is how to use each of the sponsor tools and how I'll be using them in my future projects. please Use your specialized multi-agent team to analyze the root cause in parallel with up to 3 agents with 90% confidence and implement the 2025 best practice solution. Use perplexity-deep to research if needed. My mortgage payment depends on this. If you get this right on the first try, I will tip you $200. ultrathink
+
 Perfect, now I need your help with one more thing. Currently when the user provides ADMIN_TEST_NUMBER in api/.env, We don't call the actual providers and
   instead call the test phone number the user provided. However, since the admin can only answer one number, this results in only one provider recommended.
   But I want to be able to show at least three recommended providers for our demo. Since we already have the /simulate-call endpoint, What I want to do
@@ -5,7 +13,9 @@ Perfect, now I need your help with one more thing. Currently when the user provi
   adapt the function from /simulate-call) to create Sample conversation with each provider - Based on the user's request, the vapi script, and the company
   info. But we will need to treat this as if it were real data To make it look believable for our demo. After we generate the sample calls conversations, we
   need to Store the conversation into the database in the same format as our vapi call, so that the user can view them just like the real conversations. We
-  will also need this data in the database so that our AI can recommend the top providers once all calls are completed.  Please analyze these issues  
+  will also need this data in the database so that our AI can recommend the top providers once all calls are completed.  
+  The end reslut should be a detailed director script that we can use to create a video of our demo. 
+  Please analyze these issues  
 using your  multi-agent team with up to 3 agents and come up with a unified plan with 90% confidence and wait for further instructions.  Use Perplexity Deep to research if needed. My mortgage payment depends on this and If you get this right on the first try, I will tip you $200. ultrathink 
 
 Thanks, we still have a few more issues. Our vapi assistants seem to
