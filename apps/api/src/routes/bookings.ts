@@ -265,19 +265,19 @@ async function handleRealBookingCall(
 
     // Check for date/time agreement patterns in transcript
     const hasDateTimeAgreement =
-      // Provider offered a time
-      (/i can do|available|works for me|how about|let's do/i.test(transcriptLower) &&
+      // Provider offered/agreed to a time (including simple "yes" responses)
+      (/i can do|available|works for me|how about|let's do|yes|yeah|yep|sure|that works|sounds good/i.test(transcriptLower) &&
       // And a day/time was mentioned
-      /(monday|tuesday|wednesday|thursday|friday|saturday|sunday|tomorrow|next week|today)/i.test(transcriptLower) &&
+      /(monday|tuesday|wednesday|thursday|friday|saturday|sunday|tomorrow|next week|today|wednesday)/i.test(transcriptLower) &&
       /(\d{1,2}(?::\d{2})?\s*(?:am|pm)|morning|afternoon|evening|noon)/i.test(transcriptLower));
 
-    // Check for confirmation patterns
+    // Check for confirmation patterns (also detect when provider says "yes" to confirmation question)
     const hasConfirmationPattern =
-      /(?:just to confirm|perfect|excellent|great|sounds good|see you|appointment.*(?:set|scheduled|confirmed))/i.test(transcriptLower);
+      /(?:just to confirm|perfect|excellent|great|sounds good|see you|appointment.*(?:set|scheduled|confirmed)|does that sound correct.*yes|we're all set|all set)/i.test(transcriptLower);
 
     // Check there's no rejection
     const hasRejection =
-      /(?:not available|can't help|unavailable|no longer|sorry.*can't|decline)/i.test(transcriptLower);
+      /(?:not available|can't help|unavailable|no longer|sorry.*can't|decline|can't make it|won't work)/i.test(transcriptLower);
 
     if (hasDateTimeAgreement && hasConfirmationPattern && !hasRejection) {
       fastify.log.info(
