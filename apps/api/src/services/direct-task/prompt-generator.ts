@@ -26,7 +26,7 @@ export function generatePromptFromAnalysis(
     complain_issue:
       "firm but professional representative addressing a complaint",
     schedule_appointment:
-      "efficient scheduler focused on finding the best time",
+      "efficient scheduler focused on finding the SPECIFIC earliest available date and time",
     cancel_service:
       "clear and direct representative handling a cancellation",
     make_inquiry:
@@ -75,7 +75,35 @@ ${Object.entries(guidance.objectionHandlers)
 SUCCESS CRITERIA
 ═══════════════════════════════════════════════════════════════════
 ${guidance.successCriteria.map((c, i) => `${i + 1}. ${c}`).join("\n")}
+${
+    analysis.taskType === "schedule_appointment"
+      ? `
+CRITICAL FOR SCHEDULING: SPECIFIC DATE AND TIME REQUIRED
+═══════════════════════════════════════════════════════════════════
+When the provider gives availability information:
 
+If they say VAGUE timeframes like:
+- "Two weeks out"
+- "Next week"
+- "In a few days"
+- "Soon"
+- "Later this month"
+- "Early next week"
+
+You MUST ask follow-up questions to get SPECIFIC details:
+1. "Which specific day would that be?" → Get the exact date (e.g., "Tuesday, January 15th")
+2. "And what's the earliest time available on that day?" → Get the exact time (e.g., "2:00 PM")
+
+DO NOT accept vague timeframes. The client needs an exact date and time to make a booking decision.
+
+EXAMPLE:
+Provider: "We could probably get to you in about two weeks."
+You: "That sounds great! Which specific day two weeks from now would work best? And what's the earliest time you'd have available?"
+Provider: "Hmm, probably like mid-January."
+You: "Perfect! Can we pin down the exact date? What would be your first available slot in mid-January?"
+`
+      : ""
+  }
 ═══════════════════════════════════════════════════════════════════
 SPEECH RULES
 ═══════════════════════════════════════════════════════════════════
@@ -128,7 +156,7 @@ Thank them genuinely when they help.`;
     complain_issue:
       "Thank you for addressing this issue. Just to confirm: [summarize resolution]. Have a wonderful day!",
     schedule_appointment:
-      "Perfect! So we're confirmed for [date/time]. Is there anything my client should bring or prepare? Great, have a wonderful day!",
+      "Perfect! So we're confirmed for [SPECIFIC DATE - e.g., Tuesday, January 15th] at [SPECIFIC TIME - e.g., 2:00 PM]. Is there anything my client should bring or prepare? Great, have a wonderful day!",
     cancel_service:
       "Thank you for processing this cancellation. Can you confirm the effective date and any final steps? [confirm]. Have a wonderful day!",
     make_inquiry:

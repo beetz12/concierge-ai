@@ -125,9 +125,6 @@ const HeroSection: React.FC = () => (
           <p className="text-slate-500 text-sm mb-4">Powered by</p>
           <div className="flex items-center justify-center gap-8 flex-wrap">
             <div className="text-slate-400 font-semibold text-sm">
-              Kestra Orchestration
-            </div>
-            <div className="text-slate-400 font-semibold text-sm">
               Vercel Hosting
             </div>
             <div className="text-slate-400 font-semibold text-sm">

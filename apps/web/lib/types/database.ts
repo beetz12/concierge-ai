@@ -180,6 +180,7 @@ export type Database = {
           notification_method: string | null
           notification_sent_at: string | null
           preferred_contact: string | null
+          recommendations: Json | null
           selected_provider_id: string | null
           sms_message_sid: string | null
           status: Database["public"]["Enums"]["request_status"]
@@ -201,6 +202,7 @@ export type Database = {
           notification_method?: string | null
           notification_sent_at?: string | null
           preferred_contact?: string | null
+          recommendations?: Json | null
           selected_provider_id?: string | null
           sms_message_sid?: string | null
           status?: Database["public"]["Enums"]["request_status"]
@@ -222,6 +224,7 @@ export type Database = {
           notification_method?: string | null
           notification_sent_at?: string | null
           preferred_contact?: string | null
+          recommendations?: Json | null
           selected_provider_id?: string | null
           sms_message_sid?: string | null
           status?: Database["public"]["Enums"]["request_status"]
@@ -285,6 +288,7 @@ export type Database = {
         | "SEARCHING"
         | "CALLING"
         | "ANALYZING"
+        | "RECOMMENDED"
         | "BOOKING"
         | "COMPLETED"
         | "FAILED"
@@ -928,6 +932,7 @@ export const Constants = {
         "SEARCHING",
         "CALLING",
         "ANALYZING",
+        "RECOMMENDED",
         "BOOKING",
         "COMPLETED",
         "FAILED",

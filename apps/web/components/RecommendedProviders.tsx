@@ -93,25 +93,36 @@ const RecommendedProviders: React.FC<Props> = ({
         {providers.map((provider, index) => (
           <div
             key={provider.providerId}
-            className={`bg-surface border rounded-xl p-6 transition-all duration-200 ${
-              selectedId === provider.providerId
-                ? "border-primary-500 shadow-lg shadow-primary-500/20"
-                : "border-surface-highlight hover:border-primary-500/50"
+            className={`bg-surface border rounded-xl p-6 transition-all duration-200 relative overflow-hidden ${
+              index === 0
+                ? "border-amber-500 shadow-xl shadow-amber-500/25 ring-2 ring-amber-500/40"
+                : selectedId === provider.providerId
+                  ? "border-primary-500 shadow-lg shadow-primary-500/20"
+                  : "border-surface-highlight hover:border-primary-500/50"
             }`}
           >
-            {/* Header with Badge */}
-            <div className="flex items-start justify-between mb-4">
-              <div className="flex-1">
-                <div className="flex items-center gap-3 mb-2">
-                  <h3 className="text-xl font-bold text-slate-100">
-                    {provider.providerName}
-                  </h3>
-                  {index === 0 && (
-                    <div className="px-3 py-1 bg-amber-500/20 border border-amber-500/30 rounded-full text-xs font-bold text-amber-400">
-                      🏆 BEST MATCH
-                    </div>
-                  )}
-                </div>
+            {/* Concierge Recommended Banner */}
+            {index === 0 && (
+              <div className="absolute top-0 left-0 right-0 bg-gradient-to-r from-amber-500 to-amber-600 text-white text-center py-2 text-sm font-bold uppercase tracking-wider">
+                ⭐ Concierge Recommended ⭐
+              </div>
+            )}
+
+            {/* Content Wrapper with Top Padding for Banner */}
+            <div className={index === 0 ? "pt-10" : ""}>
+              {/* Header with Badge */}
+              <div className="flex items-start justify-between mb-4">
+                <div className="flex-1">
+                  <div className="flex items-center gap-3 mb-2">
+                    <h3 className="text-xl font-bold text-slate-100">
+                      {provider.providerName}
+                    </h3>
+                    {index === 0 && (
+                      <div className="px-3 py-1 bg-amber-500/20 border border-amber-500/30 rounded-full text-xs font-bold text-amber-400">
+                        TOP PICK
+                      </div>
+                    )}
+                  </div>
                 <div className="flex items-center gap-4 text-sm text-slate-400">
                   <a
                     href={`tel:${provider.phone}`}
@@ -187,20 +198,21 @@ const RecommendedProviders: React.FC<Props> = ({
               </div>
             )}
 
-            {/* Select Button */}
-            <button
-              onClick={() => onSelect(provider)}
-              disabled={selectedId === provider.providerId}
-              className={`w-full py-3 px-4 rounded-lg font-semibold transition-all duration-200 ${
-                selectedId === provider.providerId
-                  ? "bg-primary-600 text-white cursor-default"
-                  : "bg-primary-600/10 text-primary-400 border border-primary-500/30 hover:bg-primary-600 hover:text-white hover:shadow-lg hover:shadow-primary-500/20"
-              }`}
-            >
-              {selectedId === provider.providerId
-                ? "Selected"
-                : "Select This Provider"}
-            </button>
+              {/* Select Button */}
+              <button
+                onClick={() => onSelect(provider)}
+                disabled={selectedId === provider.providerId}
+                className={`w-full py-3 px-4 rounded-lg font-semibold transition-all duration-200 ${
+                  selectedId === provider.providerId
+                    ? "bg-primary-600 text-white cursor-default"
+                    : "bg-primary-600/10 text-primary-400 border border-primary-500/30 hover:bg-primary-600 hover:text-white hover:shadow-lg hover:shadow-primary-500/20"
+                }`}
+              >
+                {selectedId === provider.providerId
+                  ? "Selected"
+                  : "Select This Provider"}
+              </button>
+            </div>
           </div>
         ))}
       </div>

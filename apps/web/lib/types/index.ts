@@ -83,6 +83,7 @@ export interface ServiceRequest {
   description: string;
   criteria: string;
   location?: string;
+  clientAddress?: string; // Full street address for VAPI booking calls
   status: RequestStatus;
   createdAt: string;
   providersFound: Provider[];

@@ -34,6 +34,7 @@ export interface ResearchPromptRequest {
   urgency: string;
   providerName: string;
   clientName: string;
+  clientAddress?: string;
 }
 
 export interface ServiceTerminology {
