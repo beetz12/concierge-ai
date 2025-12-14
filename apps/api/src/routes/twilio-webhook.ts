@@ -336,8 +336,8 @@ export default async function twilioWebhookRoutes(fastify: FastifyInstance) {
 
         // Auto-trigger booking call to provider
         try {
-          // Use localhost for internal API calls (not ngrok external URL)
-          const backendUrl = 'http://localhost:8000';
+          // Use BACKEND_URL env var for production, fallback to localhost for development
+          const backendUrl = process.env.BACKEND_URL || 'http://localhost:8000';
 
           // Check for ADMIN_TEST_NUMBER to substitute test phone
           const adminTestPhonesRaw = process.env.ADMIN_TEST_NUMBER;
