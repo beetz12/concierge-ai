@@ -13,6 +13,7 @@ import {
   CheckCircle,
 } from "lucide-react";
 import StatusBadge from "@/components/StatusBadge";
+import { PageHeader } from "@/components/PageHeader";
 import { RequestStatus } from "@/lib/types";
 import { useAppContext } from "@/lib/providers/AppProvider";
 
@@ -157,20 +158,19 @@ export default function Dashboard() {
   // Show hero section for first-time users
   if (requests.length === 0) {
     return (
-      <div className="space-y-8">
+      <div className="p-4 md:p-6 space-y-6">
+        <PageHeader />
         <HeroSection />
       </div>
     );
   }
 
   return (
-    <div className="space-y-8">
-      <div>
-        <h1 className="text-3xl font-bold text-slate-100">Welcome back</h1>
-        <p className="text-slate-400 mt-2">
-          Here&apos;s what your AI concierge is working on.
-        </p>
-      </div>
+    <div className="p-4 md:p-6 space-y-6">
+      <PageHeader
+        title="Welcome back"
+        description="Here's what your AI concierge is working on."
+      />
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         <StatCard
