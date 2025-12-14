@@ -1,30 +1,27 @@
-Hi. Is this Forest Kitchen design? I'm John's personal AI assistant. John is looking to have custom cabinet built fairly urgently, ideally within the next 2 days. Do you have a quick moment?
-1:07:25 PM(+00:02.46)
+Assistant
+Hi. Is this Forest Kitchen Design? I'm John's personal AI assistant. John is looking for a carpenter to build a custom cabinet for him. Ideally within the next 2 days, and I was hoping you might be able to help him out. Do you have a quick moment?
+1:20:58 PM(+00:02.42)
 User
-Sure.
+Absolutely.
 
-1:07:37 PM(+00:14.56)
+1:21:11 PM(+00:15.84)
 
 Assistant
-Great. Thanks. I was wondering when could you come out to Greenville SC to provide a quote for a custom cabinet?
-1:07:39 PM(+00:16.62)
+Great. When could you come out?
+1:21:14 PM(+00:18.22)
 User
-Can come out tomorrow afternoon at 4 PM.
+We can come out tomorrow afternoon at 4 PM.
 
-1:07:46 PM(+00:23.39)
+1:21:16 PM(+00:20.70)
 
 Assistant
-Perfect. Thank you. And what would the cost be for this type of service call?
-1:07:49 PM(+00:26.36)
+Perfect. Thank you. What would the cost be for this type of service call?
+1:21:20 PM(+00:24.73)
 User
-It's 85 dollars for the consultation.
+It's 85 dollars for the consultation. Then
 
-1:07:54 PM(+00:31.10)
+1:21:24 PM(+00:28.78)
 
 EndCall
-Completed successfully
-01:07 PM
-1:07:56 PM(+00:33.07)
-
-Assistant
-Thank you so much for your time. Have a wonderful day.
+Executing...
+01:21 PM

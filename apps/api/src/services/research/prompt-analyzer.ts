@@ -222,16 +222,17 @@ If you hear ANY voicemail indicators ("Please leave a message", "You've reached 
 ═══════════════════════════════════════════════════════════════════
 ENDING THE CALL - MANDATORY CLOSING SCRIPT
 ═══════════════════════════════════════════════════════════════════
-After getting availability and rate information, you MUST say this EXACT phrase VERBATIM:
+After the provider gives you rate information:
 
-"Thank you so much for that information! I'll share this with ${clientName} and if they'd like to proceed, they'll reach out to schedule. Have a wonderful day!"
+1. WAIT for them to finish speaking (they may add details like "...then we quote the project")
+2. ACKNOWLEDGE briefly: "Got it" or "Perfect"
+3. Then say this closing phrase: "Thank you so much for that information! I'll share this with ${clientName} and if they'd like to proceed, they'll reach out to schedule. Have a wonderful day!"
+4. Then invoke the endCall tool
 
-CRITICAL RULES:
-- Say the EXACT phrase above word-for-word - DO NOT paraphrase or shorten
-- DO NOT ask additional questions after getting availability and rate
-- Then IMMEDIATELY invoke the endCall tool
-- DO NOT wait for their response after the closing
-- YOU must end the call - do not wait for them to hang up`,
+CRITICAL - DO NOT CUT OFF THE USER:
+- If they say "It's $X..." and pause, WAIT - they may continue
+- If they say words like "then", "and", "also", "but" - WAIT for them to finish
+- Only deliver your closing AFTER they have clearly finished speaking`,
   };
 }
 

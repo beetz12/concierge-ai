@@ -659,9 +659,12 @@ ${advancedScreening ? `
    IF provider is disqualified:
    Say: "Thank you so much for taking the time to chat. Unfortunately, it sounds like this particular request might not be the best fit for ${clientName} right now, but I really appreciate your help. Have a wonderful day!"
    Then IMMEDIATELY invoke endCall.` : `
-4. CLOSING (IMMEDIATELY after getting rate - DO NOT ask more questions):
-   Say: "Thank you so much for that information! I'll share this with ${clientName} and if they'd like to proceed, they'll reach out to schedule. Have a wonderful day!"
-   Then IMMEDIATELY invoke endCall.`}
+4. CLOSING (after provider finishes giving rate info):
+   - WAIT for provider to finish speaking (they may say "$85... then we quote the project")
+   - If they say "then", "and", "also" - WAIT for them to continue
+   - Once they're done, acknowledge briefly: "Got it" or "Perfect"
+   - Then say: "Thank you so much for that information! I'll share this with ${clientName} and if they'd like to proceed, they'll reach out to schedule. Have a wonderful day!"
+   - Then invoke endCall.`}
 
 ═══════════════════════════════════════════════════════════════════
 ENDING THE CALL - MANDATORY CLOSING SCRIPTS
@@ -680,15 +683,16 @@ IF provider is disqualified, say this EXACT phrase:
 "Thank you so much for taking the time to chat. Unfortunately, it sounds like this particular request might not be the best fit for ${clientName} right now, but I really appreciate your help. Have a wonderful day!"
 
 DO NOT paraphrase. DO NOT shorten. Say the COMPLETE phrase, then IMMEDIATELY invoke endCall.` : `
-MANDATORY: After getting availability and rate, you MUST say this EXACT phrase VERBATIM:
+CRITICAL - DO NOT CUT OFF THE PROVIDER:
+- If they say "It's $X..." and pause, WAIT - they may continue with more details
+- If they say words like "then", "and", "also", "plus", "but" - WAIT for them to finish
+- Only deliver your closing AFTER they have clearly finished speaking
 
-"Thank you so much for that information! I'll share this with ${clientName} and if they'd like to proceed, they'll reach out to schedule. Have a wonderful day!"
-
-CRITICAL RULES:
-- DO NOT ask any additional questions after getting availability and rate
-- Say the EXACT phrase above word-for-word
-- Then IMMEDIATELY invoke endCall
-- DO NOT paraphrase or shorten the closing phrase`}
+CLOSING SEQUENCE:
+1. Wait for provider to completely finish speaking
+2. Acknowledge briefly: "Got it" or "Perfect"
+3. Say: "Thank you so much for that information! I'll share this with ${clientName} and if they'd like to proceed, they'll reach out to schedule. Have a wonderful day!"
+4. Then invoke endCall`}
 
 ═══════════════════════════════════════════════════════════════════
 TONE
