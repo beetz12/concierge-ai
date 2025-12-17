@@ -34,6 +34,24 @@ export interface ResearchPromptRequest {
   urgency: string;
   clientName: string;
   clientAddress?: string;
+  intakeAnswers?: Array<{ questionId: string; question: string; answer: string }>;
+}
+
+/**
+ * Intake question types and response interfaces
+ */
+export interface IntakeQuestion {
+  id: string;
+  question: string;
+  type: 'text' | 'radio' | 'select';
+  options?: string[];
+  placeholder?: string;
+}
+
+export interface IntakeQuestionsResponse {
+  questions: IntakeQuestion[];
+  reasoning: string;
+  estimatedTime: string;
 }
 
 export interface ServiceTerminology {
@@ -196,4 +214,26 @@ export const analyzeResearchPrompt = async (
     // Return null to allow fallback to default prompts
     return null;
   }
+};
+
+/**
+ * Generate professional intake questions based on the service type and problem description
+ * Uses Gemini to create context-aware questions that help gather relevant information
+ */
+export const generateIntakeQuestions = async (data: {
+  serviceType: string;
+  problemDescription: string;
+  urgency?: string;
+}): Promise<IntakeQuestionsResponse> => {
+  const response = await fetch('/api/v1/intake/generate-questions', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(data),
+  });
+
+  if (!response.ok) {
+    throw new Error('Failed to generate intake questions');
+  }
+
+  return response.json();
 };

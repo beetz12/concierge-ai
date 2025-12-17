@@ -20,18 +20,21 @@ import { DirectTwilioClient } from "../services/notifications/direct-twilio.clie
 import { createSimulatedCallService, type SimulatedCallRequest } from "../services/simulation/index.js";
 
 // Schema for Gemini-generated custom prompts
+// closingScript is optional - backend provides default based on clientName when not provided
 const generatedPromptSchema = z.object({
   systemPrompt: z.string(),
   firstMessage: z.string(),
-  closingScript: z.string(),
+  closingScript: z.string().optional(),
 });
+
+// E.164 phone format regex - supports US numbers (+1XXXXXXXXXX)
+const e164PhoneRegex = /^\+1\d{10}$/;
+const e164PhoneMessage = "Phone must be E.164 format (+1XXXXXXXXXX)";
 
 // Zod schema for request validation
 const callProviderSchema = z.object({
   providerName: z.string().min(1, "Provider name is required"),
-  providerPhone: z
-    .string()
-    .regex(/^\+1\d{10}$/, "Phone must be E.164 format (+1XXXXXXXXXX)"),
+  providerPhone: z.string().regex(e164PhoneRegex, e164PhoneMessage),
   serviceNeeded: z.string().min(1, "Service type is required"),
   userCriteria: z.string().default(""), // Optional - empty string allowed
   problemDescription: z.string().optional(),
@@ -54,10 +57,8 @@ const batchCallSchema = z.object({
   providers: z.array(
     z.object({
       name: z.string().min(1, "Provider name is required"),
-      phone: z
-        .string()
-        .regex(/^\+1\d{10}$/, "Phone must be E.164 format (+1XXXXXXXXXX)"),
-      id: z.string().optional(), // Provider ID for database linking
+      phone: z.string().regex(e164PhoneRegex, e164PhoneMessage),
+      id: z.string().min(1, "Provider ID is required"), // REQUIRED for database linking
     }),
   ),
   serviceNeeded: z.string().min(1, "Service type is required"),
@@ -72,28 +73,79 @@ const batchCallSchema = z.object({
   serviceRequestId: z.string().optional(),
   maxConcurrent: z.number().int().min(1).max(10).optional(),
   customPrompt: generatedPromptSchema.optional(), // Gemini-generated dynamic prompt
-  preferredContact: z.enum(["phone", "text"]).optional(), // User's preferred contact method
-  userPhone: z.string().optional(), // User's phone number for notifications
+  preferredContact: z.enum(["phone", "text"]).default("text"), // Default matches DB constraint
+  userPhone: z.string().regex(e164PhoneRegex, e164PhoneMessage).optional(), // E.164 format for notifications
 });
 
+// Structured call data schema for recommendation validation
+const structuredCallDataSchema = z.object({
+  availability: z.enum(["available", "unavailable", "callback_requested", "unclear"]).optional(),
+  earliest_availability: z.string().optional(),
+  estimated_rate: z.string().optional(),
+  single_person_found: z.boolean().optional(),
+  technician_name: z.string().optional(),
+  all_criteria_met: z.boolean().optional(),
+  criteria_details: z.record(z.boolean()).optional(),
+  call_outcome: z.enum(["positive", "negative", "neutral", "no_answer", "voicemail"]).optional(),
+  recommended: z.boolean().optional(),
+  disqualified: z.boolean().optional(),
+  disqualification_reason: z.string().optional(),
+  notes: z.string().optional(),
+});
+
+// Call result schema for proper validation (replaces z.any())
+// Note: Uses passthrough() to allow additional fields from VAPI/Kestra
+const callResultSchema = z.object({
+  status: z.enum(["completed", "timeout", "error", "no_answer", "voicemail"]),
+  callId: z.string(),
+  callMethod: z.enum(["kestra", "direct_vapi", "simulated"]).default("direct_vapi"), // Required for RecommendationRequest
+  duration: z.number().optional(),
+  endedReason: z.string().optional(),
+  transcript: z.string().optional(),
+  analysis: z.object({
+    summary: z.string().optional(),
+    structuredData: structuredCallDataSchema.optional(),
+    successEvaluation: z.string().optional(),
+  }).optional(),
+  provider: z.object({
+    name: z.string(),
+    phone: z.string().optional(),
+    service: z.string().optional(),
+    location: z.string().optional(),
+  }).optional(),
+  request: z.object({
+    criteria: z.string().optional(),
+    urgency: z.string().optional(),
+  }).optional(),
+  cost: z.number().optional(),
+  error: z.string().optional(),
+}).passthrough(); // Allow additional fields from VAPI/Kestra
+
 // Recommendation schema for analyzing call results
+// Note: callResults uses z.any() for flexibility with internal VAPI/Kestra/simulated results
+// The callResultSchema is used for external Kestra webhook validation in saveCallResultSchema
 const recommendationSchema = z.object({
-  callResults: z.array(z.any()), // CallResult[] from vapi/types.ts
+  callResults: z.array(z.any()), // Flexible for internal use (CallResult[] from various sources)
   originalCriteria: z.string().default(""), // Optional - empty string allowed
   serviceRequestId: z.string().min(1, "Service request ID is required"),
+});
+
+// Schema for saving call results from Kestra
+const saveCallResultSchema = z.object({
+  providerId: z.string().min(1, "Provider ID is required"),
+  serviceRequestId: z.string().min(1, "Service request ID is required"),
+  callResult: callResultSchema,
 });
 
 // Booking schema for scheduling appointments
 const bookingSchema = z.object({
   providerId: z.string().min(1, "Provider ID is required"),
   providerName: z.string().min(1, "Provider name is required"),
-  providerPhone: z
-    .string()
-    .regex(/^\+1\d{10}$/, "Phone must be E.164 format (+1XXXXXXXXXX)"),
+  providerPhone: z.string().regex(e164PhoneRegex, e164PhoneMessage),
   serviceNeeded: z.string().min(1, "Service type is required"),
   serviceRequestId: z.string().min(1, "Service request ID is required"),
   clientName: z.string().optional(),
-  clientPhone: z.string().optional(),
+  clientPhone: z.string().regex(e164PhoneRegex, e164PhoneMessage).optional(), // E.164 format for callbacks
   location: z.string().min(1, "Location is required"),
   clientAddress: z.string().optional(), // Full street address for VAPI prompts
   preferredDateTime: z.string().optional(),
@@ -1326,6 +1378,13 @@ export default async function providerRoutes(fastify: FastifyInstance) {
               success: { type: "boolean" },
             },
           },
+          400: {
+            type: "object",
+            properties: {
+              success: { type: "boolean" },
+              error: { type: "string" },
+            },
+          },
           500: {
             type: "object",
             properties: {
@@ -1338,11 +1397,25 @@ export default async function providerRoutes(fastify: FastifyInstance) {
     },
     async (request, reply) => {
       try {
-        const { providerId, serviceRequestId, callResult } = request.body as {
-          providerId: string;
-          serviceRequestId: string;
-          callResult: any;
-        };
+        // Extract and validate required fields with fallback for backwards compatibility
+        const body = request.body as { providerId?: string; serviceRequestId?: string; callResult?: any };
+
+        if (!body.providerId || !body.serviceRequestId || !body.callResult) {
+          return reply.status(400).send({
+            success: false,
+            error: "Missing required fields: providerId, serviceRequestId, callResult",
+          });
+        }
+
+        const providerId = body.providerId;
+        const serviceRequestId = body.serviceRequestId;
+        const callResult = body.callResult;
+
+        // Log validation warnings but don't block (backwards compat with Kestra)
+        const parseResult = saveCallResultSchema.safeParse(request.body);
+        if (!parseResult.success) {
+          request.log.warn({ errors: parseResult.error.errors }, "Call result validation warnings (proceeding anyway)");
+        }
 
         request.log.info(
           { providerId, serviceRequestId, status: callResult.status },

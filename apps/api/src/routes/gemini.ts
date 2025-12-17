@@ -57,7 +57,7 @@ const selectBestProviderSchema = z.object({
       id: z.string(),
       name: z.string(),
       phone: z.string().optional(),
-      rating: z.number().optional(),
+      rating: z.number().min(0).max(5).optional(), // DB constraint: DECIMAL(2,1) CHECK 0-5
       address: z.string().optional(),
       source: z.enum(["Google Maps", "User Input"]).optional(),
     }),
@@ -70,6 +70,12 @@ const analyzeDirectTaskSchema = z.object({
   contactPhone: z.string().optional(),
 });
 
+const intakeAnswerSchema = z.object({
+  questionId: z.string(),
+  question: z.string(),
+  answer: z.string(),
+});
+
 const analyzeResearchPromptSchema = z.object({
   serviceType: z.string().min(1, "Service type is required"),
   problemDescription: z.string().optional().default(""),
@@ -78,6 +84,7 @@ const analyzeResearchPromptSchema = z.object({
   urgency: z.string().min(1, "Urgency is required"),
   clientName: z.string().min(1, "Client name is required"),
   clientAddress: z.string().optional(), // Full street address for service location
+  intakeAnswers: z.array(intakeAnswerSchema).optional(), // Additional details from user intake
 });
 
 export default async function geminiRoutes(fastify: FastifyInstance) {
@@ -554,6 +561,18 @@ export default async function geminiRoutes(fastify: FastifyInstance) {
               type: "string",
               description: "Full street address for service location (optional)",
             },
+            intakeAnswers: {
+              type: "array",
+              description: "Additional details collected from user intake (optional)",
+              items: {
+                type: "object",
+                properties: {
+                  questionId: { type: "string" },
+                  question: { type: "string" },
+                  answer: { type: "string" },
+                },
+              },
+            },
           },
         },
         response: {
@@ -608,6 +627,7 @@ export default async function geminiRoutes(fastify: FastifyInstance) {
           urgency: body.urgency,
           clientName: body.clientName,
           clientAddress: body.clientAddress,
+          intakeAnswers: body.intakeAnswers,
         });
         return result;
       } catch (error: any) {

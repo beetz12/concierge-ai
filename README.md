@@ -4,6 +4,8 @@ An AI-powered receptionist and secretary designed to help you research local ser
 
 ## Built With
 
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![CI](https://github.com/NexAiAdvisors/concierge-ai/actions/workflows/ci.yml/badge.svg)](https://github.com/NexAiAdvisors/concierge-ai/actions/workflows/ci.yml)
 [![Kestra](https://img.shields.io/badge/Orchestrated%20by-Kestra-4F46E5?style=for-the-badge&logo=data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjQiIGhlaWdodD0iMjQiIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHJlY3Qgd2lkdGg9IjI0IiBoZWlnaHQ9IjI0IiBmaWxsPSJ3aGl0ZSIvPgo8L3N2Zz4K)](https://kestra.io)
 [![VAPI](https://img.shields.io/badge/Voice%20AI-VAPI.ai-10B981?style=for-the-badge&logo=phone&logoColor=white)](https://vapi.ai)
 [![Gemini](https://img.shields.io/badge/AI%20by-Google%20Gemini-4285F4?style=for-the-badge&logo=google&logoColor=white)](https://ai.google.dev)
@@ -544,6 +546,19 @@ Install dependencies from the root directory:
 ```bash
 pnpm install
 ```
+
+### Third-Party Services
+
+You will need accounts and API keys for the following services:
+
+| Service | Purpose | Get Started |
+|---------|---------|-------------|
+| [Supabase](https://supabase.com) | Database & Auth | Free tier available |
+| [VAPI](https://vapi.ai) | Voice AI calls | Pay-per-minute |
+| [Google AI](https://ai.google.dev) | Gemini API | Free tier |
+| [Google Places](https://developers.google.com/maps) | Address autocomplete | Pay-per-request |
+| [Twilio](https://twilio.com) | SMS (optional) | Pay-per-message |
+
 
 ### Environment Variables
 

@@ -208,5 +208,12 @@ export class ProviderEnrichmentService {
   }
 }
 
-// Export singleton instance
-export const providerEnrichmentService = new ProviderEnrichmentService();
+// Lazy singleton - avoids module load timing issues with dotenv
+let _instance: ProviderEnrichmentService | null = null;
+
+export function getProviderEnrichmentService(): ProviderEnrichmentService {
+  if (!_instance) {
+    _instance = new ProviderEnrichmentService();
+  }
+  return _instance;
+}

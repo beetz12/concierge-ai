@@ -1,6 +1,20 @@
 {
   "name": "concierge-ai",
-  "private": true,
+  "private": false,
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/NexAiAdvisors/concierge-ai"
+  },
+  "keywords": [
+    "ai",
+    "voice-ai",
+    "receptionist",
+    "vapi",
+    "nextjs",
+    "fastify"
+  ],
+  "author": "Team NexAI",
   "scripts": {
     "build": "turbo run build",
     "dev": "turbo run dev",

@@ -28,7 +28,7 @@ export interface StrategicGuidance {
 export interface GeneratedPrompt {
   systemPrompt: string;
   firstMessage: string;
-  closingScript: string;
+  closingScript?: string; // Optional - backend provides default based on clientName when not provided
 }
 
 export interface AnalyzeDirectTaskRequest {

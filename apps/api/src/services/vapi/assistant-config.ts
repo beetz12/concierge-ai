@@ -482,6 +482,34 @@ If you detect voicemail (automated greeting, "leave a message", beep), immediate
               type: "string",
               description: "Any additional notes from the conversation",
             },
+            screening_answers: {
+              type: "array",
+              description: "Answers to advanced screening questions asked during the call. Extract each question-answer pair from the conversation.",
+              items: {
+                type: "object",
+                properties: {
+                  question: {
+                    type: "string",
+                    description: "The screening question that was asked",
+                  },
+                  answer: {
+                    type: "string",
+                    description: "The provider's answer to the question",
+                  },
+                  category: {
+                    type: "string",
+                    enum: ["experience", "licensing", "warranty", "methods", "references"],
+                    description: "Category of the question: experience (years in business, specialization), licensing (licenses, insurance, certifications), warranty (guarantees, callbacks), methods (techniques, equipment, process), references (reviews, portfolio)",
+                  },
+                  quality: {
+                    type: "string",
+                    enum: ["excellent", "good", "adequate", "poor", "no_answer"],
+                    description: "Quality of the answer: excellent (specific, impressive credentials), good (clear positive answer), adequate (acceptable but not standout), poor (vague or concerning), no_answer (didn't answer or deflected)",
+                  },
+                },
+                required: ["question", "answer", "category", "quality"],
+              },
+            },
           },
           required: ["availability", "all_criteria_met", "call_outcome"],
         },
@@ -833,6 +861,34 @@ For unusual requirements, frame naturally: "${clientName} specifically mentioned
             notes: {
               type: "string",
             },
+            screening_answers: {
+              type: "array",
+              description: "Answers to advanced screening questions asked during the call. Extract each question-answer pair from the conversation.",
+              items: {
+                type: "object",
+                properties: {
+                  question: {
+                    type: "string",
+                    description: "The screening question that was asked",
+                  },
+                  answer: {
+                    type: "string",
+                    description: "The provider's answer to the question",
+                  },
+                  category: {
+                    type: "string",
+                    enum: ["experience", "licensing", "warranty", "methods", "references"],
+                    description: "Category of the question: experience (years in business, specialization), licensing (licenses, insurance, certifications), warranty (guarantees, callbacks), methods (techniques, equipment, process), references (reviews, portfolio)",
+                  },
+                  quality: {
+                    type: "string",
+                    enum: ["excellent", "good", "adequate", "poor", "no_answer"],
+                    description: "Quality of the answer: excellent (specific, impressive credentials), good (clear positive answer), adequate (acceptable but not standout), poor (vague or concerning), no_answer (didn't answer or deflected)",
+                  },
+                },
+                required: ["question", "answer", "category", "quality"],
+              },
+            },
           },
           required: [
             "availability",
@@ -849,7 +905,8 @@ ${request.userCriteria}
 
 Key questions:
 1. Did we find ONE person who has ALL requirements? Not different people for different requirements.
-2. Was the provider disqualified during the call? If so, what was the reason?`,
+2. Was the provider disqualified during the call? If so, what was the reason?
+3. If advanced screening questions were asked (about experience, licensing, warranty, methods, references), extract and evaluate each answer.`,
           },
         ],
       },

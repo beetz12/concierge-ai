@@ -5,7 +5,7 @@
 
 export {
   GooglePlacesService,
-  googlePlacesService,
+  getGooglePlacesService,
   type PlaceSearchResult,
   type PlaceDetails,
   type TextSearchParams,

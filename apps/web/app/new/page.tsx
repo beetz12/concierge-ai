@@ -35,7 +35,9 @@ import { Slider } from "@/components/ui/slider";
 import {
   simulateCall,
   analyzeResearchPrompt,
+  generateIntakeQuestions,
 } from "@/lib/services/geminiService";
+import { ProfessionalIntake } from "@repo/ui/professional-intake";
 import { searchProviders as searchProvidersWorkflow } from "@/lib/services/workflowService";
 import {
   callResponseToInteractionLog,
@@ -82,6 +84,12 @@ export default function NewRequest() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showCriteriaInput, setShowCriteriaInput] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
+
+  // Professional intake state
+  const [intakeAnswers, setIntakeAnswers] = useState<
+    Array<{ questionId: string; question: string; answer: string }>
+  >([]);
+  const [intakeCompleted, setIntakeCompleted] = useState(false);
 
   // Phone validation for user's contact number
   const userPhoneValidation = usePhoneValidation();
@@ -137,8 +145,8 @@ export default function NewRequest() {
       addRequest(newRequest);
       router.push(`/request/${newRequest.id}`);
 
-      // Start background process
-      runConciergeProcess(newRequest.id, formData);
+      // Start background process with intake answers
+      runConciergeProcess(newRequest.id, formData, intakeAnswers);
     } catch (error) {
       console.error("Failed to create request:", error);
       setSubmitError(
@@ -150,7 +158,11 @@ export default function NewRequest() {
     }
   };
 
-  const runConciergeProcess = async (reqId: string, data: typeof formData) => {
+  const runConciergeProcess = async (
+    reqId: string,
+    data: typeof formData,
+    intakeData: Array<{ questionId: string; question: string; answer: string }>
+  ) => {
     // Helper to update both localStorage and database
     const updateStatus = async (
       status: "SEARCHING" | "CALLING" | "ANALYZING" | "COMPLETED" | "FAILED",
@@ -286,6 +298,7 @@ export default function NewRequest() {
           urgency: data.urgency,
           clientName: data.clientName,
           clientAddress: data.clientAddress?.formatted, // Full street address for VAPI
+          intakeAnswers: intakeData.length > 0 ? intakeData : undefined,
         });
         if (researchPrompt) {
           console.log(
@@ -669,6 +682,25 @@ export default function NewRequest() {
               }
             />
           </div>
+
+          {/* Professional Intake - after description, before contact */}
+          {formData.title &&
+            formData.description &&
+            formData.description.length > 10 && (
+              <ProfessionalIntake
+                serviceType={formData.title}
+                problemDescription={formData.description}
+                urgency={formData.urgency}
+                fetchQuestions={generateIntakeQuestions}
+                onComplete={(answers) => {
+                  setIntakeAnswers(answers);
+                  setIntakeCompleted(true);
+                }}
+                onSkip={() => {
+                  setIntakeCompleted(true);
+                }}
+              />
+            )}
 
           {/* Preferred Contact Method */}
           <div className="space-y-4">

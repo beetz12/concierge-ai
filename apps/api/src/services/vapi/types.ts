@@ -61,6 +61,17 @@ export interface CallResult {
   }>;
 }
 
+/**
+ * Individual screening answer extracted from the call
+ * Used when VAPI_ADVANCED_SCREENING=true
+ */
+export interface ScreeningAnswer {
+  question: string;
+  answer: string;
+  category: "experience" | "licensing" | "warranty" | "methods" | "references";
+  quality: "excellent" | "good" | "adequate" | "poor" | "no_answer";
+}
+
 export interface StructuredCallData {
   availability: "available" | "unavailable" | "callback_requested" | "unclear";
   earliest_availability?: string; // Specific date/time when provider can come (e.g., "Tomorrow at 2pm")
@@ -74,6 +85,8 @@ export interface StructuredCallData {
   disqualified?: boolean;
   disqualification_reason?: string;
   notes?: string;
+  // Advanced screening answers (populated when VAPI_ADVANCED_SCREENING=true)
+  screening_answers?: ScreeningAnswer[];
 }
 
 export interface KestraExecutionState {

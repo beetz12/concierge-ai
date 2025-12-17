@@ -398,5 +398,13 @@ export class GooglePlacesService {
   }
 }
 
-// Export a singleton instance
-export const googlePlacesService = new GooglePlacesService();
+// Lazy singleton - use getGooglePlacesService() instead of direct instantiation
+// This avoids module load timing issues with dotenv
+let _instance: GooglePlacesService | null = null;
+
+export function getGooglePlacesService(): GooglePlacesService {
+  if (!_instance) {
+    _instance = new GooglePlacesService();
+  }
+  return _instance;
+}

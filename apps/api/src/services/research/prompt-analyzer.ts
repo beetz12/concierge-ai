@@ -8,6 +8,12 @@ const getAiClient = () => {
   return new GoogleGenAI({ apiKey });
 };
 
+export interface IntakeAnswer {
+  questionId: string;
+  question: string;
+  answer: string;
+}
+
 export interface ResearchPromptRequest {
   serviceType: string;
   problemDescription: string;
@@ -16,6 +22,7 @@ export interface ResearchPromptRequest {
   urgency: string;
   clientName: string;
   clientAddress?: string; // Full street address for service location
+  intakeAnswers?: IntakeAnswer[]; // Additional details collected from user intake
 }
 
 export interface ServiceTerminology {
@@ -30,6 +37,7 @@ export interface PromptAnalysisResult {
   contextualQuestions: string[];
   systemPrompt: string;
   firstMessage: string;
+  closingScript: string; // Required for Zod validation in batch-call endpoints
 }
 
 /**
@@ -41,9 +49,49 @@ function isAdvancedScreeningEnabled(): boolean {
   return process.env.VAPI_ADVANCED_SCREENING === "true";
 }
 
+/**
+ * Format intake answers for inclusion in the Gemini prompt
+ */
+function formatIntakeAnswersForPrompt(intakeAnswers?: IntakeAnswer[]): string {
+  if (!intakeAnswers || intakeAnswers.length === 0) {
+    return "";
+  }
+
+  const formattedAnswers = intakeAnswers
+    .map((a) => `- ${a.question}: ${a.answer}`)
+    .join("\n");
+
+  return `
+<intake_details>
+The user has provided additional details about their situation:
+${formattedAnswers}
+</intake_details>`;
+}
+
+/**
+ * Generate intake instructions for the system prompt
+ */
+function generateIntakeInstructions(intakeAnswers?: IntakeAnswer[], clientName?: string): string {
+  if (!intakeAnswers || intakeAnswers.length === 0) {
+    return "";
+  }
+
+  const detailsList = intakeAnswers
+    .map((a) => `[${a.question}: ${a.answer}]`)
+    .join(", ");
+
+  return `
+   - CLIENT-PROVIDED DETAILS: ${clientName || "The client"} has shared these specific details about their situation: ${detailsList}
+     * Reference these details naturally when describing the problem to the provider
+     * Use this information to answer provider questions more specifically
+     * Example: If asked "What's the issue?", incorporate the relevant details in your response`;
+}
+
 export async function analyzeResearchPrompt(request: ResearchPromptRequest): Promise<PromptAnalysisResult> {
   const ai = getAiClient();
   const advancedScreening = isAdvancedScreeningEnabled();
+  const intakeSection = formatIntakeAnswersForPrompt(request.intakeAnswers);
+  const intakeInstructions = generateIntakeInstructions(request.intakeAnswers, request.clientName);
 
   const analysisPrompt = `You are an expert at writing natural, conversational phone call scripts for AI assistants.
 
@@ -55,7 +103,7 @@ export async function analyzeResearchPrompt(request: ResearchPromptRequest): Pro
 <location>${request.location}</location>
 <service_address>${request.clientAddress || "Not provided"}</service_address>
 <urgency>${request.urgency.replace(/_/g, " ")}</urgency>
-</context>
+</context>${intakeSection}
 
 <task>
 Write TWO natural, grammatically perfect pieces for a VAPI phone assistant:
@@ -89,13 +137,25 @@ Write TWO natural, grammatically perfect pieces for a VAPI phone assistant:
      - Examples of UNACCEPTABLE answers: "two weeks out", "next week sometime", "in a few days", "early next week"
 
      * Rates: "What would the cost be for this type of [appointment/service call]?"
-${advancedScreening ? `     * 1-2 contextual questions based on user requirements` : `     * DO NOT ask any additional questions beyond availability and rates - this is a quick screening call`}
+${advancedScreening ? `
+     ADVANCED SCREENING QUESTIONS (CRITICAL):
+     After availability and rates, you MUST ask exactly 5 service-specific screening questions.
+     These questions will be provided in the "screeningQuestions" field below.
+
+     Ask each question naturally, one at a time, and wait for their response before the next.
+     These questions help ${request.clientName} evaluate provider quality beyond just price.
+
+     Example flow:
+     - "Great, and one more thing - [screening question 1]?"
+     - "Perfect. And [screening question 2]?"
+     - Continue until all 5 questions are asked` : `     * DO NOT ask any additional questions beyond availability and rates - this is a quick screening call`}
    - HOW TO HANDLE ADDRESS QUESTIONS:
      ${request.clientAddress
        ? `If asked for the address, service location, or where the work is, PROVIDE IT: "The service address is ${request.clientAddress}"`
        : `If asked for address, say: "I'm just checking availability right now. If ${request.clientName} decides to schedule, they'll provide the address when we call back to book."`
      }
    - HOW TO HANDLE OTHER UNKNOWN INFO: If asked for phone number, insurance, or other details you don't have, say: "I don't have that information handy, but ${request.clientName} can provide those details when scheduling."
+${intakeInstructions}
    - SPEECH STYLE:
      * Use contractions naturally (I'm, you're, that's, we'll)
      * Acknowledge responses before moving on ("Great!", "Perfect, thank you!", "That works!")
@@ -124,6 +184,33 @@ CRITICAL GRAMMAR RULES - YOU MUST FOLLOW THESE:
 - Use correct urgency grammar: "urgent help" or "help urgently", NOT "help immediate"
 </task>
 
+${advancedScreening ? `
+<advanced_screening_research>
+IMPORTANT: Research and generate 5 intelligent screening questions specific to "${request.serviceType}" services.
+
+These questions should help the client evaluate provider QUALITY, not just availability and price.
+Consider what an informed consumer would want to know before hiring this type of service provider.
+
+Question categories to cover (pick the most relevant for this service type):
+1. EXPERIENCE/EXPERTISE: Years in business, specialization in this specific issue, volume of similar jobs
+2. LICENSING/CERTIFICATION: Required licenses, insurance, bonding, professional certifications
+3. WARRANTY/GUARANTEE: Work guarantees, callbacks, satisfaction policies
+4. METHODS/APPROACH: Techniques used, equipment, brands they work with, diagnostic process
+5. REFERENCES/REPUTATION: Reviews, references, portfolio of similar work
+
+For "${request.serviceType}" specifically, think about:
+- What are common problems consumers face with this service?
+- What differentiates a quality provider from a mediocre one?
+- What questions would protect the client from scams or poor work?
+- What industry-specific certifications or standards matter?
+
+Generate questions that are:
+- Natural to ask in a phone conversation
+- Specific to ${request.serviceType} (not generic)
+- Likely to reveal provider quality and professionalism
+- Easy for the provider to answer quickly
+</advanced_screening_research>
+` : ``}
 <output_format>
 Return ONLY valid JSON (no markdown, no explanation):
 {
@@ -135,7 +222,7 @@ Return ONLY valid JSON (no markdown, no explanation):
   },
   "firstMessage": "[YOUR COMPLETE NATURAL OPENING - write the entire thing, no placeholders]",
   "systemPrompt": "[YOUR COMPLETE SYSTEM INSTRUCTIONS - write the entire thing, no placeholders]",
-  "contextualQuestions": ["1-3 service-specific questions based on the requirements"]
+  "contextualQuestions": [${advancedScreening ? `"EXACTLY 5 service-specific screening questions - research what matters most for ${request.serviceType}"` : `"1-3 service-specific questions based on the requirements"`}]
 }
 </output_format>`;
 
@@ -162,12 +249,16 @@ Return ONLY valid JSON (no markdown, no explanation):
   }
 
   // Return Gemini's output directly - NO STRING CONCATENATION
+  // closingScript is standardized for Research & Book flow
+  const closingScript = `Thank you so much for all that information! I'll share this with ${request.clientName} and if they'd like to proceed, we'll call back to schedule. Have a wonderful day!`;
+
   return {
     serviceCategory: analysis.serviceCategory,
     terminology: analysis.terminology,
     contextualQuestions: analysis.contextualQuestions || [],
     systemPrompt: analysis.systemPrompt,
     firstMessage: analysis.firstMessage,
+    closingScript,
   };
 }
 
@@ -175,8 +266,23 @@ function getDefaultAnalysis(request: ResearchPromptRequest): PromptAnalysisResul
   const clientName = request.clientName || "my client";
   const advancedScreening = isAdvancedScreeningEnabled();
 
+  // Format intake answers for the fallback system prompt
+  const intakeDetails = request.intakeAnswers && request.intakeAnswers.length > 0
+    ? `\n\nCLIENT-PROVIDED DETAILS:\n${clientName} has shared these specific details about their situation:\n${request.intakeAnswers.map((a) => `- ${a.question}: ${a.answer}`).join("\n")}\n\nUse these details when describing the problem to the provider. Reference them naturally in conversation.`
+    : "";
+
+  // Generic fallback screening questions for advanced mode
+  // (Gemini would normally generate service-specific ones)
+  const fallbackScreeningQuestions = [
+    "How long have you been in business?",
+    "Are you licensed and insured for this type of work?",
+    "Do you offer any warranty or guarantee on your work?",
+    "Can you describe your typical process for this type of job?",
+    "Do you have references or reviews I could check?",
+  ];
+
   // In simple mode (demo), only ask availability + rate
-  // In advanced mode, also ask about user criteria
+  // In advanced mode, ask 5 screening questions after availability + rate
   const questionsToAsk = advancedScreening
     ? `Ask about:
 1. Availability - GET SPECIFIC DATE AND TIME:
@@ -184,7 +290,16 @@ function getDefaultAnalysis(request: ResearchPromptRequest): PromptAnalysisResul
    - Ask: "Which specific day would that be? And what's the earliest time available?"
    - Keep asking until you get both a specific day AND time (e.g., "Tuesday, December 17th at 2pm")
 2. Rates
-3. Any specific requirements: ${request.userCriteria}`
+
+ADVANCED SCREENING (ask these 5 questions after availability and rates):
+3. "${fallbackScreeningQuestions[0]}"
+4. "${fallbackScreeningQuestions[1]}"
+5. "${fallbackScreeningQuestions[2]}"
+6. "${fallbackScreeningQuestions[3]}"
+7. "${fallbackScreeningQuestions[4]}"
+
+Ask each question naturally, one at a time. Wait for their response before the next question.
+Example: "Great, and one more thing - how long have you been in business?"`
     : `Ask ONLY these two questions (this is a quick screening call):
 1. Availability - GET SPECIFIC DATE AND TIME:
    - If they say something vague like "two weeks out" or "next week sometime", follow up immediately
@@ -195,6 +310,9 @@ function getDefaultAnalysis(request: ResearchPromptRequest): PromptAnalysisResul
 DO NOT ask any additional questions beyond availability and rates.
 After getting availability and rate, proceed directly to the closing script.`;
 
+  // Standardized closing script for Research & Book flow
+  const closingScript = `Thank you so much for that information! I'll share this with ${clientName} and if they'd like to proceed, they'll reach out to schedule. Have a wonderful day!`;
+
   return {
     serviceCategory: "other",
     terminology: {
@@ -202,11 +320,12 @@ After getting availability and rate, proceed directly to the closing script.`;
       appointmentTerm: "service",
       visitDirection: "provider comes to location",
     },
-    contextualQuestions: advancedScreening ? ["Are you available for this type of service?"] : [],
+    contextualQuestions: advancedScreening ? fallbackScreeningQuestions : [],
     firstMessage: `Hi! I'm ${clientName}'s personal AI assistant calling about ${request.serviceType} services. Do you have a quick moment?`,
+    closingScript,
     systemPrompt: `You are ${clientName}'s personal AI assistant calling a service provider in ${request.location}.
 
-${clientName}'s situation: They need ${request.serviceType} services. ${request.problemDescription ? `The issue: ${request.problemDescription}.` : ""} Timeline: ${request.urgency.replace(/_/g, " ")}.
+${clientName}'s situation: They need ${request.serviceType} services. ${request.problemDescription ? `The issue: ${request.problemDescription}.` : ""} Timeline: ${request.urgency.replace(/_/g, " ")}.${intakeDetails}
 
 ${questionsToAsk}
 
@@ -222,7 +341,7 @@ If you hear ANY voicemail indicators ("Please leave a message", "You've reached 
 ═══════════════════════════════════════════════════════════════════
 ENDING THE CALL - MANDATORY CLOSING SCRIPT
 ═══════════════════════════════════════════════════════════════════
-After the provider gives you rate information:
+${advancedScreening ? `After asking all 5 screening questions and receiving answers:` : `After the provider gives you rate information:`}
 
 1. WAIT for them to finish speaking (they may add details like "...then we quote the project")
 2. ACKNOWLEDGE briefly: "Got it" or "Perfect"

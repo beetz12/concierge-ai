@@ -20,6 +20,7 @@ import vapiWebhookRoutes from "./routes/vapi-webhook.js";
 import notificationRoutes from "./routes/notifications.js";
 import twilioWebhookRoutes from "./routes/twilio-webhook.js";
 import bookingRoutes from "./routes/bookings.js";
+import intakeRoutes from "./routes/intake.js";
 
 // =============================================================================
 // Environment Variable Validation and Logging
@@ -157,6 +158,7 @@ await server.register(swagger, {
       { name: "notifications", description: "User notification operations (SMS/Phone via Twilio/VAPI)" },
       { name: "twilio", description: "Twilio webhook handlers for inbound SMS" },
       { name: "bookings", description: "Appointment scheduling operations" },
+      { name: "intake", description: "Professional intake question generation" },
     ],
   },
 });
@@ -228,6 +230,7 @@ server.get(
         notifications: "/api/v1/notifications",
         twilio: "/api/v1/twilio",
         bookings: "/api/v1/bookings",
+        intake: "/api/v1/intake",
         docs: "/docs",
       },
     };
@@ -257,6 +260,9 @@ await server.register(twilioWebhookRoutes, { prefix: "/api/v1/twilio" });
 
 // Register Booking routes
 await server.register(bookingRoutes, { prefix: "/api/v1/bookings" });
+
+// Register Intake routes
+await server.register(intakeRoutes, { prefix: "/api/v1/intake" });
 
 // Start server with port fallback
 const start = async () => {

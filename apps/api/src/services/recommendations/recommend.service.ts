@@ -3,10 +3,19 @@
  * Uses deterministic multi-objective scoring combined with Gemini AI analysis
  *
  * Scoring Components (100 points max):
+ *
+ * SIMPLE MODE (VAPI_ADVANCED_SCREENING=false):
  * - Conversation Quality: 35 points
  * - Service Fit: 30 points
  * - Provider Reputation: 25 points
  * - Trust Signals: 10 points
+ *
+ * ADVANCED MODE (VAPI_ADVANCED_SCREENING=true):
+ * - Conversation Quality: 25 points
+ * - Service Fit: 25 points
+ * - Provider Reputation: 15 points
+ * - Trust Signals: 5 points
+ * - Provider Qualifications: 30 points (NEW - from screening answers)
  */
 
 import { GoogleGenAI } from "@google/genai";
@@ -18,7 +27,14 @@ import type {
   CallResultWithMetadata,
 } from "./types.js";
 import { DEFAULT_SCORING_WEIGHTS } from "./types.js";
-import type { StructuredCallData } from "../vapi/types.js";
+import type { StructuredCallData, ScreeningAnswer } from "../vapi/types.js";
+
+/**
+ * Check if advanced screening mode is enabled
+ */
+function isAdvancedScreeningEnabled(): boolean {
+  return process.env.VAPI_ADVANCED_SCREENING === "true";
+}
 
 export class RecommendationService {
   private ai: GoogleGenAI;
@@ -175,89 +191,171 @@ export class RecommendationService {
   /**
    * Deterministic multi-objective scoring (100 points max)
    *
-   * Components:
+   * SIMPLE MODE (VAPI_ADVANCED_SCREENING=false):
    * - Conversation Quality: 35 points
    * - Service Fit: 30 points
    * - Provider Reputation: 25 points
    * - Trust Signals: 10 points
+   *
+   * ADVANCED MODE (VAPI_ADVANCED_SCREENING=true):
+   * - Conversation Quality: 25 points
+   * - Service Fit: 25 points
+   * - Provider Reputation: 15 points
+   * - Trust Signals: 5 points
+   * - Provider Qualifications: 30 points (from screening answers)
    */
   private calculateScore(
     result: CallResultWithMetadata,
     data: StructuredCallData
   ): number {
+    const advancedMode = isAdvancedScreeningEnabled();
     let score = 0;
 
-    // === CONVERSATION QUALITY (35 points max) ===
+    // === CONVERSATION QUALITY (35 points simple / 25 points advanced) ===
     // Did they actually answer and engage positively?
+    const outcomePoints = advancedMode ? 14 : 20;
+    const neutralPoints = advancedMode ? 7 : 10;
     if (data.call_outcome === "positive") {
-      score += 20;
+      score += outcomePoints;
     } else if (data.call_outcome === "neutral") {
-      score += 10;
+      score += neutralPoints;
     }
     // Gave specific availability info?
+    const availInfoPoints = advancedMode ? 6 : 8;
     if (data.earliest_availability && data.earliest_availability !== "unknown") {
-      score += 8;
+      score += availInfoPoints;
     }
     // Provided pricing info?
+    const pricingPoints = advancedMode ? 5 : 7;
     if (
       data.estimated_rate &&
       data.estimated_rate !== "unknown" &&
       data.estimated_rate !== "Quote upon request"
     ) {
-      score += 7;
+      score += pricingPoints;
     }
 
-    // === SERVICE FIT (30 points max) ===
+    // === SERVICE FIT (30 points simple / 25 points advanced) ===
     // Meets ALL user requirements?
+    const criteriaPoints = advancedMode ? 15 : 20;
     if (data.all_criteria_met) {
-      score += 20;
+      score += criteriaPoints;
     }
     // Availability status
+    const availStatusPoints = advancedMode ? 5 : 7;
+    const callbackPoints = advancedMode ? 2 : 3;
     if (data.availability === "available") {
-      score += 7;
+      score += availStatusPoints;
     } else if (data.availability === "callback_requested") {
-      score += 3;
+      score += callbackPoints;
     }
     // Found dedicated person with all skills?
+    const singlePersonPoints = advancedMode ? 5 : 3;
     if (data.single_person_found) {
-      score += 3;
+      score += singlePersonPoints;
     }
 
-    // === PROVIDER REPUTATION (25 points max) ===
-    // Google rating (0-20 points based on 5-star scale)
+    // === PROVIDER REPUTATION (25 points simple / 15 points advanced) ===
+    // Google rating (tiered points based on 5-star scale)
     const rating = result.rating || 0;
+    const ratingTiers = advancedMode
+      ? { tier1: 12, tier2: 10, tier3: 7, tier4: 5, tier5: 2 }
+      : { tier1: 20, tier2: 16, tier3: 12, tier4: 8, tier5: 4 };
     if (rating >= 4.5) {
-      score += 20;
+      score += ratingTiers.tier1;
     } else if (rating >= 4.0) {
-      score += 16;
+      score += ratingTiers.tier2;
     } else if (rating >= 3.5) {
-      score += 12;
+      score += ratingTiers.tier3;
     } else if (rating >= 3.0) {
-      score += 8;
+      score += ratingTiers.tier4;
     } else if (rating > 0) {
-      score += 4;
+      score += ratingTiers.tier5;
     }
-    // Review volume (0-5 points) - more reviews = more trust
+    // Review volume (tiered points) - more reviews = more trust
     const reviews = result.reviewCount || 0;
+    const reviewTiers = advancedMode
+      ? { tier1: 3, tier2: 2, tier3: 2, tier4: 1, tier5: 1 }
+      : { tier1: 5, tier2: 4, tier3: 3, tier4: 2, tier5: 1 };
     if (reviews >= 100) {
-      score += 5;
+      score += reviewTiers.tier1;
     } else if (reviews >= 50) {
-      score += 4;
+      score += reviewTiers.tier2;
     } else if (reviews >= 20) {
-      score += 3;
+      score += reviewTiers.tier3;
     } else if (reviews >= 10) {
-      score += 2;
+      score += reviewTiers.tier4;
     } else if (reviews > 0) {
-      score += 1;
+      score += reviewTiers.tier5;
     }
 
-    // === TRUST SIGNALS (10 points max) ===
+    // === TRUST SIGNALS (10 points simple / 5 points advanced) ===
     // AI recommended this provider?
+    const recommendedPoints = advancedMode ? 5 : 10;
     if (data.recommended) {
-      score += 10;
+      score += recommendedPoints;
+    }
+
+    // === PROVIDER QUALIFICATIONS (0 points simple / 30 points advanced) ===
+    // Based on screening answer quality (only in advanced mode)
+    if (advancedMode && data.screening_answers && data.screening_answers.length > 0) {
+      score += this.calculateScreeningScore(data.screening_answers);
     }
 
     return Math.min(Math.round(score), 100);
+  }
+
+  /**
+   * Calculate screening score from advanced screening answers (30 points max)
+   *
+   * Categories (6 points each, 5 categories = 30 points max):
+   * - Experience: Years in business, specialization
+   * - Licensing: Licenses, insurance, certifications
+   * - Warranty: Guarantees, callbacks, satisfaction policies
+   * - Methods: Techniques, equipment, diagnostic process
+   * - References: Reviews, portfolio, references
+   *
+   * Quality scoring per answer:
+   * - excellent: 6 points (impressive, specific credentials)
+   * - good: 4 points (clear positive answer)
+   * - adequate: 2 points (acceptable but not standout)
+   * - poor: 0 points (vague or concerning)
+   * - no_answer: 0 points (didn't answer or deflected)
+   */
+  private calculateScreeningScore(answers: ScreeningAnswer[]): number {
+    const categoryScores: Record<string, number> = {
+      experience: 0,
+      licensing: 0,
+      warranty: 0,
+      methods: 0,
+      references: 0,
+    };
+
+    const qualityPoints: Record<string, number> = {
+      excellent: 6,
+      good: 4,
+      adequate: 2,
+      poor: 0,
+      no_answer: 0,
+    };
+
+    // Score each answer, keeping only the best score per category
+    for (const answer of answers) {
+      const points = qualityPoints[answer.quality] || 0;
+      const category = answer.category;
+      if (category in categoryScores) {
+        // Keep the best score if multiple answers in same category
+        const currentScore = categoryScores[category] ?? 0;
+        categoryScores[category] = Math.max(currentScore, points);
+      }
+    }
+
+    // Sum all category scores (max 30 points: 5 categories × 6 points)
+    const totalScore = Object.values(categoryScores).reduce((sum, pts) => sum + pts, 0);
+
+    console.log(`[Screening Score] Categories: ${JSON.stringify(categoryScores)}, Total: ${totalScore}/30`);
+
+    return totalScore;
   }
 
   /**
@@ -268,6 +366,7 @@ export class RecommendationService {
     data: StructuredCallData
   ): string {
     const parts: string[] = [];
+    const advancedMode = isAdvancedScreeningEnabled();
 
     // 1. Lead with criteria match (most important to user)
     if (data.all_criteria_met) {
@@ -301,7 +400,15 @@ export class RecommendationService {
       parts.push(`Quoted: ${data.estimated_rate}`);
     }
 
-    // 5. AI-generated insight from actual conversation (call summary)
+    // 5. Screening insights (only in advanced mode)
+    if (advancedMode && data.screening_answers && data.screening_answers.length > 0) {
+      const screeningInsights = this.buildScreeningInsights(data.screening_answers);
+      if (screeningInsights) {
+        parts.push(screeningInsights);
+      }
+    }
+
+    // 6. AI-generated insight from actual conversation (call summary)
     const summary = result.analysis?.summary;
     if (summary && summary.length > 10) {
       // Skip summaries focused on the user's request
@@ -331,6 +438,64 @@ export class RecommendationService {
     return parts.length > 0
       ? parts.join(" • ")
       : "Provider contacted successfully";
+  }
+
+  /**
+   * Build screening insights summary from screening answers
+   * Highlights the best qualifications from the call
+   */
+  private buildScreeningInsights(answers: ScreeningAnswer[]): string | null {
+    // Find excellent and good answers
+    const highlights: string[] = [];
+
+    // Group by category and find best answers
+    const categoryBest: Record<string, ScreeningAnswer | null> = {
+      experience: null,
+      licensing: null,
+      warranty: null,
+      methods: null,
+      references: null,
+    };
+
+    for (const answer of answers) {
+      const current = categoryBest[answer.category];
+      const qualityRank = { excellent: 4, good: 3, adequate: 2, poor: 1, no_answer: 0 };
+      if (!current || qualityRank[answer.quality] > qualityRank[current.quality]) {
+        categoryBest[answer.category] = answer;
+      }
+    }
+
+    // Extract highlights from excellent/good answers
+    for (const [category, answer] of Object.entries(categoryBest)) {
+      if (answer && (answer.quality === "excellent" || answer.quality === "good")) {
+        const categoryLabels: Record<string, string> = {
+          experience: "Experience",
+          licensing: "Licensed",
+          warranty: "Warranty",
+          methods: "Methods",
+          references: "References",
+        };
+
+        // Create concise highlight
+        if (answer.quality === "excellent") {
+          highlights.push(`★ ${categoryLabels[category]}: ${this.truncateAnswer(answer.answer)}`);
+        } else if (answer.quality === "good" && highlights.length < 2) {
+          highlights.push(`${categoryLabels[category]}: ${this.truncateAnswer(answer.answer)}`);
+        }
+      }
+    }
+
+    // Return top 2 highlights max
+    if (highlights.length === 0) return null;
+    return highlights.slice(0, 2).join(" • ");
+  }
+
+  /**
+   * Truncate answer to reasonable length for display
+   */
+  private truncateAnswer(answer: string): string {
+    if (answer.length <= 40) return answer;
+    return answer.substring(0, 37) + "...";
   }
 
   /**

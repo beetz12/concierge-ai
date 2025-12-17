@@ -54,3 +54,8 @@ This project is submitted for:
 - **Infinity Build:** Developer tools built on Cline CLI.
 
 #AI #Hackathon #Kestra #VAPI #Gemini #Vercel #NextJS #OpenSource #VoiceAI #AgenticAI
+
+channel id: 1447633282337341572
+auth id: <REDACTED> 
+
+./DiscordChatExporter.Cli export -t "<REDACTED>" -c 1447633282337341572 --format Json --output ./output.json
