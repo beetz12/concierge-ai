@@ -163,6 +163,16 @@ const LiveStatus: React.FC<LiveStatusProps> = ({
 
     // Case 2: ANALYZING but callProgress is null - check provider states
     if (safeStatus === "analyzing" && !callProgress && providers && providers.length > 0) {
+      // Check if interaction logs show calls were completed (e.g. "Vetting ..." entries)
+      const hasCallInteractions = interactions.some(i =>
+        (i.stepName || "").includes("Vetting")
+      );
+
+      // If call interactions exist, calls did happen - proceed to analyzing
+      if (hasCallInteractions) {
+        return safeStatus;
+      }
+
       // Check if any providers have error status
       const hasErrors = providers.some(p =>
         p.callStatus === 'error' || p.callStatus === 'failed'
