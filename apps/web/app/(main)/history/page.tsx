@@ -65,7 +65,7 @@ export default async function RequestHistory() {
                 ? req.providers
                 : [];
               const selectedProvider = req.selected_provider_id
-                ? providers.find((p) => p.id === req.selected_provider_id)
+                ? providers.find((p: { id: string }) => p.id === req.selected_provider_id)
                 : null;
 
               return (
@@ -111,13 +111,13 @@ export default async function RequestHistory() {
                         <div className="flex gap-2 mt-2 flex-wrap">
                           {(() => {
                             const successCount = providers.filter(
-                              (p) => p.call_status === "completed"
+                              (p: { call_status?: string | null }) => p.call_status === "completed"
                             ).length;
                             const failedCount = providers.filter(
-                              (p) => p.call_status === "failed"
+                              (p: { call_status?: string | null }) => p.call_status === "failed"
                             ).length;
                             const pendingCount = providers.filter(
-                              (p) => !p.call_status || p.call_status === "pending"
+                              (p: { call_status?: string | null }) => !p.call_status || p.call_status === "pending"
                             ).length;
                             return (
                               <>

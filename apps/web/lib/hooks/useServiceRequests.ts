@@ -46,7 +46,7 @@ export function useServiceRequests(userId?: string) {
 
         // Transform the data to ensure arrays for relations
         const transformedData: ServiceRequestWithRelations[] = (data || []).map(
-          (item) => ({
+          (item: any) => ({
             ...item,
             providers: Array.isArray(item.providers)
               ? item.providers
@@ -80,7 +80,7 @@ export function useServiceRequests(userId?: string) {
           schema: "public",
           table: "service_requests",
         },
-        (payload) => {
+        (payload: any) => {
           if (payload.eventType === "INSERT") {
             setRequests((prev) => [
               payload.new as ServiceRequestWithRelations,

@@ -227,7 +227,7 @@ export default function NewRequest() {
         );
 
         // Map database records to local format, using database UUIDs as IDs
-        providers = dbProviders.map((dbp, idx) => ({
+        providers = dbProviders.map((dbp: Record<string, unknown>, idx: number) => ({
           id: dbp.id, // This is the database UUID - critical for VAPI call persistence
           name: dbp.name,
           phone: dbp.phone || undefined,

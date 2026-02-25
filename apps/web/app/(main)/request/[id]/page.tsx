@@ -372,7 +372,7 @@ export default function RequestDetails() {
           location: data.location || undefined,
           status: safeRequestStatus(data.status),
           createdAt: data.created_at,
-          providersFound: providers.map((p) => ({
+          providersFound: providers.map((p: any) => ({
             id: p.id,
             name: p.name,
             phone: p.phone || "",
@@ -407,7 +407,7 @@ export default function RequestDetails() {
             booking_time: p.booking_time || undefined,
             confirmation_number: p.confirmation_number || undefined,
           })),
-          interactions: logs.map((log) => ({
+          interactions: logs.map((log: any) => ({
             id: log.id,
             timestamp: log.timestamp,
             stepName: log.step_name,
@@ -459,7 +459,7 @@ export default function RequestDetails() {
           table: "service_requests",
           filter: `id=eq.${id}`,
         },
-        (payload) => {
+        (payload: any) => {
           console.log("Real-time update:", payload);
           if (payload.eventType === "UPDATE" && payload.new) {
             const newStatus = payload.new.status as string;
@@ -584,7 +584,7 @@ export default function RequestDetails() {
           table: "providers",
           filter: `request_id=eq.${id}`,
         },
-        async (payload) => {
+        async (payload: any) => {
           console.log("Provider change received:", payload);
 
           // Cast payload.new to a record type for type safety
@@ -605,7 +605,7 @@ export default function RequestDetails() {
                 if (!prev) return prev;
                 return {
                   ...prev,
-                  providersFound: providers.map((p) => ({
+                  providersFound: providers.map((p: any) => ({
                     id: p.id,
                     name: p.name,
                     phone: p.phone || "",
@@ -677,7 +677,7 @@ export default function RequestDetails() {
                   if (!prev) return prev;
                   return {
                     ...prev,
-                    providersFound: providers.map((p) => ({
+                    providersFound: providers.map((p: any) => ({
                       id: p.id,
                       name: p.name,
                       phone: p.phone || "",
@@ -730,7 +730,7 @@ export default function RequestDetails() {
           table: "interaction_logs",
           filter: `request_id=eq.${id}`,
         },
-        (payload) => {
+        (payload: any) => {
           console.log("Interaction log added:", payload);
           // Refetch all data when new interaction log is added
           if (payload.new) {
@@ -759,7 +759,7 @@ export default function RequestDetails() {
                 // Combine DB logs with any existing local logs (from real-time updates)
                 // and deduplicate by log ID
                 const existingLogs = realtimeRequest?.interactions || localRequest?.interactions || [];
-                const allLogs = [...existingLogs, ...logs.map((log) => ({
+                const allLogs = [...existingLogs, ...logs.map((log: any) => ({
                   id: log.id,
                   timestamp: log.timestamp,
                   stepName: log.step_name,
@@ -784,7 +784,7 @@ export default function RequestDetails() {
                   location: data.location || undefined,
                   status: data.status as RequestStatus,
                   createdAt: data.created_at,
-                  providersFound: providers.map((p) => ({
+                  providersFound: providers.map((p: any) => ({
                     id: p.id,
                     name: p.name,
                     phone: p.phone || "",
