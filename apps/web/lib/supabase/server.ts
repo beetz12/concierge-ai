@@ -14,6 +14,21 @@ export async function createClient() {
     process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY;
 
   if (!supabaseUrl || !supabaseAnonKey) {
+    if (process.env.NEXT_PUBLIC_DEMO_MODE === "true") {
+      // In demo mode, return a mock client
+      return {
+        from: () => ({
+          select: () => ({ data: [], error: null, single: () => ({ data: null, error: null }) }),
+          insert: () => ({ select: () => ({ data: [], error: null, single: () => ({ data: null, error: null }) }) }),
+          update: () => ({ eq: () => ({ select: () => ({ data: null, error: null, single: () => ({ data: null, error: null }) }) }) }),
+          delete: () => ({ eq: () => ({ data: null, error: null }) }),
+        }),
+        auth: {
+          getSession: async () => ({ data: { session: null }, error: null }),
+          onAuthStateChange: () => ({ data: { subscription: { unsubscribe: () => {} } } }),
+        },
+      } as any;
+    }
     throw new Error(
       "Missing Supabase environment variables. Please check your .env.local file.",
     );

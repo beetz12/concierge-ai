@@ -135,7 +135,20 @@ VAPI_PHONE_NUMBER_ID=...
 VAPI_WEBHOOK_URL=...              # Optional: enables hybrid webhook mode
 BACKEND_URL=http://localhost:8000  # Internal URL for webhook cache polling
 VAPI_ADVANCED_SCREENING=false     # Toggle advanced provider screening (see below)
+VAPI_USE_REALTIME=false           # Toggle OpenAI Realtime mode (see below)
+VAPI_REALTIME_VOICE=marin         # Voice selection for Realtime mode
 ```
+
+**VAPI Voice Modes** (`VAPI_USE_REALTIME`):
+- `false` (default): **Traditional Mode** - Uses Gemini + Deepgram STT + ElevenLabs TTS pipeline. 800-1200ms latency.
+- `true`: **Realtime Mode** - Uses OpenAI GPT-4o Realtime for native speech-to-speech. 300-700ms latency, natural voice with emotional intelligence.
+
+**VAPI Realtime Voices** (`VAPI_REALTIME_VOICE`):
+- `alloy` - Neutral, versatile
+- `echo` - Warm, engaging
+- `shimmer` - Energetic, expressive
+- `marin` (default) - Professional, clear (recommended for business)
+- `cedar` - Natural, conversational
 
 **VAPI Screening Modes** (`VAPI_ADVANCED_SCREENING`):
 - `false` (default): **Demo/Simple Mode** - Agent only asks availability + rate, then ends call with proper closing. Ideal for quick demos.
@@ -160,6 +173,24 @@ NEXT_PUBLIC_ADMIN_TEST_NUMBER=+1234         # Legacy single test phone (deprecat
 
 Note: Gemini API key is backend-only (not exposed to client).
 
+### Demo Mode
+
+Demo mode allows the app to run with only a Gemini API key — no Supabase, no VAPI, no Twilio needed.
+
+**Activation:**
+1. Backend: Set `DEMO_MODE=true` in `apps/api/.env` (or copy `apps/api/.env.demo`)
+2. Frontend: Set `NEXT_PUBLIC_DEMO_MODE=true` in `apps/web/.env.local` (or copy `apps/web/.env.demo`)
+
+**What happens in demo mode:**
+- **Database**: Skipped entirely. Server actions return mock responses with generated UUIDs. AppProvider localStorage handles all state.
+- **Auth**: Bypassed. A demo user is auto-authenticated. Middleware allows all routes.
+- **VAPI Calls**: Replaced with Gemini `simulateCall()`. Realistic AI-generated transcripts with 3-8 second delays.
+- **Provider Search**: Still uses real Gemini API (the core demo value).
+- **Real-time**: Supabase subscriptions disabled. Recommendations auto-generated from local state.
+- **UI**: Amber "Demo Mode" banner at top. "Simulated" badges on call transcripts.
+
+**Minimum requirements for demo:** Just `GEMINI_API_KEY` in `apps/api/.env`.
+
 ## Tech Stack
 
 - **Frontend**: Next.js 16, React 19, Tailwind CSS 4, TypeScript 5.9
@@ -179,6 +210,16 @@ The VAPI calling system uses a single source of truth pattern to maintain DRY pr
 - Contains the canonical assistant configuration
 - Defines conversation flow, prompts, and analysis schema
 - Used by both direct VAPI API calls and Kestra orchestration
+- Supports two voice modes: Traditional (Gemini + ElevenLabs) and Realtime (OpenAI GPT-4o)
+
+**Voice Mode Architecture**:
+
+| Mode | Pipeline | Latency | Voice Quality |
+|------|----------|---------|---------------|
+| **Traditional** | Deepgram STT → Gemini → ElevenLabs TTS | 800-1200ms | Robotic |
+| **Realtime** | OpenAI GPT-4o native audio-to-audio | 300-700ms | Natural, emotionally intelligent |
+
+Toggle with `VAPI_USE_REALTIME=true`. No infrastructure changes needed - just config.
 
 **Hybrid Webhook Mode**: `apps/api/src/services/vapi/direct-vapi.client.ts`
 

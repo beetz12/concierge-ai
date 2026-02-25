@@ -46,9 +46,12 @@ import {
 } from "@/lib/services/providerCallingService";
 import { usePhoneValidation } from "@/lib/hooks/usePhoneValidation";
 
+import { DEMO_MODE } from "@/lib/config/demo";
+
 // Environment toggle for live VAPI calls vs simulated calls
 // Note: Test phone substitution is handled by backend (ADMIN_TEST_NUMBER in backend .env)
-const LIVE_CALL_ENABLED = process.env.NEXT_PUBLIC_LIVE_CALL_ENABLED === "true";
+// In demo mode, always use simulated calls (no real VAPI calls)
+const LIVE_CALL_ENABLED = !DEMO_MODE && process.env.NEXT_PUBLIC_LIVE_CALL_ENABLED === "true";
 
 import {
   createServiceRequest,
@@ -397,6 +400,7 @@ export default function NewRequest() {
               ? {
                   systemPrompt: researchPrompt.systemPrompt,
                   firstMessage: researchPrompt.firstMessage,
+                  contextualQuestions: researchPrompt.contextualQuestions, // Screening questions for advanced mode
                   // closingScript is intentionally omitted - backend uses dynamic closing with client name
                 }
               : undefined,

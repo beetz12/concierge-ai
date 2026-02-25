@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { motion } from "motion/react";
 import {
   LayoutDashboard,
@@ -13,8 +13,11 @@ import {
   ChevronLeft,
   X,
   Home,
+  LogOut,
+  User,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useAuth, useAuthActions } from "@/lib/providers/AuthProvider";
 
 import {
   Sidebar,
@@ -40,7 +43,10 @@ const navItems = [
 
 export function AppSidebar() {
   const pathname = usePathname();
+  const router = useRouter();
   const { state, toggleSidebar, isMobile, setOpenMobile } = useSidebar();
+  const { user, isAuthenticated, isLoading } = useAuth();
+  const { signOut } = useAuthActions();
 
   const isActive = (href: string) => {
     if (href === "/") return pathname === "/";
@@ -53,6 +59,19 @@ export function AppSidebar() {
       setOpenMobile(false);
     }
   };
+
+  const handleSignOut = async () => {
+    await signOut();
+    router.push("/login");
+  };
+
+  // Get display name or email initial
+  const userInitial = user?.email?.charAt(0).toUpperCase() || "?";
+  const displayName =
+    user?.user_metadata?.display_name ||
+    user?.user_metadata?.first_name ||
+    user?.email?.split("@")[0] ||
+    "User";
 
   return (
     <Sidebar collapsible="icon">
@@ -145,12 +164,54 @@ export function AppSidebar() {
 
       <SidebarFooter>
         <SidebarMenu>
-          <SidebarMenuItem>
-            <SidebarMenuButton tooltip="Settings" className="text-slate-400 hover:text-slate-100">
-              <Settings className="h-4 w-4" />
-              <span>Settings</span>
-            </SidebarMenuButton>
-          </SidebarMenuItem>
+          {isAuthenticated && user ? (
+            <>
+              {/* User Profile */}
+              <SidebarMenuItem>
+                <div
+                  className={cn(
+                    "flex items-center gap-3 px-2 py-2 rounded-lg",
+                    state === "collapsed" && !isMobile ? "justify-center" : ""
+                  )}
+                >
+                  <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-primary-500/20 text-primary-400 text-sm font-semibold">
+                    {userInitial}
+                  </div>
+                  {(state === "expanded" || isMobile) && (
+                    <div className="flex flex-col min-w-0">
+                      <span className="text-sm font-medium text-slate-100 truncate">
+                        {displayName}
+                      </span>
+                      <span className="text-xs text-slate-500 truncate">
+                        {user.email}
+                      </span>
+                    </div>
+                  )}
+                </div>
+              </SidebarMenuItem>
+              {/* Sign Out Button */}
+              <SidebarMenuItem>
+                <SidebarMenuButton
+                  tooltip="Sign out"
+                  onClick={handleSignOut}
+                  className="text-slate-400 hover:text-red-400 hover:bg-red-500/10"
+                >
+                  <LogOut className="h-4 w-4" />
+                  <span>Sign out</span>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+            </>
+          ) : (
+            /* Sign In Link */
+            <SidebarMenuItem>
+              <SidebarMenuButton asChild tooltip="Sign in">
+                <Link href="/login" onClick={handleLinkClick}>
+                  <User className="h-4 w-4" />
+                  <span>Sign in</span>
+                </Link>
+              </SidebarMenuButton>
+            </SidebarMenuItem>
+          )}
         </SidebarMenu>
       </SidebarFooter>
     </Sidebar>

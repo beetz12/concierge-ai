@@ -8,10 +8,12 @@ if (process.env.NODE_ENV !== "production") {
 import Fastify from "fastify";
 import cors from "@fastify/cors";
 import helmet from "@fastify/helmet";
+import rateLimit from "@fastify/rate-limit";
 import formbody from "@fastify/formbody";
 import swagger from "@fastify/swagger";
 import swaggerUi from "@fastify/swagger-ui";
 import supabasePlugin from "./plugins/supabase.js";
+import authPlugin from "./plugins/auth.js";
 import userRoutes from "./routes/users.js";
 import geminiRoutes from "./routes/gemini.js";
 import workflowRoutes from "./routes/workflows.js";
@@ -21,6 +23,15 @@ import notificationRoutes from "./routes/notifications.js";
 import twilioWebhookRoutes from "./routes/twilio-webhook.js";
 import bookingRoutes from "./routes/bookings.js";
 import intakeRoutes from "./routes/intake.js";
+import demoRoutes from "./routes/demo.js";
+import {
+  extractClientIp,
+  isBlacklisted,
+  isAllowlisted,
+  getBlacklistSize,
+  addToBlacklist,
+} from "./config/ip-blacklist.js";
+import { isDemoMode } from "./config/demo.js";
 
 // =============================================================================
 // Environment Variable Validation and Logging
@@ -82,7 +93,18 @@ for (const opt of ENV_VALIDATION.optional) {
 
 console.log("=".repeat(60));
 
-if (criticalMissing) {
+if (isDemoMode()) {
+  console.log("");
+  console.log("========================================");
+  console.log("⚡ DEMO MODE ACTIVE");
+  console.log("  - Supabase: SKIPPED (in-memory)");
+  console.log("  - VAPI calls: SKIPPED (Gemini simulation)");
+  console.log("  - Auth: BYPASSED (demo user)");
+  console.log("========================================");
+  console.log("");
+}
+
+if (criticalMissing && !isDemoMode()) {
   console.error("ERROR: Critical environment variables are missing!");
   console.error("The application may not function correctly.");
   // Don't exit in production - let it run and fail gracefully
@@ -106,6 +128,43 @@ const server = Fastify({
   },
 });
 
+// =============================================================================
+// IP Blacklist Hook - Runs before ALL other middleware
+// 2025 Best Practice: Block at earliest lifecycle point (onRequest)
+// =============================================================================
+server.addHook("onRequest", async (request, reply) => {
+  const clientIp = extractClientIp(request);
+
+  // Allowlisted IPs bypass all security checks
+  if (isAllowlisted(clientIp)) {
+    return;
+  }
+
+  // Block blacklisted IPs with 403 Forbidden
+  if (isBlacklisted(clientIp)) {
+    request.log.warn(
+      {
+        event: "ip_blocked",
+        ip: clientIp,
+        method: request.method,
+        url: request.url,
+        userAgent: request.headers["user-agent"],
+      },
+      "Blocked request from blacklisted IP"
+    );
+
+    reply.code(403).send({
+      statusCode: 403,
+      error: "Forbidden",
+      message: "Access denied",
+    });
+    return;
+  }
+});
+
+// Log blacklist size at startup
+console.log(`IP Blacklist: ${getBlacklistSize()} IPs blocked`);
+
 // Register plugins
 // CORS_ORIGIN supports multiple origins as comma-separated values
 // Example: CORS_ORIGIN="http://localhost:3000,https://app.example.com,https://staging.example.com"
@@ -117,6 +176,53 @@ await server.register(cors, {
   origin: corsOrigins.length === 1 ? corsOrigins[0] : corsOrigins,
 });
 await server.register(helmet);
+
+// Rate limiting - 2025 best practices
+// Global rate limit with IETF draft spec headers and automatic ban
+await server.register(rateLimit, {
+  global: true,
+  max: 100, // 100 requests per minute globally
+  ban: 5, // After 5 rate limit violations, permanently ban the IP
+  timeWindow: "1 minute",
+  hook: "onRequest", // Early rejection for efficiency
+  enableDraftSpec: true, // IETF draft-7 standard headers
+  addHeadersOnExceeding: {
+    "x-ratelimit-limit": true,
+    "x-ratelimit-remaining": true,
+    "x-ratelimit-reset": true,
+  },
+  addHeaders: {
+    "x-ratelimit-limit": true,
+    "x-ratelimit-remaining": true,
+    "x-ratelimit-reset": true,
+    "retry-after": true,
+  },
+  keyGenerator: (request) => {
+    // Support for proxied requests (nginx, cloudflare, etc.)
+    return (
+      request.headers["x-forwarded-for"]?.toString().split(",")[0]?.trim() ||
+      request.headers["x-real-ip"]?.toString() ||
+      request.ip
+    );
+  },
+  onExceeded: (request, key) => {
+    request.log.warn({ key, url: request.url }, "Rate limit exceeded");
+  },
+  onBanReach: (request, key) => {
+    // Permanently add IP to blacklist after repeated violations
+    addToBlacklist(key);
+    request.log.error(
+      {
+        event: "ip_permanently_banned",
+        ip: key,
+        method: request.method,
+        url: request.url,
+        userAgent: request.headers["user-agent"],
+      },
+      "IP permanently banned after repeated rate limit violations"
+    );
+  },
+});
 
 // Register form-urlencoded parser for Twilio webhooks
 // Twilio sends webhook data as application/x-www-form-urlencoded
@@ -174,7 +280,11 @@ await server.register(swaggerUi, {
 // Register Supabase plugin
 await server.register(supabasePlugin);
 
-// Health check endpoint
+// Register Auth plugin (must be after Supabase)
+await server.register(authPlugin);
+
+// Health check endpoint with lenient rate limit
+// Monitoring systems (K8s, load balancers) need reliable access
 server.get(
   "/health",
   {
@@ -189,6 +299,20 @@ server.get(
             timestamp: { type: "string" },
           },
         },
+        429: {
+          type: "object",
+          properties: {
+            statusCode: { type: "number" },
+            error: { type: "string" },
+            message: { type: "string" },
+          },
+        },
+      },
+    },
+    config: {
+      rateLimit: {
+        max: 300, // Higher limit for health checks (5 req/sec)
+        timeWindow: "1 minute",
       },
     },
   },
@@ -231,6 +355,7 @@ server.get(
         twilio: "/api/v1/twilio",
         bookings: "/api/v1/bookings",
         intake: "/api/v1/intake",
+        demo: "/api/v1/demo",
         docs: "/docs",
       },
     };
@@ -263,6 +388,9 @@ await server.register(bookingRoutes, { prefix: "/api/v1/bookings" });
 
 // Register Intake routes
 await server.register(intakeRoutes, { prefix: "/api/v1/intake" });
+
+// Register Demo routes
+await server.register(demoRoutes, { prefix: "/api/v1/demo" });
 
 // Start server with port fallback
 const start = async () => {

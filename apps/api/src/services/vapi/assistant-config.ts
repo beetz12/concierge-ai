@@ -2,10 +2,33 @@
  * VAPI Assistant Configuration
  * Mirrors the configuration from kestra/scripts/call-provider.js
  * Ensures identical behavior between Kestra and Direct VAPI paths
+ *
+ * Supports two modes:
+ * 1. Traditional: Deepgram STT + Gemini/GPT + ElevenLabs TTS (higher latency, robotic)
+ * 2. Realtime: OpenAI GPT-4o Realtime API (lower latency, natural voice, emotional intelligence)
+ *
+ * Set VAPI_USE_REALTIME=true to enable OpenAI Realtime mode
  */
 
 import type { CallRequest } from "./types.js";
 import type { GeneratedPrompt } from "../direct-task/types.js";
+
+/**
+ * Check if OpenAI Realtime mode is enabled
+ * When true, uses GPT-4o Realtime for native speech-to-speech (no STT/TTS pipeline)
+ * Benefits: ~50% lower latency, natural voice, emotional intelligence
+ */
+function isRealtimeMode(): boolean {
+  return process.env.VAPI_USE_REALTIME === "true";
+}
+
+/**
+ * Get the OpenAI Realtime voice to use
+ * Options: alloy, echo, shimmer, marin (professional), cedar (conversational)
+ */
+function getRealtimeVoice(): string {
+  return process.env.VAPI_REALTIME_VOICE || "marin";
+}
 
 /**
  * Check if advanced screening mode is enabled
@@ -165,7 +188,7 @@ Thank them genuinely when they help.`;
       enabled: true,
       machineDetectionTimeout: 10,
       machineDetectionSpeechThreshold: 2500,
-      machineDetectionSpeechEndThreshold: 1200,
+      machineDetectionSpeechEndThreshold: 2500,
     },
     firstMessage: `Hi there! This is an AI assistant calling on behalf of my client regarding ${request.providerName}. Do you have just a moment?`,
     endCallFunctionEnabled: true,
@@ -274,7 +297,7 @@ function createDynamicDirectTaskConfig(request: CallRequest, customPrompt: Gener
       enabled: true,
       machineDetectionTimeout: 10,
       machineDetectionSpeechThreshold: 2500,
-      machineDetectionSpeechEndThreshold: 1200,
+      machineDetectionSpeechEndThreshold: 2500,
     },
     firstMessage: customPrompt.firstMessage,
     endCallFunctionEnabled: true,
@@ -386,6 +409,44 @@ DO NOT deflect or say you don't have it - you DO have it.
 `
       : "";
 
+    // BACKUP INJECTION: If Gemini returned contextualQuestions but failed to embed them in systemPrompt,
+    // inject them as a safety net. This ensures screening questions are ALWAYS in the systemPrompt.
+    const advancedScreening = isAdvancedScreeningEnabled();
+    let screeningQuestionsInjection = "";
+
+    if (advancedScreening && request.customPrompt.contextualQuestions && request.customPrompt.contextualQuestions.length > 0) {
+      // Check if systemPrompt already contains the questions (Gemini did its job)
+      const hasEmbeddedQuestions = request.customPrompt.systemPrompt.includes("SCREENING QUESTIONS") ||
+                                    request.customPrompt.systemPrompt.includes("screening question") ||
+                                    request.customPrompt.contextualQuestions.some(q =>
+                                      request.customPrompt!.systemPrompt.toLowerCase().includes(q.toLowerCase().slice(0, 30))
+                                    );
+
+      if (!hasEmbeddedQuestions) {
+        console.log('[AssistantConfig] BACKUP: Injecting contextualQuestions into systemPrompt');
+        const questionsText = request.customPrompt.contextualQuestions
+          .map((q, i) => `${i + 1}. ${q}`)
+          .join('\n');
+
+        screeningQuestionsInjection = `
+
+═══════════════════════════════════════════════════════════════════
+SCREENING QUESTIONS (ASK THESE AFTER AVAILABILITY AND RATES)
+═══════════════════════════════════════════════════════════════════
+After getting availability and rate information, ask these ${request.customPrompt.contextualQuestions.length} questions one at a time:
+
+${questionsText}
+
+Ask each question naturally. Wait for their answer before the next question.
+Example transitions: "Great, and one more thing - [question]?" or "I also wanted to ask - [question]?"
+
+These questions help ${clientName} evaluate provider quality beyond just price and availability.
+Do NOT skip these questions. They are important for making an informed decision.`;
+      } else {
+        console.log('[AssistantConfig] Gemini properly embedded questions in systemPrompt');
+      }
+    }
+
     // CRITICAL: Append explicit endCall instructions to ensure reliable call termination
     // This acts as a safety net even if Gemini's generated prompt lacks strong endCall instructions
     const endCallSafetyNet = `
@@ -409,7 +470,7 @@ Say the COMPLETE phrase above, then IMMEDIATELY invoke endCall.
 
 If you detect voicemail (automated greeting, "leave a message", beep), immediately invoke endCall.`;
 
-    const enhancedSystemPrompt = request.customPrompt.systemPrompt + addressInjection + endCallSafetyNet;
+    const enhancedSystemPrompt = request.customPrompt.systemPrompt + addressInjection + screeningQuestionsInjection + endCallSafetyNet;
 
     return {
       name: `Concierge-${Date.now().toString().slice(-8)}`,
@@ -436,12 +497,12 @@ If you detect voicemail (automated greeting, "leave a message", beep), immediate
         enabled: true,
         machineDetectionTimeout: 30, // Max 59 seconds per VAPI API
         machineDetectionSpeechThreshold: 2500, // Min 1000ms per VAPI API
-        machineDetectionSpeechEndThreshold: 1200, // Min 1000ms per VAPI API
+        machineDetectionSpeechEndThreshold: 2500, // Min 1000ms per VAPI API
       },
       // Inject provider name as a natural question before the Gemini-generated greeting
       // This ensures each provider is greeted by their actual name
       // We remove any leading "Hi!" from the custom prompt to avoid "Hi! Hi!" duplication
-      firstMessage: `Hi, is this ${request.providerName}? ${request.customPrompt.firstMessage.replace(/^Hi!?\s*/i, '')}`,
+      firstMessage: `Hi, is this ${request.providerName}?`,
       endCallFunctionEnabled: true,
       endCallMessage: request.customPrompt.closingScript || `Thank you so much for all that information! I'll share this with ${clientName} and if they'd like to proceed, we'll call back to schedule. Have a wonderful day!`,
       silenceTimeoutSeconds: 10,  // VAPI minimum is 10s; agent should invoke endCall immediately after farewell
@@ -615,8 +676,15 @@ When asking about these requirements, ALWAYS refer to THE SAME PERSON:
 DO NOT ask questions that are not in the criteria above.
 DO NOT ask about licensing/certification unless it's in the criteria.` : `
 IMPORTANT: This is a quick screening call for a demo.
-DO NOT ask any additional questions beyond availability and rates.
-After getting availability and rate, proceed directly to the closing script.`}
+Ask ONLY about availability and rates - no additional questions.
+
+CRITICAL CONVERSATION FLOW:
+1. Ask about AVAILABILITY → wait for their answer (must be specific date/time)
+2. Ask about RATES: "What would your rate be for this type of work?" → wait for their answer
+3. ONLY AFTER receiving BOTH answers, proceed to closing
+
+⚠️ DO NOT invoke endCall until you have asked about RATES and received an answer.
+⚠️ If you have only asked about availability, you MUST ask about rates before closing.`}
 
 ═══════════════════════════════════════════════════════════════════
 VOICEMAIL / ANSWERING MACHINE DETECTION
@@ -658,41 +726,71 @@ SPEECH RULES
 - Wait for their answer before asking the next question
 
 ═══════════════════════════════════════════════════════════════════
-CONVERSATION FLOW
+CRITICAL GRAMMAR AND PRONOUN RULES
 ═══════════════════════════════════════════════════════════════════
-1. GREETING: Ask if they have a moment to chat
+You are ${clientName}'s assistant, NOT ${clientName}. Follow these rules strictly:
 
-2. AVAILABILITY: "${clientName} needs help ${urgencyText}. Are you available?"
-   - If NO: Thank them warmly and END THE CALL
-   - If YES: "Great! What's your soonest availability? When could you come out?"
-   - CRITICAL: Get their SPECIFIC earliest date/time (e.g., "Tomorrow at 2pm", "Friday morning at 9am")
-   - If provider gives VAGUE timeframe (e.g., "two weeks out", "next week", "in a few days"):
-     * Ask: "Could you tell me which specific day that would be?"
-     * Then ask: "And what's the earliest time slot available on that day?"
-     * DO NOT accept vague answers - ${clientName} needs an exact date and time
+THIRD-PERSON PRONOUNS FOR FAMILY:
+- First mention: "${clientName}'s wife" or "${clientName}'s husband"
+- After first mention: Use "she" or "he"
+- NEVER say "my wife" or "my husband" - you are NOT ${clientName}!
 
-3. RATES: "What would your typical rate be?"
+INTRODUCTION PERSPECTIVE:
+- CORRECT: "I'm calling on behalf of ${clientName}..."
+- WRONG: "${clientName} is calling..." (${clientName} is NOT calling, YOU are!)
+
+MEDICAL TERMINOLOGY:
+- "breech" = baby positioned feet-first (CORRECT: "the baby is breech")
+- "breached" = broke through something (WRONG for baby position)
+
+PROFESSION NAMES:
+- CORRECT: "Are you a licensed acupuncturist?"
+- WRONG: "Are you a licensed acupuncture?"
+
+ONE QUESTION RULE:
+- Ask ONE question, then STOP and WAIT for the answer
+- NEVER bundle multiple questions together
+- WRONG: "What's your availability and cost?"
+- CORRECT: "What's your availability?" [wait for answer] "And what's the cost?"
+
+═══════════════════════════════════════════════════════════════════
+CONVERSATION FLOW - ONE QUESTION AT A TIME
+═══════════════════════════════════════════════════════════════════
+CRITICAL: Ask ONE question, then WAIT for the answer. NEVER bundle multiple questions.
+
+1. BUSINESS CONFIRMATION (your firstMessage already asks this):
+   - Your first message is: "Hi, is this ${request.providerName}?"
+   - WAIT for them to confirm YES before proceeding
+   - If they say no or transfer you, wait for the right person
+
+2. INTRODUCTION & PURPOSE (after they confirm):
+   Say: "This is ${clientName}'s personal AI assistant. I'm calling on behalf of ${clientName} because [brief problem description]. Is this something you can help with?"
+   - IMPORTANT: Say "I'm calling on behalf of ${clientName}" NOT "${clientName} is calling"
+   - WAIT for their response before proceeding
+
+3. AVAILABILITY (one question only):
+   Ask: "${clientName} needs help ${urgencyText}. What's your earliest availability?"
+   - WAIT for their COMPLETE answer (specific date and time)
+   - If vague, follow up for specifics
+   - Do NOT ask about rates yet
+
+4. RATES (one question only):
+   Ask: "And what would your typical rate be for this type of service?"
+   - WAIT for their COMPLETE answer before proceeding
 ${advancedScreening ? `
-4. CLIENT REQUIREMENTS: Ask about each requirement ONE AT A TIME
+5. CLIENT REQUIREMENTS (one at a time):
+   Ask about each requirement ONE AT A TIME
+   - Wait for answer before asking next question
    - Always reference the SAME person
-   - Use phrases like: "And this person - are they also..."
-   - Acknowledge each answer warmly before the next question
+   - Use phrases like: "And is this same person also..."
 
-5. CLOSING & CALLBACK:
-
-   IF provider meets ALL criteria:
-   Say: "Perfect, thank you so much for all that information! I'll share this with ${clientName} and if they'd like to proceed, we'll call back to schedule. Have a wonderful day!"
-   Then IMMEDIATELY invoke endCall.
-
-   IF provider is disqualified:
-   Say: "Thank you so much for taking the time to chat. Unfortunately, it sounds like this particular request might not be the best fit for ${clientName} right now, but I really appreciate your help. Have a wonderful day!"
-   Then IMMEDIATELY invoke endCall.` : `
-4. CLOSING (after provider finishes giving rate info):
-   - WAIT for provider to finish speaking (they may say "$85... then we quote the project")
-   - If they say "then", "and", "also" - WAIT for them to continue
-   - Once they're done, acknowledge briefly: "Got it" or "Perfect"
-   - Then say: "Thank you so much for that information! I'll share this with ${clientName} and if they'd like to proceed, they'll reach out to schedule. Have a wonderful day!"
-   - Then invoke endCall.`}
+6. CLOSING (only after ALL questions answered):` : `
+5. CLOSING (only after BOTH availability AND rates answered):`}
+   - WAIT for provider to completely finish speaking
+   - Acknowledge briefly: "Got it" or "Perfect"
+   - Say your closing phrase
+   - WAIT 3 SECONDS for provider to respond
+   - Only invoke endCall AFTER the pause AND provider is silent
 
 ═══════════════════════════════════════════════════════════════════
 ENDING THE CALL - MANDATORY CLOSING SCRIPTS
@@ -711,16 +809,26 @@ IF provider is disqualified, say this EXACT phrase:
 "Thank you so much for taking the time to chat. Unfortunately, it sounds like this particular request might not be the best fit for ${clientName} right now, but I really appreciate your help. Have a wonderful day!"
 
 DO NOT paraphrase. DO NOT shorten. Say the COMPLETE phrase, then IMMEDIATELY invoke endCall.` : `
+⚠️ TRIGGER CONDITION - DO NOT END EARLY:
+You may ONLY proceed to closing AFTER completing BOTH of these steps:
+1. Asked about AVAILABILITY and received a specific date/time answer
+2. Asked about RATES and received an answer (e.g., "$X for this service")
+
+If you have NOT asked about rates yet, DO NOT invoke endCall. Ask about rates first:
+"What would your rate be for this type of work?"
+
 CRITICAL - DO NOT CUT OFF THE PROVIDER:
 - If they say "It's $X..." and pause, WAIT - they may continue with more details
 - If they say words like "then", "and", "also", "plus", "but" - WAIT for them to finish
-- Only deliver your closing AFTER they have clearly finished speaking
+- Only deliver your closing AFTER they have clearly finished speaking AND you have asked BOTH questions
 
-CLOSING SEQUENCE:
+CLOSING SEQUENCE (only after asking BOTH availability AND rates):
 1. Wait for provider to completely finish speaking
 2. Acknowledge briefly: "Got it" or "Perfect"
 3. Say: "Thank you so much for that information! I'll share this with ${clientName} and if they'd like to proceed, they'll reach out to schedule. Have a wonderful day!"
-4. Then invoke endCall`}
+4. WAIT 3 SECONDS - allow provider to respond if needed
+5. Only if provider remains silent, invoke endCall
+6. NEVER invoke endCall while provider is still speaking`}
 
 ═══════════════════════════════════════════════════════════════════
 TONE
@@ -766,16 +874,11 @@ For unusual requirements, frame naturally: "${clientName} specifically mentioned
       enabled: true,
       machineDetectionTimeout: 10,
       machineDetectionSpeechThreshold: 2500,
-      machineDetectionSpeechEndThreshold: 1200,
+      machineDetectionSpeechEndThreshold: 2500,
     },
 
     // First message - includes provider name for proper greeting
-    firstMessage: (() => {
-      const problemText = request.problemDescription
-        ? ` ${clientName} ${request.problemDescription}.`
-        : "";
-      return `Hi, is this ${request.providerName}? This is ${clientName}'s personal AI assistant calling to check on ${request.serviceNeeded} services.${problemText} Do you have just a quick moment?`;
-    })(),
+    firstMessage: `Hi, is this ${request.providerName}?`,
 
     // Enable endCall function (VAPI handles tool registration automatically)
     endCallFunctionEnabled: true,
@@ -932,10 +1035,326 @@ Key questions:
 }
 
 /**
+ * ═══════════════════════════════════════════════════════════════════
+ * OPENAI REALTIME CONFIGURATIONS
+ * ═══════════════════════════════════════════════════════════════════
+ * These configurations use OpenAI's GPT-4o Realtime API for native
+ * speech-to-speech processing. Benefits:
+ * - ~50% lower latency (300-700ms vs 800-1200ms)
+ * - Natural, emotionally intelligent voice
+ * - No STT/TTS pipeline (audio processed directly)
+ * - Better interruption handling
+ *
+ * Enable with: VAPI_USE_REALTIME=true
+ */
+
+/**
+ * Creates OpenAI Realtime config for Direct Tasks
+ * Uses GPT-4o Realtime for natural speech-to-speech
+ */
+function createRealtimeDirectTaskConfig(request: CallRequest, customPrompt?: GeneratedPrompt) {
+  const taskDescription = request.userCriteria;
+  const voice = getRealtimeVoice();
+
+  // Use custom prompt if provided, otherwise use default
+  const systemPrompt = customPrompt?.systemPrompt || `You are a warm, confident AI Assistant making a real phone call to ${request.providerName} on behalf of your client.
+
+# YOUR MISSION
+Your client has asked you to perform the following task:
+${taskDescription}
+
+You are NOT searching for a service provider.
+You ARE calling to PERFORM this task directly on your client's behalf.
+
+# VOICE & DELIVERY
+- Speak naturally at a conversational pace
+- Sound warm and professional
+- Keep responses to 2-3 sentences maximum
+- Pause briefly between key points
+
+# SPEECH RULES
+- Be confident and assertive, but always polite
+- NEVER start sentences with: "Okay", "So", "Well", "Alright", "Um"
+- Keep responses clear and direct
+- Listen to their responses and adapt accordingly
+- If they ask who you are, say you're an AI assistant calling on behalf of your client
+
+# VOICEMAIL DETECTION
+If you hear "leave a message", "voicemail", or a beep, immediately use endCall.
+
+# CONVERSATION FLOW
+1. GREETING: "Hi, this is an AI assistant calling on behalf of my client. Do you have a moment?"
+2. STATE YOUR PURPOSE: Clearly explain why you're calling
+3. HANDLE THE CONVERSATION: Respond appropriately, remain firm but polite
+4. GET RESOLUTION: Get specific commitments (amounts, dates, confirmation numbers)
+5. CLOSING: "Thank you so much for your help! I'll relay this to my client. Have a wonderful day!"
+   Then IMMEDIATELY use endCall.
+
+# TONE
+Be confident, clear, and professional. You're advocating for your client.`;
+
+  console.log('[AssistantConfig] Creating OpenAI Realtime config for Direct Task');
+
+  return {
+    name: `DirectTask-Realtime-${Date.now().toString().slice(-8)}`,
+    voice: {
+      provider: "openai" as const,
+      voiceId: voice,
+    },
+    model: {
+      provider: "openai" as const,
+      model: "gpt-4o-realtime-preview-2024-12-17",
+      messages: [{ role: "system" as const, content: systemPrompt }],
+      tools: [{ type: "endCall" }],
+      temperature: 0.8,
+      maxTokens: 250,
+    },
+    // NO transcriber - Realtime handles speech natively
+    voicemailDetection: {
+      provider: "twilio",
+      enabled: true,
+      machineDetectionTimeout: 10,
+      machineDetectionSpeechThreshold: 2500,
+      machineDetectionSpeechEndThreshold: 2500,
+    },
+    firstMessage: customPrompt?.firstMessage || `Hi there! This is an AI assistant calling on behalf of my client regarding ${request.providerName}. Do you have just a moment?`,
+    endCallFunctionEnabled: true,
+    endCallMessage: "Thank you so much for your help! I'll relay this information to my client. Have a wonderful day!",
+    silenceTimeoutSeconds: 10,
+    analysisPlan: {
+      summaryPlan: {
+        enabled: true,
+        messages: [
+          {
+            role: "system" as const,
+            content: `Summarize the outcome of this Direct Task call. The task was: ${taskDescription}.
+Was the task successful? What was the resolution? Any next steps or confirmations received?`,
+          },
+        ],
+      },
+      structuredDataPlan: {
+        enabled: true,
+        schema: {
+          type: "object",
+          properties: {
+            task_completed: {
+              type: "boolean",
+              description: "Was the task successfully completed?",
+            },
+            outcome: {
+              type: "string",
+              enum: ["success", "partial", "failed", "needs_followup"],
+              description: "Overall outcome of the task",
+            },
+            resolution_details: {
+              type: "string",
+              description: "Specific details of the resolution",
+            },
+            next_steps: {
+              type: "string",
+              description: "Any follow-up actions required",
+            },
+            contact_name: {
+              type: "string",
+              description: "Name of person spoken to (if given)",
+            },
+            notes: {
+              type: "string",
+              description: "Additional relevant information from the call",
+            },
+          },
+          required: ["task_completed", "outcome"],
+        },
+        messages: [
+          {
+            role: "system" as const,
+            content: `Analyze this Direct Task call. The task was: ${taskDescription}
+Was the task completed successfully? What specific outcome was achieved?`,
+          },
+        ],
+      },
+      successEvaluationPlan: {
+        enabled: true,
+        rubric: "Checklist" as const,
+        messages: [
+          {
+            role: "system" as const,
+            content: `Evaluate this Direct Task call:
+1. Did the AI clearly state the purpose of the call?
+2. Did the AI pursue the task persistently but politely?
+3. Did the AI get a clear resolution or outcome?
+4. Did the AI properly end the call?`,
+          },
+        ],
+      },
+    },
+  };
+}
+
+/**
+ * Creates OpenAI Realtime config for Provider Search/Research & Book
+ * Uses GPT-4o Realtime for natural speech-to-speech
+ */
+function createRealtimeProviderSearchConfig(request: CallRequest) {
+  const clientName = request.clientName || "my client";
+  const urgencyText = request.urgency.replace(/_/g, " ");
+  const advancedScreening = isAdvancedScreeningEnabled();
+  const voice = getRealtimeVoice();
+
+  // Build address section
+  const addressInfo = request.clientAddress
+    ? `The service address is: ${request.clientAddress}. Provide this if asked.`
+    : `Service area: ${request.location}. If asked for exact address, say you're just checking availability and rates first.`;
+
+  // Build screening questions section
+  const screeningSection = advancedScreening
+    ? `After getting availability and rates, ask about the client's specific requirements one at a time:
+${request.userCriteria}
+
+Ask each question naturally. Wait for their answer before the next question.`
+    : `This is a quick screening call. Ask ONLY about availability and rates - no additional questions.`;
+
+  const systemPrompt = `# Role
+You are ${clientName}'s personal AI assistant calling ${request.providerName}.
+
+# Voice & Delivery
+- Speak naturally at a conversational pace
+- Sound warm and professional, like a helpful friend
+- Keep responses to 2-3 sentences maximum
+- Pause briefly between key points for clarity
+
+# Service Information
+${clientName} needs ${request.serviceNeeded} services.
+${addressInfo}
+
+# Conversation Flow
+1. Confirm you've reached ${request.providerName}
+2. Introduce yourself: "I'm ${clientName}'s AI assistant, calling because ${clientName} needs ${request.serviceNeeded}."
+3. Ask about availability: "Are you available ${urgencyText}?"
+   - If vague ("next week", "soon"), ask for specific day and time
+4. Ask about rates: "What would your rate be for this type of work?"
+5. ${screeningSection}
+6. Thank them and end the call
+
+# Speech Rules
+- NEVER start with "Okay", "So", "Well", "Um"
+- Ask ONE question at a time, wait for the answer
+- Keep responses SHORT - voice conversations need brevity
+- If interrupted, acknowledge and let them speak
+
+# Voicemail Detection
+If you hear "leave a message", "voicemail", or a beep, immediately use endCall.
+
+# Disqualification
+If they can't meet requirements, say:
+"Thank you for your time. This might not be the best fit for ${clientName} right now, but I appreciate your help. Have a wonderful day!"
+Then use endCall.
+
+# Ending the Call
+When you have availability and rate info, say:
+"Thank you so much! I'll share this with ${clientName} and we'll call back to schedule if they'd like to proceed. Have a wonderful day!"
+Then IMMEDIATELY use endCall.`;
+
+  console.log('[AssistantConfig] Creating OpenAI Realtime config for Provider Search');
+
+  return {
+    name: `Concierge-Realtime-${Date.now().toString().slice(-8)}`,
+    voice: {
+      provider: "openai" as const,
+      voiceId: voice,
+    },
+    model: {
+      provider: "openai" as const,
+      model: "gpt-4o-realtime-preview-2024-12-17",
+      messages: [{ role: "system" as const, content: systemPrompt }],
+      tools: [{ type: "endCall" }],
+      temperature: 0.8,
+      maxTokens: 250,
+    },
+    // NO transcriber - Realtime handles speech natively
+    voicemailDetection: {
+      provider: "twilio",
+      enabled: true,
+      machineDetectionTimeout: 30,
+      machineDetectionSpeechThreshold: 2500,
+      machineDetectionSpeechEndThreshold: 2500,
+    },
+    firstMessage: `Hi, is this ${request.providerName}?`,
+    endCallFunctionEnabled: true,
+    endCallMessage: `Thank you so much! I'll share this with ${clientName} and we'll call back to schedule. Have a wonderful day!`,
+    silenceTimeoutSeconds: 10,
+    analysisPlan: {
+      structuredDataSchema: {
+        type: "object",
+        properties: {
+          availability: {
+            type: "string",
+            description: "When they're available - specific date/time",
+          },
+          estimated_rate: {
+            type: "string",
+            description: "Cost estimate or rate information",
+          },
+          all_criteria_met: {
+            type: "boolean",
+            description: "Does the provider meet ALL of the client's requirements?",
+          },
+          earliest_availability: {
+            type: "string",
+            description: "Earliest date/time they can start work",
+          },
+          disqualified: {
+            type: "boolean",
+            description: "Was the provider disqualified?",
+          },
+          disqualification_reason: {
+            type: "string",
+            description: "Reason the provider was disqualified (if applicable)",
+          },
+          call_outcome: {
+            type: "string",
+            enum: ["positive", "negative", "neutral", "no_answer", "voicemail"],
+            description: "Overall outcome of the call",
+          },
+          notes: {
+            type: "string",
+            description: "Any additional notes from the conversation",
+          },
+          screening_answers: {
+            type: "array",
+            description: "Answers to screening questions",
+            items: {
+              type: "object",
+              properties: {
+                question: { type: "string" },
+                answer: { type: "string" },
+                category: {
+                  type: "string",
+                  enum: ["experience", "licensing", "warranty", "methods", "references"],
+                },
+                quality: {
+                  type: "string",
+                  enum: ["excellent", "good", "adequate", "poor", "no_answer"],
+                },
+              },
+              required: ["question", "answer", "category", "quality"],
+            },
+          },
+        },
+        required: ["availability", "all_criteria_met", "call_outcome"],
+      },
+      successEvaluationPrompt: `Evaluate if ${clientName}'s needs can be met by this provider based on the call.`,
+      successEvaluationRubric: "AutomaticRubric",
+      summaryPrompt: `Summarize the key information gathered for ${clientName}: availability, rates, and whether requirements are met.`,
+    },
+  };
+}
+
+/**
  * Creates VAPI assistant configuration for provider calls
- * Routes to appropriate config based on request type:
- * - Direct Tasks: AI performs an action (complain, negotiate, etc.)
- * - Research & Book: AI searches for service providers
+ * Routes to appropriate config based on request type and realtime mode:
+ * - Realtime mode: Uses OpenAI GPT-4o Realtime for natural speech-to-speech
+ * - Traditional mode: Uses Gemini + Deepgram STT + ElevenLabs TTS
  *
  * @param request - The call request information
  * @param customPrompt - Optional Gemini-generated custom prompt for Direct Tasks
@@ -944,6 +1363,18 @@ export function createAssistantConfig(
   request: CallRequest,
   customPrompt?: GeneratedPrompt
 ) {
+  const useRealtime = isRealtimeMode();
+
+  if (useRealtime) {
+    console.log('[AssistantConfig] Using OpenAI Realtime mode');
+    if (isDirectTask(request)) {
+      return createRealtimeDirectTaskConfig(request, customPrompt);
+    }
+    return createRealtimeProviderSearchConfig(request);
+  }
+
+  // Traditional mode (Gemini + Deepgram + ElevenLabs)
+  console.log('[AssistantConfig] Using traditional mode (Gemini + ElevenLabs)');
   if (isDirectTask(request)) {
     if (customPrompt) {
       return createDynamicDirectTaskConfig(request, customPrompt);

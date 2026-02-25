@@ -35,9 +35,12 @@ import {
   addInteractionLog,
 } from "@/lib/actions/service-requests";
 
+import { DEMO_MODE } from "@/lib/config/demo";
+
 // Environment toggle for live VAPI calls vs simulated calls
 // Note: Test phone substitution is handled by backend (ADMIN_TEST_NUMBER in backend .env)
-const LIVE_CALL_ENABLED = process.env.NEXT_PUBLIC_LIVE_CALL_ENABLED === "true";
+// In demo mode, always use simulated calls (no real VAPI calls)
+const LIVE_CALL_ENABLED = !DEMO_MODE && process.env.NEXT_PUBLIC_LIVE_CALL_ENABLED === "true";
 
 export default function DirectTask() {
   const router = useRouter();

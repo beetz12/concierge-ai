@@ -34,6 +34,7 @@ import {
 } from "@/lib/types";
 import { createClient } from "@/lib/supabase/client";
 import { scheduleBooking } from "@/lib/services/bookingService";
+import { DEMO_MODE } from "@/lib/config/demo";
 
 const LogItem: React.FC<{ log: InteractionLog; index: number }> = ({ log }) => {
   const iconMap = {
@@ -54,7 +55,14 @@ const LogItem: React.FC<{ log: InteractionLog; index: number }> = ({ log }) => {
 
       <div className="bg-surface rounded-xl border border-surface-highlight shadow-sm p-5 hover:border-primary-500/30 transition-shadow">
         <div className="flex justify-between items-start mb-2">
-          <h4 className="font-bold text-slate-200">{log.stepName || "Unknown Step"}</h4>
+          <div className="flex items-center gap-2">
+            <h4 className="font-bold text-slate-200">{log.stepName || "Unknown Step"}</h4>
+            {DEMO_MODE && (
+              <span className="text-xs bg-amber-500/20 text-amber-300 px-2 py-0.5 rounded-full font-medium">
+                Simulated
+              </span>
+            )}
+          </div>
           <span className="text-xs text-slate-500 font-mono">
             {log.timestamp ? new Date(log.timestamp).toLocaleTimeString() : "Unknown time"}
           </span>
@@ -210,6 +218,11 @@ export default function RequestDetails() {
   // Backend generates and stores recommendations when all calls complete
   // Frontend only fetches and displays - no local generation
   const fetchRecommendationsFromDb = useCallback(async () => {
+    if (DEMO_MODE) {
+      setRecommendationsChecked(true);
+      recommendationsCheckedRef.current = true;
+      return;
+    }
     if (!id || !isValidUuid(id)) return;
     if (recommendations) {
       console.log("[Recommendations] Already have recommendations, skipping fetch");
@@ -432,6 +445,7 @@ export default function RequestDetails() {
 
   // Real-time subscription for live updates
   useEffect(() => {
+    if (DEMO_MODE) return; // No real-time in demo mode
     if (!id || !isValidUuid(id)) return;
 
     const supabase = createClient();
@@ -881,6 +895,42 @@ export default function RequestDetails() {
       return () => clearTimeout(pollTimer);
     }
   }, [request?.status, recommendationsChecked, recommendationsLoading, recommendations]);
+
+  // Demo mode: auto-generate recommendations when status is ANALYZING
+  useEffect(() => {
+    if (!DEMO_MODE) return;
+    if (!request) return;
+    if (request.status !== RequestStatus.ANALYZING) return;
+    if (recommendations || recommendationsLoading) return;
+
+    const generateDemoRecommendations = async () => {
+      setRecommendationsLoading(true);
+      await new Promise((r) => setTimeout(r, 2000));
+
+      const providers = request.providersFound || [];
+      const demoRecs = providers.slice(0, 3).map((p, idx) => ({
+        providerId: p.id,
+        providerName: p.name,
+        phone: p.phone || "N/A",
+        rating: p.rating || 4.5 - idx * 0.2,
+        reviewCount: Math.floor(50 + Math.random() * 200),
+        earliestAvailability: "Next business day",
+        estimatedRate: `$${75 + idx * 25}-${150 + idx * 25}/hour`,
+        score: 95 - idx * 8,
+        reasoning: `Highly rated provider with excellent availability. ${p.name} demonstrated strong communication skills and competitive pricing during the screening call.`,
+        criteriaMatched: ["Available", "Within budget", "Good ratings"],
+      }));
+
+      setRecommendations({
+        providers: demoRecs,
+        overallRecommendation: `Based on our screening calls, we recommend ${demoRecs[0]?.providerName || "the top provider"} as your best option. All ${demoRecs.length} providers met your criteria and are available.`,
+      });
+      setRecommendationsLoading(false);
+      setRecommendationsChecked(true);
+    };
+
+    generateDemoRecommendations();
+  }, [request?.status, recommendations, recommendationsLoading]);
 
   // Handler for provider selection
   const handleProviderSelect = (provider: {

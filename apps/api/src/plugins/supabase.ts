@@ -2,6 +2,7 @@ import { FastifyPluginAsync } from "fastify";
 import fp from "fastify-plugin";
 import { SupabaseClient } from "@supabase/supabase-js";
 import { getSupabaseAdmin } from "../lib/supabase.js";
+import { isDemoMode } from "../config/demo.js";
 
 // Extend Fastify types to include Supabase decorator
 declare module "fastify" {
@@ -25,6 +26,22 @@ declare module "fastify" {
  * - In server: const { data } = await fastify.supabase.from('users').select('*');
  */
 const supabasePlugin: FastifyPluginAsync = async (fastify) => {
+  if (isDemoMode()) {
+    fastify.log.info("⚡ DEMO MODE: Skipping Supabase - using in-memory storage");
+    const mockSupabase = {
+      from: () => ({
+        select: () => ({ data: [], error: null, single: () => ({ data: null, error: null }), limit: () => ({ data: [], error: null }) }),
+        insert: () => ({ select: () => ({ data: [], error: null, single: () => ({ data: null, error: null }) }) }),
+        update: () => ({ eq: () => ({ select: () => ({ data: null, error: null, single: () => ({ data: null, error: null }) }) }) }),
+        delete: () => ({ eq: () => ({ data: null, error: null }) }),
+        upsert: () => ({ data: null, error: null }),
+      }),
+    } as any;
+    fastify.decorate("supabase", mockSupabase);
+    fastify.decorateRequest("supabase", { getter: () => mockSupabase });
+    return;
+  }
+
   try {
     const supabase = getSupabaseAdmin();
 

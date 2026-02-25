@@ -18,13 +18,17 @@ import { RecommendationService } from "../services/recommendations/recommend.ser
 import { triggerUserNotification } from "../services/notifications/index.js";
 import { DirectTwilioClient } from "../services/notifications/direct-twilio.client.js";
 import { createSimulatedCallService, type SimulatedCallRequest } from "../services/simulation/index.js";
+import { isDemoMode } from "../config/demo.js";
+import { simulateCall as geminiSimulateCall } from "../services/gemini.js";
 
 // Schema for Gemini-generated custom prompts
 // closingScript is optional - backend provides default based on clientName when not provided
+// contextualQuestions is used for advanced screening mode (VAPI_ADVANCED_SCREENING=true)
 const generatedPromptSchema = z.object({
   systemPrompt: z.string(),
   firstMessage: z.string(),
   closingScript: z.string().optional(),
+  contextualQuestions: z.array(z.string()).optional(),
 });
 
 // E.164 phone format regex - supports US numbers (+1XXXXXXXXXX)
@@ -237,6 +241,7 @@ export default async function providerRoutes(fastify: FastifyInstance) {
                 systemPrompt: { type: "string" },
                 firstMessage: { type: "string" },
                 closingScript: { type: "string" },
+                contextualQuestions: { type: "array", items: { type: "string" } },
               },
             },
           },
@@ -293,6 +298,37 @@ export default async function providerRoutes(fastify: FastifyInstance) {
       try {
         // Validate request body with Zod
         const validated = callProviderSchema.parse(request.body);
+
+        if (isDemoMode()) {
+          request.log.info({ provider: validated.providerName }, "⚡ DEMO MODE: Simulating call via Gemini");
+          await new Promise(r => setTimeout(r, 3000 + Math.random() * 5000));
+          const log = await geminiSimulateCall(validated.providerName, validated.userCriteria, true);
+          return reply.send({
+            success: true,
+            callResult: {
+              status: log.status === "success" ? "completed" : "error",
+              callId: `demo-${Date.now()}`,
+              callMethod: "simulated",
+              duration: 1 + Math.random() * 3,
+              endedReason: "demo-simulation",
+              transcript: log.transcript?.map((l: any) => `${l.speaker}: ${l.text}`).join("\n") || log.detail,
+              analysis: {
+                summary: log.detail,
+                structuredData: {
+                  call_outcome: log.status === "success" ? "positive" : "neutral",
+                  availability_status: "Available",
+                  estimated_rate: "$75-150/hour",
+                  earliest_availability: "Next business day",
+                  provider_confirmed_single_person: true,
+                  disqualified: false,
+                },
+                successEvaluation: log.status === "success" ? "positive" : "neutral",
+              },
+              provider: { name: validated.providerName, phone: validated.providerPhone, service: validated.serviceNeeded, location: validated.location },
+              request: { criteria: validated.userCriteria, urgency: validated.urgency },
+            },
+          });
+        }
 
         // Initiate the call
         const result = await callingService.callProvider(validated);
@@ -660,6 +696,7 @@ export default async function providerRoutes(fastify: FastifyInstance) {
                 systemPrompt: { type: "string" },
                 firstMessage: { type: "string" },
                 closingScript: { type: "string" },
+                contextualQuestions: { type: "array", items: { type: "string" } },
               },
             },
             preferredContact: {
@@ -711,6 +748,31 @@ export default async function providerRoutes(fastify: FastifyInstance) {
     async (request, reply) => {
       try {
         let validated = batchCallSchema.parse(request.body);
+
+        if (isDemoMode()) {
+          request.log.info("⚡ DEMO MODE: Simulating batch calls via Gemini");
+          const simulate = async () => {
+            for (const provider of validated.providers) {
+              const delay = 3000 + Math.random() * 5000;
+              await new Promise(r => setTimeout(r, delay));
+              const log = await geminiSimulateCall(
+                provider.name,
+                `${validated.serviceNeeded}. ${validated.userCriteria}`,
+                false
+              );
+              request.log.info({ provider: provider.name, status: log.status }, "Demo call simulated");
+            }
+          };
+          simulate().catch(err => request.log.error({ err }, "Demo simulation error"));
+          return reply.status(202).send({
+            success: true,
+            data: {
+              executionId: `demo-${Date.now()}`,
+              providersQueued: validated.providers.length,
+              mode: "demo",
+            },
+          });
+        }
 
         // Load test phone configuration from backend environment
         const adminTestPhonesRaw = process.env.ADMIN_TEST_NUMBER;

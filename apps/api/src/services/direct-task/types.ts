@@ -29,6 +29,7 @@ export interface GeneratedPrompt {
   systemPrompt: string;
   firstMessage: string;
   closingScript?: string; // Optional - backend provides default based on clientName when not provided
+  contextualQuestions?: string[]; // Screening questions for Research & Book flow (VAPI_ADVANCED_SCREENING=true)
 }
 
 export interface AnalyzeDirectTaskRequest {

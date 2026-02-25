@@ -335,7 +335,7 @@ Before implementing this change, please research 2025 best practices for
 
 I just implemented '/Users/dave/Work/nex-photos/docs/features/SUPPORT_SYSTEM_PROGRESS.md'. 
 Please help me do a full code review with your specialized ai team to make sure
-that the front-end, back-end, and database are all properly set up and can work together and fix any issues you find. If you encounter any critical conflicts or significant obstacles, Present to me the options and ask me what to do instead of Making blind assumptions and proceeding.  ultrathink
+that the front-end, back-end, and database are all properly set up and can work together and fix any issues you find. If you encounter any critical conflicts or significant obstacles, Present to me the options and ask me what to do instead of Making blind assumptions and proceeding. My mortgage payment depends on this. If you get this right on the first try, I will tip you $200.  ultrathink
 
 # update skill
 

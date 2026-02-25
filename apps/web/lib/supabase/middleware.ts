@@ -17,6 +17,9 @@ export async function updateSession(request: NextRequest) {
     process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY;
 
   if (!supabaseUrl || !supabaseAnonKey) {
+    if (process.env.NEXT_PUBLIC_DEMO_MODE === "true") {
+      return NextResponse.next({ request });
+    }
     throw new Error(
       "Missing Supabase environment variables. Please check your .env.local file.",
     );

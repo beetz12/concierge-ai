@@ -8,6 +8,17 @@
 import { revalidatePath } from "next/cache";
 import { createClient } from "../supabase/server";
 import type { Database } from "../types/database";
+import {
+  createServiceRequestDemo,
+  updateServiceRequestDemo,
+  deleteServiceRequestDemo,
+  addProviderDemo,
+  addProvidersDemo,
+  addInteractionLogDemo,
+  addInteractionLogsDemo,
+} from "./demo-actions";
+
+const DEMO_MODE = process.env.NEXT_PUBLIC_DEMO_MODE === "true";
 
 type ServiceRequestInsert =
   Database["public"]["Tables"]["service_requests"]["Insert"];
@@ -21,6 +32,7 @@ type InteractionLogInsert =
  * Create a new service request
  */
 export async function createServiceRequest(data: ServiceRequestInsert) {
+  if (DEMO_MODE) return createServiceRequestDemo(data);
   const supabase = await createClient();
 
   const { data: request, error } = await supabase
@@ -44,6 +56,7 @@ export async function updateServiceRequest(
   id: string,
   updates: ServiceRequestUpdate,
 ) {
+  if (DEMO_MODE) return updateServiceRequestDemo(id, updates);
   const supabase = await createClient();
 
   const { data: request, error } = await supabase
@@ -66,6 +79,7 @@ export async function updateServiceRequest(
  * Delete a service request
  */
 export async function deleteServiceRequest(id: string) {
+  if (DEMO_MODE) return deleteServiceRequestDemo(id);
   const supabase = await createClient();
 
   const { error } = await supabase
@@ -84,6 +98,7 @@ export async function deleteServiceRequest(id: string) {
  * Add a provider to a service request
  */
 export async function addProvider(data: ProviderInsert) {
+  if (DEMO_MODE) return addProviderDemo(data);
   const supabase = await createClient();
 
   const { data: provider, error } = await supabase
@@ -105,6 +120,7 @@ export async function addProvider(data: ProviderInsert) {
  * Add multiple providers to a service request
  */
 export async function addProviders(providers: ProviderInsert[]) {
+  if (DEMO_MODE) return addProvidersDemo(providers);
   const supabase = await createClient();
 
   const { data, error } = await supabase
@@ -129,6 +145,7 @@ export async function addProviders(providers: ProviderInsert[]) {
  * Add an interaction log to a service request
  */
 export async function addInteractionLog(data: InteractionLogInsert) {
+  if (DEMO_MODE) return addInteractionLogDemo(data);
   const supabase = await createClient();
 
   const { data: log, error } = await supabase
@@ -150,6 +167,7 @@ export async function addInteractionLog(data: InteractionLogInsert) {
  * Add multiple interaction logs to a service request
  */
 export async function addInteractionLogs(logs: InteractionLogInsert[]) {
+  if (DEMO_MODE) return addInteractionLogsDemo(logs);
   const supabase = await createClient();
 
   const { data, error } = await supabase
