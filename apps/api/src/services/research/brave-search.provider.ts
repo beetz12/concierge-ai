@@ -11,10 +11,15 @@ interface Logger {
 }
 
 export class BraveSearchProvider implements WebSearchProvider {
+  private static readonly cache = new Map<
+    string,
+    { documents: WebSearchDocument[]; expiresAt: number }
+  >();
   private readonly apiKey: string | null;
   private readonly baseUrl = "https://api.search.brave.com/res/v1/web/search";
   private readonly retryDelayMs = 1200;
   private readonly maxAttempts = 3;
+  private readonly cacheTtlMs = 10 * 60 * 1000;
 
   constructor(private logger: Logger, apiKey?: string) {
     this.apiKey = apiKey || process.env.BRAVE_SEARCH_API_KEY || null;
@@ -27,6 +32,13 @@ export class BraveSearchProvider implements WebSearchProvider {
   async search(request: WebSearchRequest): Promise<WebSearchDocument[]> {
     if (!this.apiKey) {
       return [];
+    }
+
+    const cacheKey = `${request.query}::${request.count ?? 10}`;
+    const cached = BraveSearchProvider.cache.get(cacheKey);
+    if (cached && cached.expiresAt > Date.now()) {
+      this.logger.debug({ query: request.query }, "Brave search cache hit");
+      return cached.documents;
     }
 
     for (let attempt = 1; attempt <= this.maxAttempts; attempt += 1) {
@@ -48,7 +60,7 @@ export class BraveSearchProvider implements WebSearchProvider {
           ? response.data.web.results
           : [];
 
-        return results
+        const documents = results
           .map((result: Record<string, unknown>) => ({
             title:
               typeof result.title === "string"
@@ -71,6 +83,13 @@ export class BraveSearchProvider implements WebSearchProvider {
             ): result is WebSearchDocument & { title: string; url: string } =>
               Boolean(result.title) && Boolean(result.url),
           );
+
+        BraveSearchProvider.cache.set(cacheKey, {
+          documents,
+          expiresAt: Date.now() + this.cacheTtlMs,
+        });
+
+        return documents;
       } catch (error) {
         const status =
           axios.isAxiosError(error) && error.response
@@ -78,6 +97,14 @@ export class BraveSearchProvider implements WebSearchProvider {
             : undefined;
 
         if (status === 429 && attempt < this.maxAttempts) {
+          if (cached) {
+            this.logger.warn(
+              { query: request.query, attempt },
+              "Brave rate limited the request, using cached response",
+            );
+            return cached.documents;
+          }
+
           this.logger.warn(
             {
               attempt,

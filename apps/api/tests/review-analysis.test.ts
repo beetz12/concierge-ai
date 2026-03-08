@@ -150,3 +150,58 @@ test("ReviewAnalysisService skips Gemini for thin evidence and uses deterministi
     /Thin review volume/,
   );
 });
+
+test("ReviewAnalysisService treats short generic multi-source snippets as thin evidence", async () => {
+  process.env.GEMINI_API_KEY = "test-key";
+
+  const service = new ReviewAnalysisService(logger);
+  let called = false;
+
+  (service as unknown as { ai: { models: { generateContent: () => Promise<unknown> } } }).ai = {
+    models: {
+      async generateContent() {
+        called = true;
+        return { text: "{}" };
+      },
+    },
+  };
+
+  const result = await service.analyzeProviders([
+    {
+      id: "provider-generic",
+      name: "Generic Evidence Landscaping",
+      rating: 4.9,
+      reviewCount: 80,
+      providerIntel: {
+        tradeFit: "medium",
+        reputationSources: [
+          {
+            platform: "facebook",
+            label: "Facebook",
+            url: "https://example.com/facebook",
+            snippet: "Landscaping company serving Greenville homeowners.",
+          },
+          {
+            platform: "houzz",
+            label: "Houzz",
+            url: "https://example.com/houzz",
+            snippet: "Professional landscaping and outdoor living services.",
+          },
+          {
+            platform: "bbb",
+            label: "BBB",
+            url: "https://example.com/bbb",
+          },
+        ],
+      },
+    },
+  ]);
+
+  assert.equal(called, false);
+  assert.equal(result.stats.analyzedProviders, 0);
+  assert.equal(result.stats.skippedProviders, 1);
+  assert.match(
+    result.providers[0]?.providerIntel?.positiveThemes?.[0]?.theme || "",
+    /Strong Google review signal|Has additional social proof/,
+  );
+});

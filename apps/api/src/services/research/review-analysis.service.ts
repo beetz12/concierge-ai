@@ -152,24 +152,36 @@ export class ReviewAnalysisService {
     const richSnippetCount = sources.filter(
       (source) => (source.snippet?.trim().length ?? 0) >= 60,
     ).length;
+    const nuancedSnippetCount = sources.filter(
+      (source) => (source.snippet?.trim().length ?? 0) >= 140,
+    ).length;
     const ratedSourceCount = sources.filter(
       (source) =>
         source.rating !== undefined || (source.reviewCount ?? 0) > 0,
     ).length;
     const distinctPlatforms = new Set(sources.map((source) => source.platform)).size;
+    const contradictionSignal = sources.some((source) =>
+      /complaint|damage|late|poor|issue|problem|mixed|warning|dispute|refund|excellent|recommend/i.test(
+        source.snippet ?? "",
+      ),
+    );
 
     if (!hasGoogleSignal && sources.length === 0) {
       return "none";
     }
 
     if (
+      contradictionSignal &&
       richSnippetCount >= 1 &&
       (distinctPlatforms >= 2 || ratedSourceCount >= 2)
     ) {
       return "rich";
     }
 
-    if (richSnippetCount >= 2) {
+    if (
+      nuancedSnippetCount >= 2 &&
+      (distinctPlatforms >= 2 || ratedSourceCount >= 3)
+    ) {
       return "rich";
     }
 
