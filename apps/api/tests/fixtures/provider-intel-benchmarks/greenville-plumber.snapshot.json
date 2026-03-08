@@ -1,0 +1,937 @@
+{
+  "scenarioId": "greenville-plumber",
+  "service": "plumber",
+  "location": "Greenville, SC",
+  "generatedAt": "2026-03-08T21:47:40.803Z",
+  "providers": [
+    {
+      "id": "ChIJWfTNo04uWIgR6EuJFZek-aM",
+      "name": "Dipple Plumbing, Electrical, Heating & Air",
+      "phone": "+18646600197",
+      "internationalPhone": "+1 864-660-0197",
+      "rating": 4.9,
+      "reviewCount": 2422,
+      "address": "211 N Pleasantburg Dr, Greenville, SC 29607, USA",
+      "distance": 1.9,
+      "distanceText": "1.9 mi",
+      "hoursOfOperation": [
+        "Mon: Open 24 hours",
+        "Tue: Open 24 hours",
+        "Wed: Open 24 hours",
+        "Thu: Open 24 hours",
+        "Fri: Open 24 hours",
+        "Sat: Open 24 hours",
+        "Sun: Open 24 hours"
+      ],
+      "isOpenNow": true,
+      "placeId": "ChIJWfTNo04uWIgR6EuJFZek-aM",
+      "googleMapsUri": "https://maps.google.com/?cid=11815656066191543272&g_mp=Cidnb29nbGUubWFwcy5wbGFjZXMudjEuUGxhY2VzLlNlYXJjaFRleHQQAhgEIAA",
+      "website": "https://dippleservices.com/?utm_source=google-gbp&utm_medium=organic&utm_campaign=*504*dipple-Greenville",
+      "source": "google_places",
+      "reason": "Highly rated plumber in Greenville, SC (1.9 mi)",
+      "openingHours": {
+        "openNow": true,
+        "weekdayText": [
+          "Mon: Open 24 hours",
+          "Tue: Open 24 hours",
+          "Wed: Open 24 hours",
+          "Thu: Open 24 hours",
+          "Fri: Open 24 hours",
+          "Sat: Open 24 hours",
+          "Sun: Open 24 hours"
+        ]
+      },
+      "providerIntel": {
+        "reputationSources": [
+          {
+            "platform": "yelp",
+            "label": "Yelp",
+            "url": "https://www.yelp.com/biz/dipple-plumbing-electrical-heating-and-air-greenville",
+            "reviewCount": 26,
+            "sourceType": "review_platform",
+            "confidence": "high",
+            "snippet": "Specialties: Dipple Plumbing, Electrical, Heating &amp; Air is a trusted plumber in Greenville, SC, proudly serving the entire Upstate South Carolina region, including Mauldin, Simpsonville, Taylors, Greer, Travelers Rest, Easley, and Spartanburg.",
+            "reviewCountLabel": "DIPPLE PLUMBING, ELECTRICAL, HEATING & AIR - Updated January 2026 - 36 Photos & 26 Reviews - 211 N Pleasantburg Dr, Greenville, South Carolina - Heating & Air Conditioning/HVAC - Phone Number - Yelp"
+          },
+          {
+            "platform": "yelp",
+            "label": "Yelp",
+            "url": "https://www.yelp.com/biz/dipple-plumbing-electric-heating-and-air-simpsonville",
+            "reviewCount": 11,
+            "sourceType": "review_platform",
+            "confidence": "high",
+            "snippet": "DIPPLE PLUMBING, ELECTRICAL, HEATING &amp; AIR - Quick Response Time - 211 N Pleasantburg Dr, Greenville, SC 29607, 3 Photos, Mon - Open 24 hours, Tue - Open 24 hours, Wed - Open 24 hours, Thu - Open 24 hours, Fri - Open 24 hours, Sat - Open 24 hours, Sun - Open 24 hours",
+            "reviewCountLabel": "DIPPLE PLUMBING, ELECTRICAL, HEATING & AIR - Updated February 2026 - 11 Reviews - 211 N Pleasantburg Dr, Greenville, South Carolina - General Contractors - Phone Number - Yelp"
+          },
+          {
+            "platform": "angi",
+            "label": "Angi",
+            "url": "https://www.angi.com/companylist/us/sc/greenville/dipple-plumbing,-electrical,-heating-and-air-reviews-285811.htm",
+            "sourceType": "review_platform",
+            "confidence": "medium",
+            "snippet": "Greenville residents trust Angi for their home project needs! Search Angi for Plumbing, Landscaping, and everything in between.",
+            "reviewCountLabel": "Dipple Plumbing, Electrical, Heating & Air Reviews"
+          },
+          {
+            "platform": "facebook",
+            "label": "Facebook",
+            "url": "https://www.facebook.com/DippleServices/",
+            "sourceType": "social",
+            "confidence": "medium",
+            "snippet": "Dipple Plumbing, Electrical, Heating &amp; Air has served Greenville and the surrounding areas since 1979. They’re available 24/7. Call for a free estimate. Page · Plumbing Service · Heating, Ventilating &amp; Air Conditioning Service · 211 N Pleasantburg Dr, Greenville, SC, United States, South Carolina",
+            "reviewCountLabel": "Dipple Plumbing, Electrical, Heating & Air | Greenville SC | Facebook"
+          }
+        ],
+        "tradeClass": "unknown",
+        "tradeFit": "low",
+        "identityConfidence": "high",
+        "researchConfidence": "low",
+        "positiveThemes": [
+          {
+            "theme": "Strong Google review signal",
+            "sentiment": "positive",
+            "frequency": "dominant",
+            "examples": [
+              "Google rating 4.9 from 2422 reviews"
+            ]
+          },
+          {
+            "theme": "Has additional social proof",
+            "sentiment": "positive",
+            "frequency": "single",
+            "examples": [
+              "Found an off-platform Facebook presence"
+            ]
+          }
+        ],
+        "negativeThemes": [],
+        "contradictionNotes": [
+          {
+            "summary": "Cross-platform review evidence should be checked for consistency",
+            "severity": "low",
+            "platforms": [
+              "google",
+              "yelp"
+            ],
+            "rationale": "High Google scores paired with Yelp presence merit direct contradiction review."
+          }
+        ],
+        "seriousComplaints": [],
+        "recentTrend": "stable"
+      }
+    },
+    {
+      "id": "ChIJ4fsW3FouWIgRpbzLng_9HpA",
+      "name": "Mr. Rooter Plumbing of Greenville",
+      "phone": "+18644123695",
+      "internationalPhone": "+1 864-412-3695",
+      "rating": 4.9,
+      "reviewCount": 1314,
+      "address": "1341 Rutherford Rd, Greenville, SC 29609, USA",
+      "distance": 3,
+      "distanceText": "3 mi",
+      "hoursOfOperation": [
+        "Mon: Open 24 hours",
+        "Tue: Open 24 hours",
+        "Wed: Open 24 hours",
+        "Thu: Open 24 hours",
+        "Fri: Open 24 hours",
+        "Sat: Open 24 hours",
+        "Sun: Open 24 hours"
+      ],
+      "isOpenNow": true,
+      "placeId": "ChIJ4fsW3FouWIgRpbzLng_9HpA",
+      "googleMapsUri": "https://maps.google.com/?cid=10385016034293431461&g_mp=Cidnb29nbGUubWFwcy5wbGFjZXMudjEuUGxhY2VzLlNlYXJjaFRleHQQAhgEIAA",
+      "website": "https://www.mrrooter.com/greenville/?cid=LSTL_MRR000199&utm_source=gmb&utm_campaign=local&utm_medium=organic",
+      "source": "google_places",
+      "reason": "Highly rated plumber in Greenville, SC (3 mi)",
+      "openingHours": {
+        "openNow": true,
+        "weekdayText": [
+          "Mon: Open 24 hours",
+          "Tue: Open 24 hours",
+          "Wed: Open 24 hours",
+          "Thu: Open 24 hours",
+          "Fri: Open 24 hours",
+          "Sat: Open 24 hours",
+          "Sun: Open 24 hours"
+        ]
+      },
+      "providerIntel": {
+        "reputationSources": [
+          {
+            "platform": "yelp",
+            "label": "Yelp",
+            "url": "https://www.yelp.com/biz/mr-rooter-plumbing-of-greenville-greenville-2",
+            "reviewCount": 19,
+            "sourceType": "review_platform",
+            "confidence": "high",
+            "snippet": "Specialties: Mr. Rooter® Plumbing provides quality plumbing services in Greenville and surrounding areas. With 200+ locations and 50+ years in the business, Mr. Rooter is a name you can trust.",
+            "reviewCountLabel": "Mr. Rooter Plumbing of Greenville - Updated February 2026 - 54 Photos - 19 Reviews - 1341 Rutherford Rd, Greenville, South Carolina - Plumbing - Phone Number - Yelp"
+          },
+          {
+            "platform": "bbb",
+            "label": "BBB",
+            "url": "https://www.bbb.org/us/sc/greenville/profile/plumber/mr-rooter-plumbing-of-greenville-0673-15002307",
+            "sourceType": "directory",
+            "confidence": "high",
+            "snippet": "1341 Rutherford Road · Greenville, SC 29609View Service Area · This business has committed to upholding the BBB Standards for Trust.Why choose a BBB Accredited Business? A+More InformationHow are BBB ratings calculated? Become BBB Accredited · BBB Accredited Since: 3/1/2006 ·",
+            "reviewCountLabel": "Mr. Rooter Plumbing of Greenville | BBB Business Profile | Better Business Bureau"
+          },
+          {
+            "platform": "homeadvisor",
+            "label": "HomeAdvisor",
+            "url": "https://www.homeadvisor.com/rated.MrRooterPlumbing.147289440.html",
+            "sourceType": "review_platform",
+            "confidence": "medium",
+            "snippet": "See reviews for Mr. Rooter Plumbing of Greenville in Greenville, SC at 1341 Rutherford Rd. from Angi members or join today to leave your own review.",
+            "reviewCountLabel": "Mr. Rooter Plumbing of Greenville Reviews - Greenville, SC | HomeAdvisor"
+          },
+          {
+            "platform": "angi",
+            "label": "Angi",
+            "url": "https://www.angi.com/companylist/us/sc/greenville/mr-rooter-plumbing-of-greenville-reviews-2341238.htm",
+            "sourceType": "review_platform",
+            "confidence": "medium",
+            "snippet": "See reviews for Mr. Rooter Plumbing of Greenville in Greenville, SC at 1341 Rutherford Road from Angi members or join today to leave your own review.",
+            "reviewCountLabel": "Mr. Rooter Plumbing of Greenville Reviews - Greenville, SC | Angi"
+          }
+        ],
+        "tradeClass": "unknown",
+        "tradeFit": "low",
+        "identityConfidence": "high",
+        "researchConfidence": "low",
+        "positiveThemes": [
+          {
+            "theme": "Strong Google review signal",
+            "sentiment": "positive",
+            "frequency": "dominant",
+            "examples": [
+              "Google rating 4.9 from 1314 reviews"
+            ]
+          }
+        ],
+        "negativeThemes": [],
+        "contradictionNotes": [
+          {
+            "summary": "Cross-platform review evidence should be checked for consistency",
+            "severity": "low",
+            "platforms": [
+              "google",
+              "yelp"
+            ],
+            "rationale": "High Google scores paired with Yelp presence merit direct contradiction review."
+          }
+        ],
+        "seriousComplaints": [],
+        "recentTrend": "stable"
+      }
+    },
+    {
+      "id": "ChIJC_6u4yIyWIgRy3cJB8bh3Wo",
+      "name": "Ken's Plumbing",
+      "phone": "+18647668403",
+      "internationalPhone": "+1 864-766-8403",
+      "rating": 4.7,
+      "reviewCount": 479,
+      "address": "2506 Poinsett Hwy, Greenville, SC 29609, USA",
+      "distance": 3.4,
+      "distanceText": "3.4 mi",
+      "hoursOfOperation": [
+        "Mon: Open 24 hours",
+        "Tue: Open 24 hours",
+        "Wed: Open 24 hours",
+        "Thu: Open 24 hours",
+        "Fri: Open 24 hours",
+        "Sat: Open 24 hours",
+        "Sun: Open 24 hours"
+      ],
+      "isOpenNow": true,
+      "placeId": "ChIJC_6u4yIyWIgRy3cJB8bh3Wo",
+      "googleMapsUri": "https://maps.google.com/?cid=7700559178511251403&g_mp=Cidnb29nbGUubWFwcy5wbGFjZXMudjEuUGxhY2VzLlNlYXJjaFRleHQQAhgEIAA",
+      "website": "https://www.kensplumbing.net/",
+      "source": "google_places",
+      "reason": "Highly rated plumber in Greenville, SC (3.4 mi)",
+      "openingHours": {
+        "openNow": true,
+        "weekdayText": [
+          "Mon: Open 24 hours",
+          "Tue: Open 24 hours",
+          "Wed: Open 24 hours",
+          "Thu: Open 24 hours",
+          "Fri: Open 24 hours",
+          "Sat: Open 24 hours",
+          "Sun: Open 24 hours"
+        ]
+      },
+      "providerIntel": {
+        "reputationSources": [
+          {
+            "platform": "yelp",
+            "label": "Yelp",
+            "url": "https://www.yelp.com/biz/kens-plumbing-greenville",
+            "reviewCount": 29,
+            "sourceType": "review_platform",
+            "confidence": "high",
+            "snippet": "2506 Poinsett Hwy · Greenville, SC 29609 · Get directions · Accepts credit cards · Ask a question · Yelp users haven’t asked any questions yet about Ken&#x27;s Plumbing. Emergency Plumber · Water Leak Detection · 24 Hour Plumbers · Plumbing Supply · Second Chance Apartments ·",
+            "reviewCountLabel": "Ken’s Plumbing - Updated December 2025 - 13 Photos - 29 Reviews - 2506 Poinsett Hwy, Greenville, South Carolina - Plumbing - Phone Number - Yelp"
+          },
+          {
+            "platform": "angi",
+            "label": "Angi",
+            "url": "https://www.angi.com/companylist/us/sc/greenville/ken's-plumbing-the-picky-people's-plumber-reviews-287765.htm",
+            "sourceType": "review_platform",
+            "confidence": "medium",
+            "snippet": "See reviews for Ken&#x27;s Plumbing The Picky People&#x27;s Plumber in Greenville, SC at 2506 Poinsett Hwy from Angi members or join today to leave your own review.",
+            "reviewCountLabel": "Ken's Plumbing The Picky People's Plumber Reviews - Greenville, SC | Angi"
+          },
+          {
+            "platform": "bbb",
+            "label": "BBB",
+            "url": "https://www.bbb.org/us/sc/greenville/profile/plumber/kens-plumbing-inc-0673-10002245",
+            "sourceType": "directory",
+            "confidence": "high",
+            "snippet": "2506 Poinsett Hwy · Greenville, SC 29609-2457View Service Area · This business has committed to upholding the BBB Standards for Trust.Why choose a BBB Accredited Business? A+More InformationHow are BBB ratings calculated? Become BBB Accredited · Ken’s Plumbing provides plumbing services to Upstate homeowners.",
+            "reviewCountLabel": "Ken's Plumbing, Inc | BBB Business Profile | Better Business Bureau"
+          },
+          {
+            "platform": "facebook",
+            "label": "Facebook",
+            "url": "https://www.facebook.com/KensPlumbing/",
+            "sourceType": "social",
+            "confidence": "medium",
+            "snippet": "Ken&#x27;s Plumbing, Greenville. 529 likes · 7 talking about this · 30 were here. This page is about Ken&#x27;s Plumbing, &quot;The Picky People&#x27;s Plumber&quot;. You will find helpful tips, plumbin",
+            "reviewCountLabel": "Ken's Plumbing | Greenville SC | Facebook"
+          }
+        ],
+        "tradeClass": "unknown",
+        "tradeFit": "low",
+        "identityConfidence": "high",
+        "researchConfidence": "low",
+        "positiveThemes": [
+          {
+            "theme": "Has additional social proof",
+            "sentiment": "positive",
+            "frequency": "single",
+            "examples": [
+              "Found an off-platform Facebook presence"
+            ]
+          }
+        ],
+        "negativeThemes": [],
+        "contradictionNotes": [],
+        "seriousComplaints": [],
+        "recentTrend": "stable"
+      }
+    },
+    {
+      "id": "ChIJ-TKSuX2AV4gRZ6BWutenRuQ",
+      "name": "Superior Plumbing Services",
+      "phone": "+18644380599",
+      "internationalPhone": "+1 864-438-0599",
+      "rating": 4.9,
+      "reviewCount": 256,
+      "address": "1200 Woodruff Road Suite G-19, Greenville, SC 29607, USA",
+      "distance": 6.4,
+      "distanceText": "6.4 mi",
+      "hoursOfOperation": [
+        "Mon: Open 24 hours",
+        "Tue: Open 24 hours",
+        "Wed: Open 24 hours",
+        "Thu: Open 24 hours",
+        "Fri: Open 24 hours",
+        "Sat: Closed",
+        "Sun: Open 24 hours"
+      ],
+      "isOpenNow": true,
+      "placeId": "ChIJ-TKSuX2AV4gRZ6BWutenRuQ",
+      "googleMapsUri": "https://maps.google.com/?cid=16449019234003361895&g_mp=Cidnb29nbGUubWFwcy5wbGFjZXMudjEuUGxhY2VzLlNlYXJjaFRleHQQAhgEIAA",
+      "website": "http://superiorplumbingsc.net/",
+      "source": "google_places",
+      "reason": "Highly rated plumber in Greenville, SC (6.4 mi)",
+      "openingHours": {
+        "openNow": true,
+        "weekdayText": [
+          "Mon: Open 24 hours",
+          "Tue: Open 24 hours",
+          "Wed: Open 24 hours",
+          "Thu: Open 24 hours",
+          "Fri: Open 24 hours",
+          "Sat: Closed",
+          "Sun: Open 24 hours"
+        ]
+      },
+      "providerIntel": {
+        "reputationSources": [
+          {
+            "platform": "yelp",
+            "label": "Yelp",
+            "url": "https://www.yelp.com/biz/superior-plumbing-services-greenville-2",
+            "sourceType": "review_platform",
+            "confidence": "high",
+            "snippet": "SUPERIOR PLUMBING SERVICES - 1200 Woodruff Rd, Ste G19, Greenville, SC 29607, 40 Photos, Mon - Open 24 hours, Tue - Open 24 hours, Wed - Open 24 hours, Thu - Open 24 hours, Fri - Open 24 hours, Sat - Open 24 hours, Sun - Open 24 hours",
+            "reviewCountLabel": "Superior Plumbing Services - Updated March 2026 - 40 Photos - 1200 Woodruff Rd, Greenville, South Carolina - Plumbing - Phone Number - Yelp"
+          },
+          {
+            "platform": "bbb",
+            "label": "BBB",
+            "url": "https://www.bbb.org/us/sc/greenville/profile/plumber/superior-plumbing-services-llc-0673-90023124",
+            "sourceType": "directory",
+            "confidence": "high",
+            "snippet": "Not BBB Accredited. Plumber in Greenville, SC. See BBB rating, reviews, complaints, and more.",
+            "reviewCountLabel": "Superior Plumbing Services, LLC | BBB Business Profile | Better Business Bureau"
+          },
+          {
+            "platform": "homeadvisor",
+            "label": "HomeAdvisor",
+            "url": "https://www.homeadvisor.com/rated.SuperiorPlumbing.123680770.html",
+            "sourceType": "review_platform",
+            "confidence": "medium",
+            "snippet": "Superior Plumbing Services, LLC | HomeAdvisor prescreened Designers &amp; Decorators, Plumbers in Greenville, SC.",
+            "reviewCountLabel": "Superior Plumbing Services, LLC | Greenville, SC 29650 - HomeAdvisor"
+          },
+          {
+            "platform": "facebook",
+            "label": "Facebook",
+            "url": "https://www.facebook.com/spsgreenville/",
+            "sourceType": "social",
+            "confidence": "medium",
+            "snippet": "Superior Plumbing Services LLC, Greenville. 230 likes · 4 talking about this. Protect your Home and Business with Superior. Your Local Superior Plumbers. Affordable Plumbing.",
+            "reviewCountLabel": "Superior Plumbing Services LLC | Greenville SC | Facebook"
+          },
+          {
+            "platform": "homeadvisor",
+            "label": "HomeAdvisor",
+            "url": "https://www.homeadvisor.com/rated.SuperiorPlumbing.45440373.html",
+            "sourceType": "review_platform",
+            "confidence": "medium",
+            "snippet": "First class company. Jeff did exactly what he said he was gonna do exactly when he said he said he was gonna do it. I will never call another plumbing company. As far as Im concerned, Seperior plumbing is the only plumbing company in Greenville.",
+            "reviewCountLabel": "Superior Plumbing Services, LLC Reviews - Greer, SC | HomeAdvisor"
+          },
+          {
+            "platform": "bbb",
+            "label": "BBB",
+            "url": "https://www.bbb.org/us/ga/kennesaw/profile/plumber/superior-plumbing-services-inc-0443-2024",
+            "sourceType": "directory",
+            "confidence": "high",
+            "snippet": "BBB Accredited since 12/4/2009. Plumber in Kennesaw, GA. See BBB rating, reviews, complaints, get a quote and more.",
+            "reviewCountLabel": "Superior Plumbing Services, Inc. | BBB Business Profile | Better Business Bureau"
+          }
+        ],
+        "tradeClass": "unknown",
+        "tradeFit": "low",
+        "identityConfidence": "high",
+        "researchConfidence": "low",
+        "positiveThemes": [
+          {
+            "theme": "Strong Google review signal",
+            "sentiment": "positive",
+            "frequency": "dominant",
+            "examples": [
+              "Google rating 4.9 from 256 reviews"
+            ]
+          },
+          {
+            "theme": "Has additional social proof",
+            "sentiment": "positive",
+            "frequency": "single",
+            "examples": [
+              "Found an off-platform Facebook presence"
+            ]
+          }
+        ],
+        "negativeThemes": [],
+        "contradictionNotes": [
+          {
+            "summary": "Cross-platform review evidence should be checked for consistency",
+            "severity": "low",
+            "platforms": [
+              "google",
+              "yelp"
+            ],
+            "rationale": "High Google scores paired with Yelp presence merit direct contradiction review."
+          }
+        ],
+        "seriousComplaints": [],
+        "recentTrend": "stable"
+      }
+    },
+    {
+      "id": "ChIJ77n58CgxWIgRmUU-B8x_38c",
+      "name": "Chisholm Plumbing, Heating & Air Conditioning",
+      "phone": "+18647344690",
+      "internationalPhone": "+1 864-734-4690",
+      "rating": 5,
+      "reviewCount": 211,
+      "address": "811 Pendleton St, Greenville, SC 29601, USA",
+      "distance": 1.5,
+      "distanceText": "1.5 mi",
+      "hoursOfOperation": [
+        "Mon: 7:00 AM - 10:00 PM",
+        "Tue: 7:00 AM - 10:00 PM",
+        "Wed: 7:00 AM - 10:00 PM",
+        "Thu: 7:00 AM - 10:00 PM",
+        "Fri: 7:00 AM - 10:00 PM",
+        "Sat: 7:00 AM - 10:00 PM",
+        "Sun: 7:00 AM - 10:00 PM"
+      ],
+      "isOpenNow": true,
+      "placeId": "ChIJ77n58CgxWIgRmUU-B8x_38c",
+      "googleMapsUri": "https://maps.google.com/?cid=14402370647625713049&g_mp=Cidnb29nbGUubWFwcy5wbGFjZXMudjEuUGxhY2VzLlNlYXJjaFRleHQQAhgEIAA",
+      "website": "https://callchisholm.com/service-area/hvac-services-plumbers-in-greenville-sc/?utm_source=google&utm_medium=organic&utm_campaign=gbp_greenville",
+      "source": "google_places",
+      "reason": "Highly rated plumber in Greenville, SC (1.5 mi)",
+      "openingHours": {
+        "openNow": true,
+        "weekdayText": [
+          "Mon: 7:00 AM - 10:00 PM",
+          "Tue: 7:00 AM - 10:00 PM",
+          "Wed: 7:00 AM - 10:00 PM",
+          "Thu: 7:00 AM - 10:00 PM",
+          "Fri: 7:00 AM - 10:00 PM",
+          "Sat: 7:00 AM - 10:00 PM",
+          "Sun: 7:00 AM - 10:00 PM"
+        ]
+      },
+      "providerIntel": {
+        "reputationSources": [
+          {
+            "platform": "yelp",
+            "label": "Yelp",
+            "url": "https://www.yelp.com/biz/chisholm-plumbing-heating-and-air-conditioning-greenville-2",
+            "sourceType": "review_platform",
+            "confidence": "high",
+            "snippet": "Specialties: Chisholm Plumbing Heating &amp; Air Conditioning is your trusted local provider for top-quality HVAC and plumbing services in Greenville, SC, and surrounding areas. We specialize in AC repair, furnace installation, water heater replacement, ...",
+            "reviewCountLabel": "CHISHOLM PLUMBING, HEATING & AIR CONDITIONING - Updated March 2026 - Request a Quote - 811 Pendleton St, Greenville, South Carolina - Heating & Air Conditioning/HVAC - Phone Number - Yelp"
+          },
+          {
+            "platform": "facebook",
+            "label": "Facebook",
+            "url": "https://www.facebook.com/CallChisholm/",
+            "sourceType": "social",
+            "confidence": "medium",
+            "snippet": "Chisholm Plumbing, Heating &amp; Air Conditioning, Greer. 3,698 likes · 129 talking about this · 28 were here. Call Chisholm! We are your local, family owned PLUMBING, HEATING &amp; AIR CONDITIONING business!",
+            "reviewCountLabel": "Chisholm Plumbing, Heating & Air Conditioning | Greer SC | Facebook"
+          },
+          {
+            "platform": "angi",
+            "label": "Angi",
+            "url": "https://www.angi.com/companylist/us/sc/greer/chisholm-plumbing-heating-air-conditioning-llc-reviews-1.htm",
+            "sourceType": "review_platform",
+            "confidence": "medium",
+            "snippet": "Chisholm Plumbing, Heating and Air Conditioning is proud to be a locally owned and operated business that has been serving Greenville, Spartanburg, Greer, Taylors, Simpsonville, Duncan, since 2015! With years of experience and unmatched expertise, we can help with any and all of your plumbing needs.",
+            "reviewCountLabel": "Chisholm Plumbing, Heating & Air Conditioning LLC Reviews - Greer, SC | Angi"
+          }
+        ],
+        "tradeClass": "unknown",
+        "tradeFit": "low",
+        "identityConfidence": "high",
+        "researchConfidence": "low",
+        "positiveThemes": [
+          {
+            "theme": "Strong Google review signal",
+            "sentiment": "positive",
+            "frequency": "dominant",
+            "examples": [
+              "Google rating 5 from 211 reviews"
+            ]
+          },
+          {
+            "theme": "Has additional social proof",
+            "sentiment": "positive",
+            "frequency": "single",
+            "examples": [
+              "Found an off-platform Facebook presence"
+            ]
+          }
+        ],
+        "negativeThemes": [],
+        "contradictionNotes": [
+          {
+            "summary": "Cross-platform review evidence should be checked for consistency",
+            "severity": "low",
+            "platforms": [
+              "google",
+              "yelp"
+            ],
+            "rationale": "High Google scores paired with Yelp presence merit direct contradiction review."
+          }
+        ],
+        "seriousComplaints": [],
+        "recentTrend": "stable"
+      }
+    },
+    {
+      "id": "ChIJHacMGEosWIgRijZ42cv8baU",
+      "name": "GS Plumbing",
+      "phone": "+18643622772",
+      "internationalPhone": "+1 864-362-2772",
+      "rating": 4.9,
+      "reviewCount": 641,
+      "address": "55 Donkle Rd, Greenville, SC 29609, USA",
+      "distance": 4.9,
+      "distanceText": "4.9 mi",
+      "hoursOfOperation": [
+        "Mon: Open 24 hours",
+        "Tue: Open 24 hours",
+        "Wed: Open 24 hours",
+        "Thu: Open 24 hours",
+        "Fri: Open 24 hours",
+        "Sat: Open 24 hours",
+        "Sun: Open 24 hours"
+      ],
+      "isOpenNow": true,
+      "placeId": "ChIJHacMGEosWIgRijZ42cv8baU",
+      "googleMapsUri": "https://maps.google.com/?cid=11920461741176665738&g_mp=Cidnb29nbGUubWFwcy5wbGFjZXMudjEuUGxhY2VzLlNlYXJjaFRleHQQAhgEIAA",
+      "website": "https://gsplumbing.net/?utm_campaign=google_business&utm_source=google_business&utm_medium=website",
+      "source": "google_places",
+      "reason": "Highly rated plumber in Greenville, SC (4.9 mi)",
+      "openingHours": {
+        "openNow": true,
+        "weekdayText": [
+          "Mon: Open 24 hours",
+          "Tue: Open 24 hours",
+          "Wed: Open 24 hours",
+          "Thu: Open 24 hours",
+          "Fri: Open 24 hours",
+          "Sat: Open 24 hours",
+          "Sun: Open 24 hours"
+        ]
+      },
+      "providerIntel": {
+        "reputationSources": [
+          {
+            "platform": "bbb",
+            "label": "BBB",
+            "url": "https://www.bbb.org/us/sc/greenville/profile/plumber/gs-plumbing-of-sc-llc-0673-9001341",
+            "sourceType": "directory",
+            "confidence": "high",
+            "snippet": "55 Donkle Rd Ste A · Greenville, SC 29609-6948View Service Area · This business has committed to upholding the BBB Standards for Trust.Why choose a BBB Accredited Business? A+More InformationHow are BBB ratings calculated? Become BBB Accredited · GS Plumbing, Inc.",
+            "reviewCountLabel": "GS Plumbing of SC, LLC | BBB Business Profile | Better Business Bureau"
+          },
+          {
+            "platform": "yelp",
+            "label": "Yelp",
+            "url": "https://www.yelp.com/biz/gs-plumbing-greenville-2",
+            "sourceType": "review_platform",
+            "confidence": "high",
+            "snippet": "Specialties: One Call Plumbs It All GS Plumbing provides Toilet Repair, Clogged Drains, Leaky Faucets, Water Heaters Repairs, Tankless Water Heaters, Backflow Testing, Water Filters, Garbage Disposals, Sewer Line Repair, Water Line Repair, Leak Detection to the Greenville, SC Area.",
+            "reviewCountLabel": "GS Plumbing - Updated December 2025 - 55 Donkle Rd, Greenville, South Carolina - Plumbing - Phone Number - Yelp"
+          },
+          {
+            "platform": "angi",
+            "label": "Angi",
+            "url": "https://www.angi.com/companylist/us/sc/greenville/gs-plumbing-reviews-291956.htm",
+            "sourceType": "review_platform",
+            "confidence": "medium",
+            "snippet": "Greenville residents trust Angi for their home project needs! Search Angi for Plumbing, Landscaping, and everything in between.",
+            "reviewCountLabel": "GS Plumbing Reviews - Greenville, SC"
+          }
+        ],
+        "tradeClass": "unknown",
+        "tradeFit": "low",
+        "identityConfidence": "high",
+        "researchConfidence": "low",
+        "positiveThemes": [
+          {
+            "theme": "Strong Google review signal",
+            "sentiment": "positive",
+            "frequency": "dominant",
+            "examples": [
+              "Google rating 4.9 from 641 reviews"
+            ]
+          }
+        ],
+        "negativeThemes": [],
+        "contradictionNotes": [
+          {
+            "summary": "Cross-platform review evidence should be checked for consistency",
+            "severity": "low",
+            "platforms": [
+              "google",
+              "yelp"
+            ],
+            "rationale": "High Google scores paired with Yelp presence merit direct contradiction review."
+          }
+        ],
+        "seriousComplaints": [],
+        "recentTrend": "stable"
+      }
+    },
+    {
+      "id": "ChIJL0UNQH5tWIgRu43Yeggzqq8",
+      "name": "1-Tom-Plumber",
+      "phone": "+18642065710",
+      "internationalPhone": "+1 864-206-5710",
+      "rating": 4.9,
+      "reviewCount": 2228,
+      "address": "33 Market Point Dr Suite 3015, Greenville, SC 29607, USA",
+      "distance": 5.6,
+      "distanceText": "5.6 mi",
+      "hoursOfOperation": [
+        "Mon: Open 24 hours",
+        "Tue: Open 24 hours",
+        "Wed: Open 24 hours",
+        "Thu: Open 24 hours",
+        "Fri: Open 24 hours",
+        "Sat: Open 24 hours",
+        "Sun: Open 24 hours"
+      ],
+      "isOpenNow": true,
+      "placeId": "ChIJL0UNQH5tWIgRu43Yeggzqq8",
+      "googleMapsUri": "https://maps.google.com/?cid=12657985814191967675&g_mp=Cidnb29nbGUubWFwcy5wbGFjZXMudjEuUGxhY2VzLlNlYXJjaFRleHQQAhgEIAA",
+      "website": "https://www.1tomplumber.com/greenvillesc/",
+      "source": "google_places",
+      "reason": "Highly rated plumber in Greenville, SC (5.6 mi)",
+      "openingHours": {
+        "openNow": true,
+        "weekdayText": [
+          "Mon: Open 24 hours",
+          "Tue: Open 24 hours",
+          "Wed: Open 24 hours",
+          "Thu: Open 24 hours",
+          "Fri: Open 24 hours",
+          "Sat: Open 24 hours",
+          "Sun: Open 24 hours"
+        ]
+      },
+      "providerIntel": {
+        "reputationSources": [
+          {
+            "platform": "yelp",
+            "label": "Yelp",
+            "url": "https://www.yelp.com/biz/1-tom-plumber-greenville-5",
+            "reviewCount": 15,
+            "sourceType": "review_platform",
+            "confidence": "high",
+            "snippet": "1-TOM-PLUMBER - 33 Market Point Dr, Ste 3015, Greenville, SC 29607, 20 Photos, Mon - Open 24 hours, Tue - Open 24 hours, Wed - Open 24 hours, Thu - Open 24 hours, Fri - Open 24 hours, Sat - Open 24 hours, Sun - Open 24 hours",
+            "reviewCountLabel": "1-Tom-Plumber - Updated December 2025 - 20 Photos - 15 Reviews - 33 Market Point Dr, Greenville, South Carolina - Plumbing - Phone Number - Yelp"
+          }
+        ],
+        "tradeClass": "unknown",
+        "tradeFit": "low",
+        "identityConfidence": "high",
+        "researchConfidence": "low",
+        "positiveThemes": [
+          {
+            "theme": "Strong Google review signal",
+            "sentiment": "positive",
+            "frequency": "dominant",
+            "examples": [
+              "Google rating 4.9 from 2228 reviews"
+            ]
+          }
+        ],
+        "negativeThemes": [],
+        "contradictionNotes": [
+          {
+            "summary": "Cross-platform review evidence should be checked for consistency",
+            "severity": "low",
+            "platforms": [
+              "google",
+              "yelp"
+            ],
+            "rationale": "High Google scores paired with Yelp presence merit direct contradiction review."
+          }
+        ],
+        "seriousComplaints": [],
+        "recentTrend": "stable"
+      }
+    },
+    {
+      "id": "ChIJpeXpQoUpWIgRdblFXX6RgA0",
+      "name": "Brothers Plumbing, Air & Electric",
+      "phone": "+18642772111",
+      "internationalPhone": "+1 864-277-2111",
+      "rating": 4.9,
+      "reviewCount": 1270,
+      "address": "98A Shelter Ct, Greer, SC 29650, USA",
+      "distance": 9.2,
+      "distanceText": "9.2 mi",
+      "hoursOfOperation": [
+        "Mon: Open 24 hours",
+        "Tue: Open 24 hours",
+        "Wed: Open 24 hours",
+        "Thu: Open 24 hours",
+        "Fri: Open 24 hours",
+        "Sat: Open 24 hours",
+        "Sun: Open 24 hours"
+      ],
+      "isOpenNow": true,
+      "placeId": "ChIJpeXpQoUpWIgRdblFXX6RgA0",
+      "googleMapsUri": "https://maps.google.com/?cid=972937491428784501&g_mp=Cidnb29nbGUubWFwcy5wbGFjZXMudjEuUGxhY2VzLlNlYXJjaFRleHQQAhgEIAA",
+      "website": "https://www.hirebrothers.com/",
+      "source": "google_places",
+      "reason": "Highly rated plumber in Greenville, SC (9.2 mi)",
+      "openingHours": {
+        "openNow": true,
+        "weekdayText": [
+          "Mon: Open 24 hours",
+          "Tue: Open 24 hours",
+          "Wed: Open 24 hours",
+          "Thu: Open 24 hours",
+          "Fri: Open 24 hours",
+          "Sat: Open 24 hours",
+          "Sun: Open 24 hours"
+        ]
+      },
+      "providerIntel": {
+        "reputationSources": [
+          {
+            "platform": "bbb",
+            "label": "BBB",
+            "url": "https://www.bbb.org/us/tx/mesquite/profile/plumber/baker-brothers-plumbing-air-electric-0875-30000632",
+            "sourceType": "directory",
+            "confidence": "high",
+            "snippet": "BBB Accredited since 8/14/2000. Plumber in Mesquite, TX. See BBB rating, reviews, complaints, get a quote and more.",
+            "reviewCountLabel": "Baker Brothers Plumbing, Air & Electric | BBB Business Profile | Better Business Bureau"
+          }
+        ],
+        "tradeClass": "unknown",
+        "tradeFit": "low",
+        "identityConfidence": "high",
+        "researchConfidence": "low",
+        "positiveThemes": [
+          {
+            "theme": "Strong Google review signal",
+            "sentiment": "positive",
+            "frequency": "dominant",
+            "examples": [
+              "Google rating 4.9 from 1270 reviews"
+            ]
+          }
+        ],
+        "negativeThemes": [],
+        "contradictionNotes": [],
+        "seriousComplaints": [],
+        "recentTrend": "stable"
+      }
+    },
+    {
+      "id": "ChIJ0ef0u2InWIgRur9IKtf0v8k",
+      "name": "Local Plumber and HVAC",
+      "phone": "+18646882991",
+      "internationalPhone": "+1 864-688-2991",
+      "rating": 4.9,
+      "reviewCount": 303,
+      "address": "1443 S Batesville Rd Suite 55, Greer, SC 29650, USA",
+      "distance": 9,
+      "distanceText": "9 mi",
+      "hoursOfOperation": [
+        "Mon: Open 24 hours",
+        "Tue: Open 24 hours",
+        "Wed: Open 24 hours",
+        "Thu: Open 24 hours",
+        "Fri: Open 24 hours",
+        "Sat: Open 24 hours",
+        "Sun: Open 24 hours"
+      ],
+      "isOpenNow": true,
+      "placeId": "ChIJ0ef0u2InWIgRur9IKtf0v8k",
+      "googleMapsUri": "https://maps.google.com/?cid=14537607327139807162&g_mp=Cidnb29nbGUubWFwcy5wbGFjZXMudjEuUGxhY2VzLlNlYXJjaFRleHQQAhgEIAA",
+      "website": "https://www.localplumberhvac.com/",
+      "source": "google_places",
+      "reason": "Highly rated plumber in Greenville, SC (9 mi)",
+      "openingHours": {
+        "openNow": true,
+        "weekdayText": [
+          "Mon: Open 24 hours",
+          "Tue: Open 24 hours",
+          "Wed: Open 24 hours",
+          "Thu: Open 24 hours",
+          "Fri: Open 24 hours",
+          "Sat: Open 24 hours",
+          "Sun: Open 24 hours"
+        ]
+      },
+      "providerIntel": {
+        "reputationSources": [
+          {
+            "platform": "facebook",
+            "label": "Facebook",
+            "url": "https://www.facebook.com/localplumberllc/",
+            "sourceType": "social",
+            "confidence": "medium",
+            "snippet": "Local Plumber and HVAC, Simpsonville. 266 likes · 3 were here. Licensed and Insured SC plumber, native to Simpsonville Call to talk to a real plumber!",
+            "reviewCountLabel": "Local Plumber and HVAC | Simpsonville SC | Facebook"
+          }
+        ],
+        "tradeClass": "unknown",
+        "tradeFit": "low",
+        "identityConfidence": "high",
+        "researchConfidence": "low",
+        "positiveThemes": [
+          {
+            "theme": "Strong Google review signal",
+            "sentiment": "positive",
+            "frequency": "dominant",
+            "examples": [
+              "Google rating 4.9 from 303 reviews"
+            ]
+          },
+          {
+            "theme": "Has additional social proof",
+            "sentiment": "positive",
+            "frequency": "single",
+            "examples": [
+              "Found an off-platform Facebook presence"
+            ]
+          }
+        ],
+        "negativeThemes": [],
+        "contradictionNotes": [],
+        "seriousComplaints": [],
+        "recentTrend": "stable"
+      }
+    },
+    {
+      "id": "ChIJGRgP7bIxWIgRvsRDGMFHtuc",
+      "name": "Tri-State Plumbing, Electrical, and Septic",
+      "phone": "+18649825232",
+      "internationalPhone": "+1 864-982-5232",
+      "rating": 4.7,
+      "reviewCount": 226,
+      "address": "1801 Rutherford Rd, Greenville, SC 29609, USA",
+      "distance": 3.9,
+      "distanceText": "3.9 mi",
+      "hoursOfOperation": [
+        "Mon: Open 24 hours",
+        "Tue: Open 24 hours",
+        "Wed: Open 24 hours",
+        "Thu: Open 24 hours",
+        "Fri: Open 24 hours",
+        "Sat: Open 24 hours",
+        "Sun: Open 24 hours"
+      ],
+      "isOpenNow": true,
+      "placeId": "ChIJGRgP7bIxWIgRvsRDGMFHtuc",
+      "googleMapsUri": "https://maps.google.com/?cid=16696611563184047294&g_mp=Cidnb29nbGUubWFwcy5wbGFjZXMudjEuUGxhY2VzLlNlYXJjaFRleHQQAhgEIAA",
+      "website": "https://864plumbing.com/?utm_source=organic&utm_medium=gbp_listing",
+      "source": "google_places",
+      "reason": "Highly rated plumber in Greenville, SC (3.9 mi)",
+      "openingHours": {
+        "openNow": true,
+        "weekdayText": [
+          "Mon: Open 24 hours",
+          "Tue: Open 24 hours",
+          "Wed: Open 24 hours",
+          "Thu: Open 24 hours",
+          "Fri: Open 24 hours",
+          "Sat: Open 24 hours",
+          "Sun: Open 24 hours"
+        ]
+      },
+      "providerIntel": {
+        "tradeClass": "unknown",
+        "tradeFit": "low",
+        "identityConfidence": "high",
+        "researchConfidence": "low",
+        "positiveThemes": [],
+        "negativeThemes": [],
+        "contradictionNotes": [],
+        "seriousComplaints": [],
+        "recentTrend": "unknown"
+      }
+    }
+  ]
+}

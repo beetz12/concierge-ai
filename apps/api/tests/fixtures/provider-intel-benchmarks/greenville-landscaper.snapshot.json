@@ -1,0 +1,882 @@
+{
+  "scenarioId": "greenville-landscaper",
+  "service": "landscaper",
+  "location": "Greenville, SC",
+  "generatedAt": "2026-03-08T21:47:18.083Z",
+  "providers": [
+    {
+      "id": "ChIJ24S0O9stWIgRXUfUtLGfuf8",
+      "name": "Precision Landscape",
+      "phone": "+18646600611",
+      "internationalPhone": "+1 864-660-0611",
+      "rating": 4.8,
+      "reviewCount": 256,
+      "address": "11 Beverly Rd, Greenville, SC 29609, USA",
+      "distance": 3.2,
+      "distanceText": "3.2 mi",
+      "hoursOfOperation": [
+        "Mon: 8:00 AM - 5:00 PM",
+        "Tue: 8:00 AM - 5:00 PM",
+        "Wed: 8:00 AM - 5:00 PM",
+        "Thu: 8:00 AM - 5:00 PM",
+        "Fri: 8:00 AM - 5:00 PM",
+        "Sat: Closed",
+        "Sun: Closed"
+      ],
+      "isOpenNow": false,
+      "placeId": "ChIJ24S0O9stWIgRXUfUtLGfuf8",
+      "googleMapsUri": "https://maps.google.com/?cid=18426934935954933597&g_mp=Cidnb29nbGUubWFwcy5wbGFjZXMudjEuUGxhY2VzLlNlYXJjaFRleHQQAhgEIAA",
+      "website": "https://precisiongvl.com/",
+      "source": "google_places",
+      "reason": "Highly rated landscaper in Greenville, SC (3.2 mi)",
+      "openingHours": {
+        "openNow": false,
+        "weekdayText": [
+          "Mon: 8:00 AM - 5:00 PM",
+          "Tue: 8:00 AM - 5:00 PM",
+          "Wed: 8:00 AM - 5:00 PM",
+          "Thu: 8:00 AM - 5:00 PM",
+          "Fri: 8:00 AM - 5:00 PM",
+          "Sat: Closed",
+          "Sun: Closed"
+        ]
+      },
+      "providerIntel": {
+        "reputationSources": [
+          {
+            "platform": "yelp",
+            "label": "Yelp",
+            "url": "https://www.yelp.com/biz/precision-landscape-management-greenville",
+            "sourceType": "review_platform",
+            "confidence": "high",
+            "snippet": "PRECISION LANDSCAPE MANAGEMENT in Greenville, reviews by real people. Yelp is a fun and easy way to find, recommend and talk about what’s great and not so great in Greenville and beyond.",
+            "reviewCountLabel": "PRECISION LANDSCAPE MANAGEMENT - Updated February 2026 - 11 Beverly Rd, Greenville, South Carolina - Lawn Services - Phone Number - Yelp"
+          },
+          {
+            "platform": "facebook",
+            "label": "Facebook",
+            "url": "https://www.facebook.com/PrecisionLandscapeDesign/",
+            "sourceType": "social",
+            "confidence": "medium",
+            "snippet": "Precision Landscape Design LLC, Greenville. 181 likes. •Dependable Competent Dedicated Services Offered: -Landscape Design -Sod Application -Installs (mulch,pine needles,Plants etc.) -Weekly/Bi...",
+            "reviewCountLabel": "Precision Landscape Design LLC | Greenville SC | Facebook"
+          },
+          {
+            "platform": "houzz",
+            "label": "Houzz",
+            "url": "https://www.houzz.com/professionals/landscape-contractors/precision-landscape-management-pfvwus-pf~1041823964",
+            "sourceType": "review_platform",
+            "confidence": "medium",
+            "snippet": "Precision Landscape Management provides services in the following areas: Five Forks, Greenville, Greer, Lyman, Mauldin, Powdersville, Sans Souci, Taylors, Tigerville, Travelers Rest, Wade Hampton",
+            "reviewCountLabel": "PRECISION LANDSCAPE MANAGEMENT - Project Photos & Reviews - Taylors, SC US | Houzz"
+          }
+        ],
+        "tradeClass": "design_build",
+        "tradeFit": "high",
+        "identityConfidence": "high",
+        "researchConfidence": "high",
+        "positiveThemes": [
+          {
+            "theme": "High overall customer satisfaction (Google rating 4.8/256 reviews)",
+            "sentiment": "positive",
+            "frequency": "single"
+          },
+          {
+            "theme": "Strong indication of professionalism, quality craftsmanship, and reliability based on high Google rating",
+            "sentiment": "positive",
+            "frequency": "single"
+          },
+          {
+            "theme": "Services described as dependable, competent, and dedicated on Facebook",
+            "sentiment": "positive",
+            "frequency": "single"
+          }
+        ],
+        "negativeThemes": [],
+        "contradictionNotes": [
+          {
+            "summary": "While Google shows strong positive reputation, other major platforms (Yelp, Facebook, Houzz) lack explicit rating and review count data in the provided snippets, making it difficult to corroborate the overall reputation across multiple sources.",
+            "severity": "medium",
+            "platforms": []
+          }
+        ],
+        "seriousComplaints": [],
+        "recentTrend": "stable"
+      }
+    },
+    {
+      "id": "ChIJ81zAOGoxWIgR3rRX062gNYw",
+      "name": "Reedy River Landscapes",
+      "phone": "+18646686008",
+      "internationalPhone": "+1 864-668-6008",
+      "rating": 4.9,
+      "reviewCount": 80,
+      "address": "25 Hall Rd, Greenville, SC 29609, USA",
+      "distance": 3.4,
+      "distanceText": "3.4 mi",
+      "hoursOfOperation": [
+        "Mon: 8:00 AM - 5:00 PM",
+        "Tue: 8:00 AM - 5:00 PM",
+        "Wed: 8:00 AM - 5:00 PM",
+        "Thu: 8:00 AM - 5:00 PM",
+        "Fri: 8:00 AM - 5:00 PM",
+        "Sat: Closed",
+        "Sun: Closed"
+      ],
+      "isOpenNow": false,
+      "placeId": "ChIJ81zAOGoxWIgR3rRX062gNYw",
+      "googleMapsUri": "https://maps.google.com/?cid=10103158007511102686&g_mp=Cidnb29nbGUubWFwcy5wbGFjZXMudjEuUGxhY2VzLlNlYXJjaFRleHQQAhgEIAA",
+      "website": "https://www.reedyriverlandscapes.com/",
+      "source": "google_places",
+      "reason": "Highly rated landscaper in Greenville, SC (3.4 mi)",
+      "openingHours": {
+        "openNow": false,
+        "weekdayText": [
+          "Mon: 8:00 AM - 5:00 PM",
+          "Tue: 8:00 AM - 5:00 PM",
+          "Wed: 8:00 AM - 5:00 PM",
+          "Thu: 8:00 AM - 5:00 PM",
+          "Fri: 8:00 AM - 5:00 PM",
+          "Sat: Closed",
+          "Sun: Closed"
+        ]
+      },
+      "providerIntel": {
+        "reputationSources": [
+          {
+            "platform": "homeadvisor",
+            "label": "HomeAdvisor",
+            "url": "https://www.homeadvisor.com/rated.ReedyRiverLandscapes.62583890.html",
+            "sourceType": "review_platform",
+            "confidence": "medium",
+            "snippet": "Reedy River Landscapes is a wonderful company to work with. Luke and his crew are so good at what they do and have taken both of my projects from average to above and beyond. They created what could have been just a regular, functional dry creek bed and turned it into a beautiful landscape ...",
+            "reviewCountLabel": "Reedy River Landscapes Reviews - Greenville, SC | HomeAdvisor"
+          },
+          {
+            "platform": "houzz",
+            "label": "Houzz",
+            "url": "https://www.houzz.com/professionals/landscape-architects-and-landscape-designers/reedy-river-landscapes-pfvwus-pf~1514910730",
+            "sourceType": "review_platform",
+            "confidence": "medium",
+            "snippet": "Reedy River Landscapes is currently rated 5 overall out of 5",
+            "reviewCountLabel": "REEDY RIVER LANDSCAPES - Project Photos & Reviews - Greenville, SC US | Houzz"
+          },
+          {
+            "platform": "bbb",
+            "label": "BBB",
+            "url": "https://www.bbb.org/us/sc/greenville/profile/landscape-design/reedy-river-landscapes-0673-90030546",
+            "sourceType": "directory",
+            "confidence": "high",
+            "snippet": "Not BBB Accredited. Landscape Design in Greenville, SC. See BBB rating, reviews, complaints, and more.",
+            "reviewCountLabel": "Reedy River Landscapes | BBB Business Profile | Better Business Bureau"
+          },
+          {
+            "platform": "facebook",
+            "label": "Facebook",
+            "url": "https://www.facebook.com/reedyriverlandscapes/",
+            "sourceType": "social",
+            "confidence": "medium",
+            "snippet": "Reedy River Landscapes, Greenville. 554 likes · 2 were here. Landscaping projects, maintenance, and design",
+            "reviewCountLabel": "Reedy River Landscapes | Greenville SC | Facebook"
+          }
+        ],
+        "tradeClass": "design_build",
+        "tradeFit": "medium",
+        "identityConfidence": "high",
+        "researchConfidence": "medium",
+        "positiveThemes": [
+          {
+            "theme": "Exceptional craftsmanship and high-quality project execution (evidenced by 4.9/80 Google, 5/5 Houzz, and descriptive HomeAdvisor snippet).",
+            "sentiment": "positive",
+            "frequency": "single"
+          },
+          {
+            "theme": "Professionalism and strong customer satisfaction (HomeAdvisor snippet describes a \"wonderful company to work with\" that takes projects \"above and beyond\").",
+            "sentiment": "positive",
+            "frequency": "single"
+          }
+        ],
+        "negativeThemes": [],
+        "contradictionNotes": [
+          {
+            "summary": "The business is 'Not BBB Accredited,' which contrasts with the overwhelmingly positive ratings and reviews found on Google, Houzz, and implied by HomeAdvisor.",
+            "severity": "medium",
+            "platforms": []
+          }
+        ],
+        "seriousComplaints": [],
+        "recentTrend": "stable"
+      }
+    },
+    {
+      "id": "ChIJCQZ4_dwpWIgRLlHF19FOfxI",
+      "name": "Southern Stripes Lawn & Landscapes",
+      "phone": "+18644320211",
+      "internationalPhone": "+1 864-432-0211",
+      "rating": 4.8,
+      "reviewCount": 110,
+      "address": "118B Pride Dr, Simpsonville, SC 29681, USA",
+      "distance": 12.5,
+      "distanceText": "12.5 mi",
+      "hoursOfOperation": [
+        "Mon: Open 24 hours",
+        "Tue: Open 24 hours",
+        "Wed: Open 24 hours",
+        "Thu: Open 24 hours",
+        "Fri: Open 24 hours",
+        "Sat: Open 24 hours",
+        "Sun: Open 24 hours"
+      ],
+      "isOpenNow": true,
+      "placeId": "ChIJCQZ4_dwpWIgRLlHF19FOfxI",
+      "googleMapsUri": "https://maps.google.com/?cid=1332870677900120366&g_mp=Cidnb29nbGUubWFwcy5wbGFjZXMudjEuUGxhY2VzLlNlYXJjaFRleHQQAhgEIAA",
+      "website": "http://southernstripessc.com/",
+      "source": "google_places",
+      "reason": "Highly rated landscaper in Greenville, SC (12.5 mi)",
+      "openingHours": {
+        "openNow": true,
+        "weekdayText": [
+          "Mon: Open 24 hours",
+          "Tue: Open 24 hours",
+          "Wed: Open 24 hours",
+          "Thu: Open 24 hours",
+          "Fri: Open 24 hours",
+          "Sat: Open 24 hours",
+          "Sun: Open 24 hours"
+        ]
+      },
+      "providerIntel": {
+        "reputationSources": [
+          {
+            "platform": "facebook",
+            "label": "Facebook",
+            "url": "https://www.facebook.com/p/Southern-Stripes-Lawn-Landscapes-100057408851388/",
+            "sourceType": "social",
+            "confidence": "medium",
+            "snippet": "Southern Stripes Lawn &amp; Landscapes, Simpsonville. 857 likes · 307 talking about this · 1 was here. Greater Greenville’s Premier Lawn &amp; Landscaping Company",
+            "reviewCountLabel": "Southern Stripes Lawn & Landscapes | Simpsonville SC | Facebook"
+          }
+        ],
+        "tradeClass": "design_build",
+        "tradeFit": "medium",
+        "identityConfidence": "high",
+        "researchConfidence": "medium",
+        "positiveThemes": [
+          {
+            "theme": "Strong Google review signal",
+            "sentiment": "positive",
+            "frequency": "dominant",
+            "examples": [
+              "Google rating 4.8 from 110 reviews"
+            ]
+          },
+          {
+            "theme": "Has additional social proof",
+            "sentiment": "positive",
+            "frequency": "single",
+            "examples": [
+              "Found an off-platform Facebook presence"
+            ]
+          }
+        ],
+        "negativeThemes": [],
+        "contradictionNotes": [],
+        "seriousComplaints": [],
+        "recentTrend": "stable"
+      }
+    },
+    {
+      "id": "ChIJNdpd4zYvWIgROwz5SL8NbEw",
+      "name": "Greenville Outdoor Living",
+      "phone": "+18647877800",
+      "internationalPhone": "+1 864-787-7800",
+      "rating": 5,
+      "reviewCount": 38,
+      "address": "42 Grand Ave, Greenville, SC 29607, USA",
+      "distance": 1.9,
+      "distanceText": "1.9 mi",
+      "hoursOfOperation": [
+        "Mon: 7:30 AM - 5:00 PM",
+        "Tue: 7:30 AM - 5:00 PM",
+        "Wed: 7:30 AM - 5:00 PM",
+        "Thu: 7:30 AM - 5:00 PM",
+        "Fri: 7:30 AM - 5:00 PM",
+        "Sat: Closed",
+        "Sun: Closed"
+      ],
+      "isOpenNow": false,
+      "placeId": "ChIJNdpd4zYvWIgROwz5SL8NbEw",
+      "googleMapsUri": "https://maps.google.com/?cid=5506791559581469755&g_mp=Cidnb29nbGUubWFwcy5wbGFjZXMudjEuUGxhY2VzLlNlYXJjaFRleHQQAhgEIAA",
+      "website": "https://www.greenvilleoutdoorliving.com/",
+      "source": "google_places",
+      "reason": "Highly rated landscaper in Greenville, SC (1.9 mi)",
+      "openingHours": {
+        "openNow": false,
+        "weekdayText": [
+          "Mon: 7:30 AM - 5:00 PM",
+          "Tue: 7:30 AM - 5:00 PM",
+          "Wed: 7:30 AM - 5:00 PM",
+          "Thu: 7:30 AM - 5:00 PM",
+          "Fri: 7:30 AM - 5:00 PM",
+          "Sat: Closed",
+          "Sun: Closed"
+        ]
+      },
+      "providerIntel": {
+        "reputationSources": [
+          {
+            "platform": "homeadvisor",
+            "label": "HomeAdvisor",
+            "url": "https://www.homeadvisor.com/rated.GreenvilleOutdoorLiving.111488229.html",
+            "sourceType": "review_platform",
+            "confidence": "medium",
+            "snippet": "Greenville Outdoor Living, LLC | HomeAdvisor prescreened Brick &amp; Stone Contractors, Concrete Contractors in Greenville, SC.",
+            "reviewCountLabel": "Greenville Outdoor Living, LLC | Greenville, SC 29607 - HomeAdvisor"
+          },
+          {
+            "platform": "facebook",
+            "label": "Facebook",
+            "url": "https://www.facebook.com/gvilleoutdoorliving/",
+            "sourceType": "social",
+            "confidence": "medium",
+            "snippet": "Greenville Outdoor Living, Greenville. 400 likes · 4 talking about this. Hardscape - Landscape - Design",
+            "reviewCountLabel": "Greenville Outdoor Living | Greenville SC | Facebook"
+          }
+        ],
+        "tradeClass": "design_build",
+        "tradeFit": "high",
+        "identityConfidence": "high",
+        "researchConfidence": "high",
+        "positiveThemes": [
+          {
+            "theme": "Strong Google review signal",
+            "sentiment": "positive",
+            "frequency": "dominant",
+            "examples": [
+              "Google rating 5 from 38 reviews"
+            ]
+          },
+          {
+            "theme": "Has additional social proof",
+            "sentiment": "positive",
+            "frequency": "single",
+            "examples": [
+              "Found an off-platform Facebook presence"
+            ]
+          }
+        ],
+        "negativeThemes": [],
+        "contradictionNotes": [],
+        "seriousComplaints": [],
+        "recentTrend": "stable"
+      }
+    },
+    {
+      "id": "ChIJua3idcIlWIgRLov9cTU4BJg",
+      "name": "Todd Rudisill, Inc. Landscaping & Design",
+      "phone": "+18642480878",
+      "internationalPhone": "+1 864-248-0878",
+      "rating": 4.9,
+      "reviewCount": 82,
+      "address": "110 Augusta Arbor Way, Greenville, SC 29605, USA",
+      "distance": 7.7,
+      "distanceText": "7.7 mi",
+      "hoursOfOperation": [
+        "Mon: 9:00 AM - 4:00 PM",
+        "Tue: 9:00 AM - 4:00 PM",
+        "Wed: 9:00 AM - 4:00 PM",
+        "Thu: 9:00 AM - 4:00 PM",
+        "Fri: 9:00 AM - 12:00 PM",
+        "Sat: Closed",
+        "Sun: Closed"
+      ],
+      "isOpenNow": false,
+      "placeId": "ChIJua3idcIlWIgRLov9cTU4BJg",
+      "googleMapsUri": "https://maps.google.com/?cid=10953941995868752686&g_mp=Cidnb29nbGUubWFwcy5wbGFjZXMudjEuUGxhY2VzLlNlYXJjaFRleHQQAhgEIAA",
+      "website": "https://www.toddrudisill.com/",
+      "source": "google_places",
+      "reason": "Highly rated landscaper in Greenville, SC (7.7 mi)",
+      "openingHours": {
+        "openNow": false,
+        "weekdayText": [
+          "Mon: 9:00 AM - 4:00 PM",
+          "Tue: 9:00 AM - 4:00 PM",
+          "Wed: 9:00 AM - 4:00 PM",
+          "Thu: 9:00 AM - 4:00 PM",
+          "Fri: 9:00 AM - 12:00 PM",
+          "Sat: Closed",
+          "Sun: Closed"
+        ]
+      },
+      "providerIntel": {
+        "reputationSources": [
+          {
+            "platform": "yelp",
+            "label": "Yelp",
+            "url": "https://www.yelp.com/biz/todd-rudisill-inc-landscaping-and-design-greenville",
+            "sourceType": "review_platform",
+            "confidence": "high",
+            "snippet": "People use Yelp to search for everything from the city&#x27;s tastiest burger to the most renowned cardiologist. What will you uncover in your neighborhood?",
+            "reviewCountLabel": "TODD RUDISILL, INC. LANDSCAPING & DESIGN"
+          },
+          {
+            "platform": "facebook",
+            "label": "Facebook",
+            "url": "https://www.facebook.com/p/Todd-Rudisill-INC-Landscaping-Design-100063815072285/",
+            "sourceType": "social",
+            "confidence": "medium",
+            "snippet": "Todd Rudisill, INC. Landscaping &amp; Design, Greenville, South Carolina. 350 likes · 1 talking about this · 19 were here. Founded in 2001, Todd Rudisill, Inc. Landscaping &amp; Design is a professional...",
+            "reviewCountLabel": "Todd Rudisill, INC. Landscaping & Design | Greenville SC | Facebook"
+          }
+        ],
+        "tradeClass": "design_build",
+        "tradeFit": "medium",
+        "identityConfidence": "high",
+        "researchConfidence": "medium",
+        "positiveThemes": [
+          {
+            "theme": "Strong overall customer satisfaction indicated by an excellent Google rating (4.9 out of 5 stars from 82 reviews)",
+            "sentiment": "positive",
+            "frequency": "single"
+          },
+          {
+            "theme": "Likely high quality of service and professionalism based on consistent positive feedback on Google",
+            "sentiment": "positive",
+            "frequency": "single"
+          }
+        ],
+        "negativeThemes": [],
+        "contradictionNotes": [
+          {
+            "summary": "Reputation data is primarily strong on Google, with specific review counts and ratings unknown for Yelp and Facebook, suggesting less active or consolidated review presence on those platforms.",
+            "severity": "medium",
+            "platforms": []
+          }
+        ],
+        "seriousComplaints": [],
+        "recentTrend": "stable"
+      }
+    },
+    {
+      "id": "ChIJCReywjYsWIgRGGByo7RDP3k",
+      "name": "ALL Outdoors",
+      "phone": "+18642752039",
+      "internationalPhone": "+1 864-275-2039",
+      "rating": 4.7,
+      "reviewCount": 363,
+      "address": "1775 Rutherford Rd, Greenville, SC 29609, USA",
+      "distance": 3.7,
+      "distanceText": "3.7 mi",
+      "hoursOfOperation": [
+        "Mon: 8:00 AM - 5:00 PM",
+        "Tue: 8:00 AM - 5:00 PM",
+        "Wed: 8:00 AM - 5:00 PM",
+        "Thu: 8:00 AM - 5:00 PM",
+        "Fri: 8:00 AM - 4:00 PM",
+        "Sat: Closed",
+        "Sun: Closed"
+      ],
+      "isOpenNow": false,
+      "placeId": "ChIJCReywjYsWIgRGGByo7RDP3k",
+      "googleMapsUri": "https://maps.google.com/?cid=8736776245237407768&g_mp=Cidnb29nbGUubWFwcy5wbGFjZXMudjEuUGxhY2VzLlNlYXJjaFRleHQQAhgEIAA",
+      "website": "http://www.alloutdoors-sc.com/",
+      "source": "google_places",
+      "reason": "Highly rated landscaper in Greenville, SC (3.7 mi)",
+      "openingHours": {
+        "openNow": false,
+        "weekdayText": [
+          "Mon: 8:00 AM - 5:00 PM",
+          "Tue: 8:00 AM - 5:00 PM",
+          "Wed: 8:00 AM - 5:00 PM",
+          "Thu: 8:00 AM - 5:00 PM",
+          "Fri: 8:00 AM - 4:00 PM",
+          "Sat: Closed",
+          "Sun: Closed"
+        ]
+      },
+      "providerIntel": {
+        "reputationSources": [
+          {
+            "platform": "bbb",
+            "label": "BBB",
+            "url": "https://www.bbb.org/us/sc/greenville/profile/lawn-care/all-outdoors-0673-90045821",
+            "sourceType": "directory",
+            "confidence": "high",
+            "snippet": "Not BBB Accredited. Lawn Care in Greenville, SC. See BBB rating, reviews, complaints, and more.",
+            "reviewCountLabel": "All Outdoors | BBB Business Profile | Better Business Bureau"
+          },
+          {
+            "platform": "yelp",
+            "label": "Yelp",
+            "url": "https://www.yelp.com/biz/all-outdoors-greenville",
+            "sourceType": "review_platform",
+            "confidence": "high",
+            "snippet": "ALL OUTDOORS, 1303 Rutherford Rd, Unit C, Greenville, SC 29609, 9 Photos, (864) 275-2039, Mon - 9:00 am - 5:00 pm, Tue - 9:00 am - 5:00 pm, Wed - 9:00 am - 5:00 pm, Thu - 9:00 am - 5:00 pm, Fri - Closed, Sat - Closed, Sun - Closed",
+            "reviewCountLabel": "ALL OUTDOORS - Updated February 2026 - 1303 Rutherford Rd, Greenville, South Carolina - Lawn Services - Phone Number - Yelp"
+          },
+          {
+            "platform": "facebook",
+            "label": "Facebook",
+            "url": "https://www.facebook.com/alloutdoorssc/",
+            "sourceType": "social",
+            "confidence": "medium",
+            "snippet": "Log into Facebook to start sharing and connecting with your friends, family, and people you know.",
+            "reviewCountLabel": "ALL Outdoors | Greenville SC"
+          },
+          {
+            "platform": "homeadvisor",
+            "label": "HomeAdvisor",
+            "url": "https://www.homeadvisor.com/rated.AllOutdoors.5035599.html",
+            "sourceType": "review_platform",
+            "confidence": "medium",
+            "snippet": "BBB Accredited Business. Best of Angi/Home Advisor 2022 Award Winner. Voted Nextdoor &#x27;Neighborhood Favorite&#x27; two years in row. With over 45 years of service in the St. Louis area, All Outdoors Inc. is your number one choice for expert tree service ...",
+            "reviewCountLabel": "All Outdoors Reviews - Chesterfield, MO | HomeAdvisor"
+          }
+        ],
+        "tradeClass": "maintenance",
+        "tradeFit": "low",
+        "identityConfidence": "high",
+        "researchConfidence": "low",
+        "positiveThemes": [
+          {
+            "theme": "Has additional social proof",
+            "sentiment": "positive",
+            "frequency": "single",
+            "examples": [
+              "Found an off-platform Facebook presence"
+            ]
+          }
+        ],
+        "negativeThemes": [],
+        "contradictionNotes": [],
+        "seriousComplaints": [],
+        "recentTrend": "stable"
+      }
+    },
+    {
+      "id": "ChIJN0vO4VcwWIgRZuXGTWAFOQ4",
+      "name": "Morales Landscaping And Pine Straw Service",
+      "phone": "+18644344176",
+      "internationalPhone": "+1 864-434-4176",
+      "rating": 4.6,
+      "reviewCount": 88,
+      "address": "2950 New Easley Hwy, Greenville, SC 29611, USA",
+      "distance": 4.5,
+      "distanceText": "4.5 mi",
+      "hoursOfOperation": [
+        "Mon: 8:00 AM - 5:00 PM",
+        "Tue: 8:00 AM - 5:00 PM",
+        "Wed: 8:00 AM - 5:00 PM",
+        "Thu: 8:00 AM - 5:00 PM",
+        "Fri: 8:00 AM - 5:00 PM",
+        "Sat: 8:00 AM - 5:00 PM",
+        "Sun: Closed"
+      ],
+      "isOpenNow": false,
+      "placeId": "ChIJN0vO4VcwWIgRZuXGTWAFOQ4",
+      "googleMapsUri": "https://maps.google.com/?cid=1024856301383378278&g_mp=Cidnb29nbGUubWFwcy5wbGFjZXMudjEuUGxhY2VzLlNlYXJjaFRleHQQAhgEIAA",
+      "website": "http://www.moraleslandscapingtreeservice.com/",
+      "source": "google_places",
+      "reason": "Highly rated landscaper in Greenville, SC (4.5 mi)",
+      "openingHours": {
+        "openNow": false,
+        "weekdayText": [
+          "Mon: 8:00 AM - 5:00 PM",
+          "Tue: 8:00 AM - 5:00 PM",
+          "Wed: 8:00 AM - 5:00 PM",
+          "Thu: 8:00 AM - 5:00 PM",
+          "Fri: 8:00 AM - 5:00 PM",
+          "Sat: 8:00 AM - 5:00 PM",
+          "Sun: Closed"
+        ]
+      },
+      "providerIntel": {
+        "reputationSources": [
+          {
+            "platform": "homeadvisor",
+            "label": "HomeAdvisor",
+            "url": "https://www.homeadvisor.com/rated.MoralesLandscaping.36235631.html",
+            "sourceType": "review_platform",
+            "confidence": "medium",
+            "snippet": "Morales Landscaping and Pine Straw Services | HomeAdvisor prescreened Designers &amp; Decorators, Landscape Contractors in Greenville, SC.",
+            "reviewCountLabel": "Morales Landscaping and Pine Straw Services | Greenville, SC 29640 - HomeAdvisor"
+          }
+        ],
+        "tradeClass": "design_build",
+        "tradeFit": "medium",
+        "identityConfidence": "high",
+        "researchConfidence": "medium",
+        "positiveThemes": [],
+        "negativeThemes": [],
+        "contradictionNotes": [],
+        "seriousComplaints": [],
+        "recentTrend": "stable"
+      }
+    },
+    {
+      "id": "ChIJyd0LPTMsWIgRqDS6uecFkx0",
+      "name": "The Grounds Guys of Greenville, SC",
+      "phone": "+18648862024",
+      "internationalPhone": "+1 864-886-2024",
+      "rating": 4.7,
+      "reviewCount": 200,
+      "address": "250 Enterprise Dr, Powdersville, SC 29642, USA",
+      "distance": 7.2,
+      "distanceText": "7.2 mi",
+      "hoursOfOperation": [
+        "Mon: Open 24 hours",
+        "Tue: Open 24 hours",
+        "Wed: Open 24 hours",
+        "Thu: Open 24 hours",
+        "Fri: Open 24 hours",
+        "Sat: Open 24 hours",
+        "Sun: Open 24 hours"
+      ],
+      "isOpenNow": true,
+      "placeId": "ChIJyd0LPTMsWIgRqDS6uecFkx0",
+      "googleMapsUri": "https://maps.google.com/?cid=2131053541487948968&g_mp=Cidnb29nbGUubWFwcy5wbGFjZXMudjEuUGxhY2VzLlNlYXJjaFRleHQQAhgEIAA",
+      "website": "https://www.groundsguys.com/locations/south-carolina/greenville/?cid=LSTL_GUY000204&utm_source=gmb&utm_campaign=local&utm_medium=organic",
+      "source": "google_places",
+      "reason": "Highly rated landscaper in Greenville, SC (7.2 mi)",
+      "openingHours": {
+        "openNow": true,
+        "weekdayText": [
+          "Mon: Open 24 hours",
+          "Tue: Open 24 hours",
+          "Wed: Open 24 hours",
+          "Thu: Open 24 hours",
+          "Fri: Open 24 hours",
+          "Sat: Open 24 hours",
+          "Sun: Open 24 hours"
+        ]
+      },
+      "providerIntel": {
+        "reputationSources": [
+          {
+            "platform": "yelp",
+            "label": "Yelp",
+            "url": "https://www.yelp.com/biz/the-grounds-guys-of-greenville-sc-powdersville",
+            "reviewCount": 14,
+            "sourceType": "review_platform",
+            "confidence": "high",
+            "snippet": "From there, we became a recognizable brand built on the values of excellent workmanship, customer satisfaction, and real care. The Ground Guys provides full-service and fast response time lawn care to residential and commercial clients.",
+            "reviewCountLabel": "THE GROUNDS GUYS OF GREENVILLE, SC - Updated November 2025 - 43 Photos & 14 Reviews - 250 Enterprise Dr, Powdersville, South Carolina - Landscaping - Phone Number - Yelp"
+          },
+          {
+            "platform": "facebook",
+            "label": "Facebook",
+            "url": "https://www.facebook.com/TheGroundsGuysGreenvilleSC/",
+            "sourceType": "social",
+            "confidence": "medium",
+            "snippet": "The Grounds Guys of Greenville, SC, Powdersville. 939 likes · 6 talking about this. The Grounds Guys is a full-service grounds care company. We deliver industry-leading commercial and residential...",
+            "reviewCountLabel": "The Grounds Guys of Greenville, SC | Powdersville SC | Facebook"
+          }
+        ],
+        "tradeClass": "maintenance",
+        "tradeFit": "low",
+        "identityConfidence": "high",
+        "researchConfidence": "low",
+        "positiveThemes": [
+          {
+            "theme": "Has additional social proof",
+            "sentiment": "positive",
+            "frequency": "single",
+            "examples": [
+              "Found an off-platform Facebook presence"
+            ]
+          }
+        ],
+        "negativeThemes": [],
+        "contradictionNotes": [],
+        "seriousComplaints": [],
+        "recentTrend": "stable"
+      }
+    },
+    {
+      "id": "ChIJGZd64HAtWIgR5uiZo9qNoyk",
+      "name": "Paramount Outdoor Living",
+      "phone": "+18646642857",
+      "internationalPhone": "+1 864-664-2857",
+      "rating": 4.9,
+      "reviewCount": 55,
+      "address": "2435 E North St STE 172, Greenville, SC 29615, USA",
+      "distance": 2.5,
+      "distanceText": "2.5 mi",
+      "hoursOfOperation": [
+        "Mon: 9:00 AM - 5:00 PM",
+        "Tue: 9:00 AM - 5:00 PM",
+        "Wed: 9:00 AM - 5:00 PM",
+        "Thu: 9:00 AM - 5:00 PM",
+        "Fri: 9:00 AM - 5:00 PM",
+        "Sat: Closed",
+        "Sun: Closed"
+      ],
+      "isOpenNow": false,
+      "placeId": "ChIJGZd64HAtWIgR5uiZo9qNoyk",
+      "googleMapsUri": "https://maps.google.com/?cid=3000397746946042086&g_mp=Cidnb29nbGUubWFwcy5wbGFjZXMudjEuUGxhY2VzLlNlYXJjaFRleHQQAhgEIAA",
+      "website": "https://www.paramountoutdoorliving.net/",
+      "source": "google_places",
+      "reason": "Highly rated landscaper in Greenville, SC (2.5 mi)",
+      "openingHours": {
+        "openNow": false,
+        "weekdayText": [
+          "Mon: 9:00 AM - 5:00 PM",
+          "Tue: 9:00 AM - 5:00 PM",
+          "Wed: 9:00 AM - 5:00 PM",
+          "Thu: 9:00 AM - 5:00 PM",
+          "Fri: 9:00 AM - 5:00 PM",
+          "Sat: Closed",
+          "Sun: Closed"
+        ]
+      },
+      "providerIntel": {
+        "reputationSources": [
+          {
+            "platform": "yelp",
+            "label": "Yelp",
+            "url": "https://www.yelp.com/biz/paramount-outdoor-living-greenville",
+            "sourceType": "review_platform",
+            "confidence": "high",
+            "snippet": "2435 E North St · Ste 1108-172 · Greenville, SC 29615 · Serving Greenville Area · Get directions · ASL proficient · Accepts credit cards · Accepts Zelle · Accepts Venmo · Ask a question · Yelp users haven’t asked any questions yet about Paramount Outdoor Living.",
+            "reviewCountLabel": "PARAMOUNT OUTDOOR LIVING - Updated February 2026 - Request a Quote - 2435 E North St, Greenville, South Carolina - Landscaping - Phone Number - Yelp"
+          },
+          {
+            "platform": "homeadvisor",
+            "label": "HomeAdvisor",
+            "url": "https://www.homeadvisor.com/rated.ParamountOutdoorLiving.82816332.html",
+            "sourceType": "review_platform",
+            "confidence": "medium",
+            "snippet": "See reviews for Paramount Outdoor Living, LLC in Rankin, MS at 980 Holly Bush Road from Angi members or join today to leave your own review.",
+            "reviewCountLabel": "Paramount Outdoor Living, LLC Reviews - Rankin, MS | HomeAdvisor"
+          }
+        ],
+        "tradeClass": "design_build",
+        "tradeFit": "medium",
+        "identityConfidence": "high",
+        "researchConfidence": "medium",
+        "positiveThemes": [
+          {
+            "theme": "Strong Google review signal",
+            "sentiment": "positive",
+            "frequency": "dominant",
+            "examples": [
+              "Google rating 4.9 from 55 reviews"
+            ]
+          }
+        ],
+        "negativeThemes": [],
+        "contradictionNotes": [
+          {
+            "summary": "High Google rating (4.9 based on 55 reviews) contrasts with a complete lack of ratings or reviews on Yelp and HomeAdvisor/Angi.",
+            "severity": "medium",
+            "platforms": []
+          },
+          {
+            "summary": "Potential location discrepancy: Google and Yelp indicate Greenville, SC, while the HomeAdvisor snippet references a location in Rankin, MS, which might imply different entities or data inconsistency.",
+            "severity": "medium",
+            "platforms": []
+          }
+        ],
+        "seriousComplaints": [],
+        "recentTrend": "stable"
+      }
+    },
+    {
+      "id": "ChIJ8_MpUeAlWIgR7hgG2bwoXYc",
+      "name": "All In Landscape Management",
+      "phone": "+18649180410",
+      "internationalPhone": "+1 864-918-0410",
+      "rating": 4.8,
+      "reviewCount": 99,
+      "address": "122 Old Mill Rd Suite J, Mauldin, SC 29662, USA",
+      "distance": 6.5,
+      "distanceText": "6.5 mi",
+      "hoursOfOperation": [
+        "Mon: 9:00 AM - 4:00 PM",
+        "Tue: 9:00 AM - 4:00 PM",
+        "Wed: 9:00 AM - 4:00 PM",
+        "Thu: 9:00 AM - 4:00 PM",
+        "Fri: 9:00 AM - 12:00 PM",
+        "Sat: Closed",
+        "Sun: Closed"
+      ],
+      "isOpenNow": false,
+      "placeId": "ChIJ8_MpUeAlWIgR7hgG2bwoXYc",
+      "googleMapsUri": "https://maps.google.com/?cid=9753997159514380526&g_mp=Cidnb29nbGUubWFwcy5wbGFjZXMudjEuUGxhY2VzLlNlYXJjaFRleHQQAhgEIAA",
+      "website": "https://allinlandscape.com/",
+      "source": "google_places",
+      "reason": "Highly rated landscaper in Greenville, SC (6.5 mi)",
+      "openingHours": {
+        "openNow": false,
+        "weekdayText": [
+          "Mon: 9:00 AM - 4:00 PM",
+          "Tue: 9:00 AM - 4:00 PM",
+          "Wed: 9:00 AM - 4:00 PM",
+          "Thu: 9:00 AM - 4:00 PM",
+          "Fri: 9:00 AM - 12:00 PM",
+          "Sat: Closed",
+          "Sun: Closed"
+        ]
+      },
+      "providerIntel": {
+        "reputationSources": [
+          {
+            "platform": "yelp",
+            "label": "Yelp",
+            "url": "https://www.yelp.com/biz/all-in-landscape-management-mauldin",
+            "sourceType": "review_platform",
+            "confidence": "high",
+            "snippet": "ALL IN LANDSCAPE MANAGEMENT, 122 Old Mill Rd, Ste J, Mauldin, SC 29662, 7 Photos, (864) 918-0410, Mon - 8:00 am - 5:00 pm, Tue - 8:00 am - 5:00 pm, Wed - 8:00 am - 5:00 pm, Thu - 8:00 am - 5:00 pm, Fri - 8:00 am - 5:00 pm, Sat - Closed, Sun - Closed",
+            "reviewCountLabel": "ALL IN LANDSCAPE MANAGEMENT - Updated February 2026 - 122 Old Mill Rd, Mauldin, South Carolina - Landscaping - Phone Number - Yelp"
+          },
+          {
+            "platform": "bbb",
+            "label": "BBB",
+            "url": "https://www.bbb.org/us/sc/mauldin/profile/lawn-maintenance/all-in-landscape-management-0673-90006202",
+            "sourceType": "directory",
+            "confidence": "high",
+            "snippet": "Not BBB Accredited. Lawn Maintenance in Mauldin, SC. See BBB rating, reviews, complaints, and more.",
+            "reviewCountLabel": "All In Landscape Management | BBB Business Profile | Better Business Bureau"
+          },
+          {
+            "platform": "homeadvisor",
+            "label": "HomeAdvisor",
+            "url": "https://www.homeadvisor.com/rated.AllInLandscape.111360536.html",
+            "sourceType": "review_platform",
+            "confidence": "medium",
+            "snippet": "See reviews for All In Landscape Management in Greenville, SC at 122 Old Mill Rd, Suite J from Angi members or join today to leave your own review.",
+            "reviewCountLabel": "All In Landscape Management Reviews - Greenville, SC | HomeAdvisor"
+          }
+        ],
+        "tradeClass": "maintenance",
+        "tradeFit": "low",
+        "identityConfidence": "high",
+        "researchConfidence": "low",
+        "positiveThemes": [
+          {
+            "theme": "Strong Google review signal",
+            "sentiment": "positive",
+            "frequency": "dominant",
+            "examples": [
+              "Google rating 4.8 from 99 reviews"
+            ]
+          }
+        ],
+        "negativeThemes": [],
+        "contradictionNotes": [
+          {
+            "summary": "Cross-platform review evidence should be checked for consistency",
+            "severity": "low",
+            "platforms": [
+              "google",
+              "yelp"
+            ],
+            "rationale": "High Google scores paired with Yelp presence merit direct contradiction review."
+          }
+        ],
+        "seriousComplaints": [],
+        "recentTrend": "stable"
+      }
+    }
+  ]
+}

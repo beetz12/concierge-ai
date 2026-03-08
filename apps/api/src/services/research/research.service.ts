@@ -14,6 +14,7 @@ import { ReviewAnalysisService } from "./review-analysis.service.js";
 import { normalizePhoneToE164 } from "../../utils/phone.js";
 import { serializeError } from "../../utils/error.js";
 import type {
+  Provider,
   ProviderIntelConfidence,
   ResearchPipelineStage,
   ResearchRequest,
@@ -159,8 +160,34 @@ export class ResearchService {
     return current;
   }
 
+  async prepareProvidersForRecommendations(
+    request: Pick<ResearchRequest, "service" | "location">,
+    providers: Provider[],
+    options: { deterministicReviewAnalysis?: boolean } = {},
+  ): Promise<ResearchResult> {
+    let current: ResearchResult = {
+      status: "success",
+      method: "direct_gemini",
+      providers,
+      pipelineStages: [],
+    };
+
+    current = this.applyIdentityAndTradeClassification(
+      current,
+      request as ResearchRequest,
+    );
+    current = await this.runGeminiReviewAnalysisStage(
+      current,
+      options.deterministicReviewAnalysis ?? false,
+    );
+    current = this.rankDecisionReadyProviders(current);
+
+    return current;
+  }
+
   private async runGeminiReviewAnalysisStage(
-    result: ResearchResult
+    result: ResearchResult,
+    deterministicReviewAnalysis = false,
   ): Promise<ResearchResult> {
     if (result.status === "error" || result.providers.length === 0) {
       return this.appendStage(
@@ -178,6 +205,7 @@ export class ResearchService {
     try {
       const analyzed = await this.reviewAnalysisService.analyzeProviders(
         result.providers,
+        { deterministicOnly: deterministicReviewAnalysis },
       );
 
       const stageStatus =
@@ -193,7 +221,9 @@ export class ResearchService {
             stageStatus,
             "direct_gemini",
             analyzed.providers.length,
-            analyzed.stats.analyzedProviders > 0
+            deterministicReviewAnalysis
+              ? `Deterministic review analysis skipped Gemini and applied fallback analysis to ${analyzed.stats.skippedProviders} providers.`
+              : analyzed.stats.analyzedProviders > 0
               ? `Gemini review analysis processed ${analyzed.stats.analyzedProviders} providers and skipped ${analyzed.stats.skippedProviders} providers with thin evidence.`
               : "Skipped Gemini review analysis because no providers had enough reputation evidence to analyze."
           ),

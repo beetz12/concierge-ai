@@ -71,6 +71,10 @@ export interface ReviewAnalysisResult {
   };
 }
 
+export interface ReviewAnalysisOptions {
+  deterministicOnly?: boolean;
+}
+
 export class ReviewAnalysisService {
   private readonly ai: GoogleGenAI | null;
   private readonly model = "gemini-2.5-flash";
@@ -84,7 +88,10 @@ export class ReviewAnalysisService {
     return this.ai !== null;
   }
 
-  async analyzeProviders(providers: Provider[]): Promise<ReviewAnalysisResult> {
+  async analyzeProviders(
+    providers: Provider[],
+    options: ReviewAnalysisOptions = {},
+  ): Promise<ReviewAnalysisResult> {
     let analyzedProviders = 0;
     let skippedProviders = 0;
 
@@ -99,7 +106,7 @@ export class ReviewAnalysisService {
         continue;
       }
 
-      if (evidenceLevel === "thin") {
+      if (options.deterministicOnly || evidenceLevel === "thin") {
         skippedProviders += 1;
         const fallback = this.buildFallbackAnalysis(provider);
         updatedProviders.push({

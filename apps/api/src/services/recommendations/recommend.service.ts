@@ -560,8 +560,9 @@ export class RecommendationService {
     const platforms = result.providerIntel?.reputationSources?.map(
       (source) => source.platform,
     );
-    if (platforms && platforms.length > 0) {
-      parts.push(`Cross-platform sources: ${Array.from(new Set(platforms)).join(", ")}`);
+    const uniquePlatforms = platforms ? Array.from(new Set(platforms)) : [];
+    if (uniquePlatforms.length > 0) {
+      parts.push(`Cross-platform sources: ${uniquePlatforms.join(", ")}`);
     }
 
     const positiveThemes = result.providerIntel?.positiveThemes
@@ -569,6 +570,10 @@ export class RecommendationService {
       .slice(0, 2);
     if (positiveThemes && positiveThemes.length > 0) {
       parts.push(`Strengths: ${positiveThemes.join(", ")}`);
+    } else if ((result.reviewCount ?? 0) >= 10 && (result.rating ?? 0) >= 4.5) {
+      parts.push("Strengths: Strong verified review signal");
+    } else if (uniquePlatforms.length > 0) {
+      parts.push("Strengths: Cross-platform reputation evidence available");
     }
 
     const negativeThemes = result.providerIntel?.negativeThemes
@@ -583,6 +588,8 @@ export class RecommendationService {
       .slice(0, 1);
     if (contradictions && contradictions.length > 0) {
       parts.push(`Contradiction: ${contradictions[0]}`);
+    } else if ((result.reviewCount ?? 0) > 0 && (result.reviewCount ?? 0) < 10) {
+      parts.push("Caution: Limited review depth");
     }
 
     // 4. Pricing transparency
