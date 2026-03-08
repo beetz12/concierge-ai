@@ -27,10 +27,24 @@ test("worker runtime defaults to OpenAI realtime", () => {
   assert.equal(config.openai.turnDetection.type, "server_vad");
   assert.equal(config.openai.turnDetection.interrupt_response, false);
   assert.equal(config.openai.inputAudioNoiseReduction, undefined);
+  assert.equal(config.voiceOptions.minInterruptionDuration, 900);
   assert.equal(
     config.gemini.model,
     "gemini-2.5-flash-native-audio-preview-12-2025",
   );
+});
+
+test("worker runtime accepts custom telephony noise thresholds", () => {
+  const config = getWorkerRuntimeConfig({
+    OPENAI_API_KEY: "test-key",
+    OPENAI_REALTIME_TURN_THRESHOLD: "0.9",
+    OPENAI_REALTIME_TURN_SILENCE_DURATION_MS: "1500",
+    OPENAI_REALTIME_INPUT_AUDIO_NOISE_REDUCTION: "near_field",
+  });
+
+  assert.equal(config.openai.turnDetection.threshold, 0.9);
+  assert.equal(config.openai.turnDetection.silence_duration_ms, 1500);
+  assert.deepEqual(config.openai.inputAudioNoiseReduction, { type: "near_field" });
 });
 
 test("worker runtime accepts gemini-live override", () => {
@@ -60,7 +74,7 @@ test("qualification instructions enforce one-question turns and explicit finish"
 
   assert.match(instructions, /Ask only one question at a time/i);
   assert.match(instructions, /Never say or imply 'thanks for calling'/i);
-  assert.match(instructions, /finishCall tool/i);
+  assert.match(instructions, /use finishCall/i);
 });
 
 test("opening prompt verifies the business identity before the service question", () => {

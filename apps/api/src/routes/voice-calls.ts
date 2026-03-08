@@ -4,6 +4,7 @@ import { ContractorCallService } from "../services/voice/contractor-call.service
 
 const e164PhoneRegex = /^\+1\d{10}$/;
 const e164PhoneMessage = "Phone must be E.164 format (+1XXXXXXXXXX)";
+const sessionParamsSchema = z.object({ sessionId: z.string().min(1) });
 
 const intakeAnswerSchema = z.object({
   questionId: z.string().optional(),
@@ -31,6 +32,16 @@ const contractorCallSchema = z.object({
   dealBreakers: z.array(z.string().min(1)).optional(),
   intakeAnswers: z.array(intakeAnswerSchema).optional(),
   taskDescription: z.string().optional(),
+});
+
+const supervisorBrowserSchema = z.object({
+  displayName: z.string().min(1).optional(),
+  canPublishAudio: z.boolean().optional(),
+});
+
+const supervisorCallSchema = z.object({
+  phoneNumber: z.string().regex(e164PhoneRegex, e164PhoneMessage),
+  displayName: z.string().min(1).optional(),
 });
 
 const normalizeIntakeAnswers = (
@@ -115,6 +126,130 @@ export default async function voiceCallRoutes(fastify: FastifyInstance) {
         reply.code(404).send({
           error: "NotFound",
           message: error instanceof Error ? error.message : "Contractor call not found",
+        });
+      }
+    },
+  );
+
+  fastify.post(
+    "/calls/:sessionId/supervisor/browser-token",
+    {
+      schema: {
+        tags: ["voice"],
+        summary: "Create a LiveKit browser token for live call monitoring",
+      },
+    },
+    async (request, reply) => {
+      try {
+        const params = sessionParamsSchema.parse(request.params);
+        const body = supervisorBrowserSchema.parse(request.body ?? {});
+        const result = await contractorCallService.createSupervisorBrowserToken({
+          sessionId: params.sessionId,
+          displayName: body.displayName,
+          canPublishAudio: body.canPublishAudio,
+        });
+        return {
+          success: true,
+          ...result,
+        };
+      } catch (error) {
+        reply.code(400).send({
+          error: "SupervisorTokenFailed",
+          message:
+            error instanceof Error
+              ? error.message
+              : "Failed to create supervisor browser token",
+        });
+      }
+    },
+  );
+
+  fastify.post(
+    "/calls/:sessionId/supervisor/call",
+    {
+      schema: {
+        tags: ["voice"],
+        summary: "Dial a supervisor into the active LiveKit call",
+      },
+    },
+    async (request, reply) => {
+      try {
+        const params = sessionParamsSchema.parse(request.params);
+        const body = supervisorCallSchema.parse(request.body);
+        const result = await contractorCallService.addSupervisorCall({
+          sessionId: params.sessionId,
+          phoneNumber: body.phoneNumber,
+          displayName: body.displayName,
+        });
+        return {
+          success: true,
+          ...result,
+        };
+      } catch (error) {
+        reply.code(400).send({
+          error: "SupervisorCallFailed",
+          message:
+            error instanceof Error
+              ? error.message
+              : "Failed to dial supervisor into live call",
+        });
+      }
+    },
+  );
+
+  fastify.post(
+    "/calls/:sessionId/pause",
+    {
+      schema: {
+        tags: ["voice"],
+        summary: "Pause the active voice agent so a supervisor can listen or speak",
+      },
+    },
+    async (request, reply) => {
+      try {
+        const params = sessionParamsSchema.parse(request.params);
+        const result = await contractorCallService.controlActiveCall({
+          sessionId: params.sessionId,
+          action: "pause",
+        });
+        return {
+          success: true,
+          ...result,
+        };
+      } catch (error) {
+        reply.code(400).send({
+          error: "PauseFailed",
+          message:
+            error instanceof Error ? error.message : "Failed to pause active call",
+        });
+      }
+    },
+  );
+
+  fastify.post(
+    "/calls/:sessionId/resume",
+    {
+      schema: {
+        tags: ["voice"],
+        summary: "Resume the paused voice agent",
+      },
+    },
+    async (request, reply) => {
+      try {
+        const params = sessionParamsSchema.parse(request.params);
+        const result = await contractorCallService.controlActiveCall({
+          sessionId: params.sessionId,
+          action: "resume",
+        });
+        return {
+          success: true,
+          ...result,
+        };
+      } catch (error) {
+        reply.code(400).send({
+          error: "ResumeFailed",
+          message:
+            error instanceof Error ? error.message : "Failed to resume active call",
         });
       }
     },

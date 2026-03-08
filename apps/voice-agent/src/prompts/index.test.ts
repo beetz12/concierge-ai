@@ -18,6 +18,16 @@ test("qualification template uses an outbound business-identity opener", () => {
   assert.doesNotMatch(template.openingPrompt, /thanks for calling/i);
 });
 
+test("qualification template uses the client name in the opener when available", () => {
+  const template = buildVoicePromptTemplate({
+    ...qualificationContext,
+    clientName: "David",
+  });
+
+  assert.match(template.openingPrompt, /David's AI assistant calling on behalf of David/i);
+  assert.match(template.openingPrompt, /Is this Acme Landscaping\?/i);
+});
+
 test("qualification template enforces sequential fact collection and edge-case handling", () => {
   const template = buildVoicePromptTemplate(qualificationContext);
 

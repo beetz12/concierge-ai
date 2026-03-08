@@ -117,7 +117,34 @@ export interface ContractorCallStatus {
     availability: string | null;
     estimatedRate: string | null;
     transcript: string | null;
+    recordingPath: string | null;
+    transcriptPath: string | null;
+    sessionReportPath: string | null;
   };
+}
+
+export interface SupervisorBrowserTokenResult {
+  sessionId: string;
+  roomName: string;
+  participantIdentity: string;
+  displayName: string;
+  canPublishAudio: boolean;
+  wsUrl?: string;
+  token: string;
+}
+
+export interface SupervisorCallJoinResult {
+  sessionId: string;
+  roomName: string;
+  participantIdentity: string;
+}
+
+export interface SessionControlResult {
+  sessionId: string;
+  action: "pause" | "resume";
+  paused: boolean;
+  roomName: string;
+  participantIdentity: string;
 }
 
 interface ContractorCallServiceDependencies {
@@ -328,7 +355,9 @@ export class ContractorCallService {
     const response = await this.requestVoiceAgent<ContractorCallPreviewResponse>(
       "/preview/call",
       {
-        metadata: plan.previewMetadata,
+        body: {
+          metadata: plan.previewMetadata,
+        },
       },
     );
 
@@ -344,10 +373,12 @@ export class ContractorCallService {
     const payload = await this.requestVoiceAgent<ContractorCallDispatchResponse>(
       getVoiceAgentDispatchPath(input.mode),
       {
-        request: {
-          ...plan.previewMetadata,
-          serviceRequestId: persistedContext.serviceRequestId,
-          providerId: persistedContext.providerId,
+        body: {
+          request: {
+            ...plan.previewMetadata,
+            serviceRequestId: persistedContext.serviceRequestId,
+            providerId: persistedContext.providerId,
+          },
         },
       },
     );
@@ -413,6 +444,14 @@ export class ContractorCallService {
       session.outcome && typeof session.outcome === "object"
         ? (session.outcome as Record<string, unknown>)
         : null;
+    const artifactEvent = [...events]
+      .reverse()
+      .find((event) => event.event_type === "session_artifacts_ready");
+    const artifactPayload =
+      artifactEvent && typeof artifactEvent.payload === "object" && artifactEvent.payload
+        ? (artifactEvent.payload as Record<string, unknown>)
+        : null;
+    const transcriptFromEvents = this.buildTranscriptFromVoiceEvents(events);
 
     return {
       session,
@@ -437,9 +476,110 @@ export class ContractorCallService {
           outcome?.estimatedRate,
           providerCallResult?.estimatedRate,
         ),
-        transcript: this.pickString(provider?.call_transcript),
+        transcript: this.pickString(provider?.call_transcript, transcriptFromEvents),
+        recordingPath: this.pickString(
+          artifactPayload?.recordingPath,
+        ),
+        transcriptPath: this.pickString(
+          artifactPayload?.transcriptPath,
+        ),
+        sessionReportPath: this.pickString(
+          artifactPayload?.sessionReportPath,
+        ),
       },
     };
+  }
+
+  async createSupervisorBrowserToken(input: {
+    sessionId: string;
+    displayName?: string;
+    canPublishAudio?: boolean;
+  }): Promise<SupervisorBrowserTokenResult> {
+    const result = await this.requestVoiceAgent<{
+      success: true;
+      sessionId: string;
+      roomName: string;
+      participantIdentity: string;
+      displayName: string;
+      canPublishAudio: boolean;
+      wsUrl?: string;
+      token: string;
+    }>(`/sessions/${input.sessionId}/supervisor/browser-token`, {
+      method: "POST",
+      body: {
+        displayName: input.displayName,
+        canPublishAudio: input.canPublishAudio,
+      },
+    });
+
+    return {
+      sessionId: result.sessionId,
+      roomName: result.roomName,
+      participantIdentity: result.participantIdentity,
+      displayName: result.displayName,
+      canPublishAudio: result.canPublishAudio,
+      wsUrl: result.wsUrl,
+      token: result.token,
+    };
+  }
+
+  async addSupervisorCall(input: {
+    sessionId: string;
+    phoneNumber: string;
+    displayName?: string;
+  }): Promise<SupervisorCallJoinResult> {
+    const result = await this.requestVoiceAgent<{
+      success: true;
+      sessionId: string;
+      roomName: string;
+      participantIdentity: string;
+    }>(`/sessions/${input.sessionId}/supervisor/call`, {
+      method: "POST",
+      body: {
+        phoneNumber: input.phoneNumber,
+        displayName: input.displayName,
+      },
+    });
+
+    return {
+      sessionId: result.sessionId,
+      roomName: result.roomName,
+      participantIdentity: result.participantIdentity,
+    };
+  }
+
+  async controlActiveCall(input: {
+    sessionId: string;
+    action: "pause" | "resume";
+  }): Promise<SessionControlResult> {
+    const config = getCallRuntimeConfig();
+    const workerControlUrl =
+      process.env.VOICE_AGENT_WORKER_CONTROL_URL || "http://127.0.0.1:8788";
+    const response = await this.fetchImpl(
+      `${workerControlUrl}/sessions/${input.sessionId}/${input.action}`,
+      {
+        method: "POST",
+        headers: {
+          "content-type": "application/json",
+          "x-voice-agent-key": config.voiceAgent.sharedSecret,
+        },
+      },
+    );
+
+    const data = (await response.json()) as
+      | SessionControlResult
+      | { message?: string };
+    if (!response.ok) {
+      const message =
+        typeof data === "object" && data && "message" in data
+          ? data.message
+          : JSON.stringify(data);
+      throw new Error(
+        `Voice worker control request failed (${response.status}): ${message}`,
+      );
+    }
+
+    return data as SessionControlResult;
   }
 
   private async createPersistenceContext(
@@ -530,17 +670,24 @@ export class ContractorCallService {
     });
   }
 
-  private async requestVoiceAgent<T>(pathname: string, payload: unknown): Promise<T> {
+  private async requestVoiceAgent<T>(
+    pathname: string,
+    options: {
+      method?: "GET" | "POST";
+      body?: unknown;
+    } = {},
+  ): Promise<T> {
     const config = getCallRuntimeConfig();
     const voiceAgentUrl =
       process.env.VOICE_AGENT_SERVICE_URL || "http://127.0.0.1:8787";
     const response = await this.fetchImpl(`${voiceAgentUrl}${pathname}`, {
-      method: "POST",
+      method: options.method || "POST",
       headers: {
         "content-type": "application/json",
         "x-voice-agent-key": config.voiceAgent.sharedSecret,
       },
-      body: JSON.stringify(payload),
+      body:
+        options.body === undefined ? undefined : JSON.stringify(options.body),
     });
 
     const data = (await response.json()) as T | { message?: string };
@@ -565,5 +712,35 @@ export class ContractorCallService {
     }
 
     return null;
+  }
+
+  private buildTranscriptFromVoiceEvents(
+    events: Array<Record<string, unknown>>,
+  ): string | null {
+    const lines = events
+      .filter((event) => event.event_type === "transcript_message")
+      .map((event) => {
+        const payload =
+          event.payload && typeof event.payload === "object"
+            ? (event.payload as Record<string, unknown>)
+            : null;
+        const role = this.pickString(payload?.role);
+        const text = this.pickString(payload?.text);
+
+        if (!role || !text) {
+          return null;
+        }
+
+        const speaker =
+          role === "assistant"
+            ? "Assistant"
+            : role === "user"
+              ? "Provider"
+              : role;
+        return `${speaker}: ${text}`;
+      })
+      .filter((line): line is string => Boolean(line));
+
+    return lines.length ? lines.join("\n\n") : null;
   }
 }

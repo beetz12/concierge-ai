@@ -6,6 +6,7 @@ import type { VoiceAgentConfig } from "./config.js";
 const baseConfig: VoiceAgentConfig = {
   host: "0.0.0.0",
   port: 8787,
+  workerControlPort: 8788,
   callRuntimeProvider: "livekit",
   apiBaseUrl: "http://127.0.0.1:8000/api/v1/voice-tools",
   sharedSecret: "secret",
@@ -17,6 +18,7 @@ const baseConfig: VoiceAgentConfig = {
     agentName: "concierge-outbound-agent",
     sipOutboundTrunkId: "ST_123",
     fromNumber: "+15550001111",
+    sipKrispEnabled: true,
     configured: true,
     telephonyConfigured: true,
   },
@@ -66,6 +68,7 @@ test("LiveKitTelephonyService dispatches agent and SIP participant into the same
   assert.equal(calls[0]?.roomName, "concierge-session_123");
   assert.equal(calls[1]?.roomName, "concierge-session_123");
   assert.equal(calls[1]?.sipTrunkId, "ST_123");
+  assert.equal((calls[1]?.options as { krispEnabled?: boolean })?.krispEnabled, true);
 });
 
 test("LiveKitTelephonyService rejects dispatch when telephony is not configured", async () => {
@@ -102,4 +105,43 @@ test("LiveKitTelephonyService rejects dispatch when telephony is not configured"
       }),
     /telephony is not configured/i,
   );
+});
+
+test("LiveKitTelephonyService can add a supervisor SIP participant into an existing room", async () => {
+  const calls: Array<Record<string, unknown>> = [];
+  const service = new LiveKitTelephonyService(baseConfig, {
+    dispatchClient: {
+      async createDispatch() {
+        throw new Error("dispatch should not be called");
+      },
+    },
+    sipClient: {
+      async createSipParticipant(sipTrunkId, phoneNumber, roomName, options) {
+        calls.push({
+          sipTrunkId,
+          phoneNumber,
+          roomName,
+          options,
+        });
+        return {};
+      },
+    },
+  });
+
+  const result = await service.addSipParticipantToRoom({
+    roomName: "concierge-session_123",
+    phoneNumber: "+15557654321",
+    participantIdentity: "supervisor-session_123",
+    displayName: "Supervisor",
+    metadata: "{\"role\":\"supervisor\"}",
+    participantAttributes: {
+      role: "supervisor",
+    },
+  });
+
+  assert.equal(result.roomName, "concierge-session_123");
+  assert.equal(result.participantIdentity, "supervisor-session_123");
+  assert.equal(calls.length, 1);
+  assert.equal(calls[0]?.sipTrunkId, "ST_123");
+  assert.equal(calls[0]?.phoneNumber, "+15557654321");
 });

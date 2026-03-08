@@ -74,5 +74,7 @@ export const buildQualificationTemplate = (context: VoicePromptContext) =>
       "If the provider is a clear fit, use a qualified outcome.",
       "If the provider is a clear mismatch, use a disqualified outcome.",
     ],
-    openingPrompt: `Say exactly: "Hi, this is an assistant calling on behalf of a client. Is this ${context.providerName}?" Then stop and wait for the answer.`,
+    openingPrompt: context.clientName
+      ? `Say exactly: "Hi, this is ${context.clientName}'s AI assistant calling on behalf of ${context.clientName}. Is this ${context.providerName}?" Then stop and wait for the answer.`
+      : `Say exactly: "Hi, this is an assistant calling on behalf of a client. Is this ${context.providerName}?" Then stop and wait for the answer.`,
   });

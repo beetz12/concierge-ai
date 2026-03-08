@@ -18,6 +18,11 @@ export type WorkerModelProvider =
 
 export interface WorkerRuntimeConfig {
   modelProvider: WorkerModelProvider;
+  voiceOptions: {
+    minInterruptionDuration: number;
+    minEndpointingDelay: number;
+    maxEndpointingDelay: number;
+  };
   openai: {
     model?: string;
     voice: string;
@@ -61,6 +66,35 @@ const parseProvider = (value: string | undefined): WorkerModelProvider => {
   }
 };
 
+const parseNumber = (value: string | undefined, fallback: number): number => {
+  if (value === undefined || value === "") {
+    return fallback;
+  }
+
+  const parsed = Number(value);
+  if (!Number.isFinite(parsed)) {
+    throw new Error(`Expected numeric value, received: ${value}`);
+  }
+
+  return parsed;
+};
+
+const parseNoiseReduction = (
+  value: string | undefined,
+): { type: "near_field" | "far_field" } | undefined => {
+  if (value === undefined || value === "") {
+    return undefined;
+  }
+
+  if (value === "near_field" || value === "far_field") {
+    return { type: value };
+  }
+
+  throw new Error(
+    `Unsupported OPENAI_REALTIME_INPUT_AUDIO_NOISE_REDUCTION: ${value}. Expected near_field or far_field.`,
+  );
+};
+
 export const getWorkerRuntimeConfig = (
   env: NodeJS.ProcessEnv = process.env,
 ): WorkerRuntimeConfig => {
@@ -80,6 +114,20 @@ export const getWorkerRuntimeConfig = (
 
   return {
     modelProvider,
+    voiceOptions: {
+      minInterruptionDuration: parseNumber(
+        env.VOICE_AGENT_MIN_INTERRUPTION_DURATION_MS,
+        900,
+      ),
+      minEndpointingDelay: parseNumber(
+        env.VOICE_AGENT_MIN_ENDPOINTING_DELAY_MS,
+        900,
+      ),
+      maxEndpointingDelay: parseNumber(
+        env.VOICE_AGENT_MAX_ENDPOINTING_DELAY_MS,
+        6000,
+      ),
+    },
     openai: {
       model: env.OPENAI_REALTIME_MODEL,
       voice: env.OPENAI_REALTIME_VOICE || "cedar",
@@ -87,12 +135,21 @@ export const getWorkerRuntimeConfig = (
       // This keeps ambient PSTN noise from clipping the assistant's own words mid-sentence.
       turnDetection: {
         type: "server_vad",
-        threshold: 0.72,
-        prefix_padding_ms: 700,
-        silence_duration_ms: 900,
+        threshold: parseNumber(env.OPENAI_REALTIME_TURN_THRESHOLD, 0.82),
+        prefix_padding_ms: parseNumber(
+          env.OPENAI_REALTIME_TURN_PREFIX_PADDING_MS,
+          700,
+        ),
+        silence_duration_ms: parseNumber(
+          env.OPENAI_REALTIME_TURN_SILENCE_DURATION_MS,
+          1200,
+        ),
         create_response: true,
         interrupt_response: false,
       },
+      inputAudioNoiseReduction: parseNoiseReduction(
+        env.OPENAI_REALTIME_INPUT_AUDIO_NOISE_REDUCTION,
+      ),
     },
     gemini: {
       model: env.GEMINI_LIVE_MODEL || DEFAULT_GEMINI_MODEL,
@@ -124,6 +181,7 @@ export const createAgentSession = (
     case "gemini-live":
       return new voice.AgentSession({
         vad,
+        voiceOptions: config.voiceOptions,
         llm: new google.beta.realtime.RealtimeModel({
           model: config.gemini.model,
           voice: config.gemini.voice,
@@ -136,17 +194,20 @@ export const createAgentSession = (
         stt: config.pipeline.sttModel,
         llm: config.pipeline.llmModel,
         tts: config.pipeline.ttsModel,
+        voiceOptions: config.voiceOptions,
         turnDetection: new livekit.turnDetector.MultilingualModel(),
       });
     case "openai-realtime":
     default:
       return new voice.AgentSession({
         vad,
+        voiceOptions: config.voiceOptions,
         llm: new openai.realtime.RealtimeModel({
           model: config.openai.model,
           voice: config.openai.voice,
           temperature: 0.7,
           turnDetection: config.openai.turnDetection,
+          inputAudioNoiseReduction: config.openai.inputAudioNoiseReduction,
         }),
       });
   }

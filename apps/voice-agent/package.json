@@ -11,7 +11,7 @@
     "start:worker": "node dist/worker.js start",
     "lint": "eslint src --max-warnings 0",
     "check-types": "tsc --noEmit",
-    "test": "node --import tsx --test src/**/*.test.ts tests/**/*.test.ts"
+    "test": "node --import tsx --test \"src/**/*.test.ts\" \"tests/**/*.test.ts\""
   },
   "dependencies": {
     "@livekit/agents": "^1.0.48",

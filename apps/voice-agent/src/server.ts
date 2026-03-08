@@ -1,4 +1,5 @@
 import { createServer, type IncomingMessage, type ServerResponse } from "node:http";
+import { AccessToken } from "livekit-server-sdk";
 import { VoiceToolsClient } from "./backend-client.js";
 import { getVoiceAgentConfig } from "./config.js";
 import { VoiceObservability } from "./health.js";
@@ -40,6 +41,65 @@ export const buildVoiceAgentServer = () => {
     sharedSecret: config.sharedSecret,
   });
   const liveKitTelephony = new LiveKitTelephonyService(config);
+
+  const loadSessionRoomContext = async (sessionId: string) => {
+    const persisted = (await backendClient.getVoiceSession(sessionId)) as {
+      session?: {
+        id?: string;
+        metadata?: Record<string, string>;
+        service_request_id?: string;
+        provider_id?: string;
+      };
+    };
+
+    const session = persisted.session;
+    const roomName = session?.metadata?.roomName;
+    if (!session?.id || !roomName) {
+      throw new Error(`Voice session ${sessionId} does not have an active LiveKit room.`);
+    }
+
+    return {
+      sessionId: session.id,
+      roomName,
+      serviceRequestId: session.service_request_id || "",
+      providerId: session.provider_id || "",
+      metadata: session.metadata || {},
+    };
+  };
+
+  const buildSupervisorBrowserToken = async (input: {
+    sessionId: string;
+    roomName: string;
+    displayName?: string;
+    canPublishAudio?: boolean;
+  }) => {
+    if (!config.livekit.apiKey || !config.livekit.apiSecret) {
+      throw new Error("LiveKit credentials are missing for supervisor token generation.");
+    }
+
+    const identity = `supervisor-browser-${input.sessionId}-${Date.now()}`;
+    const token = new AccessToken(config.livekit.apiKey, config.livekit.apiSecret, {
+      identity,
+      name: input.displayName || "Supervisor Monitor",
+      ttl: "1h",
+    });
+
+    token.addGrant({
+      roomJoin: true,
+      room: input.roomName,
+      canSubscribe: true,
+      canPublish: Boolean(input.canPublishAudio),
+    });
+
+    return {
+      roomName: input.roomName,
+      participantIdentity: identity,
+      displayName: input.displayName || "Supervisor Monitor",
+      canPublishAudio: Boolean(input.canPublishAudio),
+      wsUrl: config.livekit.url,
+      token: await token.toJwt(),
+    };
+  };
 
   const persistSession = async (sessionId: string, eventType?: string) => {
     const session = sessionManager.getSession(sessionId);
@@ -505,6 +565,106 @@ export const buildVoiceAgentServer = () => {
         writeJson(response, 400, {
           error: "ValidationError",
           message: error instanceof Error ? error.message : "Invalid batch dispatch payload",
+        });
+      }
+      return;
+    }
+
+    const supervisorBrowserMatch =
+      request.method === "POST"
+        ? /^\/sessions\/([^/]+)\/supervisor\/browser-token$/.exec(request.url || "")
+        : null;
+    if (supervisorBrowserMatch) {
+      try {
+        const body = (await readJson(request)) as {
+          displayName?: string;
+          canPublishAudio?: boolean;
+        };
+        const sessionId = supervisorBrowserMatch[1] || "";
+        const sessionContext = await loadSessionRoomContext(sessionId);
+        const payload = await buildSupervisorBrowserToken({
+          sessionId,
+          roomName: sessionContext.roomName,
+          displayName: body.displayName,
+          canPublishAudio: body.canPublishAudio,
+        });
+
+        writeJson(response, 200, {
+          success: true,
+          sessionId,
+          ...payload,
+        });
+      } catch (error) {
+        writeJson(response, 400, {
+          error: "SupervisorTokenFailed",
+          message:
+            error instanceof Error
+              ? error.message
+              : "Failed to generate supervisor browser token",
+        });
+      }
+      return;
+    }
+
+    const supervisorCallMatch =
+      request.method === "POST"
+        ? /^\/sessions\/([^/]+)\/supervisor\/call$/.exec(request.url || "")
+        : null;
+    if (supervisorCallMatch) {
+      try {
+        const body = (await readJson(request)) as {
+          phoneNumber?: string;
+          displayName?: string;
+        };
+        if (!body.phoneNumber) {
+          throw new Error("phoneNumber is required for supervisor dial-in");
+        }
+
+        const sessionId = supervisorCallMatch[1] || "";
+        const sessionContext = await loadSessionRoomContext(sessionId);
+        const supervisorParticipant = await liveKitTelephony.addSipParticipantToRoom({
+          roomName: sessionContext.roomName,
+          phoneNumber: body.phoneNumber,
+          participantIdentity: `supervisor-${sessionId}`,
+          displayName: body.displayName || "Supervisor",
+          metadata: JSON.stringify({
+            role: "supervisor",
+            sessionId,
+          }),
+          participantAttributes: {
+            role: "supervisor",
+            sessionId,
+            serviceRequestId: sessionContext.serviceRequestId,
+            providerId: sessionContext.providerId,
+          },
+        });
+
+        await backendClient.appendVoiceSessionEvent({
+          sessionId,
+          serviceRequestId: sessionContext.serviceRequestId,
+          providerId: sessionContext.providerId,
+          eventType: "supervisor_call_joined",
+          agentRole: "supervisor",
+          payload: {
+            roomName: sessionContext.roomName,
+            participantIdentity: supervisorParticipant.participantIdentity,
+            phoneNumber: body.phoneNumber,
+          },
+        });
+
+        writeJson(response, 200, {
+          success: true,
+          sessionId,
+          roomName: supervisorParticipant.roomName,
+          participantIdentity: supervisorParticipant.participantIdentity,
+        });
+      } catch (error) {
+        writeJson(response, 400, {
+          error: "SupervisorCallFailed",
+          message:
+            error instanceof Error
+              ? error.message
+              : "Failed to add supervisor call participant",
         });
       }
       return;

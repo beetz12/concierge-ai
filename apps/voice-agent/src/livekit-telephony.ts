@@ -21,6 +21,7 @@ export interface LiveKitDispatchClients {
         displayName?: string;
         participantMetadata?: string;
         participantAttributes?: { [key: string]: string };
+        krispEnabled?: boolean;
         waitUntilAnswered?: boolean;
       },
     ): Promise<unknown>;
@@ -38,6 +39,20 @@ export interface OutboundCallDispatchInput {
 
 export interface OutboundCallDispatchResult {
   dispatchId: string;
+  participantIdentity: string;
+  roomName: string;
+}
+
+export interface RoomSipParticipantInput {
+  roomName: string;
+  phoneNumber: string;
+  participantIdentity: string;
+  displayName: string;
+  metadata?: string;
+  participantAttributes?: Record<string, string>;
+}
+
+export interface RoomSipParticipantResult {
   participantIdentity: string;
   roomName: string;
 }
@@ -97,12 +112,44 @@ export class LiveKitTelephonyService {
         displayName: input.displayName,
         participantMetadata: input.metadata,
         participantAttributes: input.participantAttributes,
+        krispEnabled: this.config.livekit.sipKrispEnabled,
         waitUntilAnswered: false,
       },
     );
 
     return {
       dispatchId: dispatch.id,
+      participantIdentity: input.participantIdentity,
+      roomName: input.roomName,
+    };
+  }
+
+  async addSipParticipantToRoom(
+    input: RoomSipParticipantInput,
+  ): Promise<RoomSipParticipantResult> {
+    if (!this.config.livekit.telephonyConfigured || !this.config.livekit.sipOutboundTrunkId) {
+      throw new Error(
+        "LiveKit telephony is not configured. Expected LIVEKIT_SIP_OUTBOUND_TRUNK_ID and valid LiveKit credentials.",
+      );
+    }
+
+    await this.clients.sipClient.createSipParticipant(
+      this.config.livekit.sipOutboundTrunkId,
+      input.phoneNumber,
+      input.roomName,
+      {
+        fromNumber: this.config.livekit.fromNumber,
+        participantIdentity: input.participantIdentity,
+        participantName: input.displayName,
+        displayName: input.displayName,
+        participantMetadata: input.metadata,
+        participantAttributes: input.participantAttributes,
+        krispEnabled: this.config.livekit.sipKrispEnabled,
+        waitUntilAnswered: false,
+      },
+    );
+
+    return {
       participantIdentity: input.participantIdentity,
       roomName: input.roomName,
     };

@@ -1,5 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
+import { resetCallRuntimeConfigForTests } from "../src/config/call-runtime.js";
 import {
   ContractorCallService,
   createCriteriaSummary,
@@ -11,6 +12,45 @@ const mockSupabase = {
     throw new Error("Supabase should not be called in these unit tests");
   },
 } as never;
+
+const withRuntimeEnv = <T>(run: () => Promise<T> | T) => {
+  const previous = {
+    CALL_RUNTIME_PROVIDER: process.env.CALL_RUNTIME_PROVIDER,
+    LIVEKIT_URL: process.env.LIVEKIT_URL,
+    LIVEKIT_API_KEY: process.env.LIVEKIT_API_KEY,
+    LIVEKIT_API_SECRET: process.env.LIVEKIT_API_SECRET,
+    VOICE_AGENT_SHARED_SECRET: process.env.VOICE_AGENT_SHARED_SECRET,
+  };
+
+  process.env.CALL_RUNTIME_PROVIDER = "livekit";
+  process.env.LIVEKIT_URL = "wss://example.livekit.cloud";
+  process.env.LIVEKIT_API_KEY = "key";
+  process.env.LIVEKIT_API_SECRET = "secret";
+  process.env.VOICE_AGENT_SHARED_SECRET = "shared-secret";
+  resetCallRuntimeConfigForTests();
+
+  const restore = () => {
+    process.env.CALL_RUNTIME_PROVIDER = previous.CALL_RUNTIME_PROVIDER;
+    process.env.LIVEKIT_URL = previous.LIVEKIT_URL;
+    process.env.LIVEKIT_API_KEY = previous.LIVEKIT_API_KEY;
+    process.env.LIVEKIT_API_SECRET = previous.LIVEKIT_API_SECRET;
+    process.env.VOICE_AGENT_SHARED_SECRET = previous.VOICE_AGENT_SHARED_SECRET;
+    resetCallRuntimeConfigForTests();
+  };
+
+  try {
+    const result = run();
+    if (result instanceof Promise) {
+      return result.finally(restore);
+    }
+
+    restore();
+    return result;
+  } catch (error) {
+    restore();
+    throw error;
+  }
+};
 
 test("createCriteriaSummary includes must-ask questions, deal breakers, and intake answers", () => {
   const summary = createCriteriaSummary({
@@ -116,4 +156,78 @@ test("ContractorCallService builds a direct-task plan using task analysis output
   assert.equal(plan.directTaskType, "make_inquiry");
   assert.equal(plan.previewMetadata.directTaskType, "make_inquiry");
   assert.equal(plan.previewMetadata.customPrompt?.systemPrompt, "Ask about seasonal cleanup packages.");
+});
+
+test("ContractorCallService can request a supervisor browser token from the voice agent", async () => {
+  await withRuntimeEnv(async () => {
+    const calls: Array<{ url: string; method: string; body?: string }> = [];
+    const service = new ContractorCallService({
+      supabase: mockSupabase,
+      fetchImpl: (async (input, init) => {
+        calls.push({
+          url: String(input),
+          method: init?.method || "GET",
+          body: typeof init?.body === "string" ? init.body : undefined,
+        });
+
+        return new Response(
+          JSON.stringify({
+            success: true,
+            sessionId: "session_123",
+            roomName: "concierge-session_123",
+            participantIdentity: "supervisor-browser-session_123",
+            displayName: "Supervisor Monitor",
+            canPublishAudio: false,
+            wsUrl: "wss://example.livekit.cloud",
+            token: "jwt-token",
+          }),
+          { status: 200, headers: { "content-type": "application/json" } },
+        );
+      }) as typeof fetch,
+    });
+
+    const result = await service.createSupervisorBrowserToken({
+      sessionId: "session_123",
+      displayName: "Supervisor Monitor",
+    });
+
+    assert.equal(result.roomName, "concierge-session_123");
+    assert.equal(result.token, "jwt-token");
+    assert.match(calls[0]?.url || "", /supervisor\/browser-token$/);
+  });
+});
+
+test("ContractorCallService can pause an active worker session", async () => {
+  await withRuntimeEnv(async () => {
+    const calls: Array<{ url: string; method: string }> = [];
+    const service = new ContractorCallService({
+      supabase: mockSupabase,
+      fetchImpl: (async (input, init) => {
+        calls.push({
+          url: String(input),
+          method: init?.method || "GET",
+        });
+
+        return new Response(
+          JSON.stringify({
+            success: true,
+            sessionId: "session_123",
+            action: "pause",
+            paused: true,
+            roomName: "concierge-session_123",
+            participantIdentity: "provider-123",
+          }),
+          { status: 200, headers: { "content-type": "application/json" } },
+        );
+      }) as typeof fetch,
+    });
+
+    const result = await service.controlActiveCall({
+      sessionId: "session_123",
+      action: "pause",
+    });
+
+    assert.equal(result.paused, true);
+    assert.match(calls[0]?.url || "", /sessions\/session_123\/pause$/);
+  });
 });
