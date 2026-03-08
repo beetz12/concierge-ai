@@ -358,6 +358,26 @@ export default function RequestDetails() {
   // Fetch from database if not in localStorage
   useEffect(() => {
     if (!localRequest && !dbRequest && !loading) {
+      if (DEMO_MODE) {
+        const saved = window.localStorage.getItem("concierge_requests");
+        if (saved) {
+          try {
+            const parsed = JSON.parse(saved) as ServiceRequest[];
+            const matchedRequest = parsed.find((request) => request.id === id);
+            if (matchedRequest) {
+              addRequest(matchedRequest);
+              setError(null);
+              return;
+            }
+          } catch (storageError) {
+            console.error("Failed to parse demo-mode request cache:", storageError);
+          }
+        }
+
+        setError("Request not found (session-only request may have expired)");
+        return;
+      }
+
       // Only query Supabase if ID is a valid UUID
       // Direct Task IDs (task-xxx) are localStorage-only and not in the database
       if (!isValidUuid(id)) {

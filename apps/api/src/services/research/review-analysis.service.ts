@@ -55,6 +55,14 @@ const analysisSchema = z.object({
 
 type ReviewAnalysis = z.infer<typeof analysisSchema>;
 
+type RawReviewAnalysis = {
+  positiveThemes?: unknown[];
+  negativeThemes?: unknown[];
+  contradictionNotes?: unknown[];
+  seriousComplaints?: unknown[];
+  recentTrend?: unknown;
+};
+
 export interface ReviewAnalysisResult {
   providers: Provider[];
   stats: {
@@ -168,7 +176,8 @@ If evidence is thin, keep arrays small and use recentTrend=\"unknown\" or \"stab
         },
       });
 
-      const parsed = analysisSchema.parse(JSON.parse(response.text || "{}"));
+      const raw = JSON.parse(response.text || "{}") as RawReviewAnalysis;
+      const parsed = analysisSchema.parse(this.normalizeAnalysis(raw));
       return this.mergeWithFallback(parsed, fallback);
     } catch (error) {
       this.logger.warn(
@@ -177,6 +186,168 @@ If evidence is thin, keep arrays small and use recentTrend=\"unknown\" or \"stab
       );
       return fallback;
     }
+  }
+
+  private normalizeAnalysis(raw: RawReviewAnalysis): ReviewAnalysis {
+    return {
+      positiveThemes: this.normalizeThemes(raw.positiveThemes, "positive"),
+      negativeThemes: this.normalizeThemes(raw.negativeThemes, "negative"),
+      contradictionNotes: this.normalizeContradictions(raw.contradictionNotes),
+      seriousComplaints: this.normalizeComplaints(raw.seriousComplaints),
+      recentTrend:
+        raw.recentTrend === "improving" ||
+        raw.recentTrend === "stable" ||
+        raw.recentTrend === "deteriorating" ||
+        raw.recentTrend === "unknown"
+          ? raw.recentTrend
+          : "unknown",
+    };
+  }
+
+  private normalizeThemes(
+    values: unknown[] | undefined,
+    sentiment: "positive" | "negative",
+  ): ProviderReviewTheme[] {
+    return (values ?? [])
+      .map((value) => {
+        if (typeof value === "string") {
+          return {
+            theme: value,
+            sentiment,
+            frequency: "single" as const,
+          };
+        }
+
+        if (!value || typeof value !== "object") {
+          return null;
+        }
+
+        const record = value as Record<string, unknown>;
+        const theme = typeof record.theme === "string" ? record.theme : null;
+        if (!theme) return null;
+
+        const parsedSentiment =
+          record.sentiment === "positive" ||
+          record.sentiment === "negative" ||
+          record.sentiment === "mixed"
+            ? record.sentiment
+            : sentiment;
+
+        const frequency =
+          record.frequency === "single" ||
+          record.frequency === "repeated" ||
+          record.frequency === "dominant"
+            ? record.frequency
+            : undefined;
+
+        const examples = Array.isArray(record.examples)
+          ? record.examples.filter(
+              (example): example is string => typeof example === "string",
+            )
+          : undefined;
+
+        return {
+          theme,
+          sentiment: parsedSentiment,
+          frequency,
+          examples,
+        };
+      })
+      .filter((theme): theme is ProviderReviewTheme => Boolean(theme));
+  }
+
+  private normalizeContradictions(
+    values: unknown[] | undefined,
+  ): ProviderContradictionNote[] {
+    const normalized: ProviderContradictionNote[] = [];
+
+    for (const value of values ?? []) {
+      if (typeof value === "string") {
+        normalized.push({
+          summary: value,
+          severity: "medium",
+          platforms: [],
+        });
+        continue;
+      }
+
+      if (!value || typeof value !== "object") {
+        continue;
+      }
+
+      const record = value as Record<string, unknown>;
+      const summary = typeof record.summary === "string" ? record.summary : null;
+      if (!summary) continue;
+
+      const severity: ProviderContradictionNote["severity"] =
+        record.severity === "low" ||
+        record.severity === "medium" ||
+        record.severity === "high"
+          ? record.severity
+          : "medium";
+
+      const platforms = Array.isArray(record.platforms)
+        ? record.platforms.filter(
+            (platform): platform is string => typeof platform === "string",
+          )
+        : [];
+
+      const rationale =
+        typeof record.rationale === "string" ? record.rationale : undefined;
+
+      normalized.push({
+        summary,
+        severity,
+        platforms,
+        rationale,
+      });
+    }
+
+    return normalized;
+  }
+
+  private normalizeComplaints(
+    values: unknown[] | undefined,
+  ): ProviderSeriousComplaint[] {
+    const normalized: ProviderSeriousComplaint[] = [];
+
+    for (const value of values ?? []) {
+      if (!value || typeof value !== "object") {
+        continue;
+      }
+
+      const record = value as Record<string, unknown>;
+      const summary = typeof record.summary === "string" ? record.summary : null;
+      if (!summary) continue;
+
+      const category: ProviderSeriousComplaint["category"] =
+        record.category === "no_show" ||
+        record.category === "damage" ||
+        record.category === "pricing" ||
+        record.category === "unfinished_work" ||
+        record.category === "safety" ||
+        record.category === "license_or_insurance" ||
+        record.category === "complaint_handling" ||
+        record.category === "other"
+          ? record.category
+          : "other";
+
+      const repeated = Boolean(record.repeated);
+      const platforms = Array.isArray(record.platforms)
+        ? record.platforms.filter(
+            (platform): platform is string => typeof platform === "string",
+          )
+        : undefined;
+
+      normalized.push({
+        category,
+        summary,
+        repeated,
+        platforms,
+      });
+    }
+
+    return normalized;
   }
 
   private buildFallbackAnalysis(provider: Provider): ReviewAnalysis {
