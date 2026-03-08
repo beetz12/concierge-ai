@@ -10,6 +10,7 @@
 - dispatches provider and booking sessions through `/dispatch/*`
 - creates a LiveKit agent dispatch plus outbound SIP participant for real phone calls
 - persists session snapshots and event history through the API's internal `voice-tools` routes
+- builds call wording through scenario templates under `src/prompts/` instead of inline runtime strings
 - reads `VOICE_AGENT_HOST`, `VOICE_AGENT_PORT`, `CALL_RUNTIME_PROVIDER`, `VOICE_AGENT_API_BASE_URL`, `VOICE_AGENT_SHARED_SECRET`, and LiveKit telephony env vars
 - supports `openai-realtime`, `gemini-live`, and `pipeline` worker modes via `VOICE_AGENT_MODEL_PROVIDER`
 
@@ -49,6 +50,16 @@ Recommended default:
 - `apps/api` owns request persistence, provider records, recommendations, booking flows, and runtime selection
 - `apps/voice-agent` owns live call session state, agent handoffs, observability, and the internal tool contract
 - `VAPI` remains a compatibility fallback selected through `CALL_RUNTIME_PROVIDER=vapi`
+
+## Prompt Templates
+
+Realtime call behavior now comes from dedicated prompt templates in `src/prompts/`:
+
+- `qualification-template.ts` for outbound provider screening
+- `booking-template.ts` for callback scheduling and exact appointment confirmation
+- `direct-task-template.ts` for future task-oriented calls that need a different tone and goal structure
+
+The worker runtime only selects the template and model settings. Scenario wording, fixed openers, question ordering, edge-case handling, and closing rules live in the template layer.
 
 ## Local Startup
 

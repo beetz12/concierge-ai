@@ -59,13 +59,13 @@ test("qualification instructions enforce one-question turns and explicit finish"
   const instructions = buildAgentInstructions(qualificationMetadata);
 
   assert.match(instructions, /Ask only one question at a time/i);
-  assert.match(instructions, /Never bombard the provider/i);
+  assert.match(instructions, /Never say or imply 'thanks for calling'/i);
   assert.match(instructions, /finishCall tool/i);
 });
 
-test("opening prompt asks only the first service confirmation question", () => {
+test("opening prompt verifies the business identity before the service question", () => {
   const opening = buildOpeningPrompt(qualificationMetadata);
 
-  assert.match(opening, /ask only this first question/i);
-  assert.match(opening, /do you offer landscaping/i);
+  assert.match(opening, /calling on behalf of a client/i);
+  assert.match(opening, /Is this Acme Landscaping\?/i);
 });

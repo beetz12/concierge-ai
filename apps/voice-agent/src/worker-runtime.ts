@@ -4,6 +4,7 @@ import * as livekit from "@livekit/agents-plugin-livekit";
 import * as openai from "@livekit/agents-plugin-openai";
 import type * as silero from "@livekit/agents-plugin-silero";
 import type { LiveKitDispatchMetadata } from "./livekit-metadata.js";
+import { buildVoicePromptTemplate } from "./prompts/index.js";
 
 const DEFAULT_STT_MODEL = "assemblyai/universal-streaming:en";
 const DEFAULT_LLM_MODEL = "openai/gpt-4.1-mini";
@@ -108,66 +109,11 @@ export const getWorkerRuntimeConfig = (
 export const buildAgentInstructions = (
   metadata: LiveKitDispatchMetadata,
 ): string => {
-  if (metadata.kind === "booking") {
-    return [
-      "You are an AI concierge calling a service provider to finalize a booking.",
-      `Provider: ${metadata.providerName}.`,
-      `Service needed: ${metadata.serviceNeeded}.`,
-      `Location: ${metadata.location}.`,
-      metadata.preferredDateTime
-        ? `Preferred appointment time: ${metadata.preferredDateTime}.`
-        : "",
-      metadata.clientName ? `Client name: ${metadata.clientName}.` : "",
-      metadata.clientPhone ? `Client callback number: ${metadata.clientPhone}.` : "",
-      metadata.clientAddress ? `Client address: ${metadata.clientAddress}.` : "",
-      metadata.additionalNotes ? `Additional notes: ${metadata.additionalNotes}.` : "",
-      "Sound like a normal human caller.",
-      "Keep each turn short and natural.",
-      "Speak smoothly, with warm professional energy, like a polished virtual assistant.",
-      "Do not rush. Finish every word fully and avoid clipping the first or last word of a sentence.",
-      "Ask for one thing at a time.",
-      "When the booking conversation is complete, give one short closing sentence and immediately use the finishCall tool.",
-    ]
-      .filter(Boolean)
-      .join(" ");
-  }
-
-  return [
-    "You are an AI concierge qualifying a local service provider by phone.",
-    `Provider: ${metadata.providerName}.`,
-    `Service needed: ${metadata.serviceNeeded}.`,
-    `Location: ${metadata.location}.`,
-    metadata.userCriteria ? `User criteria: ${metadata.userCriteria}.` : "",
-    metadata.problemDescription ? `Problem description: ${metadata.problemDescription}.` : "",
-    metadata.urgency ? `Urgency: ${metadata.urgency}.` : "",
-    metadata.clientAddress ? `Job address: ${metadata.clientAddress}.` : "",
-    "Sound like a normal business caller, not a chatbot.",
-    "Keep your voice responses brief, warm, and conversational.",
-    "Speak smoothly, with warm professional energy, like a polished virtual assistant.",
-    "Do not rush. Finish every word fully and avoid clipping the first or last word of a sentence.",
-    "Ask only one question at a time and wait for the answer before asking the next question.",
-    "Never bombard the provider with multiple questions in one turn.",
-    "Question order: first confirm whether they offer the requested service, then ask what specific services they offer, then ask pricing, then ask earliest availability.",
-    "If they already answered a later question, do not ask it again.",
-    "Once you have service confirmation, services offered, pricing, and earliest availability, give one short closing sentence and immediately use the finishCall tool.",
-  ]
-    .filter(Boolean)
-    .join(" ");
+  return buildVoicePromptTemplate(metadata).systemInstructions;
 };
 
 export const buildOpeningPrompt = (metadata: LiveKitDispatchMetadata): string => {
-  if (metadata.kind === "booking") {
-    return [
-      "Introduce yourself briefly.",
-      `Say you are calling about scheduling ${metadata.serviceNeeded}.`,
-      metadata.preferredDateTime
-        ? `Ask whether ${metadata.preferredDateTime} is available.`
-        : "Ask for the next available appointment window.",
-      "Ask only that first question.",
-    ].join(" ");
-  }
-
-  return `Introduce yourself briefly and ask only this first question: do you offer ${metadata.serviceNeeded}?`;
+  return buildVoicePromptTemplate(metadata).openingPrompt;
 };
 
 export const createAgentSession = (
