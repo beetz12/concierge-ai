@@ -1,16 +1,12 @@
 import assert from "node:assert/strict";
 import { mkdtemp, readFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
-import { dirname, join, resolve } from "node:path";
+import { join } from "node:path";
 import test from "node:test";
-import { pathToFileURL } from "node:url";
 import {
   providerIntelBenchmarkScenarios,
 } from "./fixtures/provider-intel-benchmark-scenarios.js";
-
-const scriptUrl = pathToFileURL(
-  resolve(process.cwd(), "scripts/provider-intel-benchmark.ts"),
-).href;
+import { runProviderIntelBenchmark } from "../scripts/provider-intel-benchmark.js";
 
 for (const scenario of providerIntelBenchmarkScenarios.filter(
   (item) => item.expectedTopProviders.length > 0,
@@ -18,24 +14,11 @@ for (const scenario of providerIntelBenchmarkScenarios.filter(
   test(`provider-intel benchmark snapshot: ${scenario.id}`, async () => {
     const outDir = await mkdtemp(join(tmpdir(), "provider-intel-benchmark-"));
     const outputPath = join(outDir, `${scenario.id}.json`);
-    const previousArgv = process.argv;
-
-    process.argv = [
-      "node",
-      scriptUrl,
-      "--scenario",
-      scenario.id,
-      "--mode",
-      "snapshot",
-      "--output",
+    await runProviderIntelBenchmark({
+      scenarioId: scenario.id,
+      mode: "snapshot",
       outputPath,
-    ];
-
-    try {
-      await import(`${scriptUrl}?scenario=${scenario.id}&ts=${Date.now()}`);
-    } finally {
-      process.argv = previousArgv;
-    }
+    });
 
     const report = JSON.parse(await readFile(outputPath, "utf8")) as {
       topProviders: Array<{ name: string }>;

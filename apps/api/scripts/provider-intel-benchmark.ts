@@ -20,22 +20,6 @@ const fixturesDir = resolve(
   "../tests/fixtures/provider-intel-benchmarks",
 );
 
-const args = process.argv.slice(2).filter((arg) => arg !== "--");
-const getArg = (flag: string, fallback?: string) => {
-  const index = args.indexOf(flag);
-  return index >= 0 ? args[index + 1] : fallback;
-};
-
-const scenarioId = getArg("--scenario", "greenville-landscaper")!;
-const mode = getArg("--mode", "snapshot")!;
-const requestedOutputPath = getArg(
-  "--output",
-  `provider-intel-benchmark-${scenarioId}.json`,
-)!;
-const captureSnapshot = args.includes("--capture-snapshot");
-const skipAssert = args.includes("--skip-assert");
-const outputPath = resolve(process.cwd(), requestedOutputPath);
-
 const logger = {
   info(obj: Record<string, unknown>, msg?: string) {
     console.log("[info]", msg ?? "", JSON.stringify(obj));
@@ -51,10 +35,41 @@ const logger = {
   },
 };
 
+export interface ProviderIntelBenchmarkOptions {
+  scenarioId?: string;
+  mode?: string;
+  outputPath?: string;
+  captureSnapshot?: boolean;
+  skipAssert?: boolean;
+}
+
 function assert(condition: unknown, message: string): asserts condition {
   if (!condition) {
     throw new Error(message);
   }
+}
+
+function parseCliOptions(): Required<ProviderIntelBenchmarkOptions> {
+  const args = process.argv.slice(2).filter((arg) => arg !== "--");
+  const getArg = (flag: string, fallback?: string) => {
+    const index = args.indexOf(flag);
+    return index >= 0 ? args[index + 1] : fallback;
+  };
+
+  const scenarioId = getArg("--scenario", "greenville-landscaper")!;
+  const mode = getArg("--mode", "snapshot")!;
+  const outputPath = resolve(
+    process.cwd(),
+    getArg("--output", `provider-intel-benchmark-${scenarioId}.json`)!,
+  );
+
+  return {
+    scenarioId,
+    mode,
+    outputPath,
+    captureSnapshot: args.includes("--capture-snapshot"),
+    skipAssert: args.includes("--skip-assert"),
+  };
 }
 
 function buildSyntheticCallResults(
@@ -105,6 +120,7 @@ function buildSyntheticCallResults(
 
 function buildBenchmarkReport(
   scenario: ProviderIntelBenchmarkScenario,
+  mode: string,
   result: ResearchResult,
   recommendationResult: Awaited<
     ReturnType<RecommendationService["generateRecommendations"]>
@@ -196,11 +212,22 @@ async function writeSnapshot(
   );
 }
 
-async function main() {
-  const scenario = benchmarkScenarioById(scenarioId);
+export async function runProviderIntelBenchmark(
+  options: ProviderIntelBenchmarkOptions = {},
+) {
+  const cliOptions = parseCliOptions();
+  const resolvedOptions = {
+    scenarioId: options.scenarioId ?? cliOptions.scenarioId,
+    mode: options.mode ?? cliOptions.mode,
+    outputPath: resolve(process.cwd(), options.outputPath ?? cliOptions.outputPath),
+    captureSnapshot: options.captureSnapshot ?? cliOptions.captureSnapshot,
+    skipAssert: options.skipAssert ?? cliOptions.skipAssert,
+  };
+
+  const scenario = benchmarkScenarioById(resolvedOptions.scenarioId);
   assert(
     scenario,
-    `Unknown benchmark scenario "${scenarioId}". Known scenarios: ${providerIntelBenchmarkScenarios.map((item) => item.id).join(", ")}`,
+    `Unknown benchmark scenario "${resolvedOptions.scenarioId}". Known scenarios: ${providerIntelBenchmarkScenarios.map((item) => item.id).join(", ")}`,
   );
 
   const researchService = new ResearchService(logger);
@@ -209,7 +236,7 @@ async function main() {
 
   let result: ResearchResult;
 
-  if (mode === "live") {
+  if (resolvedOptions.mode === "live") {
     assert(process.env.GOOGLE_PLACES_API_KEY, "Missing GOOGLE_PLACES_API_KEY");
 
     result = await researchService.search({
@@ -219,12 +246,15 @@ async function main() {
       maxResults: 5,
     });
 
-    assert(result.status === "success", `Live research failed: ${result.error ?? "unknown error"}`);
+    assert(
+      result.status === "success",
+      `Live research failed: ${result.error ?? "unknown error"}`,
+    );
 
-    if (captureSnapshot) {
+    if (resolvedOptions.captureSnapshot) {
       await writeSnapshot(scenario, result.providers);
     }
-  } else if (mode === "snapshot") {
+  } else if (resolvedOptions.mode === "snapshot") {
     const providers = await loadSnapshotProviders(scenario);
     result = await researchService.prepareProvidersForRecommendations(
       {
@@ -235,7 +265,9 @@ async function main() {
       { deterministicReviewAnalysis: true },
     );
   } else {
-    throw new Error(`Unsupported mode "${mode}". Use live or snapshot.`);
+    throw new Error(
+      `Unsupported mode "${resolvedOptions.mode}". Use live or snapshot.`,
+    );
   }
 
   const recommendationResult = await recommendationService.generateRecommendations(
@@ -256,9 +288,14 @@ async function main() {
     "Recommendation service produced zero finalists",
   );
 
-  const report = buildBenchmarkReport(scenario, result, recommendationResult);
+  const report = buildBenchmarkReport(
+    scenario,
+    resolvedOptions.mode,
+    result,
+    recommendationResult,
+  );
 
-  if (!skipAssert) {
+  if (!resolvedOptions.skipAssert) {
     assertExpectedOrder(
       "topProviders",
       report.topProviders.map((provider) => provider.name),
@@ -271,20 +308,32 @@ async function main() {
     );
   }
 
-  await writeFile(outputPath, JSON.stringify(report, null, 2));
+  await writeFile(resolvedOptions.outputPath, JSON.stringify(report, null, 2));
 
   console.log(
-    `Provider-intel benchmark passed for ${scenario.id} (${mode})`,
+    `Provider-intel benchmark passed for ${scenario.id} (${resolvedOptions.mode})`,
   );
-  console.log(`Report written to ${outputPath}`);
-  if (skipAssert) {
-    console.log(`Observed top providers: ${report.topProviders.map((provider) => provider.name).join(" | ")}`);
-    console.log(`Observed finalists: ${report.finalists.map((provider) => provider.name).join(" | ")}`);
+  console.log(`Report written to ${resolvedOptions.outputPath}`);
+  if (resolvedOptions.skipAssert) {
+    console.log(
+      `Observed top providers: ${report.topProviders.map((provider) => provider.name).join(" | ")}`,
+    );
+    console.log(
+      `Observed finalists: ${report.finalists.map((provider) => provider.name).join(" | ")}`,
+    );
   }
+
+  return report;
 }
 
-await main().catch((error) => {
-  console.error("Provider-intel benchmark failed:");
-  console.error(error instanceof Error ? error.stack ?? error.message : error);
-  process.exitCode = 1;
-});
+const isEntrypoint =
+  process.argv[1] !== undefined &&
+  resolve(process.argv[1]) === fileURLToPath(import.meta.url);
+
+if (isEntrypoint) {
+  runProviderIntelBenchmark().catch((error) => {
+    console.error("Provider-intel benchmark failed:");
+    console.error(error instanceof Error ? error.stack ?? error.message : error);
+    process.exitCode = 1;
+  });
+}
