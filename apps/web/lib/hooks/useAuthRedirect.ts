@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useRouter } from "next/navigation";
 import { useAuth } from "../providers/AuthProvider";
 
 interface UseRequireAuthOptions {
@@ -111,19 +111,20 @@ export function useRedirectIfAuthenticated(
   const { defaultRedirect = "/dashboard" } = options;
   const { isAuthenticated, isLoading } = useAuth();
   const router = useRouter();
-  const searchParams = useSearchParams();
   const [isReady, setIsReady] = useState(false);
 
   useEffect(() => {
     if (isLoading) return;
 
     if (isAuthenticated) {
-      const redirectTo = searchParams.get("redirectTo") || defaultRedirect;
+      const redirectTo =
+        new URLSearchParams(window.location.search).get("redirectTo") ||
+        defaultRedirect;
       router.replace(redirectTo);
     } else {
       setIsReady(true);
     }
-  }, [isAuthenticated, isLoading, defaultRedirect, router, searchParams]);
+  }, [isAuthenticated, isLoading, defaultRedirect, router]);
 
   return {
     isLoading,

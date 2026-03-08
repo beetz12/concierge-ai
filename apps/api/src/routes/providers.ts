@@ -12,6 +12,8 @@ import {
   ConcurrentCallService,
   KestraClient,
 } from "../services/vapi/index.js";
+import { RuntimeRouterService } from "../services/calls/runtime-router.service.js";
+import { BookingCallService } from "../services/calls/booking-call.service.js";
 import type { CallRequest, CallResult } from "../services/vapi/types.js";
 import { CallResultService } from "../services/vapi/call-result.service.js";
 import { RecommendationService } from "../services/recommendations/recommend.service.js";
@@ -158,7 +160,8 @@ const bookingSchema = z.object({
 
 export default async function providerRoutes(fastify: FastifyInstance) {
   // Create service instances with fastify logger
-  const callingService = new ProviderCallingService(fastify.log);
+  const vapiCallingService = new ProviderCallingService(fastify.log);
+  const runtimeRouter = new RuntimeRouterService(fastify.log, vapiCallingService);
   const concurrentCallService = new ConcurrentCallService(fastify.log);
   const recommendationService = new RecommendationService();
   const kestraClient = new KestraClient(fastify.log);
@@ -257,6 +260,12 @@ export default async function providerRoutes(fastify: FastifyInstance) {
                   status: { type: "string" },
                   callId: { type: "string" },
                   callMethod: { type: "string" },
+                  runtimeProvider: { type: "string" },
+                  accepted: { type: "boolean" },
+                  dispatchId: { type: "string" },
+                  sessionId: { type: "string" },
+                  providerId: { type: "string" },
+                  serviceRequestId: { type: "string" },
                   duration: { type: "number" },
                   endedReason: { type: "string" },
                   transcript: { type: "string" },
@@ -331,7 +340,7 @@ export default async function providerRoutes(fastify: FastifyInstance) {
         }
 
         // Initiate the call
-        const result = await callingService.callProvider(validated);
+        const result = await runtimeRouter.callProvider(validated);
 
         return reply.send({
           success: true,
@@ -382,6 +391,9 @@ export default async function providerRoutes(fastify: FastifyInstance) {
               vapiConfigured: { type: "boolean" },
               fallbackAvailable: { type: "boolean" },
               activeMethod: { type: "string" },
+              runtimeProvider: { type: "string" },
+              livekitEnabled: { type: "boolean" },
+              voiceAgentUrl: { type: "string" },
             },
           },
           500: {
@@ -396,7 +408,7 @@ export default async function providerRoutes(fastify: FastifyInstance) {
     },
     async (request, reply) => {
       try {
-        const status = await callingService.getSystemStatus();
+        const status = await runtimeRouter.getSystemStatus();
         return reply.send(status);
       } catch (error: unknown) {
         request.log.error({ error }, "Failed to get system status");
@@ -524,6 +536,23 @@ export default async function providerRoutes(fastify: FastifyInstance) {
                       averageCallDuration: { type: "number" },
                     },
                   },
+                  runtimeProvider: { type: "string" },
+                  accepted: { type: "boolean" },
+                  resultsInDatabase: { type: "boolean" },
+                  dispatches: {
+                    type: "array",
+                    items: {
+                      type: "object",
+                      properties: {
+                        runtimeProvider: { type: "string" },
+                        accepted: { type: "boolean" },
+                        dispatchId: { type: "string" },
+                        sessionId: { type: "string" },
+                        providerId: { type: "string" },
+                        serviceRequestId: { type: "string" },
+                      },
+                    },
+                  },
                   errors: {
                     type: "array",
                     items: {
@@ -579,7 +608,7 @@ export default async function providerRoutes(fastify: FastifyInstance) {
         }));
 
         // Initiate batch calls using ProviderCallingService
-        const result = await callingService.callProvidersBatch(requests, {
+        const result = await runtimeRouter.callProvidersBatch(requests, {
           maxConcurrent: validated.maxConcurrent,
         });
 
@@ -891,7 +920,7 @@ export default async function providerRoutes(fastify: FastifyInstance) {
 
             // Run real VAPI calls and simulated calls in parallel
             const realCallsPromise = requests.length > 0
-              ? callingService.callProvidersBatch(requests, {
+              ? runtimeRouter.callProvidersBatch(requests, {
                   maxConcurrent: validated.maxConcurrent || 5,
                 })
               : Promise.resolve({ success: true, resultsInDatabase: true, stats: { completed: 0 } });
@@ -2011,114 +2040,42 @@ export default async function providerRoutes(fastify: FastifyInstance) {
           "Initiating booking call",
         );
 
-        // Import booking config
-        const { createBookingAssistantConfig } = await import(
-          "../services/vapi/booking-assistant-config.js"
-        );
-
-        // Create booking assistant configuration
-        const bookingConfig = createBookingAssistantConfig({
+        const bookingCallService = new BookingCallService(request.log);
+        const bookingResult = await bookingCallService.execute({
           providerName: validated.providerName,
           providerPhone: validated.providerPhone,
+          phoneToCall,
           serviceNeeded: validated.serviceNeeded,
           clientName: validated.clientName,
           clientPhone: validated.clientPhone,
-          location: validated.location,
+          location: validated.location || "",
           clientAddress: validated.clientAddress,
-          preferredDateTime: validated.preferredDateTime,
+          preferredDateTime: validated.preferredDateTime || "as soon as possible",
           serviceRequestId: validated.serviceRequestId,
           providerId: validated.providerId,
           additionalNotes: validated.additionalNotes,
         });
 
-        // Build call parameters directly (use phoneToCall which may be test phone)
-        const callParams: any = {
-          phoneNumberId: process.env.VAPI_PHONE_NUMBER_ID,
-          customer: {
-            number: phoneToCall,
-            name: validated.providerName,
-          },
-          assistant: bookingConfig,
-        };
-
-        // Use VAPI SDK directly for booking calls
-        const { VapiClient } = await import("@vapi-ai/server-sdk");
-        const vapi = new VapiClient({ token: process.env.VAPI_API_KEY! });
-
-        request.log.info(
-          { provider: validated.providerName, phone: phoneToCall, isAdminTestMode },
-          "Creating booking call via VAPI",
-        );
-
-        // Create the call
-        const callResponse = await vapi.calls.create(callParams);
-
-        // Extract call from response (handle different SDK response types)
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        let call: any;
-        if (Array.isArray(callResponse)) {
-          call = callResponse[0];
-        } else if ((callResponse as any).id) {
-          call = callResponse;
-        } else if ((callResponse as any).data?.id) {
-          call = (callResponse as any).data;
-        } else {
-          throw new Error("Unexpected response format from VAPI calls.create");
+        if (bookingResult.kind === "dispatched") {
+          return reply.send({
+            success: true,
+            data: {
+              bookingInitiated: true,
+              executionId: bookingResult.dispatchId,
+              bookingStatus: "dispatched",
+              method: "livekit",
+            },
+          });
         }
 
         request.log.info(
-          { callId: call.id, status: call.status },
-          "Booking call created, waiting for completion",
-        );
-
-        // Poll for completion
-        const maxAttempts = 60; // 5 minutes
-        let attempts = 0;
-        let completedCall: any = null;
-
-        while (attempts < maxAttempts) {
-          const callData = await vapi.calls.get({ id: call.id });
-
-          // Extract call from response (handle different SDK response types)
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          let currentCall: any;
-          if (Array.isArray(callData)) {
-            currentCall = callData[0];
-          } else if ((callData as any).id) {
-            currentCall = callData;
-          } else if ((callData as any).data?.id) {
-            currentCall = (callData as any).data;
-          } else {
-            throw new Error("Unexpected response format from VAPI calls.get");
-          }
-
-          if (!["queued", "ringing", "in-progress"].includes(currentCall.status)) {
-            completedCall = currentCall;
-            break;
-          }
-
-          await new Promise((resolve) => setTimeout(resolve, 5000));
-          attempts++;
-        }
-
-        if (!completedCall) {
-          throw new Error(`Booking call ${call.id} timed out after ${maxAttempts * 5} seconds`);
-        }
-
-        request.log.info(
-          { callId: completedCall.id, status: completedCall.status },
+          { callId: bookingResult.callId, runtimeProvider: bookingResult.runtimeProvider },
           "Booking call completed",
         );
 
-        // Extract structured data from call result
-        const analysis = completedCall.analysis || {};
-        const structuredData = analysis.structuredData || {};
-        let bookingConfirmed = structuredData.booking_confirmed || false;
-
-        // Extract transcript
-        const transcript = completedCall.artifact?.transcript || "";
-        const transcriptStr =
-          typeof transcript === "string" ? transcript : JSON.stringify(transcript);
+        const structuredData = bookingResult.structuredData;
+        let bookingConfirmed = bookingResult.bookingConfirmed;
+        const transcriptStr = bookingResult.transcript;
 
         // Fallback detection: If VAPI didn't detect confirmation but transcript shows agreement
         if (!bookingConfirmed && transcriptStr) {
@@ -2340,13 +2297,13 @@ export default async function providerRoutes(fastify: FastifyInstance) {
           success: true,
           data: {
             bookingConfirmed,
-            callId: completedCall.id,
+            callId: bookingResult.callId,
             confirmedDate: structuredData.confirmed_date || "",
             confirmedTime: structuredData.confirmed_time || "",
             confirmationNumber: structuredData.confirmation_number || "",
             callOutcome: structuredData.call_outcome || "unknown",
             transcript: transcriptStr,
-            summary: analysis.summary || "",
+            summary: bookingResult.completedCall.analysis?.summary || "",
             nextSteps: structuredData.next_steps || "",
           },
         });

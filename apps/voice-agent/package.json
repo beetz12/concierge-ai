@@ -1,0 +1,35 @@
+{
+  "name": "voice-agent",
+  "version": "0.1.0",
+  "type": "module",
+  "private": true,
+  "scripts": {
+    "dev": "tsx watch src/index.ts",
+    "dev:worker": "tsx src/worker.ts dev",
+    "build": "tsc",
+    "start": "node dist/index.js",
+    "start:worker": "node dist/worker.js start",
+    "lint": "eslint src --max-warnings 0",
+    "check-types": "tsc --noEmit",
+    "test": "node --import tsx --test src/**/*.test.ts tests/**/*.test.ts"
+  },
+  "dependencies": {
+    "@livekit/agents": "^1.0.48",
+    "@livekit/agents-plugin-google": "^1.0.48",
+    "@livekit/agents-plugin-livekit": "^1.0.48",
+    "@livekit/agents-plugin-openai": "^1.0.48",
+    "@livekit/agents-plugin-silero": "^1.0.48",
+    "@livekit/noise-cancellation-node": "^0.1.9",
+    "@livekit/rtc-node": "^0.13.24",
+    "dotenv": "^17.2.3",
+    "livekit-server-sdk": "^2.15.0",
+    "zod": "^3.24.2"
+  },
+  "devDependencies": {
+    "@repo/eslint-config": "workspace:*",
+    "@repo/typescript-config": "workspace:*",
+    "@types/node": "^22.15.3",
+    "tsx": "^4.19.4",
+    "typescript": "5.9.2"
+  }
+}

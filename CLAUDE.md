@@ -10,6 +10,23 @@ AI Concierge - An AI receptionist/secretary that researches local service provid
 - **Research & Book** (`/new`) - Full flow: research → call → recommend top 3 → user selects → book
 - **Direct Task** (`/direct`) - Single call with dynamic prompts (negotiate, complain, inquire, etc.)
 
+## Agent Directives
+
+You are working on a project that uses Beads (`bd`) for persistent memory and issue tracking.
+
+At the start of every session:
+1. Run `bd ready --json` to see the highest-priority tasks that have no open blockers.
+2. If there are tasks in progress from a previous session, retrieve their full details using `bd show <id>`.
+3. Give me a brief summary of what we were working on and ask me which task we should tackle next.
+
+When writing code:
+- Always check if there is an existing Bead issue before making architectural changes.
+- If you discover a new bug or edge case, use `bd create` to log it instead of keeping it in context.
+
+When ending a session:
+- Use `/session-to-beads` to capture remaining work, bugs, and decisions as structured Beads issues.
+- Run `bd sync` to persist changes.
+
 ## Commands
 
 ```bash

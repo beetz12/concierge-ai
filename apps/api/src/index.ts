@@ -24,6 +24,7 @@ import twilioWebhookRoutes from "./routes/twilio-webhook.js";
 import bookingRoutes from "./routes/bookings.js";
 import intakeRoutes from "./routes/intake.js";
 import demoRoutes from "./routes/demo.js";
+import voiceToolRoutes from "./routes/voice-tools.js";
 import {
   extractClientIp,
   isBlacklisted,
@@ -32,11 +33,14 @@ import {
   addToBlacklist,
 } from "./config/ip-blacklist.js";
 import { isDemoMode } from "./config/demo.js";
+import { getCallRuntimeConfig } from "./config/call-runtime.js";
 
 // =============================================================================
 // Environment Variable Validation and Logging
 // This runs at startup to catch configuration issues early in Railway
 // =============================================================================
+
+const runtimeConfig = getCallRuntimeConfig();
 
 const ENV_VALIDATION = {
   // Critical - app won't work without these
@@ -44,17 +48,6 @@ const ENV_VALIDATION = {
     "SUPABASE_URL",
     "SUPABASE_SERVICE_ROLE_KEY",
     "GEMINI_API_KEY",
-  ],
-  // Important for full functionality
-  important: [
-    "VAPI_API_KEY",
-    "VAPI_PHONE_NUMBER_ID",
-  ],
-  // Optional services (Twilio for SMS)
-  optional: [
-    { name: "TWILIO_ACCOUNT_SID", description: "Twilio Account SID for SMS" },
-    { name: "TWILIO_AUTH_TOKEN", description: "Twilio Auth Token for SMS" },
-    { name: "TWILIO_PHONE_NUMBER", alt: "TWILIO_PHONE_NO", description: "Twilio phone number for SMS" },
   ],
 };
 
@@ -64,6 +57,9 @@ console.log("AI Concierge API - Environment Configuration");
 console.log("=".repeat(60));
 console.log(`NODE_ENV: ${process.env.NODE_ENV || "development"}`);
 console.log(`PORT: ${process.env.PORT || "8000"}`);
+console.log(`CALL_RUNTIME_PROVIDER: ${runtimeConfig.provider}`);
+console.log(`LIVEKIT_ENABLED: ${runtimeConfig.livekitEnabled ? "✓ true" : "✗ false"}`);
+console.log(`VAPI_ENABLED: ${runtimeConfig.vapiEnabled ? "✓ true" : "✗ false"}`);
 console.log("-".repeat(60));
 
 // Check critical vars
@@ -74,22 +70,44 @@ for (const varName of ENV_VALIDATION.critical) {
   if (!exists) criticalMissing = true;
 }
 
-// Check important vars
-for (const varName of ENV_VALIDATION.important) {
-  const exists = !!process.env[varName];
-  console.log(`[IMPORTANT] ${varName}: ${exists ? "✓ SET" : "⚠ MISSING"}`);
+console.log("[CALL RUNTIME]");
+if (runtimeConfig.provider === "livekit") {
+  console.log(
+    `  LIVEKIT_URL: ${runtimeConfig.livekit.url ? "✓ SET" : "✗ MISSING"}`,
+  );
+  console.log(
+    `  LIVEKIT_API_KEY: ${runtimeConfig.livekit.apiKey ? "✓ SET" : "✗ MISSING"}`,
+  );
+  console.log(
+    `  LIVEKIT_API_SECRET: ${runtimeConfig.livekit.apiSecret ? "✓ SET" : "✗ MISSING"}`,
+  );
+  console.log(
+    `  VOICE_AGENT_SHARED_SECRET: ${runtimeConfig.voiceAgent.sharedSecret ? "✓ SET" : "✗ MISSING"}`,
+  );
+} else {
+  console.log(
+    `  VAPI_API_KEY: ${runtimeConfig.vapi.apiKey ? "✓ SET" : "✗ MISSING"}`,
+  );
+  console.log(
+    `  VAPI_PHONE_NUMBER_ID: ${runtimeConfig.vapi.phoneNumberId ? "✓ SET" : "✗ MISSING"}`,
+  );
 }
 
 // Check optional vars (with alternatives)
 console.log("-".repeat(60));
 console.log("SMS Configuration (Twilio):");
-for (const opt of ENV_VALIDATION.optional) {
-  const primary = process.env[opt.name];
-  const alt = opt.alt ? process.env[opt.alt] : undefined;
-  const exists = !!(primary || alt);
-  const source = primary ? opt.name : alt ? opt.alt : "none";
-  console.log(`  ${opt.name}: ${exists ? `✓ SET (via ${source})` : "✗ MISSING"}`);
-}
+console.log(
+  `  TWILIO_ACCOUNT_SID: ${runtimeConfig.twilio.accountSid ? "✓ SET" : "✗ MISSING"}`,
+);
+console.log(
+  `  TWILIO_AUTH_TOKEN: ${runtimeConfig.twilio.authToken ? "✓ SET" : "✗ MISSING"}`,
+);
+console.log(
+  `  SMS_FROM_NUMBER: ${runtimeConfig.twilio.smsFromNumber ? `✓ SET (${runtimeConfig.twilio.smsFromNumber})` : "✗ MISSING"}`,
+);
+console.log(
+  `  VOICE_FROM_NUMBER: ${runtimeConfig.twilio.voiceFromNumber ? `✓ SET (${runtimeConfig.twilio.voiceFromNumber})` : "✗ MISSING"}`,
+);
 
 console.log("=".repeat(60));
 
@@ -127,6 +145,9 @@ const server = Fastify({
     },
   },
 });
+
+let isShuttingDown = false;
+let shutdownPromise: Promise<void> | null = null;
 
 // =============================================================================
 // IP Blacklist Hook - Runs before ALL other middleware
@@ -265,6 +286,7 @@ await server.register(swagger, {
       { name: "twilio", description: "Twilio webhook handlers for inbound SMS" },
       { name: "bookings", description: "Appointment scheduling operations" },
       { name: "intake", description: "Professional intake question generation" },
+      { name: "voice-tools", description: "Internal tool routes for the LiveKit voice-agent service" },
     ],
   },
 });
@@ -317,6 +339,13 @@ server.get(
     },
   },
   async () => {
+    if (isShuttingDown) {
+      return {
+        status: "shutting_down",
+        timestamp: new Date().toISOString(),
+      };
+    }
+
     return { status: "ok", timestamp: new Date().toISOString() };
   },
 );
@@ -356,6 +385,7 @@ server.get(
         bookings: "/api/v1/bookings",
         intake: "/api/v1/intake",
         demo: "/api/v1/demo",
+        voiceTools: "/api/v1/voice-tools",
         docs: "/docs",
       },
     };
@@ -392,6 +422,9 @@ await server.register(intakeRoutes, { prefix: "/api/v1/intake" });
 // Register Demo routes
 await server.register(demoRoutes, { prefix: "/api/v1/demo" });
 
+// Register internal voice-agent tool routes
+await server.register(voiceToolRoutes, { prefix: "/api/v1/voice-tools" });
+
 // Start server with port fallback
 const start = async () => {
   const basePort = parseInt(process.env.PORT || "8000", 10);
@@ -421,4 +454,40 @@ const start = async () => {
   process.exit(1);
 };
 
-start();
+const shutdown = async (signal: NodeJS.Signals) => {
+  if (shutdownPromise) {
+    return shutdownPromise;
+  }
+
+  isShuttingDown = true;
+  server.log.info({ signal }, "Received shutdown signal");
+
+  shutdownPromise = server
+    .close()
+    .then(() => {
+      server.log.info("API server shutdown complete");
+    })
+    .catch((error) => {
+      server.log.error({ err: error }, "API server shutdown failed");
+      throw error;
+    });
+
+  return shutdownPromise;
+};
+
+const registerShutdownHandler = (signal: NodeJS.Signals) => {
+  process.once(signal, () => {
+    shutdown(signal)
+      .then(() => {
+        process.exit(0);
+      })
+      .catch(() => {
+        process.exit(1);
+      });
+  });
+};
+
+registerShutdownHandler("SIGINT");
+registerShutdownHandler("SIGTERM");
+
+await start();

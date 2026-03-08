@@ -12,6 +12,7 @@ import {
   type BatchCallResult,
 } from "./concurrent-call.service.js";
 import type { CallRequest, CallResult } from "./types.js";
+import { getCallRuntimeConfig } from "../../config/call-runtime.js";
 
 interface Logger {
   info: (obj: Record<string, unknown>, msg?: string) => void;
@@ -285,11 +286,10 @@ export class ProviderCallingService {
    * Returns information about which method is active
    */
   async getSystemStatus(): Promise<SystemStatus> {
+    const runtimeConfig = getCallRuntimeConfig();
     const kestraEnabled = process.env.KESTRA_ENABLED === "true";
     const kestraUrl = process.env.KESTRA_URL || "not configured";
-    const vapiConfigured = !!(
-      process.env.VAPI_API_KEY && process.env.VAPI_PHONE_NUMBER_ID
-    );
+    const vapiConfigured = runtimeConfig.vapi.configured;
 
     let kestraHealthy = false;
     if (kestraEnabled) {
@@ -297,6 +297,7 @@ export class ProviderCallingService {
     }
 
     return {
+      runtimeProvider: runtimeConfig.provider,
       kestraEnabled,
       kestraUrl: kestraEnabled ? kestraUrl : null,
       kestraHealthy,
@@ -308,6 +309,7 @@ export class ProviderCallingService {
 }
 
 export interface SystemStatus {
+  runtimeProvider: "livekit" | "vapi";
   kestraEnabled: boolean;
   kestraUrl: string | null;
   kestraHealthy: boolean;

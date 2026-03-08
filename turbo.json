@@ -2,7 +2,18 @@
   "$schema": "https://turborepo.com/schema.json",
   "ui": "tui",
   "globalDependencies": ["tsconfig.json"],
-  "globalEnv": ["NODE_ENV"],
+  "globalEnv": [
+    "NODE_ENV",
+    "CALL_RUNTIME_PROVIDER",
+    "LIVEKIT_API_KEY",
+    "LIVEKIT_API_SECRET",
+    "LIVEKIT_URL",
+    "NEXT_PUBLIC_GOOGLE_PLACES_API_KEY",
+    "VOICE_AGENT_API_BASE_URL",
+    "VOICE_AGENT_HOST",
+    "VOICE_AGENT_PORT",
+    "VOICE_AGENT_SHARED_SECRET"
+  ],
   "tasks": {
     "build": {
       "dependsOn": ["^build"],

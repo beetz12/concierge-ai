@@ -31,6 +31,82 @@ export interface ResearchResult {
   filteredCount?: number; // After filtering
 }
 
+export type ProviderTradeClass =
+  | "design_build"
+  | "maintenance"
+  | "specialty"
+  | "unknown";
+
+export type ProviderIntelConfidence = "low" | "medium" | "high";
+
+export interface ProviderReputationSource {
+  platform:
+    | "google"
+    | "facebook"
+    | "yelp"
+    | "bbb"
+    | "thumbtack"
+    | "angi"
+    | "houzz"
+    | "homeadvisor"
+    | "nextdoor"
+    | "other";
+  label: string;
+  url?: string;
+  rating?: number;
+  reviewCount?: number;
+  reviewCountLabel?: string;
+  sourceType?: "review_platform" | "community" | "directory" | "social";
+  confidence?: ProviderIntelConfidence;
+}
+
+export interface ProviderReviewTheme {
+  theme: string;
+  sentiment: "positive" | "negative" | "mixed";
+  frequency?: "single" | "repeated" | "dominant";
+  examples?: string[];
+}
+
+export interface ProviderContradictionNote {
+  summary: string;
+  severity: "low" | "medium" | "high";
+  platforms: string[];
+  rationale?: string;
+}
+
+export interface ProviderSeriousComplaint {
+  category:
+    | "no_show"
+    | "damage"
+    | "pricing"
+    | "unfinished_work"
+    | "safety"
+    | "license_or_insurance"
+    | "complaint_handling"
+    | "other";
+  summary: string;
+  repeated: boolean;
+  platforms?: string[];
+}
+
+export interface ProviderIntel {
+  tradeClass?: ProviderTradeClass;
+  tradeFit?: ProviderIntelConfidence;
+  identityConfidence?: ProviderIntelConfidence;
+  researchConfidence?: ProviderIntelConfidence;
+  reputationSources?: ProviderReputationSource[];
+  positiveThemes?: ProviderReviewTheme[];
+  negativeThemes?: ProviderReviewTheme[];
+  contradictionNotes?: ProviderContradictionNote[];
+  seriousComplaints?: ProviderSeriousComplaint[];
+  recentTrend?: "improving" | "stable" | "deteriorating" | "unknown";
+  communitySignal?: {
+    nextdoorFaves?: number;
+    independentMentions?: number;
+    threadCount?: number;
+  };
+}
+
 export interface Provider {
   id: string;
   name: string;
@@ -50,6 +126,7 @@ export interface Provider {
   googleMapsUri?: string; // Direct link to Google Maps
   website?: string; // Business website
   internationalPhone?: string; // E.164 format phone
+  providerIntel?: ProviderIntel; // Normalized cross-platform reputation evidence
 }
 
 export interface SystemStatus {

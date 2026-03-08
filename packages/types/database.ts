@@ -1,4 +1,3 @@
-Initialising login role...
 export type Json =
   | string
   | number
@@ -11,7 +10,7 @@ export type Database = {
   // Allows to automatically instantiate createClient with right options
   // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
   __InternalSupabase: {
-    PostgrestVersion: "13.0.5"
+    PostgrestVersion: "14.1"
   }
   public: {
     Tables: {
@@ -87,6 +86,7 @@ export type Database = {
           name: string
           phone: string | null
           place_id: string | null
+          provider_intel: Json | null
           rating: number | null
           request_id: string
           review_count: number | null
@@ -120,6 +120,7 @@ export type Database = {
           name: string
           phone?: string | null
           place_id?: string | null
+          provider_intel?: Json | null
           rating?: number | null
           request_id: string
           review_count?: number | null
@@ -153,6 +154,7 @@ export type Database = {
           name?: string
           phone?: string | null
           place_id?: string | null
+          provider_intel?: Json | null
           rating?: number | null
           request_id?: string
           review_count?: number | null
@@ -274,6 +276,89 @@ export type Database = {
         }
         Relationships: []
       }
+      voice_call_events: {
+        Row: {
+          agent_role: string | null
+          created_at: string
+          event_type: string
+          id: string
+          payload: Json
+          provider_id: string
+          service_request_id: string
+          session_id: string
+        }
+        Insert: {
+          agent_role?: string | null
+          created_at?: string
+          event_type: string
+          id?: string
+          payload?: Json
+          provider_id: string
+          service_request_id: string
+          session_id: string
+        }
+        Update: {
+          agent_role?: string | null
+          created_at?: string
+          event_type?: string
+          id?: string
+          payload?: Json
+          provider_id?: string
+          service_request_id?: string
+          session_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "voice_call_events_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "voice_call_sessions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      voice_call_sessions: {
+        Row: {
+          active_agent: string
+          closed_at: string | null
+          id: string
+          metadata: Json
+          outcome: Json | null
+          provider_id: string
+          runtime_provider: string
+          service_request_id: string
+          started_at: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          active_agent: string
+          closed_at?: string | null
+          id: string
+          metadata?: Json
+          outcome?: Json | null
+          provider_id: string
+          runtime_provider: string
+          service_request_id: string
+          started_at?: string
+          status: string
+          updated_at?: string
+        }
+        Update: {
+          active_agent?: string
+          closed_at?: string | null
+          id?: string
+          metadata?: Json
+          outcome?: Json | null
+          provider_id?: string
+          runtime_provider?: string
+          service_request_id?: string
+          started_at?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
@@ -289,6 +374,7 @@ export type Database = {
         | "SEARCHING"
         | "CALLING"
         | "ANALYZING"
+        | "RECOMMENDED"
         | "BOOKING"
         | "COMPLETED"
         | "FAILED"
@@ -420,7 +506,6 @@ export type Database = {
           created_at: string | null
           id: string
           last_accessed_at: string | null
-          level: number | null
           metadata: Json | null
           name: string | null
           owner: string | null
@@ -435,7 +520,6 @@ export type Database = {
           created_at?: string | null
           id?: string
           last_accessed_at?: string | null
-          level?: number | null
           metadata?: Json | null
           name?: string | null
           owner?: string | null
@@ -450,7 +534,6 @@ export type Database = {
           created_at?: string | null
           id?: string
           last_accessed_at?: string | null
-          level?: number | null
           metadata?: Json | null
           name?: string | null
           owner?: string | null
@@ -463,38 +546,6 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "objects_bucketId_fkey"
-            columns: ["bucket_id"]
-            isOneToOne: false
-            referencedRelation: "buckets"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      prefixes: {
-        Row: {
-          bucket_id: string
-          created_at: string | null
-          level: number
-          name: string
-          updated_at: string | null
-        }
-        Insert: {
-          bucket_id: string
-          created_at?: string | null
-          level?: number
-          name: string
-          updated_at?: string | null
-        }
-        Update: {
-          bucket_id?: string
-          created_at?: string | null
-          level?: number
-          name?: string
-          updated_at?: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "prefixes_bucketId_fkey"
             columns: ["bucket_id"]
             isOneToOne: false
             referencedRelation: "buckets"
@@ -649,28 +700,17 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      add_prefixes: {
-        Args: { _bucket_id: string; _name: string }
-        Returns: undefined
-      }
       can_insert_object: {
         Args: { bucketid: string; metadata: Json; name: string; owner: string }
         Returns: undefined
       }
-      delete_leaf_prefixes: {
-        Args: { bucket_ids: string[]; names: string[] }
-        Returns: undefined
-      }
-      delete_prefix: {
-        Args: { _bucket_id: string; _name: string }
-        Returns: boolean
-      }
       extension: { Args: { name: string }; Returns: string }
       filename: { Args: { name: string }; Returns: string }
       foldername: { Args: { name: string }; Returns: string[] }
-      get_level: { Args: { name: string }; Returns: number }
-      get_prefix: { Args: { name: string }; Returns: string }
-      get_prefixes: { Args: { name: string }; Returns: string[] }
+      get_common_prefix: {
+        Args: { p_delimiter: string; p_key: string; p_prefix: string }
+        Returns: string
+      }
       get_size_by_bucket: {
         Args: never
         Returns: {
@@ -695,23 +735,22 @@ export type Database = {
       }
       list_objects_with_delimiter: {
         Args: {
-          bucket_id: string
+          _bucket_id: string
           delimiter_param: string
           max_keys?: number
           next_token?: string
           prefix_param: string
+          sort_order?: string
           start_after?: string
         }
         Returns: {
+          created_at: string
           id: string
+          last_accessed_at: string
           metadata: Json
           name: string
           updated_at: string
         }[]
-      }
-      lock_top_prefixes: {
-        Args: { bucket_ids: string[]; names: string[] }
-        Returns: undefined
       }
       operation: { Args: never; Returns: string }
       search: {
@@ -734,40 +773,21 @@ export type Database = {
           updated_at: string
         }[]
       }
-      search_legacy_v1: {
+      search_by_timestamp: {
         Args: {
-          bucketname: string
-          levels?: number
-          limits?: number
-          offsets?: number
-          prefix: string
-          search?: string
-          sortcolumn?: string
-          sortorder?: string
+          p_bucket_id: string
+          p_level: number
+          p_limit: number
+          p_prefix: string
+          p_sort_column: string
+          p_sort_column_after: string
+          p_sort_order: string
+          p_start_after: string
         }
         Returns: {
           created_at: string
           id: string
-          last_accessed_at: string
-          metadata: Json
-          name: string
-          updated_at: string
-        }[]
-      }
-      search_v1_optimised: {
-        Args: {
-          bucketname: string
-          levels?: number
-          limits?: number
-          offsets?: number
-          prefix: string
-          search?: string
-          sortcolumn?: string
-          sortorder?: string
-        }
-        Returns: {
-          created_at: string
-          id: string
+          key: string
           last_accessed_at: string
           metadata: Json
           name: string
@@ -932,6 +952,7 @@ export const Constants = {
         "SEARCHING",
         "CALLING",
         "ANALYZING",
+        "RECOMMENDED",
         "BOOKING",
         "COMPLETED",
         "FAILED",
@@ -945,5 +966,3 @@ export const Constants = {
     },
   },
 } as const
-A new version of Supabase CLI is available: v2.65.5 (currently installed v2.54.11)
-We recommend updating regularly for new features and bug fixes: https://supabase.com/docs/guides/cli/getting-started#updating-the-supabase-cli

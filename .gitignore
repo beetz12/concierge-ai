@@ -45,6 +45,7 @@ supabase/.branches
 
 # playwright
 .playwright-mcp
+.playwright-cli
 
 # claude code
 .claude

@@ -1,6 +1,7 @@
 import { GoogleGenAI } from "@google/genai";
 import { GooglePlacesService } from "./places/google-places.service.js";
 import { ProviderEnrichmentService } from "./research/enrichment.service.js";
+import type { ProviderIntel } from "./research/types.js";
 
 // Types matching frontend interfaces
 export interface Provider {
@@ -20,6 +21,7 @@ export interface Provider {
   placeId?: string;
   internationalPhone?: string;
   website?: string;
+  providerIntel?: ProviderIntel;
 }
 
 export interface InteractionLog {
@@ -422,4 +424,3 @@ export const selectBestProvider = async (
     return { selectedId: null, reasoning: "AI Analysis failed." };
   }
 };
-

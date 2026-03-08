@@ -86,6 +86,7 @@ export type Database = {
           name: string
           phone: string | null
           place_id: string | null
+          provider_intel: Json | null
           rating: number | null
           request_id: string
           review_count: number | null
@@ -119,6 +120,7 @@ export type Database = {
           name: string
           phone?: string | null
           place_id?: string | null
+          provider_intel?: Json | null
           rating?: number | null
           request_id: string
           review_count?: number | null
@@ -152,6 +154,7 @@ export type Database = {
           name?: string
           phone?: string | null
           place_id?: string | null
+          provider_intel?: Json | null
           rating?: number | null
           request_id?: string
           review_count?: number | null

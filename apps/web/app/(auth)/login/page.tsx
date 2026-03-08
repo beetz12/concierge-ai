@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useRouter } from "next/navigation";
 import { motion } from "motion/react";
 import { Sparkles, Mail, Lock, Loader2, ArrowRight } from "lucide-react";
 import { useAuthActions } from "@/lib/providers/AuthProvider";
@@ -12,7 +12,6 @@ import { Label } from "@/components/ui/label";
 
 export default function LoginPage() {
   const router = useRouter();
-  const searchParams = useSearchParams();
   const { signIn } = useAuthActions();
   const { isLoading: authLoading, isReady } = useRedirectIfAuthenticated();
 
@@ -35,7 +34,9 @@ export default function LoginPage() {
       }
 
       // Redirect to the original destination or dashboard
-      const redirectTo = searchParams.get("redirectTo") || "/dashboard";
+      const redirectTo =
+        new URLSearchParams(window.location.search).get("redirectTo") ||
+        "/dashboard";
       router.push(redirectTo);
     } catch (err) {
       setError("An unexpected error occurred. Please try again.");

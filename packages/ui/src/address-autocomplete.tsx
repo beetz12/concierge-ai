@@ -220,7 +220,7 @@ export function AddressAutocomplete({
         autocompleteElementRef.current = null;
       }
     };
-  }, [isLoaded]);
+  }, [isLoaded, handleInputChange, handlePlaceSelect]);
 
   useEffect(() => {
     const element = autocompleteElementRef.current as

@@ -7,7 +7,7 @@ An AI-powered receptionist and secretary designed to help you research local ser
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![CI](https://github.com/NexAiAdvisors/concierge-ai/actions/workflows/ci.yml/badge.svg)](https://github.com/NexAiAdvisors/concierge-ai/actions/workflows/ci.yml)
 [![Kestra](https://img.shields.io/badge/Orchestrated%20by-Kestra-4F46E5?style=for-the-badge&logo=data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjQiIGhlaWdodD0iMjQiIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHJlY3Qgd2lkdGg9IjI0IiBoZWlnaHQ9IjI0IiBmaWxsPSJ3aGl0ZSIvPgo8L3N2Zz4K)](https://kestra.io)
-[![VAPI](https://img.shields.io/badge/Voice%20AI-VAPI.ai-10B981?style=for-the-badge&logo=phone&logoColor=white)](https://vapi.ai)
+[![LiveKit](https://img.shields.io/badge/Voice%20Runtime-LiveKit-0F172A?style=for-the-badge&logo=livekit&logoColor=white)](https://livekit.io)
 [![Gemini](https://img.shields.io/badge/AI%20by-Google%20Gemini-4285F4?style=for-the-badge&logo=google&logoColor=white)](https://ai.google.dev)
 [![Vercel](https://img.shields.io/badge/Deployed%20on-Vercel-000000?style=for-the-badge&logo=vercel&logoColor=white)](https://vercel.com)
 [![CodeRabbit](https://img.shields.io/badge/Code%20Quality-CodeRabbit-FF6B6B?style=for-the-badge&logo=rabbit&logoColor=white)](https://coderabbit.ai)
@@ -25,7 +25,17 @@ Built with passion for the **AI Agents Assemble Hackathon** by:
 
 > **[Watch the 3-minute demo](https://youtube.com/watch?v=COMING_SOON)** - See AI Concierge research providers, make real phone calls, and recommend the top 3 matches!
 
-*Demo video showcases: Form submission → AI research → Concurrent VAPI calls → Top 3 recommendations → Booking confirmation*
+*Demo video showcases: Form submission → AI research → LiveKit-first provider calling → Top 3 recommendations → Booking confirmation*
+
+## Runtime Status
+
+The repository now uses a **LiveKit-first voice runtime**:
+
+- `apps/api` remains the business and orchestration API
+- `apps/voice-agent` owns live call session state, handoffs, and internal tool calls
+- `CALL_RUNTIME_PROVIDER=livekit` is the default runtime
+- `VAPI` stays available as an env-gated fallback path for compatibility
+- real outbound calling now requires both the `apps/voice-agent` HTTP service and the LiveKit worker plus a configured `LIVEKIT_SIP_OUTBOUND_TRUNK_ID`
 
 ## Hackathon Highlights
 
@@ -34,7 +44,7 @@ This project was built for the **AI Agents Assemble Hackathon** and showcases in
 | Achievement | Technology | Impact |
 |------------|------------|---------|
 | **AI Agent Orchestration** | Kestra | AI Agent summarizes provider data (10+ sources), makes decisions, recommends top 3 |
-| **Voice AI Integration** | VAPI.ai | Concurrent calling (5 simultaneous) with intelligent conversation |
+| **Voice AI Integration** | LiveKit + voice-agent | Backend-controlled calling, session persistence, handoffs, and diagnostics |
 | **AI Research & Analysis** | Google Gemini | Maps grounding for provider search + Top 3 recommendations |
 | **Production Deployment** | Vercel | Live demo with real-time updates |
 | **Code Quality Automation** | CodeRabbit | AI-powered PR reviews with security scanning (clearly visible) |
@@ -53,7 +63,7 @@ This project was built for the **AI Agents Assemble Hackathon** and showcases in
 - [Screenshots](#screenshots)
 - [Two Request Types](#two-request-types)
 - [Tech Stack](#tech-stack)
-- [VAPI Voice AI Architecture](#vapi-voice-ai-architecture)
+- [Voice Runtime Architecture](#voice-runtime-architecture)
 - [CodeRabbit AI Code Review](#coderabbit-ai-code-review)
 - [Getting Started](#getting-started)
 - [Kestra Workflow Setup](#kestra-workflow-setup-local)
@@ -69,7 +79,7 @@ This project was built for the **AI Agents Assemble Hackathon** and showcases in
 
 ### Concurrent AI Calling System
 - Call up to 5 providers simultaneously (80%+ time savings)
-- Intelligent conversation handling with VAPI.ai
+- LiveKit-first conversation handling through the dedicated voice-agent service
 - Automatic disqualification detection (politely exits unqualified providers)
 - Captures pricing, availability, and service details
 
@@ -98,7 +108,7 @@ This project was built for a hackathon using these sponsor technologies:
 | Sponsor | Technology | Usage |
 |---------|------------|-------|
 | **Kestra** | Workflow Orchestration | Orchestrates multi-step AI workflows (research, call, recommend, book) |
-| **VAPI.ai** | Voice AI | Makes automated phone calls to verify provider availability/rates |
+| **LiveKit + Voice Agent** | Voice runtime | Default provider-calling and booking dispatch path |
 | **Google Gemini** | LLM | Powers research (Maps grounding), analysis, and dynamic prompt generation |
 | **Vercel** | Deployment | Hosts the production web application |
 | **CodeRabbit** | AI Code Review | Automated PR reviews for code quality, security, and best practices |
@@ -109,7 +119,7 @@ This project leverages **Kestra's built-in AI Agent** (`io.kestra.plugin.ai.agen
 
 1. **Summarize data from external systems**:
    - Aggregates Google Maps provider search results (10+ candidates with ratings, reviews, contact info)
-   - Consolidates VAPI.ai call transcripts and structured extraction data
+   - Consolidates voice runtime transcripts and structured extraction data
    - Compiles provider availability, pricing, and qualification details
 
 2. **Make autonomous decisions** based on summarized data:
@@ -120,7 +130,7 @@ This project leverages **Kestra's built-in AI Agent** (`io.kestra.plugin.ai.agen
 **Workflow Implementation**:
 - `kestra/flows/research_agent.yaml` - AI Agent summarizes Google Maps data, filters and ranks providers
 - `kestra/flows/recommend_providers.yaml` - AI Agent analyzes call results, generates top 3 recommendations
-- `kestra/flows/contact_providers.yaml` - Orchestrates concurrent VAPI calls with `EachParallel`
+- `kestra/flows/contact_providers.yaml` - Legacy orchestration path for concurrent provider calling
 
 This directly satisfies the **Wakanda Data Award** requirement: *"Use Kestra's built-in AI Agent to summarise data from other systems, with bonus credit if your agent can make decisions based on the summarised data."*
 
@@ -130,7 +140,7 @@ This directly satisfies the **Wakanda Data Award** requirement: *"Use Kestra's b
 - **Production API**: [https://api-production-8fe4.up.railway.app](https://api-production-8fe4.up.railway.app)
 - **API Documentation**: [https://api-production-8fe4.up.railway.app/docs](https://api-production-8fe4.up.railway.app/docs) - Interactive Swagger UI
 
-> **Try it live**: Submit a request to see Kestra orchestration, VAPI.ai concurrent calling, and Gemini-powered recommendations in action!
+> **Try it live**: Submit a request to see Kestra orchestration, LiveKit-first calling, and Gemini-powered recommendations in action!
 
 ## Hackathon Prize Alignment
 
@@ -185,8 +195,8 @@ It also maintains a history of requests, detailed logs of AI analysis and intera
   │                   │                  │
   ▼                   ▼                  ▼
 ┌──────────┐   ┌─────────────┐   ┌──────────────┐
-│ Gemini   │   │   VAPI.ai   │   │  Supabase    │
-│ Research │   │ Concurrent  │   │  Database    │
+│ Gemini   │   │ Voice Agent │   │  Supabase    │
+│ Research │   │ + LiveKit   │   │  Database    │
 │ (Maps)   │   │   Calling   │   │  & RLS       │
 └──────────┘   └─────────────┘   └──────────────┘
      │                │                  │
@@ -201,7 +211,7 @@ It also maintains a history of requests, detailed logs of AI analysis and intera
            └─────────────────────┘
 ```
 
-**Flow**: User Request → Kestra Orchestration → Gemini (10+ providers via Maps) → VAPI Concurrent Calls (5 simultaneous) → Gemini Analysis → Top 3 Recommendations → User Selection → VAPI Booking
+**Flow**: User Request → Kestra/API orchestration → Gemini research → LiveKit-first voice-agent dispatch → Gemini analysis → Top 3 recommendations → User selection → booking dispatch
 
 ## Screenshots
 
@@ -221,7 +231,7 @@ Full automated workflow for finding and booking service providers:
 
 1. **User submits request** - Describe service needed, location, and criteria
 2. **AI researches** - Finds 10+ providers via Gemini + Google Places API
-3. **AI calls providers** - Makes real phone calls (VAPI.ai) to verify availability/rates
+3. **AI calls providers** - Makes real phone calls through the LiveKit-first voice runtime to verify availability/rates
 4. **AI recommends** - Analyzes call results, presents **top 3 providers** with scores and reasoning
 5. **User selects** - Choose preferred provider from recommendations
 6. **AI books** - Calls provider back to schedule appointment
@@ -246,27 +256,29 @@ This project is a monorepo managed by **Turborepo**.
 - **Backend**: Fastify (`apps/api`)
 - **Database**: Supabase
 - **AI Integration**: Google Gemini 2.5 Flash (`@google/generative-ai` v1.0.1)
-- **Voice AI**: VAPI.ai (`@vapi-ai/server-sdk` v0.11.0) for automated provider calling
+- **Voice Runtime**: `apps/voice-agent` + LiveKit by default, with VAPI fallback still available
 - **Styling**: Tailwind CSS
 - **Package Manager**: pnpm
 
-## VAPI Voice AI Architecture
+## Voice Runtime Architecture
 
-The AI Concierge uses VAPI.ai to make automated phone calls to service providers. The system follows a **single source of truth** pattern:
+The current runtime is **LiveKit-first**, with `apps/api` and `apps/voice-agent` separated on purpose:
 
-- **Configuration Source**: `apps/api/src/services/vapi/assistant-config.ts` defines all assistant behavior
-- **Kestra Integration**: Scripts import from compiled TypeScript (`apps/api/dist`) to avoid duplication
-- **Build Requirement**: Run `pnpm build` before using Kestra workflows
+- `apps/api` owns business workflows, provider research, recommendation generation, booking orchestration, and persistence
+- `apps/voice-agent` owns live session state, diagnostics, handoffs, and the internal voice-tools contract
+- `CALL_RUNTIME_PROVIDER=livekit` is the default runtime switch
+- `VAPI` remains implemented as a fallback runtime behind env flags and the runtime router
 
-Key capabilities:
+Key files:
 
-- Intelligent disqualification detection (politely exits unqualified providers)
-- Conditional callback scheduling (only if ALL criteria met)
-- Earliest availability tracking (specific date/time)
-- Single-person verification (ensures ONE technician has ALL requirements)
-- **Concurrent calling**: Call multiple providers simultaneously (configurable via `VAPI_MAX_CONCURRENT_CALLS`)
+- `apps/api/src/config/call-runtime.ts`
+- `apps/api/src/services/calls/runtime-router.service.ts`
+- `apps/api/src/services/calls/booking-call.service.ts`
+- `apps/api/src/routes/voice-tools.ts`
+- `apps/voice-agent/src/server.ts`
+- `apps/voice-agent/src/session-manager.ts`
 
-For detailed architecture, see `docs/VAPI_FALLBACK_ARCHITECTURE.md`.
+For the legacy VAPI-oriented design notes, see `docs/VAPI_FALLBACK_ARCHITECTURE.md`.
 
 ### Concurrent Provider Calling
 
@@ -275,7 +287,13 @@ The system supports calling multiple providers simultaneously to reduce total wa
 **Configuration:**
 ```bash
 # In apps/api/.env
-VAPI_MAX_CONCURRENT_CALLS=5  # Number of simultaneous calls (default: 5)
+CALL_RUNTIME_PROVIDER=livekit
+LIVEKIT_ENABLED=true
+LIVEKIT_URL=wss://your-project.livekit.cloud
+LIVEKIT_API_KEY=your_livekit_api_key
+LIVEKIT_API_SECRET=your_livekit_api_secret
+VOICE_AGENT_SHARED_SECRET=choose_a_shared_secret
+VOICE_AGENT_SERVICE_URL=http://127.0.0.1:8787
 ```
 
 **API Endpoint:** `POST /api/v1/providers/batch-call`
@@ -290,15 +308,15 @@ VAPI_MAX_CONCURRENT_CALLS=5  # Number of simultaneous calls (default: 5)
 }
 ```
 
-**Kestra Workflow:** `contact_providers_concurrent.yaml` uses `EachParallel` with `concurrencyLimit` for orchestrated concurrent calling.
+**Kestra Workflow:** `contact_providers_concurrent.yaml` remains available as an orchestration layer, while the runtime router decides whether calls execute through LiveKit or VAPI.
 
 ### Live Call Configuration
 
-The `/new` page supports both simulated (Gemini-based) calls and real VAPI phone calls. Configure via environment variables in `apps/web/.env.local`:
+The `/new` page supports both simulated (Gemini-based) calls and real provider-calling flows. Configure via environment variables in `apps/web/.env.local`:
 
 | Variable | Values | Description |
 |----------|--------|-------------|
-| `NEXT_PUBLIC_LIVE_CALL_ENABLED` | `true` / `false` | Enable real VAPI calls (`false` = simulated) |
+| `NEXT_PUBLIC_LIVE_CALL_ENABLED` | `true` / `false` | Enable real provider calling (`false` = simulated) |
 | `NEXT_PUBLIC_ADMIN_TEST_PHONES` | Comma-separated E.164 phones | **Recommended**: Array of test phones for concurrent testing |
 | `NEXT_PUBLIC_ADMIN_TEST_NUMBER` | Single E.164 phone | **Deprecated**: Legacy single test number (still supported) |
 
@@ -310,7 +328,7 @@ NEXT_PUBLIC_LIVE_CALL_ENABLED=false
 # No test phones set
 ```
 
-**Testing Concurrent Calls (Recommended)** - Real VAPI calls to multiple test phones:
+**Testing Concurrent Calls (Recommended)** - Real calls to multiple test phones:
 ```bash
 NEXT_PUBLIC_LIVE_CALL_ENABLED=true
 NEXT_PUBLIC_ADMIN_TEST_PHONES=+15551234567,+15559876543,+15555551234
@@ -321,7 +339,7 @@ In this mode:
 - Perfect for testing **concurrent calling** with multiple real phones
 - If research returns 10 providers but you have 3 test phones, only 3 calls are made
 
-**Testing Single Call (Legacy)** - Real VAPI calls to one test phone:
+**Testing Single Call (Legacy)** - Real calls to one test phone:
 ```bash
 NEXT_PUBLIC_LIVE_CALL_ENABLED=true
 NEXT_PUBLIC_ADMIN_TEST_NUMBER=+15551234567  # Deprecated, use ADMIN_TEST_PHONES instead
@@ -331,13 +349,13 @@ In this mode:
 - Call goes to **your single test number**
 - Backward compatible with existing setups
 
-**Production** - Real VAPI calls to actual providers:
+**Production** - Real calls to actual providers:
 ```bash
 NEXT_PUBLIC_LIVE_CALL_ENABLED=true
 # No test phones set - calls go to real provider numbers
 ```
 
-#### Simulation Mode (Development without VAPI costs)
+#### Simulation Mode (Development without voice runtime costs)
 
 For development and testing without real phone calls, the system includes a **Gemini-powered simulation service** that generates realistic provider conversations:
 
@@ -349,17 +367,26 @@ NEXT_PUBLIC_LIVE_CALL_ENABLED=false
 The simulation service (`apps/api/src/services/simulation/`) uses Gemini to:
 - Generate realistic provider responses based on service type
 - Simulate availability, pricing, and qualification discussions
-- Return structured data matching real VAPI call format
+- Return structured data matching the real provider-calling format
 
-This allows full end-to-end testing without consuming VAPI credits.
+This allows full end-to-end testing without consuming live call runtime credits.
 
 #### Backend Configuration
 
-The backend also needs VAPI credentials in `apps/api/.env`:
+The backend defaults to LiveKit and only needs VAPI credentials when fallback is enabled:
 ```bash
+CALL_RUNTIME_PROVIDER=livekit
+LIVEKIT_ENABLED=true
+LIVEKIT_URL=wss://your-project.livekit.cloud
+LIVEKIT_API_KEY=your_livekit_api_key
+LIVEKIT_API_SECRET=your_livekit_api_secret
+VOICE_AGENT_SHARED_SECRET=choose_a_shared_secret
+VOICE_AGENT_SERVICE_URL=http://127.0.0.1:8787
+
+# Optional VAPI fallback only
+VAPI_ENABLED=false
 VAPI_API_KEY=your_vapi_api_key
 VAPI_PHONE_NUMBER_ID=your_vapi_phone_number_id
-VAPI_WEBHOOK_URL=https://your-domain.com/api/v1/vapi/webhook  # For call results
 ```
 
 ## CodeRabbit AI Code Review
@@ -1106,6 +1133,56 @@ If the issue persists, verify that the `packages/` directory contains all requir
 If any are missing, re-clone the repository or contact a team member.
 
 ## Resources
+
+## Beads Workflow
+
+This project uses [Beads](https://github.com/steveyegge/beads) (`bd`) for persistent issue tracking and cross-session memory.
+
+### Quick Start
+
+```bash
+bd ready
+bd show <id>
+bd update <id> --claim
+bd close <id>
+bd sync
+```
+
+### Available Skills
+
+| Skill | Command | Purpose |
+|-------|---------|---------|
+| **Plan a Feature** | `/feature-to-beads` | Analyze requirements, draft implementation plan, save as epic with linked tasks |
+| **Execute Next Task** | `/beads-execute` | Pick up highest-priority ready task, execute via agent team, verify, close |
+| **Save Session Context** | `/session-to-beads` | Capture remaining work, bugs, and decisions before ending a session |
+| **Project Setup** | `/beads-project-setup` | Initialize Beads in a new project |
+
+### Workflow
+
+```text
+  /feature-to-beads -> plan feature -> epic + tasks
+          |
+          v
+    /beads-execute -> execute next ready task -> verify -> close
+          |
+          v
+   /session-to-beads -> save remaining context before ending session
+```
+
+### Key Commands
+
+| Command | What It Does |
+|---------|-------------|
+| `bd ready --json` | List unblocked tasks by priority |
+| `bd show <id>` | Full task details with dependencies |
+| `bd create "title" -t task -p 2 -d "desc" --json` | Create a new task |
+| `bd update <id> --claim` | Atomically assign + mark in-progress |
+| `bd close <id> --reason "done"` | Complete a task |
+| `bd dep add <child> <parent>` | Link a dependency |
+| `bd epic <id>` | View an epic and its tasks |
+| `bd search "query"` | Full-text search across all issues |
+| `bd doctor` | Health check |
+| `bd sync` | Commit and push to git |
 
 https://www.youtube.com/watch?v=uFXUniSm7HM - how to build your Own AI Code Review Bot with Cline CLI
 

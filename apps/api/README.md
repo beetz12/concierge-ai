@@ -1,6 +1,6 @@
 # AI Concierge API
 
-Node.js Fastify backend with Supabase integration.
+Node.js Fastify backend with Supabase integration and a LiveKit-first call control plane.
 
 ## Quick Start
 
@@ -19,11 +19,24 @@ cd apps/api
 cp .env.example .env
 ```
 
-Edit `.env` and add your Supabase credentials:
+Edit `.env` and add your Supabase credentials plus the call runtime settings:
 
 ```env
 SUPABASE_URL=https://your-project-ref.supabase.co
 SUPABASE_SERVICE_ROLE_KEY=your-service-role-key
+GEMINI_API_KEY=your-gemini-api-key
+CALL_RUNTIME_PROVIDER=livekit
+LIVEKIT_ENABLED=true
+LIVEKIT_URL=wss://your-project.livekit.cloud
+LIVEKIT_API_KEY=your-livekit-api-key
+LIVEKIT_API_SECRET=your-livekit-api-secret
+VOICE_AGENT_SHARED_SECRET=choose-a-shared-secret
+VOICE_AGENT_SERVICE_URL=http://127.0.0.1:8787
+
+# Optional fallback only
+VAPI_ENABLED=false
+# VAPI_API_KEY=your-vapi-api-key
+# VAPI_PHONE_NUMBER_ID=your-vapi-phone-number-id
 ```
 
 ### 3. Set Up Database
@@ -82,7 +95,7 @@ curl -X POST http://localhost:8000/api/v1/gemini/search-providers \
   -d '{"query":"plumber in Greenville SC","criteria":"licensed, 4.5+ rating"}'
 ```
 
-**Provider Call (VAPI.ai voice AI):**
+**Provider Call (LiveKit dispatch by default, VAPI fallback optional):**
 
 ```bash
 curl -X POST http://localhost:8000/api/v1/providers/call \
@@ -127,10 +140,12 @@ apps/api/
 │   ├── routes/               # API route handlers
 │   │   ├── gemini.ts         # AI research endpoints
 │   │   ├── providers.ts      # Provider calling endpoints
+│   │   ├── voice-tools.ts    # Internal tool routes for the voice-agent service
 │   │   ├── vapi-webhook.ts   # VAPI webhook handler
 │   │   └── users.ts          # User CRUD endpoints
 │   ├── services/             # Business logic
-│   │   ├── vapi/             # VAPI calling services
+│   │   ├── calls/            # Runtime routing and booking dispatch
+│   │   ├── vapi/             # VAPI fallback services
 │   │   │   ├── assistant-config.ts    # VAPI assistant configuration (single source of truth)
 │   │   │   ├── direct-vapi.client.ts  # Direct VAPI SDK integration
 │   │   │   ├── concurrent-call.service.ts  # Batch concurrent calls
@@ -150,11 +165,21 @@ apps/api/
 - **Fastify 5** - High-performance web framework
 - **Supabase** - PostgreSQL database with real-time capabilities
 - **Google Gemini** - AI-powered research with Google Maps grounding
-- **VAPI.ai** - Automated voice calls to service providers
+- **LiveKit-first runtime** - Default voice orchestration path
+- **VAPI.ai** - Optional fallback runtime behind env flags
 - **Kestra** - Workflow orchestration (optional)
 - **TypeScript** - Type-safe development
 - **Zod** - Runtime validation
 - **Swagger** - API documentation at `/docs`
+
+## Call Runtime
+
+The API now treats `livekit` as the default call runtime and `vapi` as an opt-in fallback.
+
+- `CALL_RUNTIME_PROVIDER=livekit` routes provider calls to the `apps/voice-agent` service
+- `VAPI_ENABLED=false` is the intended default posture
+- startup logs print the selected runtime, LiveKit readiness, and whether VAPI fallback is enabled
+- booking and provider routes no longer instantiate VAPI clients directly; runtime-specific execution lives in `src/services/calls/*`
 
 ## Database Migrations
 
@@ -218,6 +243,57 @@ pnpm lint
 pnpm build
 ```
 
+### Verification
+
+Repeatable verification commands for the LiveKit-first runtime and the VAPI fallback:
+
+```bash
+# Unit and integration-style verification
+pnpm --filter api test
+pnpm --filter voice-agent test
+
+# Type safety across both services
+pnpm --filter api check-types
+pnpm --filter voice-agent check-types
+```
+
+Manual runtime verification:
+
+```bash
+# 1. Start the API in demo mode with LiveKit selected
+PORT=8031 \
+DEMO_MODE=true \
+CALL_RUNTIME_PROVIDER=livekit \
+LIVEKIT_ENABLED=true \
+LIVEKIT_URL=wss://example.livekit.invalid \
+LIVEKIT_API_KEY=test-livekit-key \
+LIVEKIT_API_SECRET=test-livekit-secret \
+VOICE_AGENT_SHARED_SECRET=obs-secret \
+pnpm --filter api exec tsx src/index.ts
+
+# 2. Start the voice-agent against the internal tool API
+VOICE_AGENT_PORT=8791 \
+CALL_RUNTIME_PROVIDER=livekit \
+VOICE_AGENT_API_BASE_URL=http://127.0.0.1:8031/api/v1/voice-tools \
+VOICE_AGENT_SHARED_SECRET=obs-secret \
+pnpm --filter voice-agent exec tsx src/index.ts
+
+# 3. Confirm voice-agent health and diagnostics
+curl http://127.0.0.1:8791/health
+curl -H 'x-voice-agent-key: obs-secret' http://127.0.0.1:8791/diagnostics
+curl -H 'x-voice-agent-key: obs-secret' http://127.0.0.1:8791/diagnostics/failures
+
+# 4. Confirm persisted recent events from the API side
+curl -H 'x-voice-agent-key: obs-secret' \
+  'http://127.0.0.1:8031/api/v1/voice-tools/diagnostics/recent-events?limit=5'
+
+# 5. Verify the VAPI fallback path via tests or by setting:
+CALL_RUNTIME_PROVIDER=vapi
+VAPI_ENABLED=true
+VAPI_API_KEY=your-vapi-api-key
+VAPI_PHONE_NUMBER_ID=your-vapi-phone-number-id
+```
+
 ### Production
 
 ```bash
@@ -227,6 +303,7 @@ pnpm start
 ## Documentation
 
 - [Supabase Setup Guide](./SUPABASE_SETUP.md) - Complete Supabase integration guide
+- [LiveKit Rollout and Rollback](/Users/dave/Work/concierge-ai/docs/LIVEKIT_ROLLOUT_AND_ROLLBACK.md) - staged rollout plus env-only rollback procedure
 - [Fastify Documentation](https://fastify.dev/)
 - [Supabase JavaScript Client](https://supabase.com/docs/reference/javascript)
 
@@ -240,8 +317,16 @@ pnpm start
 | `SUPABASE_URL`              | Supabase project URL                 | Yes      |
 | `SUPABASE_SERVICE_ROLE_KEY` | Supabase service role key            | Yes      |
 | `GEMINI_API_KEY`            | Google Gemini API key                | Yes      |
-| `VAPI_API_KEY`              | VAPI.ai API key                      | Yes      |
-| `VAPI_PHONE_NUMBER_ID`      | VAPI outbound phone number ID        | Yes      |
+| `CALL_RUNTIME_PROVIDER`     | `livekit` or `vapi`                  | Yes      |
+| `LIVEKIT_ENABLED`           | Enable LiveKit runtime               | Yes      |
+| `LIVEKIT_URL`               | LiveKit server URL                   | Yes for `livekit` |
+| `LIVEKIT_API_KEY`           | LiveKit API key                      | Yes for `livekit` |
+| `LIVEKIT_API_SECRET`        | LiveKit API secret                   | Yes for `livekit` |
+| `VOICE_AGENT_SHARED_SECRET` | Shared secret for API ↔ voice-agent  | Yes for `livekit` |
+| `VOICE_AGENT_SERVICE_URL`   | Voice-agent base URL                 | No       |
+| `VAPI_ENABLED`              | Enable VAPI fallback                 | No       |
+| `VAPI_API_KEY`              | VAPI.ai API key                      | Yes for `vapi` |
+| `VAPI_PHONE_NUMBER_ID`      | VAPI outbound phone number ID        | Yes for `vapi` |
 | `VAPI_WEBHOOK_URL`          | Webhook URL for call results         | No       |
 | `VAPI_MAX_CONCURRENT_CALLS` | Max concurrent calls (default: 5)    | No       |
 | `KESTRA_ENABLED`            | Enable Kestra orchestration          | No       |
