@@ -1,0 +1,46 @@
+name: Provider Intel Smoke
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "0 10 * * *"
+
+jobs:
+  smoke:
+    runs-on: ubuntu-latest
+    env:
+      GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+      GOOGLE_PLACES_API_KEY: ${{ secrets.GOOGLE_PLACES_API_KEY }}
+      BRAVE_SEARCH_API_KEY: ${{ secrets.BRAVE_SEARCH_API_KEY }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10
+
+      - name: Use Node.js 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Verify required secrets are present
+        run: |
+          test -n "$GEMINI_API_KEY"
+          test -n "$GOOGLE_PLACES_API_KEY"
+          test -n "$BRAVE_SEARCH_API_KEY"
+
+      - name: Run provider-intel smoke
+        run: pnpm test:smoke:provider-intel -- --output apps/api/provider-intel-smoke-report.json
+
+      - name: Upload smoke report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: provider-intel-smoke-report
+          path: apps/api/provider-intel-smoke-report.json

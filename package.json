@@ -21,6 +21,9 @@
     "lint": "turbo run lint",
     "format": "prettier --write \"**/*.{ts,tsx,md}\"",
     "check-types": "turbo run check-types",
+    "test:e2e": "playwright test",
+    "test:smoke:provider-intel": "pnpm --filter api exec tsx scripts/provider-intel-smoke.ts",
+    "test:verify": "pnpm --filter api test && pnpm --filter api check-types && pnpm --filter api build && pnpm --filter web check-types && pnpm --filter web build && pnpm test:e2e",
     "prepare": "husky",
     "cline:security": "./scripts/cline/security-review.sh --staged",
     "cline:review": "./scripts/cline/code-review.sh --staged",
@@ -35,6 +38,8 @@
     "migrate:workflow-vars:dry": "node kestra/scripts/migrate-envs-to-secrets.js --dry-run"
   },
   "devDependencies": {
+    "@playwright/test": "^1.58.2",
+    "baseline-browser-mapping": "^2.10.0",
     "husky": "^9.0.11",
     "prettier": "^3.6.2",
     "turbo": "^2.6.3",
