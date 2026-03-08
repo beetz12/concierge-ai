@@ -138,7 +138,13 @@ export class RecommendationService {
 
     // Sort by score descending and take top 3
     const recommendations = scoredProviders
-      .sort((a, b) => b.score - a.score)
+      .sort((a, b) => {
+        if (b.score !== a.score) {
+          return b.score - a.score;
+        }
+
+        return this.calculateTieBreaker(b) - this.calculateTieBreaker(a);
+      })
       .slice(0, 3);
 
     // Generate overall recommendation text
@@ -334,11 +340,11 @@ export class RecommendationService {
 
     if (intel.tradeFit === "high") adjustment += 8;
     if (intel.tradeFit === "medium") adjustment += 3;
-    if (intel.tradeFit === "low") adjustment -= 8;
+    if (intel.tradeFit === "low") adjustment -= 10;
 
     if (intel.identityConfidence === "high") adjustment += 6;
     if (intel.identityConfidence === "medium") adjustment += 2;
-    if (intel.identityConfidence === "low") adjustment -= 5;
+    if (intel.identityConfidence === "low") adjustment -= 10;
 
     const platformCount = new Set(
       intel.reputationSources?.map((source) => source.platform) ?? [],
@@ -348,13 +354,22 @@ export class RecommendationService {
     const positiveThemeCount = intel.positiveThemes?.length ?? 0;
     adjustment += Math.min(positiveThemeCount, 3) * 2;
 
-    const negativeThemeCount = intel.negativeThemes?.length ?? 0;
-    adjustment -= Math.min(negativeThemeCount, 2) * 2;
+    const negativeThemes = intel.negativeThemes?.map((theme) => theme.theme) ?? [];
+    const negativeThemeCount = negativeThemes.length;
+    adjustment -= Math.min(negativeThemeCount, 2) * 3;
+
+    if (negativeThemes.some((theme) => /thin review volume/i.test(theme))) {
+      adjustment -= 8;
+    }
+
+    if (negativeThemes.some((theme) => /self-promotional/i.test(theme))) {
+      adjustment -= 10;
+    }
 
     const contradictionPenalty = intel.contradictionNotes?.reduce((sum, note) => {
-      if (note.severity === "high") return sum + 6;
-      if (note.severity === "medium") return sum + 3;
-      return sum + 1;
+      if (note.severity === "high") return sum + 12;
+      if (note.severity === "medium") return sum + 8;
+      return sum + 3;
     }, 0) ?? 0;
     adjustment -= contradictionPenalty;
 
@@ -364,7 +379,41 @@ export class RecommendationService {
     ) ?? 0;
     adjustment -= seriousComplaintPenalty;
 
+    const reviews = result.reviewCount ?? 0;
+    if (reviews > 0 && reviews <= 2) {
+      adjustment -= 10;
+    } else if (reviews <= 5) {
+      adjustment -= 6;
+    }
+
+    if (platformCount === 0 && reviews < 5) {
+      adjustment -= 4;
+    }
+
     return adjustment;
+  }
+
+  private calculateTieBreaker(
+    recommendation: ProviderRecommendation,
+  ): number {
+    let score = 0;
+
+    if (recommendation.tradeFit === "high") score += 8;
+    if (recommendation.tradeFit === "medium") score += 3;
+    if (recommendation.tradeFit === "low") score -= 8;
+
+    if (recommendation.identityConfidence === "high") score += 6;
+    if (recommendation.identityConfidence === "medium") score += 2;
+    if (recommendation.identityConfidence === "low") score -= 8;
+
+    score += Math.min(recommendation.reviewCount ?? 0, 50) / 5;
+    score += Math.min(recommendation.reputationSourcePlatforms?.length ?? 0, 3) * 3;
+    score += Math.min(recommendation.positiveThemes?.length ?? 0, 3) * 2;
+    score -= Math.min(recommendation.negativeThemes?.length ?? 0, 3) * 4;
+    score -= Math.min(recommendation.contradictionNotes?.length ?? 0, 2) * 8;
+    score -= (recommendation.seriousComplaintCount ?? 0) * 8;
+
+    return score;
   }
 
   /**
