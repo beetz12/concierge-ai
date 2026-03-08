@@ -1,4 +1,11 @@
-export type LiveKitCallKind = "qualification" | "booking";
+export type LiveKitCallKind = "qualification" | "booking" | "direct_task";
+
+export interface LiveKitDynamicPrompt {
+  systemPrompt: string;
+  firstMessage?: string;
+  closingScript?: string;
+  contextualQuestions?: string[];
+}
 
 export interface LiveKitDispatchMetadata {
   kind: LiveKitCallKind;
@@ -17,6 +24,11 @@ export interface LiveKitDispatchMetadata {
   clientAddress?: string;
   preferredDateTime?: string;
   additionalNotes?: string;
+  mustAskQuestions?: string[];
+  dealBreakers?: string[];
+  taskDescription?: string;
+  directTaskType?: string;
+  customPrompt?: LiveKitDynamicPrompt;
 }
 
 export const serializeDispatchMetadata = (
@@ -46,7 +58,11 @@ export const parseDispatchMetadata = (raw: string | undefined): LiveKitDispatchM
     }
   }
 
-  if (parsed.kind !== "qualification" && parsed.kind !== "booking") {
+  if (
+    parsed.kind !== "qualification" &&
+    parsed.kind !== "booking" &&
+    parsed.kind !== "direct_task"
+  ) {
     throw new Error(`Unsupported LiveKit dispatch kind: ${parsed.kind}`);
   }
 

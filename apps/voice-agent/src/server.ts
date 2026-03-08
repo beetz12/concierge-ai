@@ -7,6 +7,7 @@ import {
   serializeDispatchMetadata,
 } from "./livekit-metadata.js";
 import { LiveKitTelephonyService } from "./livekit-telephony.js";
+import { buildVoicePromptTemplate } from "./prompts/index.js";
 import { VoiceSessionManager } from "./session-manager.js";
 
 const sessionManager = new VoiceSessionManager();
@@ -96,7 +97,7 @@ export const buildVoiceAgentServer = () => {
   };
 
   const dispatchLiveKitCall = async (input: {
-    kind: "qualification" | "booking";
+    kind: "qualification" | "booking" | "direct_task";
     request: {
       serviceRequestId?: string;
       providerId?: string;
@@ -112,6 +113,16 @@ export const buildVoiceAgentServer = () => {
       clientAddress?: string;
       preferredDateTime?: string;
       additionalNotes?: string;
+      mustAskQuestions?: string[];
+      dealBreakers?: string[];
+      taskDescription?: string;
+      directTaskType?: string;
+      customPrompt?: {
+        systemPrompt: string;
+        firstMessage?: string;
+        closingScript?: string;
+        contextualQuestions?: string[];
+      };
     };
   }) => {
     const { kind, request } = input;
@@ -157,6 +168,11 @@ export const buildVoiceAgentServer = () => {
       clientAddress: request.clientAddress,
       preferredDateTime: request.preferredDateTime,
       additionalNotes: request.additionalNotes,
+      mustAskQuestions: request.mustAskQuestions,
+      dealBreakers: request.dealBreakers,
+      taskDescription: request.taskDescription,
+      directTaskType: request.directTaskType,
+      customPrompt: request.customPrompt,
     });
 
     const participantIdentity = `provider-${session.providerId}`;
@@ -224,6 +240,55 @@ export const buildVoiceAgentServer = () => {
       return;
     }
 
+    if (request.method === "POST" && request.url === "/preview/call") {
+      try {
+        const body = (await readJson(request)) as {
+          metadata?: {
+            kind: "qualification" | "booking" | "direct_task";
+            providerName: string;
+            providerPhone?: string;
+            serviceNeeded: string;
+            location: string;
+            userCriteria?: string;
+            urgency?: string;
+            problemDescription?: string;
+            clientName?: string;
+            clientPhone?: string;
+            clientAddress?: string;
+            preferredDateTime?: string;
+            additionalNotes?: string;
+            mustAskQuestions?: string[];
+            dealBreakers?: string[];
+            taskDescription?: string;
+            directTaskType?: string;
+            customPrompt?: {
+              systemPrompt: string;
+              firstMessage?: string;
+              closingScript?: string;
+              contextualQuestions?: string[];
+            };
+          };
+        };
+
+        if (!body.metadata) {
+          throw new Error("metadata is required for call preview");
+        }
+
+        const preview = buildVoicePromptTemplate(body.metadata);
+
+        writeJson(response, 200, {
+          success: true,
+          preview,
+        });
+      } catch (error) {
+        writeJson(response, 400, {
+          error: "PreviewFailed",
+          message: error instanceof Error ? error.message : "Failed to build call preview",
+        });
+      }
+      return;
+    }
+
     if (request.method === "POST" && request.url === "/dispatch/provider-call") {
       try {
         const body = (await readJson(request)) as {
@@ -238,6 +303,16 @@ export const buildVoiceAgentServer = () => {
             urgency?: string;
             problemDescription?: string;
             clientAddress?: string;
+            mustAskQuestions?: string[];
+            dealBreakers?: string[];
+            taskDescription?: string;
+            directTaskType?: string;
+            customPrompt?: {
+              systemPrompt: string;
+              firstMessage?: string;
+              closingScript?: string;
+              contextualQuestions?: string[];
+            };
           };
         };
 
@@ -283,6 +358,14 @@ export const buildVoiceAgentServer = () => {
             clientPhone?: string;
             clientAddress?: string;
             additionalNotes?: string;
+            mustAskQuestions?: string[];
+            dealBreakers?: string[];
+            customPrompt?: {
+              systemPrompt: string;
+              firstMessage?: string;
+              closingScript?: string;
+              contextualQuestions?: string[];
+            };
           };
         };
 
@@ -308,6 +391,63 @@ export const buildVoiceAgentServer = () => {
         writeJson(response, 500, {
           error: "DispatchFailed",
           message: error instanceof Error ? error.message : "Booking dispatch failed",
+        });
+      }
+      return;
+    }
+
+    if (request.method === "POST" && request.url === "/dispatch/direct-task") {
+      try {
+        const body = (await readJson(request)) as {
+          request?: {
+            serviceRequestId?: string;
+            providerId?: string;
+            providerName?: string;
+            providerPhone?: string;
+            serviceNeeded?: string;
+            location?: string;
+            userCriteria?: string;
+            urgency?: string;
+            problemDescription?: string;
+            clientName?: string;
+            clientPhone?: string;
+            clientAddress?: string;
+            additionalNotes?: string;
+            mustAskQuestions?: string[];
+            dealBreakers?: string[];
+            taskDescription?: string;
+            directTaskType?: string;
+            customPrompt?: {
+              systemPrompt: string;
+              firstMessage?: string;
+              closingScript?: string;
+              contextualQuestions?: string[];
+            };
+          };
+        };
+
+        const taskRequest = body.request || {};
+        const payload = await dispatchLiveKitCall({
+          kind: "direct_task",
+          request: taskRequest,
+        });
+
+        writeJson(response, 200, {
+          ...payload,
+        });
+      } catch (error) {
+        observability.record({
+          timestamp: new Date().toISOString(),
+          level: "error",
+          eventType: "direct_task_dispatch_failed",
+          message: "Direct-task dispatch failed",
+          details: {
+            error: error instanceof Error ? error.message : "unknown_error",
+          },
+        });
+        writeJson(response, 500, {
+          error: "DispatchFailed",
+          message: error instanceof Error ? error.message : "Direct-task dispatch failed",
         });
       }
       return;

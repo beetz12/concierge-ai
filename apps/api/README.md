@@ -119,6 +119,28 @@ curl -X POST http://localhost:8000/api/v1/gemini/analyze-direct-task \
   -d '{"taskDescription":"negotiate my cable bill","contactName":"Comcast","contactPhone":"+18005551234"}'
 ```
 
+**Contractor Call Preview:**
+
+```bash
+curl -X POST http://localhost:8000/api/v1/voice/preview-call \
+  -H "Content-Type: application/json" \
+  -d '{"mode":"qualification","contractorName":"Acme Lawn Care","contractorPhone":"+18035550123","serviceNeeded":"lawn service","location":"Greenville, SC","problemDescription":"The client wants recurring mowing and edging.","mustAskQuestions":["Do you offer weekly mowing and edging?","Are you insured?"],"dealBreakers":["No proof of insurance"]}'
+```
+
+**Contractor Call Dispatch:**
+
+```bash
+curl -X POST http://localhost:8000/api/v1/voice/call-contractor \
+  -H "Content-Type: application/json" \
+  -d '{"mode":"qualification","contractorName":"Acme Lawn Care","contractorPhone":"+18035550123","serviceNeeded":"lawn service","location":"Greenville, SC","problemDescription":"The client wants recurring mowing and edging.","mustAskQuestions":["Do you offer weekly mowing and edging?","Are you insured?"],"dealBreakers":["No proof of insurance"]}'
+```
+
+**Contractor Call Session Status:**
+
+```bash
+curl http://localhost:8000/api/v1/voice/calls/<sessionId>
+```
+
 **Call Status:**
 
 ```bash
@@ -140,6 +162,7 @@ apps/api/
 │   ├── routes/               # API route handlers
 │   │   ├── gemini.ts         # AI research endpoints
 │   │   ├── providers.ts      # Provider calling endpoints
+│   │   ├── voice-calls.ts    # Public contractor-call preview/dispatch/status routes
 │   │   ├── voice-tools.ts    # Internal tool routes for the voice-agent service
 │   │   ├── vapi-webhook.ts   # VAPI webhook handler
 │   │   └── users.ts          # User CRUD endpoints
@@ -154,6 +177,7 @@ apps/api/
 │   │   │   ├── analyzer.ts   # Task type classification
 │   │   │   └── prompt-generator.ts  # Dynamic prompt generation
 │   │   ├── research/         # Provider research
+│   │   ├── voice/            # Contractor-call orchestration service
 │   │   └── places/           # Google Places integration
 │   ├── lib/                  # Shared libraries
 │   └── plugins/              # Fastify plugins

@@ -1,4 +1,3 @@
-import type { LiveKitDispatchMetadata } from "../livekit-metadata.js";
 import { buildBookingTemplate } from "./booking-template.js";
 import { buildDirectTaskTemplate } from "./direct-task-template.js";
 import { buildQualificationTemplate } from "./qualification-template.js";
@@ -7,7 +6,7 @@ import type { VoicePromptContext, VoicePromptTemplate } from "./template-types.j
 export type { DirectTaskType, VoicePromptContext, VoicePromptTemplate } from "./template-types.js";
 
 export const buildVoicePromptTemplate = (
-  context: VoicePromptContext | LiveKitDispatchMetadata,
+  context: VoicePromptContext,
 ): VoicePromptTemplate => {
   switch (context.kind) {
     case "booking":

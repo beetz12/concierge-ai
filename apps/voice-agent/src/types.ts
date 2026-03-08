@@ -1,6 +1,6 @@
 export type VoiceRuntimeProvider = "livekit" | "vapi";
 
-export type AgentRole = "qualification" | "booking" | "supervisor";
+export type AgentRole = "qualification" | "booking" | "direct_task" | "supervisor";
 
 export type SessionStatus =
   | "active"

@@ -31,12 +31,23 @@ export const buildQualificationTemplate = (context: VoicePromptContext) =>
       context.urgency ? `Urgency: ${context.urgency}.` : "",
       context.clientAddress ? `Job address: ${context.clientAddress}.` : "",
     ].filter(Boolean),
+    additionalGuidance: [
+      context.customPrompt?.systemPrompt
+        ? `Apply this generated qualification guidance while still following the template's outbound call rules: ${context.customPrompt.systemPrompt}`
+        : "",
+    ].filter(Boolean),
     requiredFacts: [
       "First confirm that you reached the correct company or person.",
       `After identity is confirmed, ask whether they offer ${context.serviceNeeded}.`,
       "If they do, ask what specific services they offer that are relevant to the request.",
       "Then ask for current pricing or rate structure.",
       "Then ask for the earliest availability.",
+      ...(context.customPrompt?.contextualQuestions?.map(
+        (question) => `After the core qualification questions, ask this additional screening question one at a time: ${question}`,
+      ) ?? []),
+      ...(context.mustAskQuestions?.map(
+        (question) => `User-required question: ${question}`,
+      ) ?? []),
     ],
     conversationRules: [
       ...VOICE_STYLE_RULES,
@@ -52,6 +63,10 @@ export const buildQualificationTemplate = (context: VoicePromptContext) =>
       ...GATEKEEPER_RULES,
       ...CALLBACK_RULES,
       "If the provider clearly does not offer the service, mark the call as disqualified and end politely.",
+      ...(context.dealBreakers?.map(
+        (rule) =>
+          `Treat this as a deal-breaker when applicable and summarize it clearly before ending: ${rule}`,
+      ) ?? []),
     ],
     closingBehavior: [
       "Once you have service confirmation, services offered, pricing, and earliest availability, give one short closing sentence.",

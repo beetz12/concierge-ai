@@ -29,6 +29,10 @@ const PURPOSE_BY_TASK: Record<DirectTaskType, string> = {
   general_task: "complete the client task efficiently",
 };
 
+const isDirectTaskType = (value: string): value is DirectTaskType => {
+  return value in ROLE_BY_TASK;
+};
+
 const openingByTask = (context: VoicePromptContext, taskType: DirectTaskType): string => {
   const taskLabel =
     taskType === "negotiate_price"
@@ -47,7 +51,10 @@ const openingByTask = (context: VoicePromptContext, taskType: DirectTaskType): s
 };
 
 export const buildDirectTaskTemplate = (context: VoicePromptContext) => {
-  const taskType = context.directTaskType || "general_task";
+  const taskType =
+    context.directTaskType && isDirectTaskType(context.directTaskType)
+      ? context.directTaskType
+      : "general_task";
   const taskDescription = context.taskDescription || context.userCriteria || "complete the requested client task";
 
   return composeVoicePromptTemplate({
@@ -67,11 +74,19 @@ export const buildDirectTaskTemplate = (context: VoicePromptContext) => {
       context.clientName ? `Client name: ${context.clientName}.` : "",
       context.additionalNotes ? `Additional notes: ${context.additionalNotes}.` : "",
     ].filter(Boolean),
+    additionalGuidance: [
+      context.customPrompt?.systemPrompt
+        ? `Use this generated direct-task guidance as task-specific context while still obeying the template's outbound phone rules: ${context.customPrompt.systemPrompt}`
+        : "",
+    ].filter(Boolean),
     requiredFacts: [
       "First confirm that you reached the correct company or person.",
       "State the task clearly in one sentence.",
       "Work toward a specific outcome, commitment, or answer.",
       "Summarize the result before ending the call.",
+      ...(context.mustAskQuestions?.map(
+        (question) => `User-required question or checkpoint: ${question}`,
+      ) ?? []),
     ],
     conversationRules: [
       ...VOICE_STYLE_RULES,
@@ -87,6 +102,10 @@ export const buildDirectTaskTemplate = (context: VoicePromptContext) => {
       ...GATEKEEPER_RULES,
       ...CALLBACK_RULES,
       "If the issue needs a manager or specialist, accept the transfer and restate the purpose briefly to the new person.",
+      ...(context.dealBreakers?.map(
+        (rule) =>
+          `If this blocker appears during the call, acknowledge it and reflect it in the finishCall summary: ${rule}`,
+      ) ?? []),
     ],
     closingBehavior: [
       "Once the outcome is clear, give one short closing sentence that summarizes the result.",

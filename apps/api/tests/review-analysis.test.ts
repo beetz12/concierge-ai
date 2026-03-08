@@ -9,76 +9,99 @@ const logger = {
   warn() {},
 };
 
-test("ReviewAnalysisService fallback adds a strong positive theme for high-volume strong Google ratings", async () => {
-  const service = new ReviewAnalysisService(logger);
-  const result = await service.analyzeProviders([
-    {
-      id: "provider-1",
-      name: "Greenville Outdoor Living",
-      rating: 4.9,
-      reviewCount: 38,
-      providerIntel: {
-        reputationSources: [
-          {
-            platform: "facebook",
-            label: "Facebook",
-            url: "https://www.facebook.com/gvilleoutdoorliving/",
-            snippet: "Local business page",
-          },
-        ],
-      },
-    },
-  ]);
+const withFallbackReviewAnalysis = async (
+  run: () => Promise<void>,
+) => {
+  const originalGeminiApiKey = process.env.GEMINI_API_KEY;
+  delete process.env.GEMINI_API_KEY;
 
-  const provider = result.providers[0];
-  assert.equal(result.stats.analyzedProviders, 1);
-  assert.match(
-    provider?.providerIntel?.positiveThemes?.[0]?.theme || "",
-    /Strong Google review signal/,
-  );
+  try {
+    await run();
+  } finally {
+    if (originalGeminiApiKey) {
+      process.env.GEMINI_API_KEY = originalGeminiApiKey;
+    } else {
+      delete process.env.GEMINI_API_KEY;
+    }
+  }
+};
+
+test("ReviewAnalysisService fallback adds a strong positive theme for high-volume strong Google ratings", async () => {
+  await withFallbackReviewAnalysis(async () => {
+    const service = new ReviewAnalysisService(logger);
+    const result = await service.analyzeProviders([
+      {
+        id: "provider-1",
+        name: "Greenville Outdoor Living",
+        rating: 4.9,
+        reviewCount: 38,
+        providerIntel: {
+          reputationSources: [
+            {
+              platform: "facebook",
+              label: "Facebook",
+              url: "https://www.facebook.com/gvilleoutdoorliving/",
+              snippet: "Local business page",
+            },
+          ],
+        },
+      },
+    ]);
+
+    const provider = result.providers[0];
+    assert.equal(result.stats.analyzedProviders, 1);
+    assert.match(
+      provider?.providerIntel?.positiveThemes?.[0]?.theme || "",
+      /Strong Google review signal/,
+    );
+  });
 });
 
 test("ReviewAnalysisService fallback flags thin review volume for low-count profiles", async () => {
-  const service = new ReviewAnalysisService(logger);
-  const result = await service.analyzeProviders([
-    {
-      id: "provider-2",
-      name: "Aydan's Landscaping",
-      rating: 5,
-      reviewCount: 1,
-    },
-  ]);
+  await withFallbackReviewAnalysis(async () => {
+    const service = new ReviewAnalysisService(logger);
+    const result = await service.analyzeProviders([
+      {
+        id: "provider-2",
+        name: "Aydan's Landscaping",
+        rating: 5,
+        reviewCount: 1,
+      },
+    ]);
 
-  const provider = result.providers[0];
-  assert.equal(result.stats.analyzedProviders, 1);
-  assert.match(
-    provider?.providerIntel?.negativeThemes?.[0]?.theme || "",
-    /Thin review volume/,
-  );
+    const provider = result.providers[0];
+    assert.equal(result.stats.analyzedProviders, 1);
+    assert.match(
+      provider?.providerIntel?.negativeThemes?.[0]?.theme || "",
+      /Thin review volume/,
+    );
+  });
 });
 
 test("ReviewAnalysisService fallback adds a low-severity contradiction note when Google is strong and Yelp exists", async () => {
-  const service = new ReviewAnalysisService(logger);
-  const result = await service.analyzeProviders([
-    {
-      id: "provider-3",
-      name: "Graham Kimak Landscape Designs",
-      rating: 4.9,
-      reviewCount: 12,
-      providerIntel: {
-        reputationSources: [
-          {
-            platform: "yelp",
-            label: "Yelp",
-            url: "https://www.yelp.com/biz/graham-kimak-landscape-designs",
-            snippet: "Yelp profile",
-          },
-        ],
+  await withFallbackReviewAnalysis(async () => {
+    const service = new ReviewAnalysisService(logger);
+    const result = await service.analyzeProviders([
+      {
+        id: "provider-3",
+        name: "Graham Kimak Landscape Designs",
+        rating: 4.9,
+        reviewCount: 12,
+        providerIntel: {
+          reputationSources: [
+            {
+              platform: "yelp",
+              label: "Yelp",
+              url: "https://www.yelp.com/biz/graham-kimak-landscape-designs",
+              snippet: "Yelp profile",
+            },
+          ],
+        },
       },
-    },
-  ]);
+    ]);
 
-  const contradiction = result.providers[0]?.providerIntel?.contradictionNotes?.[0];
-  assert.equal(contradiction?.severity, "low");
-  assert.deepEqual(contradiction?.platforms, ["google", "yelp"]);
+    const contradiction = result.providers[0]?.providerIntel?.contradictionNotes?.[0];
+    assert.equal(contradiction?.severity, "low");
+    assert.deepEqual(contradiction?.platforms, ["google", "yelp"]);
+  });
 });

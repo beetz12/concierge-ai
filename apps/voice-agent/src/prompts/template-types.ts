@@ -1,5 +1,3 @@
-import type { LiveKitDispatchMetadata } from "../livekit-metadata.js";
-
 export type DirectTaskType =
   | "negotiate_price"
   | "request_refund"
@@ -9,7 +7,7 @@ export type DirectTaskType =
   | "make_inquiry"
   | "general_task";
 
-export type VoicePromptKind = LiveKitDispatchMetadata["kind"] | "direct_task";
+export type VoicePromptKind = "qualification" | "booking" | "direct_task";
 
 export type VoicePromptVariant =
   | "outbound_qualification"
@@ -35,8 +33,16 @@ export interface VoicePromptContext {
   clientAddress?: string;
   preferredDateTime?: string;
   additionalNotes?: string;
+  mustAskQuestions?: string[];
+  dealBreakers?: string[];
   taskDescription?: string;
-  directTaskType?: DirectTaskType;
+  directTaskType?: string;
+  customPrompt?: {
+    systemPrompt: string;
+    firstMessage?: string;
+    closingScript?: string;
+    contextualQuestions?: string[];
+  };
 }
 
 export interface VoicePromptTemplate {
@@ -56,6 +62,7 @@ interface ComposeTemplateInput {
   identity: string[];
   mission: string[];
   context: string[];
+  additionalGuidance?: string[];
   requiredFacts: string[];
   conversationRules: string[];
   edgeCaseRules: string[];
@@ -73,6 +80,7 @@ export const composeVoicePromptTemplate = (
     buildSection("Identity", input.identity),
     buildSection("Mission", input.mission),
     buildSection("Context", input.context),
+    buildSection("Additional guidance", input.additionalGuidance || []),
     buildSection("Required facts", input.requiredFacts),
     buildSection("Conversation rules", input.conversationRules),
     buildSection("Edge cases", input.edgeCaseRules),

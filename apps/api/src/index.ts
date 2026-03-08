@@ -25,6 +25,7 @@ import bookingRoutes from "./routes/bookings.js";
 import intakeRoutes from "./routes/intake.js";
 import demoRoutes from "./routes/demo.js";
 import voiceToolRoutes from "./routes/voice-tools.js";
+import voiceCallRoutes from "./routes/voice-calls.js";
 import {
   extractClientIp,
   isBlacklisted,
@@ -287,6 +288,7 @@ await server.register(swagger, {
       { name: "bookings", description: "Appointment scheduling operations" },
       { name: "intake", description: "Professional intake question generation" },
       { name: "voice-tools", description: "Internal tool routes for the LiveKit voice-agent service" },
+      { name: "voice", description: "Public contractor call preview, dispatch, and status routes" },
     ],
   },
 });
@@ -386,6 +388,7 @@ server.get(
         intake: "/api/v1/intake",
         demo: "/api/v1/demo",
         voiceTools: "/api/v1/voice-tools",
+        voice: "/api/v1/voice",
         docs: "/docs",
       },
     };
@@ -424,6 +427,9 @@ await server.register(demoRoutes, { prefix: "/api/v1/demo" });
 
 // Register internal voice-agent tool routes
 await server.register(voiceToolRoutes, { prefix: "/api/v1/voice-tools" });
+
+// Register public voice-call orchestration routes
+await server.register(voiceCallRoutes, { prefix: "/api/v1/voice" });
 
 // Start server with port fallback
 const start = async () => {

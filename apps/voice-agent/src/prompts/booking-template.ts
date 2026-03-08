@@ -36,12 +36,20 @@ export const buildBookingTemplate = (context: VoicePromptContext) => {
       context.clientAddress ? `Service address: ${context.clientAddress}.` : "",
       context.additionalNotes ? `Additional notes: ${context.additionalNotes}.` : "",
     ].filter(Boolean),
+    additionalGuidance: [
+      context.customPrompt?.systemPrompt
+        ? `Apply this generated booking guidance while preserving the template's exact-time confirmation flow: ${context.customPrompt.systemPrompt}`
+        : "",
+    ].filter(Boolean),
     requiredFacts: [
       "First confirm that you reached the correct company or person.",
       "Then propose the preferred booking time or ask for the next available slot.",
       "Get an exact day, date, and time.",
       "Repeat the final appointment details and get an explicit confirmation.",
       "Ask whether the provider needs anything else before the appointment.",
+      ...(context.mustAskQuestions?.map(
+        (question) => `User-required question: ${question}`,
+      ) ?? []),
     ],
     conversationRules: [
       ...VOICE_STYLE_RULES,
@@ -64,6 +72,10 @@ export const buildBookingTemplate = (context: VoicePromptContext) => {
       ...CALLBACK_RULES,
       "If they ask to speak with the client directly, ask whether you can tentatively hold the time first.",
       "If they are no longer available to take the job, end politely with a failed or callback-requested outcome based on what they say.",
+      ...(context.dealBreakers?.map(
+        (rule) =>
+          `If this booking issue occurs, treat it as a blocker and summarize it before ending: ${rule}`,
+      ) ?? []),
     ],
     closingBehavior: [
       "After the provider explicitly confirms the appointment details, give one short closing sentence that repeats the final date and time.",

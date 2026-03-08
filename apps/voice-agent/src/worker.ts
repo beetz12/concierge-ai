@@ -117,7 +117,11 @@ class OutboundAssistant extends voice.Agent {
                 runtimeProvider: "livekit",
                 status: "completed",
                 activeAgent:
-                  args.metadata.kind === "booking" ? "booking" : "qualification",
+                  args.metadata.kind === "booking"
+                    ? "booking"
+                    : args.metadata.kind === "direct_task"
+                      ? "direct_task"
+                      : "qualification",
                 metadata: metadataUpdates,
                 outcome: {
                   disposition,
@@ -137,7 +141,11 @@ class OutboundAssistant extends voice.Agent {
                 providerId: args.metadata.providerId,
                 eventType: "session_completed",
                 agentRole:
-                  args.metadata.kind === "booking" ? "booking" : "qualification",
+                  args.metadata.kind === "booking"
+                    ? "booking"
+                    : args.metadata.kind === "direct_task"
+                      ? "direct_task"
+                      : "qualification",
                 payload: {
                   disposition,
                   summary,
@@ -209,7 +217,12 @@ export default defineAgent({
       serviceRequestId: metadata.serviceRequestId,
       providerId: metadata.providerId,
       eventType: "worker_joined",
-      agentRole: metadata.kind === "booking" ? "booking" : "qualification",
+      agentRole:
+        metadata.kind === "booking"
+          ? "booking"
+          : metadata.kind === "direct_task"
+            ? "direct_task"
+            : "qualification",
       payload: {
         roomName,
         modelProvider: runtimeConfig.modelProvider,
