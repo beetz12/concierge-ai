@@ -28,7 +28,7 @@ export interface WorkerRuntimeConfig {
       create_response: true;
       interrupt_response: boolean;
     };
-    inputAudioNoiseReduction: {
+    inputAudioNoiseReduction?: {
       type: "near_field" | "far_field";
     };
   };
@@ -91,9 +91,6 @@ export const getWorkerRuntimeConfig = (
         silence_duration_ms: 900,
         create_response: true,
         interrupt_response: false,
-      },
-      inputAudioNoiseReduction: {
-        type: "far_field",
       },
     },
     gemini: {
@@ -203,7 +200,6 @@ export const createAgentSession = (
           model: config.openai.model,
           voice: config.openai.voice,
           temperature: 0.7,
-          inputAudioNoiseReduction: config.openai.inputAudioNoiseReduction,
           turnDetection: config.openai.turnDetection,
         }),
       });

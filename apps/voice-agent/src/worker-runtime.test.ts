@@ -26,7 +26,7 @@ test("worker runtime defaults to OpenAI realtime", () => {
   assert.equal(config.openai.voice, "cedar");
   assert.equal(config.openai.turnDetection.type, "server_vad");
   assert.equal(config.openai.turnDetection.interrupt_response, false);
-  assert.equal(config.openai.inputAudioNoiseReduction.type, "far_field");
+  assert.equal(config.openai.inputAudioNoiseReduction, undefined);
   assert.equal(
     config.gemini.model,
     "gemini-2.5-flash-native-audio-preview-12-2025",

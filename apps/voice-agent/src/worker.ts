@@ -17,11 +17,11 @@ import {
   voice,
 } from "@livekit/agents";
 import * as silero from "@livekit/agents-plugin-silero";
-import { TelephonyBackgroundVoiceCancellation } from "@livekit/noise-cancellation-node";
 import { RoomServiceClient } from "livekit-server-sdk";
 import { fileURLToPath } from "node:url";
 import { z } from "zod";
 import { VoiceToolsClient } from "./backend-client.js";
+import { finishCallCleanup } from "./call-cleanup.js";
 import { getVoiceAgentConfig } from "./config.js";
 import { parseDispatchMetadata } from "./livekit-metadata.js";
 import {
@@ -36,6 +36,7 @@ class OutboundAssistant extends voice.Agent {
     instructions: string;
     roomServiceClient: RoomServiceClient;
     roomName: string;
+    participantIdentity: string;
     backendClient: VoiceToolsClient;
     metadata: ReturnType<typeof parseDispatchMetadata>;
   }) {
@@ -165,11 +166,13 @@ class OutboundAssistant extends voice.Agent {
               console.error("Failed to persist final call outcome", error);
             }
 
-            ctx.session.shutdown({ reason });
-            await args.roomServiceClient.deleteRoom(args.roomName).catch((error) => {
-              console.error("Failed to delete LiveKit room during finishCall", error);
+            return finishCallCleanup({
+              session: ctx.session,
+              roomServiceClient: args.roomServiceClient,
+              roomName: args.roomName,
+              participantIdentity: args.participantIdentity,
+              reason,
             });
-            return "Call ended.";
           },
         }),
       },
@@ -192,14 +195,14 @@ export default defineAgent({
       sharedSecret: config.sharedSecret,
     });
     const roomServiceClient = new RoomServiceClient(
-      config.livekit.url,
+      config.livekit.serverUrl || config.livekit.url,
       config.livekit.apiKey,
       config.livekit.apiSecret,
     );
     const roomName = ctx.room.name || `concierge-${metadata.sessionId}`;
 
     await ctx.connect();
-    await ctx.waitForParticipant();
+    const participant = await ctx.waitForParticipant();
 
     await backendClient.appendVoiceSessionEvent({
       sessionId: metadata.sessionId,
@@ -222,6 +225,7 @@ export default defineAgent({
       instructions: buildAgentInstructions(metadata),
       roomServiceClient,
       roomName,
+      participantIdentity: participant.identity,
       backendClient,
       metadata,
     });
@@ -229,9 +233,6 @@ export default defineAgent({
     await session.start({
       agent,
       room: ctx.room,
-      inputOptions: {
-        noiseCancellation: TelephonyBackgroundVoiceCancellation(),
-      },
     });
 
     const opening = session.generateReply({
