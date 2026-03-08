@@ -91,14 +91,28 @@ export class ReviewAnalysisService {
     const updatedProviders: Provider[] = [];
 
     for (const provider of providers) {
-      const hasEvidence =
-        (provider.providerIntel?.reputationSources?.length ?? 0) > 0 ||
-        Boolean(provider.reviewCount) ||
-        Boolean(provider.rating);
+      const evidenceLevel = this.assessEvidenceLevel(provider);
 
-      if (!hasEvidence) {
+      if (evidenceLevel === "none") {
         skippedProviders += 1;
         updatedProviders.push(provider);
+        continue;
+      }
+
+      if (evidenceLevel === "thin") {
+        skippedProviders += 1;
+        const fallback = this.buildFallbackAnalysis(provider);
+        updatedProviders.push({
+          ...provider,
+          providerIntel: {
+            ...provider.providerIntel,
+            positiveThemes: fallback.positiveThemes,
+            negativeThemes: fallback.negativeThemes,
+            contradictionNotes: fallback.contradictionNotes,
+            seriousComplaints: fallback.seriousComplaints,
+            recentTrend: fallback.recentTrend,
+          },
+        });
         continue;
       }
 
@@ -124,6 +138,42 @@ export class ReviewAnalysisService {
         skippedProviders,
       },
     };
+  }
+
+  private assessEvidenceLevel(provider: Provider): "none" | "thin" | "rich" {
+    const sources = provider.providerIntel?.reputationSources ?? [];
+    const hasGoogleSignal =
+      provider.rating !== undefined || (provider.reviewCount ?? 0) > 0;
+
+    if (provider.providerIntel?.tradeFit === "low") {
+      return hasGoogleSignal || sources.length > 0 ? "thin" : "none";
+    }
+
+    const richSnippetCount = sources.filter(
+      (source) => (source.snippet?.trim().length ?? 0) >= 60,
+    ).length;
+    const ratedSourceCount = sources.filter(
+      (source) =>
+        source.rating !== undefined || (source.reviewCount ?? 0) > 0,
+    ).length;
+    const distinctPlatforms = new Set(sources.map((source) => source.platform)).size;
+
+    if (!hasGoogleSignal && sources.length === 0) {
+      return "none";
+    }
+
+    if (
+      richSnippetCount >= 1 &&
+      (distinctPlatforms >= 2 || ratedSourceCount >= 2)
+    ) {
+      return "rich";
+    }
+
+    if (richSnippetCount >= 2) {
+      return "rich";
+    }
+
+    return "thin";
   }
 
   private async analyzeProvider(provider: Provider): Promise<ReviewAnalysis> {
@@ -176,7 +226,7 @@ If evidence is thin, keep arrays small and use recentTrend=\"unknown\" or \"stab
         },
       });
 
-      const raw = JSON.parse(response.text || "{}") as RawReviewAnalysis;
+      const raw = this.parseModelJson(response.text || "{}");
       const parsed = analysisSchema.parse(this.normalizeAnalysis(raw));
       return this.mergeWithFallback(parsed, fallback);
     } catch (error) {
@@ -202,6 +252,50 @@ If evidence is thin, keep arrays small and use recentTrend=\"unknown\" or \"stab
           ? raw.recentTrend
           : "unknown",
     };
+  }
+
+  private parseModelJson(text: string): RawReviewAnalysis {
+    const candidates = [
+      text,
+      this.extractJsonBlock(text),
+      this.sanitizeJson(text),
+      this.sanitizeJson(this.extractJsonBlock(text)),
+    ].filter((candidate, index, all): candidate is string =>
+      Boolean(candidate) && all.indexOf(candidate) === index,
+    );
+
+    let lastError: unknown = null;
+
+    for (const candidate of candidates) {
+      try {
+        return JSON.parse(candidate) as RawReviewAnalysis;
+      } catch (error) {
+        lastError = error;
+      }
+    }
+
+    throw lastError instanceof Error ? lastError : new Error("Failed to parse model JSON");
+  }
+
+  private extractJsonBlock(text: string): string {
+    const fencedMatch = text.match(/```(?:json)?\s*([\s\S]*?)```/i);
+    const candidate = fencedMatch?.[1] ?? text;
+    const start = candidate.indexOf("{");
+    const end = candidate.lastIndexOf("}");
+
+    if (start >= 0 && end > start) {
+      return candidate.slice(start, end + 1);
+    }
+
+    return candidate.trim();
+  }
+
+  private sanitizeJson(text: string): string {
+    return text
+      .replace(/```(?:json)?/gi, "")
+      .replace(/```/g, "")
+      .replace(/,\s*([}\]])/g, "$1")
+      .trim();
   }
 
   private normalizeThemes(

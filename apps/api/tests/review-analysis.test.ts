@@ -49,7 +49,8 @@ test("ReviewAnalysisService fallback adds a strong positive theme for high-volum
     ]);
 
     const provider = result.providers[0];
-    assert.equal(result.stats.analyzedProviders, 1);
+    assert.equal(result.stats.analyzedProviders, 0);
+    assert.equal(result.stats.skippedProviders, 1);
     assert.match(
       provider?.providerIntel?.positiveThemes?.[0]?.theme || "",
       /Strong Google review signal/,
@@ -70,7 +71,8 @@ test("ReviewAnalysisService fallback flags thin review volume for low-count prof
     ]);
 
     const provider = result.providers[0];
-    assert.equal(result.stats.analyzedProviders, 1);
+    assert.equal(result.stats.analyzedProviders, 0);
+    assert.equal(result.stats.skippedProviders, 1);
     assert.match(
       provider?.providerIntel?.negativeThemes?.[0]?.theme || "",
       /Thin review volume/,
@@ -104,4 +106,47 @@ test("ReviewAnalysisService fallback adds a low-severity contradiction note when
     assert.equal(contradiction?.severity, "low");
     assert.deepEqual(contradiction?.platforms, ["google", "yelp"]);
   });
+});
+
+test("ReviewAnalysisService skips Gemini for thin evidence and uses deterministic fallback", async () => {
+  process.env.GEMINI_API_KEY = "test-key";
+
+  const service = new ReviewAnalysisService(logger);
+  let called = false;
+
+  (service as unknown as { ai: { models: { generateContent: () => Promise<unknown> } } }).ai = {
+    models: {
+      async generateContent() {
+        called = true;
+        return { text: "{}" };
+      },
+    },
+  };
+
+  const result = await service.analyzeProviders([
+    {
+      id: "provider-thin",
+      name: "Thin Evidence Landscaping",
+      rating: 4.9,
+      reviewCount: 6,
+      providerIntel: {
+        reputationSources: [
+          {
+            platform: "facebook",
+            label: "Facebook",
+            url: "https://example.com/facebook",
+            snippet: "Business page",
+          },
+        ],
+      },
+    },
+  ]);
+
+  assert.equal(called, false);
+  assert.equal(result.stats.analyzedProviders, 0);
+  assert.equal(result.stats.skippedProviders, 1);
+  assert.match(
+    result.providers[0]?.providerIntel?.negativeThemes?.[0]?.theme || "",
+    /Thin review volume/,
+  );
 });

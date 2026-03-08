@@ -280,26 +280,38 @@ export class ResearchService {
     provider: ResearchResult["providers"][number],
   ): number {
     let score = 0;
+    const uniquePlatforms = new Set(
+      provider.providerIntel?.reputationSources?.map((source) => source.platform) ?? [],
+    );
+    const ratedSources =
+      provider.providerIntel?.reputationSources?.filter((source) => {
+        const rating = source.rating ?? 0;
+        const reviewCount = source.reviewCount ?? 0;
+        return rating >= 4.5 || reviewCount >= 5;
+      }) ?? [];
+    const externalReviewVolume = ratedSources.reduce(
+      (total, source) => total + (source.reviewCount ?? 0),
+      0,
+    );
+    const communitySignal = provider.providerIntel?.communitySignal;
 
-    score += (provider.rating ?? 0) * 20;
-    score += Math.min(provider.reviewCount ?? 0, 100) / 2;
+    score += (provider.rating ?? 0) * 18;
+    score += Math.min(provider.reviewCount ?? 0, 150) * 0.35;
 
-    if (provider.providerIntel?.tradeFit === "high") score += 20;
-    if (provider.providerIntel?.tradeFit === "medium") score += 6;
-    if (provider.providerIntel?.tradeFit === "low") score -= 20;
+    if (provider.providerIntel?.tradeFit === "high") score += 24;
+    if (provider.providerIntel?.tradeFit === "medium") score += 10;
+    if (provider.providerIntel?.tradeFit === "low") score -= 25;
 
     if (provider.providerIntel?.identityConfidence === "high") score += 12;
     if (provider.providerIntel?.identityConfidence === "medium") score += 4;
     if (provider.providerIntel?.identityConfidence === "low") score -= 10;
 
-    score +=
-      Math.min(provider.providerIntel?.reputationSources?.length ?? 0, 3) * 4;
-    score +=
-      Math.min(provider.providerIntel?.positiveThemes?.length ?? 0, 3) * 3;
-    score -=
-      Math.min(provider.providerIntel?.negativeThemes?.length ?? 0, 3) * 6;
-    score -=
-      Math.min(provider.providerIntel?.contradictionNotes?.length ?? 0, 2) * 8;
+    score += Math.min(uniquePlatforms.size, 4) * 4;
+    score += Math.min(ratedSources.length, 3) * 6;
+    score += Math.min(externalReviewVolume, 150) / 15;
+    score += Math.min(communitySignal?.independentMentions ?? 0, 5) * 2;
+    score += Math.min(communitySignal?.threadCount ?? 0, 3) * 2;
+    score += Math.min(communitySignal?.nextdoorFaves ?? 0, 25) / 5;
 
     if ((provider.reviewCount ?? 0) < 3) {
       score -= 20;
@@ -416,7 +428,7 @@ export class ResearchService {
         coordinates: request.coordinates,
         requirePhone: request.requirePhone ?? true,
         minEnrichedResults: request.minEnrichedResults ?? 3,
-        maxToEnrich: request.maxResults ?? 10,
+        maxToEnrich: Math.max(request.maxResults ?? 10, result.providers.length),
       });
 
       return {

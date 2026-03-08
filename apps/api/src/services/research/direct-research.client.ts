@@ -307,11 +307,12 @@ export class DirectResearchClient {
     };
 
     const maxResults = request.maxResults ?? 10;
-    const filtered = this.filterProviders(providers, criteria, maxResults);
+    const discoveryPoolSize = Math.max(maxResults, Math.min(maxResults * 2, 12));
+    const filtered = this.filterProviders(providers, criteria, discoveryPoolSize);
     const ranked = this.rankDiscoveryCandidates(filtered, service);
 
-    // Return top results (using maxResults from request)
-    const topResults = ranked.slice(0, maxResults);
+    // Keep a larger candidate pool for downstream enrichment and ranking.
+    const topResults = ranked.slice(0, discoveryPoolSize);
 
     this.logger.info(
       {
@@ -319,6 +320,7 @@ export class DirectResearchClient {
         afterFilters: filtered.length,
         returned: topResults.length,
         maxResults,
+        discoveryPoolSize,
       },
       "Places API results filtered and sorted",
     );
@@ -327,7 +329,7 @@ export class DirectResearchClient {
       status: topResults.length > 0 ? "success" : "error",
       method: "google_places",
       providers: topResults,
-      reasoning: `Found ${topResults.length} providers via Google Places API (${providers.length} total, ${filtered.length} after filtering)`,
+      reasoning: `Found ${topResults.length} providers via Google Places API (${providers.length} total, ${filtered.length} after filtering, ${discoveryPoolSize} retained for enrichment)`,
       totalFound: providers.length,
       filteredCount: topResults.length,
       pipelineStages: [
