@@ -21,10 +21,10 @@ const KEYWORDS: Record<ProviderTradeClass, string[]> = {
     "mowing",
     "maintenance",
     "yard maintenance",
+    "landscape maintenance",
     "grass cutting",
     "fertilization",
     "weed control",
-    "landscaping",
   ],
   specialty: [
     "tree service",
@@ -66,6 +66,9 @@ const providerText = (provider: Provider): string => {
   );
 };
 
+const hasAnyKeyword = (text: string, keywords: string[]): boolean =>
+  keywords.some((keyword) => text.includes(keyword));
+
 const inferRequestedTrade = (service: string): ProviderTradeClass => {
   const normalized = normalize(service);
 
@@ -98,6 +101,8 @@ export const classifyProviderTrade = (
   requestedService: string,
 ): TradeClassificationResult => {
   const text = providerText(provider);
+  const normalizedName = normalize(provider.name ?? "");
+  const normalizedRequest = normalize(requestedService);
   const requestedTrade = inferRequestedTrade(requestedService);
 
   const scores = (Object.keys(KEYWORDS) as ProviderTradeClass[]).map(
@@ -111,7 +116,7 @@ export const classifyProviderTrade = (
   );
 
   const bestMatch = scores.sort((a, b) => b.score - a.score)[0];
-  const tradeClass =
+  let tradeClass =
     bestMatch && bestMatch.score > 0 ? bestMatch.tradeClass : "unknown";
 
   let tradeFit: ProviderIntelConfidence = "low";
@@ -124,9 +129,36 @@ export const classifyProviderTrade = (
   if (
     requestedTrade === "design_build" &&
     tradeClass === "maintenance" &&
-    text.includes("lawn care")
+    (
+      text.includes("lawn care") ||
+      text.includes("mowing") ||
+      text.includes("grass cutting") ||
+      text.includes("fertilization")
+    )
   ) {
     tradeFit = "low";
+  }
+
+  if (
+    requestedTrade === "design_build" &&
+    (normalizedRequest === "landscaper" || normalizedRequest === "landscaping") &&
+    tradeClass === "maintenance"
+  ) {
+    tradeFit = "low";
+  }
+
+  const hasGenericLandscapeSignal =
+    normalizedName.includes("landscape") || normalizedName.includes("landscaping");
+  const hasMaintenanceSignal = hasAnyKeyword(text, KEYWORDS.maintenance);
+
+  if (
+    requestedTrade === "design_build" &&
+    hasGenericLandscapeSignal &&
+    !hasMaintenanceSignal &&
+    (tradeClass === "unknown" || tradeClass === "specialty")
+  ) {
+    tradeClass = "design_build";
+    tradeFit = bestMatch && bestMatch.score >= 2 ? "high" : "medium";
   }
 
   return { tradeClass, tradeFit };

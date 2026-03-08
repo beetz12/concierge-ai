@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import { RecommendationService } from "../src/services/recommendations/recommend.service.js";
+import { classifyProviderTrade } from "../src/services/research/trade-classification-helper.js";
 import {
   communityProofScenario,
   contradictionScenario,
@@ -100,4 +101,23 @@ test("provider-intel regression: self-promotional reputation signal is penalized
     selfPromoScenario.organic.provider?.name,
   );
   assert.match(response.recommendations[1]?.reasoning || "", /caution/i);
+});
+
+test("provider-intel regression: generic landscape brands are treated as design-build for broad landscaping searches", () => {
+  const classification = classifyProviderTrade(
+    {
+      id: "precision-landscape",
+      name: "Precision Landscape",
+      phone: "+18640001111",
+      reason: "Landscape contractor serving Greenville homes",
+      website: "https://example.com",
+      address: "Greenville, SC",
+      rating: 4.8,
+      reviewCount: 256,
+    },
+    "landscaper",
+  );
+
+  assert.equal(classification.tradeClass, "design_build");
+  assert.notEqual(classification.tradeFit, "low");
 });

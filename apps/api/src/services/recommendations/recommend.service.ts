@@ -136,14 +136,38 @@ export class RecommendationService {
       return recommendation;
     });
 
+    const decisionReadyProviders = scoredProviders.filter((recommendation) =>
+      this.isDecisionReadyRecommendation(recommendation),
+    );
+
+    const shortlistPool =
+      decisionReadyProviders.length > 0 ? decisionReadyProviders : scoredProviders;
+
+    const originalOrder = new Map(
+      shortlistPool.map((recommendation, index) => [
+        recommendation.providerId ?? recommendation.providerName,
+        index,
+      ]),
+    );
+
     // Sort by score descending and take top 3
-    const recommendations = scoredProviders
+    const recommendations = shortlistPool
       .sort((a, b) => {
-        if (b.score !== a.score) {
-          return b.score - a.score;
+        const tieBreakerDiff =
+          this.calculateTieBreaker(b) - this.calculateTieBreaker(a);
+        if (tieBreakerDiff !== 0) {
+          return tieBreakerDiff;
         }
 
-        return this.calculateTieBreaker(b) - this.calculateTieBreaker(a);
+        const scoreDiff = b.score - a.score;
+        if (scoreDiff !== 0) {
+          return scoreDiff;
+        }
+
+        return (
+          (originalOrder.get(a.providerId ?? a.providerName) ?? Number.MAX_SAFE_INTEGER) -
+          (originalOrder.get(b.providerId ?? b.providerName) ?? Number.MAX_SAFE_INTEGER)
+        );
       })
       .slice(0, 3);
 
@@ -406,14 +430,36 @@ export class RecommendationService {
     if (recommendation.identityConfidence === "medium") score += 2;
     if (recommendation.identityConfidence === "low") score -= 8;
 
-    score += Math.min(recommendation.reviewCount ?? 0, 50) / 5;
+    score += (recommendation.rating ?? 0) * 4;
+    score += Math.min(recommendation.reviewCount ?? 0, 100) / 4;
     score += Math.min(recommendation.reputationSourcePlatforms?.length ?? 0, 3) * 3;
-    score += Math.min(recommendation.positiveThemes?.length ?? 0, 3) * 2;
-    score -= Math.min(recommendation.negativeThemes?.length ?? 0, 3) * 4;
-    score -= Math.min(recommendation.contradictionNotes?.length ?? 0, 2) * 8;
-    score -= (recommendation.seriousComplaintCount ?? 0) * 8;
 
     return score;
+  }
+
+  private isDecisionReadyRecommendation(
+    recommendation: ProviderRecommendation,
+  ): boolean {
+    const reviewCount = recommendation.reviewCount ?? 0;
+    const hasExternalSources =
+      (recommendation.reputationSourcePlatforms?.length ?? 0) > 0;
+    const hasThinEvidence = recommendation.negativeThemes?.some((theme) =>
+      /thin review volume/i.test(theme),
+    );
+
+    if (recommendation.tradeFit === "low") {
+      return false;
+    }
+
+    if (reviewCount < 3 && !hasExternalSources) {
+      return false;
+    }
+
+    if (hasThinEvidence && reviewCount < 10 && !hasExternalSources) {
+      return false;
+    }
+
+    return true;
   }
 
   /**

@@ -308,15 +308,10 @@ export class DirectResearchClient {
 
     const maxResults = request.maxResults ?? 10;
     const filtered = this.filterProviders(providers, criteria, maxResults);
-
-    // Sort by distance (closest first)
-    const sorted = filtered.sort((a, b) => {
-      if (a.distance === undefined || b.distance === undefined) return 0;
-      return a.distance - b.distance;
-    });
+    const ranked = this.rankDiscoveryCandidates(filtered, service);
 
     // Return top results (using maxResults from request)
-    const topResults = sorted.slice(0, maxResults);
+    const topResults = ranked.slice(0, maxResults);
 
     this.logger.info(
       {
@@ -437,6 +432,65 @@ export class DirectResearchClient {
     }
 
     return filtered;
+  }
+
+  /**
+   * Rank discovery candidates before post-discovery enrichment.
+   * This avoids truncating the pool based only on distance.
+   */
+  private rankDiscoveryCandidates(
+    providers: Provider[],
+    requestedService: string,
+  ): Provider[] {
+    const normalizedService = requestedService.toLowerCase();
+    const scoreName = (provider: Provider): number => {
+      const name = provider.name?.toLowerCase() ?? "";
+      let score = 0;
+
+      if (name.includes("near me")) score -= 8;
+      if (name.includes("supply")) score -= 20;
+      if (name.includes("wholesale")) score -= 20;
+      if (name.includes("lawn care") && normalizedService.includes("landscap")) score -= 8;
+      if (name.includes("outdoor living") && normalizedService.includes("landscap")) score += 4;
+      if (name.includes("landscape")) score += 2;
+
+      return score;
+    };
+
+    const distanceScore = (provider: Provider): number => {
+      if (provider.distance === undefined) return 0;
+      if (provider.distance <= 5) return 10;
+      if (provider.distance <= 10) return 6;
+      if (provider.distance <= 20) return 3;
+      return 0;
+    };
+
+    return [...providers].sort((left, right) => {
+      const leftScore =
+        (left.rating ?? 0) * 20 +
+        Math.min(left.reviewCount ?? 0, 200) / 4 +
+        distanceScore(left) +
+        scoreName(left);
+      const rightScore =
+        (right.rating ?? 0) * 20 +
+        Math.min(right.reviewCount ?? 0, 200) / 4 +
+        distanceScore(right) +
+        scoreName(right);
+
+      if (rightScore !== leftScore) {
+        return rightScore - leftScore;
+      }
+
+      if ((right.reviewCount ?? 0) !== (left.reviewCount ?? 0)) {
+        return (right.reviewCount ?? 0) - (left.reviewCount ?? 0);
+      }
+
+      if ((right.rating ?? 0) !== (left.rating ?? 0)) {
+        return (right.rating ?? 0) - (left.rating ?? 0);
+      }
+
+      return (left.distance ?? Number.POSITIVE_INFINITY) - (right.distance ?? Number.POSITIVE_INFINITY);
+    });
   }
 
   /**

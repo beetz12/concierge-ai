@@ -154,6 +154,7 @@ export class ResearchService {
     current = await this.runWebReputationEnrichmentStage(current);
     current = this.applyIdentityAndTradeClassification(current, request);
     current = await this.runGeminiReviewAnalysisStage(current);
+    current = this.rankDecisionReadyProviders(current);
 
     return current;
   }
@@ -251,6 +252,60 @@ export class ResearchService {
       ...result,
       providers,
     };
+  }
+
+  private rankDecisionReadyProviders(result: ResearchResult): ResearchResult {
+    if (result.status === "error" || result.providers.length === 0) {
+      return result;
+    }
+
+    const rankedProviders = [...result.providers].sort((left, right) => {
+      const leftScore = this.calculateDecisionReadiness(left);
+      const rightScore = this.calculateDecisionReadiness(right);
+
+      if (rightScore !== leftScore) {
+        return rightScore - leftScore;
+      }
+
+      return (right.reviewCount ?? 0) - (left.reviewCount ?? 0);
+    });
+
+    return {
+      ...result,
+      providers: rankedProviders,
+    };
+  }
+
+  private calculateDecisionReadiness(
+    provider: ResearchResult["providers"][number],
+  ): number {
+    let score = 0;
+
+    score += (provider.rating ?? 0) * 20;
+    score += Math.min(provider.reviewCount ?? 0, 100) / 2;
+
+    if (provider.providerIntel?.tradeFit === "high") score += 20;
+    if (provider.providerIntel?.tradeFit === "medium") score += 6;
+    if (provider.providerIntel?.tradeFit === "low") score -= 20;
+
+    if (provider.providerIntel?.identityConfidence === "high") score += 12;
+    if (provider.providerIntel?.identityConfidence === "medium") score += 4;
+    if (provider.providerIntel?.identityConfidence === "low") score -= 10;
+
+    score +=
+      Math.min(provider.providerIntel?.reputationSources?.length ?? 0, 3) * 4;
+    score +=
+      Math.min(provider.providerIntel?.positiveThemes?.length ?? 0, 3) * 3;
+    score -=
+      Math.min(provider.providerIntel?.negativeThemes?.length ?? 0, 3) * 6;
+    score -=
+      Math.min(provider.providerIntel?.contradictionNotes?.length ?? 0, 2) * 8;
+
+    if ((provider.reviewCount ?? 0) < 3) {
+      score -= 20;
+    }
+
+    return score;
   }
 
   private async runWebReputationEnrichmentStage(

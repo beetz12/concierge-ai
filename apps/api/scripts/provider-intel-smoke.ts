@@ -8,7 +8,7 @@ import type { Provider } from "../src/services/research/types.js";
 
 loadEnv({ path: resolve(process.cwd(), ".env") });
 
-const args = process.argv.slice(2);
+const args = process.argv.slice(2).filter((arg) => arg !== "--");
 const getArg = (flag: string, fallback: string) => {
   const index = args.indexOf(flag);
   return index >= 0 ? (args[index + 1] ?? fallback) : fallback;
@@ -16,10 +16,8 @@ const getArg = (flag: string, fallback: string) => {
 
 const requestedService = getArg("--service", "landscaper");
 const requestedLocation = getArg("--location", "Greenville, SC");
-const outputPath = getArg(
-  "--output",
-  resolve(process.cwd(), "provider-intel-smoke-report.json"),
-);
+const requestedOutputPath = getArg("--output", "provider-intel-smoke-report.json");
+const outputPath = resolve(process.cwd(), requestedOutputPath);
 
 const logger = {
   info(obj: Record<string, unknown>, msg?: string) {
@@ -46,7 +44,7 @@ function buildSyntheticCallResults(
   providers: Provider[],
   originalCriteria: string,
 ): CallResultWithMetadata[] {
-  return providers.slice(0, 3).map((provider, index) => ({
+  return providers.map((provider, index) => ({
     providerId: provider.id,
     rating: provider.rating,
     reviewCount: provider.reviewCount,
@@ -194,8 +192,11 @@ async function main() {
         [],
     })),
     finalists: recommendationResult.recommendations.map((recommendation) => ({
+      name: recommendation.providerName,
       providerName: recommendation.providerName,
       phone: recommendation.phone,
+      rating: recommendation.rating,
+      reviewCount: recommendation.reviewCount,
       score: recommendation.score,
       identityConfidence: recommendation.identityConfidence,
       tradeFit: recommendation.tradeFit,
