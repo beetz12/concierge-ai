@@ -173,6 +173,41 @@ export default async function workflowRoutes(fastify: FastifyInstance) {
                     type: "number",
                     description: "Number of providers after filtering",
                   },
+                  pipelineStages: {
+                    type: "array",
+                    description:
+                      "Ordered internal pipeline stages used to produce the provider set",
+                    items: {
+                      type: "object",
+                      properties: {
+                        name: {
+                          type: "string",
+                          enum: [
+                            "candidate_discovery",
+                            "places_detail_enrichment",
+                            "web_reputation_enrichment",
+                            "gemini_review_analysis",
+                          ],
+                        },
+                        status: {
+                          type: "string",
+                          enum: ["completed", "skipped", "failed"],
+                        },
+                        method: {
+                          type: "string",
+                          enum: [
+                            "kestra",
+                            "direct_gemini",
+                            "google_places",
+                            "gemini_maps",
+                          ],
+                        },
+                        providerCount: { type: "number" },
+                        reasoning: { type: "string" },
+                        error: { type: "string" },
+                      },
+                    },
+                  },
                   reasoning: {
                     type: "string",
                     description: "AI reasoning for provider selection",

@@ -1,25 +1,21 @@
 "use client";
 
 import React from "react";
-import { Star, CheckCircle, Phone, Calendar, Loader2, Clock } from "lucide-react";
-
-interface Provider {
-  providerId: string;
-  providerName: string;
-  phone: string;
-  rating: number;
-  reviewCount?: number;
-  earliestAvailability: string;
-  estimatedRate: string;
-  score: number;
-  reasoning: string;
-  criteriaMatched?: string[];
-}
+import {
+  Star,
+  CheckCircle,
+  Phone,
+  Calendar,
+  Loader2,
+  Clock,
+  AlertTriangle,
+} from "lucide-react";
+import type { RecommendationProvider } from "@/lib/types";
 
 interface Props {
-  providers: Provider[];
+  providers: RecommendationProvider[];
   overallRecommendation: string;
-  onSelect: (provider: Provider) => void;
+  onSelect: (provider: RecommendationProvider) => void;
   loading?: boolean;
   selectedId?: string;
   /** When true, booking is complete - hide selection buttons */
@@ -162,7 +158,7 @@ const RecommendedProviders: React.FC<Props> = ({
             </div>
 
             {/* Rating */}
-            <div className="flex items-center gap-2 mb-4">
+              <div className="flex items-center gap-2 mb-4">
               {renderStars(provider.rating)}
               <span className="text-sm font-medium text-slate-300">
                 {provider.rating.toFixed(1)}
@@ -188,6 +184,34 @@ const RecommendedProviders: React.FC<Props> = ({
               </div>
             </div>
 
+            {(provider.identityConfidence ||
+              provider.tradeFit ||
+              provider.tradeClass ||
+              provider.reputationSourcePlatforms?.length) && (
+              <div className="flex flex-wrap gap-2 mb-4">
+                {provider.tradeClass ? (
+                  <div className="inline-flex items-center gap-1.5 px-3 py-1 bg-sky-500/15 border border-sky-500/30 rounded-full text-xs font-medium text-sky-300">
+                    Trade: {provider.tradeClass.replace("_", " ")}
+                  </div>
+                ) : null}
+                {provider.tradeFit ? (
+                  <div className="inline-flex items-center gap-1.5 px-3 py-1 bg-indigo-500/15 border border-indigo-500/30 rounded-full text-xs font-medium text-indigo-300">
+                    Trade fit: {provider.tradeFit}
+                  </div>
+                ) : null}
+                {provider.identityConfidence ? (
+                  <div className="inline-flex items-center gap-1.5 px-3 py-1 bg-violet-500/15 border border-violet-500/30 rounded-full text-xs font-medium text-violet-300">
+                    Identity: {provider.identityConfidence}
+                  </div>
+                ) : null}
+                {provider.reputationSourcePlatforms?.length ? (
+                  <div className="inline-flex items-center gap-1.5 px-3 py-1 bg-slate-700/70 border border-slate-600 rounded-full text-xs font-medium text-slate-300">
+                    Sources: {provider.reputationSourcePlatforms.join(", ")}
+                  </div>
+                ) : null}
+              </div>
+            )}
+
             {/* AI Reasoning */}
             <div className="bg-abyss/50 border border-surface-highlight rounded-lg p-4 mb-4">
               <h4 className="text-xs font-semibold text-primary-400 uppercase tracking-wide mb-2">
@@ -197,6 +221,63 @@ const RecommendedProviders: React.FC<Props> = ({
                 {provider.reasoning}
               </p>
             </div>
+
+            {provider.positiveThemes && provider.positiveThemes.length > 0 && (
+              <div className="mb-4">
+                <h4 className="text-xs font-semibold text-emerald-400 uppercase tracking-wide mb-2">
+                  Strengths
+                </h4>
+                <div className="flex flex-wrap gap-2">
+                  {provider.positiveThemes.map((theme, i) => (
+                    <div
+                      key={`${provider.providerId}-positive-${i}`}
+                      className="inline-flex items-center gap-1.5 px-3 py-1 bg-emerald-500/20 border border-emerald-500/30 rounded-full text-xs font-medium text-emerald-300"
+                    >
+                      <CheckCircle className="w-3 h-3" />
+                      <span>{theme}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {(provider.negativeThemes?.length ||
+              provider.contradictionNotes?.length ||
+              provider.seriousComplaintCount) && (
+              <div className="bg-amber-500/10 border border-amber-500/20 rounded-lg p-4 mb-4">
+                <h4 className="text-xs font-semibold text-amber-300 uppercase tracking-wide mb-2">
+                  Risks and Caveats
+                </h4>
+                <div className="space-y-2 text-sm text-slate-300">
+                  {provider.negativeThemes?.map((theme, i) => (
+                    <div
+                      key={`${provider.providerId}-negative-${i}`}
+                      className="flex items-start gap-2"
+                    >
+                      <AlertTriangle className="w-4 h-4 text-amber-300 mt-0.5 shrink-0" />
+                      <span>{theme}</span>
+                    </div>
+                  ))}
+                  {provider.contradictionNotes?.map((note, i) => (
+                    <div
+                      key={`${provider.providerId}-contradiction-${i}`}
+                      className="flex items-start gap-2"
+                    >
+                      <AlertTriangle className="w-4 h-4 text-amber-300 mt-0.5 shrink-0" />
+                      <span>{note}</span>
+                    </div>
+                  ))}
+                  {provider.seriousComplaintCount ? (
+                    <div className="flex items-start gap-2">
+                      <AlertTriangle className="w-4 h-4 text-amber-300 mt-0.5 shrink-0" />
+                      <span>
+                        Serious complaint flags: {provider.seriousComplaintCount}
+                      </span>
+                    </div>
+                  ) : null}
+                </div>
+              </div>
+            )}
 
             {/* Criteria Matched */}
             {provider.criteriaMatched && provider.criteriaMatched.length > 0 && (

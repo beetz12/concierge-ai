@@ -26,6 +26,8 @@ import {
 } from "lucide-react";
 import {
   InteractionLog,
+  RecommendationProvider,
+  RecommendationSet,
   ServiceRequest,
   RequestStatus,
   RequestType,
@@ -124,21 +126,7 @@ export default function RequestDetails() {
   } | null>(null);
   const [showModal, setShowModal] = useState(false);
   const [bookingLoading, setBookingLoading] = useState(false);
-  const [recommendations, setRecommendations] = useState<{
-    providers: Array<{
-      providerId: string;
-      providerName: string;
-      phone: string;
-      rating: number;
-      reviewCount?: number;
-      earliestAvailability: string;
-      estimatedRate: string;
-      score: number;
-      reasoning: string;
-      criteriaMatched?: string[];
-    }>;
-    overallRecommendation: string;
-  } | null>(null);
+  const [recommendations, setRecommendations] = useState<RecommendationSet | null>(null);
   const [recommendationsLoading, setRecommendationsLoading] = useState(false);
   const [recommendationsChecked, setRecommendationsChecked] = useState(false);
 
@@ -185,6 +173,58 @@ export default function RequestDetails() {
       /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
     return uuidRegex.test(str);
   };
+
+  const normalizeRecommendations = (payload: {
+    recommendations: Array<{
+      providerId?: string;
+      providerName: string;
+      phone: string;
+      rating?: number;
+      reviewCount?: number;
+      earliestAvailability?: string;
+      estimatedRate?: string;
+      score: number;
+      reasoning: string;
+      criteriaMatched?: string[];
+      identityConfidence?: "low" | "medium" | "high";
+      tradeClass?: "general" | "design_build" | "maintenance" | "specialty";
+      tradeFit?: "low" | "medium" | "high";
+      positiveThemes?: string[];
+      negativeThemes?: string[];
+      contradictionNotes?: string[];
+      seriousComplaintCount?: number;
+      reputationSourcePlatforms?: string[];
+    }>;
+    overallRecommendation: string;
+    analysisNotes?: string;
+  }): RecommendationSet => ({
+    providers: payload.recommendations.map(
+      (recommendation): RecommendationProvider => ({
+        providerId: recommendation.providerId || "",
+        providerName: recommendation.providerName,
+        phone: recommendation.phone,
+        rating: recommendation.rating || 0,
+        reviewCount: recommendation.reviewCount,
+        earliestAvailability:
+          recommendation.earliestAvailability || "Contact for availability",
+        estimatedRate:
+          recommendation.estimatedRate || "Quote upon request",
+        score: recommendation.score,
+        reasoning: recommendation.reasoning,
+        criteriaMatched: recommendation.criteriaMatched,
+        identityConfidence: recommendation.identityConfidence,
+        tradeClass: recommendation.tradeClass,
+        tradeFit: recommendation.tradeFit,
+        positiveThemes: recommendation.positiveThemes,
+        negativeThemes: recommendation.negativeThemes,
+        contradictionNotes: recommendation.contradictionNotes,
+        seriousComplaintCount: recommendation.seriousComplaintCount,
+        reputationSourcePlatforms: recommendation.reputationSourcePlatforms,
+      })
+    ),
+    overallRecommendation: payload.overallRecommendation,
+    analysisNotes: payload.analysisNotes,
+  });
 
   // Calculate real-time call progress from provider data
   const callProgress = React.useMemo(() => {
@@ -263,6 +303,14 @@ export default function RequestDetails() {
             score: number;
             reasoning: string;
             criteriaMatched?: string[];
+            identityConfidence?: "low" | "medium" | "high";
+            tradeClass?: "general" | "design_build" | "maintenance" | "specialty";
+            tradeFit?: "low" | "medium" | "high";
+            positiveThemes?: string[];
+            negativeThemes?: string[];
+            contradictionNotes?: string[];
+            seriousComplaintCount?: number;
+            reputationSourcePlatforms?: string[];
           }>;
           overallRecommendation: string;
           analysisNotes?: string;
@@ -274,22 +322,7 @@ export default function RequestDetails() {
           };
         };
 
-        // Transform to match component props
-        setRecommendations({
-          providers: dbRecs.recommendations.map((r) => ({
-            providerId: r.providerId || "",
-            providerName: r.providerName,
-            phone: r.phone,
-            rating: r.rating || 0,
-            reviewCount: r.reviewCount,
-            earliestAvailability: r.earliestAvailability || "Contact for availability",
-            estimatedRate: r.estimatedRate || "Quote upon request",
-            score: r.score,
-            reasoning: r.reasoning,
-            criteriaMatched: r.criteriaMatched,
-          })),
-          overallRecommendation: dbRecs.overallRecommendation,
-        });
+        setRecommendations(normalizeRecommendations(dbRecs));
         setRecommendationsChecked(true);
         recommendationsCheckedRef.current = true;
 
@@ -487,28 +520,22 @@ export default function RequestDetails() {
                   score: number;
                   reasoning: string;
                   criteriaMatched?: string[];
+                  identityConfidence?: "low" | "medium" | "high";
+                  tradeClass?: "general" | "design_build" | "maintenance" | "specialty";
+                  tradeFit?: "low" | "medium" | "high";
+                  positiveThemes?: string[];
+                  negativeThemes?: string[];
+                  contradictionNotes?: string[];
+                  seriousComplaintCount?: number;
+                  reputationSourcePlatforms?: string[];
                 }>;
                 overallRecommendation: string;
+                analysisNotes?: string;
               } | null;
 
               if (payloadRecs && payloadRecs.recommendations?.length > 0) {
                 console.log("[Subscription] Status changed to RECOMMENDED - extracting recommendations from payload");
-                // Transform and set recommendations directly from payload
-                setRecommendations({
-                  providers: payloadRecs.recommendations.map((r) => ({
-                    providerId: r.providerId || "",
-                    providerName: r.providerName,
-                    phone: r.phone,
-                    rating: r.rating || 0,
-                    reviewCount: r.reviewCount,
-                    earliestAvailability: r.earliestAvailability || "Contact for availability",
-                    estimatedRate: r.estimatedRate || "Quote upon request",
-                    score: r.score,
-                    reasoning: r.reasoning,
-                    criteriaMatched: r.criteriaMatched,
-                  })),
-                  overallRecommendation: payloadRecs.overallRecommendation,
-                });
+                setRecommendations(normalizeRecommendations(payloadRecs));
                 setRecommendationsChecked(true);
                 recommendationsCheckedRef.current = true;
               } else {
@@ -919,6 +946,14 @@ export default function RequestDetails() {
         score: 95 - idx * 8,
         reasoning: `Highly rated provider with excellent availability. ${p.name} demonstrated strong communication skills and competitive pricing during the screening call.`,
         criteriaMatched: ["Available", "Within budget", "Good ratings"],
+        identityConfidence: "medium" as const,
+        tradeFit: "medium" as const,
+        tradeClass: "general" as const,
+        positiveThemes: ["Strong communication", "Competitive pricing"],
+        negativeThemes: idx === 2 ? ["Thinner review evidence"] : [],
+        contradictionNotes: [],
+        seriousComplaintCount: 0,
+        reputationSourcePlatforms: ["google"],
       }));
 
       setRecommendations({
@@ -933,18 +968,7 @@ export default function RequestDetails() {
   }, [request?.status, recommendations, recommendationsLoading]);
 
   // Handler for provider selection
-  const handleProviderSelect = (provider: {
-    providerId: string;
-    providerName: string;
-    phone: string;
-    rating: number;
-    reviewCount?: number;
-    earliestAvailability: string;
-    estimatedRate: string;
-    score: number;
-    reasoning: string;
-    criteriaMatched?: string[];
-  }) => {
+  const handleProviderSelect = (provider: RecommendationProvider) => {
     setSelectedProvider({
       providerId: provider.providerId,
       providerName: provider.providerName,

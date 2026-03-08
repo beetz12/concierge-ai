@@ -99,6 +99,41 @@ export interface ServiceRequest {
   notificationSentAt?: string;
 }
 
+export type ProviderIntelConfidence = "low" | "medium" | "high";
+
+export type ProviderTradeClass =
+  | "general"
+  | "design_build"
+  | "maintenance"
+  | "specialty";
+
+export interface RecommendationProvider {
+  providerId: string;
+  providerName: string;
+  phone: string;
+  rating: number;
+  reviewCount?: number;
+  earliestAvailability: string;
+  estimatedRate: string;
+  score: number;
+  reasoning: string;
+  criteriaMatched?: string[];
+  identityConfidence?: ProviderIntelConfidence;
+  tradeClass?: ProviderTradeClass;
+  tradeFit?: ProviderIntelConfidence;
+  positiveThemes?: string[];
+  negativeThemes?: string[];
+  contradictionNotes?: string[];
+  seriousComplaintCount?: number;
+  reputationSourcePlatforms?: string[];
+}
+
+export interface RecommendationSet {
+  providers: RecommendationProvider[];
+  overallRecommendation: string;
+  analysisNotes?: string;
+}
+
 /**
  * Safely converts a database status value to a RequestStatus enum.
  * Falls back to PENDING if the value is null, undefined, or invalid.

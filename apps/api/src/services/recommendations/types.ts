@@ -3,6 +3,11 @@
  */
 
 import type { CallResult } from "../vapi/types.js";
+import type {
+  ProviderIntel,
+  ProviderIntelConfidence,
+  ProviderTradeClass,
+} from "../research/types.js";
 
 /**
  * Extended CallResult with provider metadata from database
@@ -12,6 +17,7 @@ export interface CallResultWithMetadata extends CallResult {
   providerId?: string; // Database UUID
   rating?: number; // Google rating (0-5)
   reviewCount?: number; // Number of Google reviews
+  providerIntel?: ProviderIntel;
 }
 
 export interface RecommendationRequest {
@@ -31,6 +37,15 @@ export interface ProviderRecommendation {
   criteriaMatched: string[];
   earliestAvailability?: string;
   estimatedRate?: string;
+  providerIntel?: ProviderIntel;
+  identityConfidence?: ProviderIntelConfidence;
+  tradeClass?: ProviderTradeClass;
+  tradeFit?: ProviderIntelConfidence;
+  positiveThemes?: string[];
+  negativeThemes?: string[];
+  contradictionNotes?: string[];
+  seriousComplaintCount?: number;
+  reputationSourcePlatforms?: string[];
   // Legacy fields (kept for backward compatibility)
   callQualityScore?: number;
   professionalismScore?: number;

@@ -117,6 +117,20 @@ export class RecommendationService {
         earliestAvailability:
           structuredData.earliest_availability || "Contact for availability",
         estimatedRate: structuredData.estimated_rate || "Quote upon request",
+        providerIntel: result.providerIntel,
+        identityConfidence: result.providerIntel?.identityConfidence,
+        tradeClass: result.providerIntel?.tradeClass,
+        tradeFit: result.providerIntel?.tradeFit,
+        positiveThemes:
+          result.providerIntel?.positiveThemes?.map((theme) => theme.theme) ?? [],
+        negativeThemes:
+          result.providerIntel?.negativeThemes?.map((theme) => theme.theme) ?? [],
+        contradictionNotes:
+          result.providerIntel?.contradictionNotes?.map((note) => note.summary) ?? [],
+        seriousComplaintCount:
+          result.providerIntel?.seriousComplaints?.length ?? 0,
+        reputationSourcePlatforms:
+          result.providerIntel?.reputationSources?.map((source) => source.platform) ?? [],
       };
 
       return recommendation;
@@ -302,7 +316,55 @@ export class RecommendationService {
       score += this.calculateScreeningScore(data.screening_answers);
     }
 
+    // === PROVIDER-INTEL ADJUSTMENTS (layered on top, capped into final 0-100) ===
+    score += this.calculateProviderIntelAdjustment(result);
+
     return Math.min(Math.round(score), 100);
+  }
+
+  private calculateProviderIntelAdjustment(
+    result: CallResultWithMetadata,
+  ): number {
+    const intel = result.providerIntel;
+    if (!intel) {
+      return 0;
+    }
+
+    let adjustment = 0;
+
+    if (intel.tradeFit === "high") adjustment += 8;
+    if (intel.tradeFit === "medium") adjustment += 3;
+    if (intel.tradeFit === "low") adjustment -= 8;
+
+    if (intel.identityConfidence === "high") adjustment += 6;
+    if (intel.identityConfidence === "medium") adjustment += 2;
+    if (intel.identityConfidence === "low") adjustment -= 5;
+
+    const platformCount = new Set(
+      intel.reputationSources?.map((source) => source.platform) ?? [],
+    ).size;
+    adjustment += Math.min(platformCount, 3) * 2;
+
+    const positiveThemeCount = intel.positiveThemes?.length ?? 0;
+    adjustment += Math.min(positiveThemeCount, 3) * 2;
+
+    const negativeThemeCount = intel.negativeThemes?.length ?? 0;
+    adjustment -= Math.min(negativeThemeCount, 2) * 2;
+
+    const contradictionPenalty = intel.contradictionNotes?.reduce((sum, note) => {
+      if (note.severity === "high") return sum + 6;
+      if (note.severity === "medium") return sum + 3;
+      return sum + 1;
+    }, 0) ?? 0;
+    adjustment -= contradictionPenalty;
+
+    const seriousComplaintPenalty = intel.seriousComplaints?.reduce(
+      (sum, complaint) => sum + (complaint.repeated ? 6 : 3),
+      0,
+    ) ?? 0;
+    adjustment -= seriousComplaintPenalty;
+
+    return adjustment;
   }
 
   /**
@@ -388,6 +450,44 @@ export class RecommendationService {
         ? ` (${result.reviewCount} reviews)`
         : "";
       parts.push(`${result.rating}★${reviewText}`);
+    }
+
+    if (result.providerIntel?.tradeFit === "high") {
+      parts.push("Strong trade match");
+    } else if (result.providerIntel?.tradeFit === "low") {
+      parts.push("Weaker trade match");
+    }
+
+    if (result.providerIntel?.identityConfidence === "high") {
+      parts.push("Identity strongly matched across sources");
+    }
+
+    const platforms = result.providerIntel?.reputationSources?.map(
+      (source) => source.platform,
+    );
+    if (platforms && platforms.length > 0) {
+      parts.push(`Cross-platform sources: ${Array.from(new Set(platforms)).join(", ")}`);
+    }
+
+    const positiveThemes = result.providerIntel?.positiveThemes
+      ?.map((theme) => theme.theme)
+      .slice(0, 2);
+    if (positiveThemes && positiveThemes.length > 0) {
+      parts.push(`Strengths: ${positiveThemes.join(", ")}`);
+    }
+
+    const negativeThemes = result.providerIntel?.negativeThemes
+      ?.map((theme) => theme.theme)
+      .slice(0, 1);
+    if (negativeThemes && negativeThemes.length > 0) {
+      parts.push(`Caution: ${negativeThemes.join(", ")}`);
+    }
+
+    const contradictions = result.providerIntel?.contradictionNotes
+      ?.map((note) => note.summary)
+      .slice(0, 1);
+    if (contradictions && contradictions.length > 0) {
+      parts.push(`Contradiction: ${contradictions[0]}`);
     }
 
     // 4. Pricing transparency

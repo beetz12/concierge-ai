@@ -1033,7 +1033,7 @@ export default async function providerRoutes(fastify: FastifyInstance) {
 
                 const { data: providers, error: fetchError } = await supabase
                   .from("providers")
-                  .select("id, call_status, call_result, call_summary, name, phone, rating, review_count")
+                    .select("id, call_status, call_result, call_summary, name, phone, rating, review_count, provider_intel")
                   .eq("request_id", validated.serviceRequestId);
 
                 if (fetchError) {
@@ -1101,6 +1101,9 @@ export default async function providerRoutes(fastify: FastifyInstance) {
                       providerId: p.id,
                       rating: p.rating ?? undefined,
                       reviewCount: p.review_count ?? undefined,
+                      providerIntel: (p.provider_intel && typeof p.provider_intel === "object")
+                        ? (p.provider_intel as Record<string, unknown>)
+                        : undefined,
                       // Call result data
                       status: p.call_status,
                       callId: callResultData?.callId || "",
@@ -1744,7 +1747,10 @@ export default async function providerRoutes(fastify: FastifyInstance) {
                       type: "object",
                       properties: {
                         providerName: { type: "string" },
+                        providerId: { type: "string" },
                         phone: { type: "string" },
+                        rating: { type: "number" },
+                        reviewCount: { type: "number" },
                         score: { type: "number" },
                         reasoning: { type: "string" },
                         criteriaMatched: {
@@ -1753,6 +1759,26 @@ export default async function providerRoutes(fastify: FastifyInstance) {
                         },
                         earliestAvailability: { type: "string" },
                         estimatedRate: { type: "string" },
+                        identityConfidence: { type: "string" },
+                        tradeClass: { type: "string" },
+                        tradeFit: { type: "string" },
+                        positiveThemes: {
+                          type: "array",
+                          items: { type: "string" },
+                        },
+                        negativeThemes: {
+                          type: "array",
+                          items: { type: "string" },
+                        },
+                        contradictionNotes: {
+                          type: "array",
+                          items: { type: "string" },
+                        },
+                        seriousComplaintCount: { type: "number" },
+                        reputationSourcePlatforms: {
+                          type: "array",
+                          items: { type: "string" },
+                        },
                         callQualityScore: { type: "number" },
                         professionalismScore: { type: "number" },
                       },

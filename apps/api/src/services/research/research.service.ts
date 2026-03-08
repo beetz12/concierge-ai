@@ -7,9 +7,19 @@
 import { KestraResearchClient } from "./kestra-research.client.js";
 import { DirectResearchClient } from "./direct-research.client.js";
 import { ProviderEnrichmentService } from "./enrichment.service.js";
+import { WebReputationSearchService } from "./web-reputation-search.service.js";
+import { inferIdentityConfidence } from "./identity-helper.js";
+import { classifyProviderTrade } from "./trade-classification-helper.js";
+import { ReviewAnalysisService } from "./review-analysis.service.js";
 import { normalizePhoneToE164 } from "../../utils/phone.js";
 import { serializeError } from "../../utils/error.js";
-import type { ResearchRequest, ResearchResult, SystemStatus } from "./types.js";
+import type {
+  ProviderIntelConfidence,
+  ResearchPipelineStage,
+  ResearchRequest,
+  ResearchResult,
+  SystemStatus,
+} from "./types.js";
 
 interface Logger {
   info: (obj: Record<string, unknown>, msg?: string) => void;
@@ -22,11 +32,15 @@ export class ResearchService {
   private kestraClient: KestraResearchClient;
   private directClient: DirectResearchClient;
   private enrichmentService: ProviderEnrichmentService;
+  private webReputationSearchService: WebReputationSearchService;
+  private reviewAnalysisService: ReviewAnalysisService;
 
   constructor(private logger: Logger) {
     this.kestraClient = new KestraResearchClient(logger);
     this.directClient = new DirectResearchClient(logger);
     this.enrichmentService = new ProviderEnrichmentService();
+    this.webReputationSearchService = new WebReputationSearchService(logger);
+    this.reviewAnalysisService = new ReviewAnalysisService(logger);
   }
 
   /**
@@ -116,15 +130,7 @@ export class ResearchService {
       }
     }
 
-    // Enrich results with additional details (phone numbers, hours, etc.)
-    // Skip enrichment for Kestra results - they don't have placeId but already have phone data
-    if (
-      result.status !== "error" &&
-      result.providers.length > 0 &&
-      result.method !== "kestra"
-    ) {
-      result = await this.enrichResults(result, request);
-    }
+    result = await this.runPostDiscoveryPipeline(result, request);
 
     // Normalize phone numbers to E.164 format for VAPI compatibility (applies to all methods)
     if (result.status !== "error") {
@@ -135,15 +141,219 @@ export class ResearchService {
   }
 
   /**
-   * Enrich provider results with additional details from Google Places API
+   * Run the explicit post-discovery pipeline in stage order.
+   * Later stages remain pluggable even before their implementations land.
    */
-  private async enrichResults(
+  private async runPostDiscoveryPipeline(
+    result: ResearchResult,
+    request: ResearchRequest
+  ): Promise<ResearchResult> {
+    let current = this.ensureDiscoveryStage(result);
+
+    current = await this.runPlacesDetailEnrichmentStage(current, request);
+    current = await this.runWebReputationEnrichmentStage(current);
+    current = this.applyIdentityAndTradeClassification(current, request);
+    current = await this.runGeminiReviewAnalysisStage(current);
+
+    return current;
+  }
+
+  private async runGeminiReviewAnalysisStage(
+    result: ResearchResult
+  ): Promise<ResearchResult> {
+    if (result.status === "error" || result.providers.length === 0) {
+      return this.appendStage(
+        result,
+        this.createStage(
+          "gemini_review_analysis",
+          "skipped",
+          result.method === "kestra" ? "kestra" : "direct_gemini",
+          result.providers.length,
+          "Skipped Gemini review analysis because candidate discovery did not produce providers."
+        )
+      );
+    }
+
+    try {
+      const analyzed = await this.reviewAnalysisService.analyzeProviders(
+        result.providers,
+      );
+
+      const stageStatus =
+        analyzed.stats.analyzedProviders > 0 ? "completed" : "skipped";
+
+      return {
+        ...result,
+        providers: analyzed.providers,
+        pipelineStages: [
+          ...(result.pipelineStages ?? []),
+          this.createStage(
+            "gemini_review_analysis",
+            stageStatus,
+            "direct_gemini",
+            analyzed.providers.length,
+            analyzed.stats.analyzedProviders > 0
+              ? `Gemini review analysis processed ${analyzed.stats.analyzedProviders} providers and skipped ${analyzed.stats.skippedProviders} providers with thin evidence.`
+              : "Skipped Gemini review analysis because no providers had enough reputation evidence to analyze."
+          ),
+        ],
+      };
+    } catch (error) {
+      this.logger.error(
+        { error: serializeError(error) },
+        "Gemini review analysis failed",
+      );
+      return this.appendStage(
+        result,
+        this.createStage(
+          "gemini_review_analysis",
+          "failed",
+          "direct_gemini",
+          result.providers.length,
+          "Gemini review analysis failed, so the pipeline continued with deterministic provider-intel only.",
+          error instanceof Error ? error.message : "Unknown review analysis error"
+        )
+      );
+    }
+  }
+
+  private applyIdentityAndTradeClassification(
+    result: ResearchResult,
+    request: ResearchRequest
+  ): ResearchResult {
+    const providers = result.providers.map((provider) => {
+      const { tradeClass, tradeFit } = classifyProviderTrade(
+        provider,
+        request.service,
+      );
+      const identityConfidence = inferIdentityConfidence(provider);
+
+      const researchConfidence: ProviderIntelConfidence =
+        tradeFit === "high" && identityConfidence === "high"
+          ? "high"
+          : tradeFit === "low" || identityConfidence === "low"
+            ? "low"
+            : "medium";
+
+      return {
+        ...provider,
+        providerIntel: {
+          ...provider.providerIntel,
+          tradeClass,
+          tradeFit,
+          identityConfidence,
+          researchConfidence,
+        },
+      };
+    });
+
+    return {
+      ...result,
+      providers,
+    };
+  }
+
+  private async runWebReputationEnrichmentStage(
+    result: ResearchResult
+  ): Promise<ResearchResult> {
+    if (result.status === "error" || result.providers.length === 0) {
+      return this.appendStage(
+        result,
+        this.createStage(
+          "web_reputation_enrichment",
+          "skipped",
+          result.method === "kestra" ? "kestra" : "direct_gemini",
+          result.providers.length,
+          "Skipped web reputation enrichment because candidate discovery did not produce providers."
+        )
+      );
+    }
+
+    if (!this.webReputationSearchService.isAvailable()) {
+      return this.appendStage(
+        result,
+        this.createStage(
+          "web_reputation_enrichment",
+          "skipped",
+          result.method === "kestra" ? "kestra" : "direct_gemini",
+          result.providers.length,
+          "Skipped web reputation enrichment because no web-search provider API key is configured."
+        )
+      );
+    }
+
+    try {
+      const enriched =
+        await this.webReputationSearchService.enrichProviders(result.providers);
+
+      return {
+        ...result,
+        providers: enriched.providers,
+        pipelineStages: [
+          ...(result.pipelineStages ?? []),
+          this.createStage(
+            "web_reputation_enrichment",
+            "completed",
+            "direct_gemini",
+            enriched.providers.length,
+            `Web reputation enrichment searched ${enriched.stats.searchedProviders} providers and found ${enriched.stats.totalSources} normalized reputation sources.`
+          ),
+        ],
+      };
+    } catch (error) {
+      this.logger.error(
+        { error: serializeError(error) },
+        "Web reputation enrichment failed"
+      );
+
+      return this.appendStage(
+        result,
+        this.createStage(
+          "web_reputation_enrichment",
+          "failed",
+          "direct_gemini",
+          result.providers.length,
+          "Web reputation enrichment failed, so the pipeline continued with Places-only provider evidence.",
+          error instanceof Error ? error.message : "Unknown web search error"
+        )
+      );
+    }
+  }
+
+  /**
+   * Enrich provider results with additional details from Google Places API.
+   * This is the explicit Places detail enrichment stage in the pipeline.
+   */
+  private async runPlacesDetailEnrichmentStage(
     result: ResearchResult,
     request: ResearchRequest
   ): Promise<ResearchResult> {
     // Skip if no providers or error
     if (result.status === "error" || result.providers.length === 0) {
-      return result;
+      return this.appendStage(
+        result,
+        this.createStage(
+          "places_detail_enrichment",
+          "skipped",
+          result.method === "kestra" ? "kestra" : "direct_gemini",
+          result.providers.length,
+          "Skipped Places detail enrichment because candidate discovery did not produce providers."
+        )
+      );
+    }
+
+    // Skip enrichment for Kestra results - they don't have placeId but already have phone data
+    if (result.method === "kestra") {
+      return this.appendStage(
+        result,
+        this.createStage(
+          "places_detail_enrichment",
+          "skipped",
+          "kestra",
+          result.providers.length,
+          "Kestra results bypass Places detail enrichment because they arrive pre-shaped without Place IDs."
+        )
+      );
     }
 
     try {
@@ -159,13 +369,33 @@ export class ResearchService {
         providers: enriched.providers,
         filteredCount: enriched.providers.length,
         reasoning: `${result.reasoning || ""} | Enriched: ${enriched.stats.enrichedCount}, with phone: ${enriched.stats.withPhoneCount}`,
+        pipelineStages: [
+          ...(result.pipelineStages ?? []),
+          this.createStage(
+            "places_detail_enrichment",
+            "completed",
+            "google_places",
+            enriched.providers.length,
+            `Places detail enrichment enriched ${enriched.stats.enrichedCount} providers and found phones for ${enriched.stats.withPhoneCount}.`
+          ),
+        ],
       };
     } catch (error) {
       this.logger.error(
         { error: serializeError(error) },
         "Enrichment failed, returning unenriched results"
       );
-      return result;
+      return this.appendStage(
+        result,
+        this.createStage(
+          "places_detail_enrichment",
+          "failed",
+          "google_places",
+          result.providers.length,
+          "Places detail enrichment failed, so the pipeline returned discovery-only providers.",
+          error instanceof Error ? error.message : "Unknown enrichment error"
+        )
+      );
     }
   }
 
@@ -182,6 +412,54 @@ export class ResearchService {
     return {
       ...result,
       providers: normalizedProviders,
+    };
+  }
+
+  private ensureDiscoveryStage(result: ResearchResult): ResearchResult {
+    if ((result.pipelineStages?.length ?? 0) > 0) {
+      return result;
+    }
+
+    return this.appendStage(
+      result,
+      this.createStage(
+        "candidate_discovery",
+        result.status === "error" ? "failed" : "completed",
+        result.method === "kestra" ? "kestra" : "direct_gemini",
+        result.providers.length,
+        result.status === "error"
+          ? "Candidate discovery failed before the staged enrichment pipeline could run."
+          : "Candidate discovery completed and handed providers to the staged enrichment pipeline.",
+        result.error
+      )
+    );
+  }
+
+  private appendStage(
+    result: ResearchResult,
+    stage: ResearchPipelineStage
+  ): ResearchResult {
+    return {
+      ...result,
+      pipelineStages: [...(result.pipelineStages ?? []), stage],
+    };
+  }
+
+  private createStage(
+    name: ResearchPipelineStage["name"],
+    status: ResearchPipelineStage["status"],
+    method: ResearchPipelineStage["method"],
+    providerCount: number,
+    reasoning: string,
+    error?: string
+  ): ResearchPipelineStage {
+    return {
+      name,
+      status,
+      method,
+      providerCount,
+      reasoning,
+      error,
     };
   }
 

@@ -7,7 +7,12 @@
 import { GoogleGenAI } from "@google/genai";
 import { GooglePlacesService } from "../places/google-places.service.js";
 import { serializeError } from "../../utils/error.js";
-import type { ResearchRequest, ResearchResult, Provider } from "./types.js";
+import type {
+  ResearchPipelineStage,
+  ResearchRequest,
+  ResearchResult,
+  Provider,
+} from "./types.js";
 
 interface Logger {
   info: (obj: Record<string, unknown>, msg?: string) => void;
@@ -131,7 +136,6 @@ export class DirectResearchClient {
 
       // FALLBACK: Use Maps grounding
       const providers = await this.searchWithMapsGrounding(request);
-
       if (providers.length === 0) {
         this.logger.warn(
           { request },
@@ -153,6 +157,20 @@ export class DirectResearchClient {
               : undefined,
           totalFound: fallbackProviders.length,
           filteredCount: fallbackProviders.length,
+          pipelineStages: [
+            this.createStage(
+              "candidate_discovery",
+              fallbackProviders.length > 0 ? "completed" : "failed",
+              "direct_gemini",
+              fallbackProviders.length,
+              fallbackProviders.length > 0
+                ? "Gemini JSON fallback recovered candidate discovery after Maps grounding returned no providers"
+                : "Gemini JSON fallback did not find any providers",
+              fallbackProviders.length === 0
+                ? "No providers found in search area"
+                : undefined,
+            ),
+          ],
         };
       }
 
@@ -163,6 +181,15 @@ export class DirectResearchClient {
         reasoning: `Found ${providers.length} providers via Gemini Maps grounding`,
         totalFound: providers.length,
         filteredCount: providers.length,
+        pipelineStages: [
+          this.createStage(
+            "candidate_discovery",
+            "completed",
+            "gemini_maps",
+            providers.length,
+            `Places-first discovery fell back to Gemini Maps grounding for ${request.service} in ${request.location}`,
+          ),
+        ],
       };
     } catch (error) {
       this.logger.error({ error, request }, "Direct research failed");
@@ -172,8 +199,36 @@ export class DirectResearchClient {
         method: "direct_gemini",
         providers: [],
         error: error instanceof Error ? error.message : "Unknown error",
+        pipelineStages: [
+          this.createStage(
+            "candidate_discovery",
+            "failed",
+            "direct_gemini",
+            0,
+            "Candidate discovery failed before post-discovery stages could run",
+            error instanceof Error ? error.message : "Unknown error",
+          ),
+        ],
       };
     }
+  }
+
+  private createStage(
+    name: ResearchPipelineStage["name"],
+    status: ResearchPipelineStage["status"],
+    method: ResearchPipelineStage["method"],
+    providerCount: number,
+    reasoning: string,
+    error?: string,
+  ): ResearchPipelineStage {
+    return {
+      name,
+      status,
+      method,
+      providerCount,
+      reasoning,
+      error,
+    };
   }
 
   /**
@@ -280,6 +335,20 @@ export class DirectResearchClient {
       reasoning: `Found ${topResults.length} providers via Google Places API (${providers.length} total, ${filtered.length} after filtering)`,
       totalFound: providers.length,
       filteredCount: topResults.length,
+      pipelineStages: [
+        this.createStage(
+          "candidate_discovery",
+          topResults.length > 0 ? "completed" : "failed",
+          "google_places",
+          topResults.length,
+          topResults.length > 0
+            ? `Google Places candidate discovery returned ${topResults.length} providers after filtering`
+            : "Google Places candidate discovery returned no providers after filtering",
+          topResults.length === 0
+            ? "No providers matched Places discovery filters"
+            : undefined,
+        ),
+      ],
     };
   }
 

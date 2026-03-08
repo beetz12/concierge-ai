@@ -29,6 +29,27 @@ export interface ResearchResult {
   // NEW fields for result metadata
   totalFound?: number; // Total before filtering
   filteredCount?: number; // After filtering
+  pipelineStages?: ResearchPipelineStage[];
+}
+
+export type ResearchPipelineStageName =
+  | "candidate_discovery"
+  | "places_detail_enrichment"
+  | "web_reputation_enrichment"
+  | "gemini_review_analysis";
+
+export type ResearchPipelineStageStatus =
+  | "completed"
+  | "skipped"
+  | "failed";
+
+export interface ResearchPipelineStage {
+  name: ResearchPipelineStageName;
+  status: ResearchPipelineStageStatus;
+  method?: "kestra" | "direct_gemini" | "google_places" | "gemini_maps";
+  providerCount?: number;
+  reasoning?: string;
+  error?: string;
 }
 
 export type ProviderTradeClass =
@@ -58,6 +79,7 @@ export interface ProviderReputationSource {
   reviewCountLabel?: string;
   sourceType?: "review_platform" | "community" | "directory" | "social";
   confidence?: ProviderIntelConfidence;
+  snippet?: string;
 }
 
 export interface ProviderReviewTheme {
@@ -105,6 +127,18 @@ export interface ProviderIntel {
     independentMentions?: number;
     threadCount?: number;
   };
+}
+
+export interface WebSearchDocument {
+  title: string;
+  url: string;
+  snippet?: string;
+  sourceEngine: "brave" | "serpapi";
+}
+
+export interface WebSearchRequest {
+  query: string;
+  count?: number;
 }
 
 export interface Provider {

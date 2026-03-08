@@ -361,6 +361,14 @@ export interface ProviderRecommendation {
   criteriaMatched?: string[];
   callQualityScore?: number;
   professionalismScore?: number;
+  identityConfidence?: "low" | "medium" | "high";
+  tradeClass?: "general" | "design_build" | "maintenance" | "specialty";
+  tradeFit?: "low" | "medium" | "high";
+  positiveThemes?: string[];
+  negativeThemes?: string[];
+  contradictionNotes?: string[];
+  seriousComplaintCount?: number;
+  reputationSourcePlatforms?: string[];
 }
 
 /**
