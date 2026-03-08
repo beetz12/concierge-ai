@@ -33,9 +33,17 @@ The repository now uses a **LiveKit-first voice runtime**:
 
 - `apps/api` remains the business and orchestration API
 - `apps/voice-agent` owns live call session state, handoffs, and internal tool calls
+- `apps/voice-mcp` exposes the voice-call API as MCP tools for other agents
 - `CALL_RUNTIME_PROVIDER=livekit` is the default runtime
 - `VAPI` stays available as an env-gated fallback path for compatibility
 - real outbound calling now requires both the `apps/voice-agent` HTTP service and the LiveKit worker plus a configured `LIVEKIT_SIP_OUTBOUND_TRUNK_ID`
+
+For local always-on operation on macOS, the recommended setup is:
+
+- `launchd` for `apps/api`
+- `launchd` for `apps/voice-agent`
+- `launchd` for the `apps/voice-agent` worker
+- `apps/voice-mcp` as a thin MCP adapter on top of the running API
 
 ## Hackathon Highlights
 
@@ -66,6 +74,7 @@ This project was built for the **AI Agents Assemble Hackathon** and showcases in
 - [Voice Runtime Architecture](#voice-runtime-architecture)
 - [CodeRabbit AI Code Review](#coderabbit-ai-code-review)
 - [Getting Started](#getting-started)
+- [Launchd And MCP](#launchd-and-mcp)
 - [Kestra Workflow Setup](#kestra-workflow-setup-local)
 - [Contributing](#contributing)
 - [Resources](#resources)
@@ -165,6 +174,42 @@ Interactive API documentation is available via Swagger UI:
 - **Local Development**: [http://localhost:8000/docs](http://localhost:8000/docs)
 
 The documentation includes all available endpoints with request/response schemas, allowing you to test API calls directly from the browser.
+
+## Launchd And MCP
+
+The recommended 2026 local setup is:
+
+- keep the voice system always on with `launchd`
+- expose the existing voice API as MCP tools through `apps/voice-mcp`
+
+Build once:
+
+```bash
+pnpm build
+```
+
+Install the macOS user agents:
+
+```bash
+chmod +x scripts/launchd/*.sh
+pnpm launchd:install
+```
+
+Run the MCP adapter:
+
+```bash
+pnpm --filter voice-mcp dev
+```
+
+Or after build:
+
+```bash
+pnpm mcp:voice
+```
+
+Reference:
+
+- [launchd-and-mcp.md](/Users/dave/Work/concierge-ai/docs/launchd-and-mcp.md)
 
 ## About
 

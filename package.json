@@ -21,6 +21,8 @@
     "lint": "turbo run lint",
     "format": "prettier --write \"**/*.{ts,tsx,md}\"",
     "check-types": "turbo run check-types",
+    "launchd:install": "./scripts/launchd/install.sh",
+    "mcp:voice": "pnpm --filter voice-mcp start",
     "test:e2e": "playwright test",
     "test:smoke:provider-intel": "pnpm --filter api exec tsx scripts/provider-intel-smoke.ts",
     "test:verify": "pnpm --filter api test && pnpm --filter api check-types && pnpm --filter api build && pnpm --filter web check-types && pnpm --filter web build && pnpm test:e2e",

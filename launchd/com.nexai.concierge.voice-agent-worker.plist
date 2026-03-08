@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+  <key>Label</key>
+  <string>com.nexai.concierge.voice-agent-worker</string>
+  <key>ProgramArguments</key>
+  <array>
+    <string>/bin/zsh</string>
+    <string>/Users/dave/Work/concierge-ai/scripts/launchd/run-voice-agent-worker.sh</string>
+  </array>
+  <key>WorkingDirectory</key>
+  <string>/Users/dave/Work/concierge-ai</string>
+  <key>RunAtLoad</key>
+  <true/>
+  <key>KeepAlive</key>
+  <true/>
+  <key>StandardOutPath</key>
+  <string>/Users/dave/Library/Logs/concierge-ai/voice-agent-worker.stdout.log</string>
+  <key>StandardErrorPath</key>
+  <string>/Users/dave/Library/Logs/concierge-ai/voice-agent-worker.stderr.log</string>
+</dict>
+</plist>
