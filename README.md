@@ -73,8 +73,9 @@ This project was built for the **AI Agents Assemble Hackathon** and showcases in
 ## Key Features
 
 ### Intelligent Provider Discovery
-- Google Maps grounded search via Gemini AI
-- Automatic filtering by rating, distance, and criteria
+- Google Places API primary discovery with Gemini Maps grounding fallback
+- Brave Search enrichment for off-platform reputation signals
+- Automatic filtering by rating, distance, trade fit, identity confidence, and criteria
 - Real-time availability verification through phone calls
 
 ### Concurrent AI Calling System
@@ -84,10 +85,11 @@ This project was built for the **AI Agents Assemble Hackathon** and showcases in
 - Captures pricing, availability, and service details
 
 ### AI-Powered Recommendations
-- Gemini analyzes all call results and provider data
+- Gemini analyzes call results plus cross-platform reputation evidence
 - Recommends top 3 providers with scoring and reasoning
 - Explains why each provider matches your needs
-- Shows trade-offs between price, availability, and quality
+- Highlights strengths, risks, contradiction notes, and identity confidence
+- Shows trade-offs between price, availability, quality, and reputation depth
 
 ### Orchestrated Workflows
 - Kestra manages complex multi-step processes
@@ -211,7 +213,20 @@ It also maintains a history of requests, detailed logs of AI analysis and intera
            └─────────────────────┘
 ```
 
-**Flow**: User Request → Kestra/API orchestration → Gemini research → LiveKit-first voice-agent dispatch → Gemini analysis → Top 3 recommendations → User selection → booking dispatch
+**Flow**: User Request → Kestra/API orchestration → Places discovery → web reputation enrichment → LiveKit-first voice-agent dispatch → Gemini analysis → Top 3 recommendations → User selection → booking dispatch
+
+### Provider Intel Pipeline
+
+The recommendation stack now uses a staged provider-intel pipeline:
+
+1. Discover candidates with `Google Places API`
+2. Enrich identity details with Places details
+3. Search the broader web with `Brave Search` for public reputation pages
+4. Normalize evidence across Google, Facebook, Yelp, Houzz, HomeAdvisor, and similar sources
+5. Analyze review themes, contradictions, and risk signals with Gemini plus deterministic fallbacks
+6. Rank providers using trade fit, identity confidence, review depth, negative severity, and call quality
+
+This keeps discovery deterministic while avoiding over-reliance on a single review platform.
 
 ## Screenshots
 
@@ -870,6 +885,8 @@ KESTRA_DB_NAME=postgres
 
 # API Keys (used by Kestra flows)
 GEMINI_API_KEY=your_gemini_api_key
+GOOGLE_PLACES_API_KEY=your_google_places_api_key
+BRAVE_SEARCH_API_KEY=your_brave_search_api_key
 ```
 
 ### 2. Create the Kestra Schema

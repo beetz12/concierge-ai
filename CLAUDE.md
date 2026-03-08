@@ -137,6 +137,22 @@ Research → Provider[] with Place IDs → addProviders() → Database UUIDs →
 
 This pattern covers **both** Kestra and Direct Gemini research paths.
 
+### Provider Intel Pipeline
+
+The research and recommendation path now has an explicit staged architecture:
+
+1. `Google Places API` for primary candidate discovery
+2. `Google Places details` for phone, website, hours, and identity anchors
+3. `Brave Search` for off-platform reputation discovery
+4. `Gemini` for review-theme extraction, contradiction detection, and risk analysis
+5. `RecommendationService` for final scoring that combines call results with provider-intel evidence
+
+Important rules:
+- Do not replace Places with generic web search for initial local candidate discovery
+- Treat review contradictions as ranking penalties, not trivia
+- Penalize low identity confidence, trade mismatch, thin review volume, and serious complaint patterns
+- Persist provider-intel evidence so the web app can render strengths, risks, and confidence instead of only raw scores
+
 ## Environment Variables
 
 **Backend (`apps/api/.env`):**
@@ -147,6 +163,8 @@ CORS_ORIGIN=http://localhost:3000
 SUPABASE_URL=...
 SUPABASE_SERVICE_ROLE_KEY=...
 GEMINI_API_KEY=...
+GOOGLE_PLACES_API_KEY=...
+BRAVE_SEARCH_API_KEY=...
 VAPI_API_KEY=...
 VAPI_PHONE_NUMBER_ID=...
 VAPI_WEBHOOK_URL=...              # Optional: enables hybrid webhook mode
@@ -155,6 +173,9 @@ VAPI_ADVANCED_SCREENING=false     # Toggle advanced provider screening (see belo
 VAPI_USE_REALTIME=false           # Toggle OpenAI Realtime mode (see below)
 VAPI_REALTIME_VOICE=marin         # Voice selection for Realtime mode
 ```
+
+`GOOGLE_PLACES_API_KEY` is required for the Places-first provider discovery path.
+`BRAVE_SEARCH_API_KEY` is optional for demos but required for full web-reputation enrichment in production.
 
 **VAPI Voice Modes** (`VAPI_USE_REALTIME`):
 - `false` (default): **Traditional Mode** - Uses Gemini + Deepgram STT + ElevenLabs TTS pipeline. 800-1200ms latency.
