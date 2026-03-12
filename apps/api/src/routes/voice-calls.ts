@@ -1,6 +1,7 @@
 import { FastifyInstance } from "fastify";
 import { z } from "zod";
 import { ContractorCallService } from "../services/voice/contractor-call.service.js";
+import { DirectTwilioClient } from "../services/notifications/direct-twilio.client.js";
 
 const e164PhoneRegex = /^\+1\d{10}$/;
 const e164PhoneMessage = "Phone must be E.164 format (+1XXXXXXXXXX)";
@@ -42,6 +43,16 @@ const supervisorBrowserSchema = z.object({
 const supervisorCallSchema = z.object({
   phoneNumber: z.string().regex(e164PhoneRegex, e164PhoneMessage),
   displayName: z.string().min(1).optional(),
+});
+
+const sendSmsBodySchema = z.object({
+  to: z.string().regex(e164PhoneRegex, e164PhoneMessage),
+  body: z.string().min(1).max(1600),
+  mediaUrl: z.array(z.string().url()).max(10).optional(),
+});
+
+const smsStatusParamsSchema = z.object({
+  messageSid: z.string().regex(/^SM[a-f0-9]{32}$/, "Invalid Twilio message SID"),
 });
 
 const normalizeIntakeAnswers = (
@@ -250,6 +261,74 @@ export default async function voiceCallRoutes(fastify: FastifyInstance) {
           error: "ResumeFailed",
           message:
             error instanceof Error ? error.message : "Failed to resume active call",
+        });
+      }
+    },
+  );
+
+  fastify.post(
+    "/sms/send",
+    {
+      schema: {
+        tags: ["voice"],
+        summary: "Send an SMS or MMS message to any phone number via Twilio",
+      },
+    },
+    async (request, reply) => {
+      try {
+        const body = sendSmsBodySchema.parse(request.body);
+        const twilioClient = new DirectTwilioClient(fastify.log);
+        if (!twilioClient.isAvailable()) {
+          return reply.code(503).send({
+            error: "TwilioNotConfigured",
+            message: "Twilio credentials are not configured",
+          });
+        }
+        const result = await twilioClient.sendRawSms(body);
+        if (!result.success) {
+          return reply.code(502).send({
+            error: "SmsSendFailed",
+            message: result.error || "Failed to send SMS",
+          });
+        }
+        return {
+          success: true,
+          messageSid: result.messageSid,
+          messageStatus: result.messageStatus,
+        };
+      } catch (error) {
+        reply.code(400).send({
+          error: "SmsSendFailed",
+          message: error instanceof Error ? error.message : "Failed to send SMS",
+        });
+      }
+    },
+  );
+
+  fastify.get(
+    "/sms/:messageSid/status",
+    {
+      schema: {
+        tags: ["voice"],
+        summary: "Check delivery status of a sent SMS by Twilio message SID",
+      },
+    },
+    async (request, reply) => {
+      try {
+        const params = smsStatusParamsSchema.parse(request.params);
+        const twilioClient = new DirectTwilioClient(fastify.log);
+        const result = await twilioClient.getMessageStatus(params.messageSid);
+        if (!result.success) {
+          return reply.code(502).send({
+            error: "StatusCheckFailed",
+            message: result.errorMessage || "Failed to check message status",
+          });
+        }
+        return result;
+      } catch (error) {
+        reply.code(400).send({
+          error: "StatusCheckFailed",
+          message: error instanceof Error ? error.message : "Invalid request",
         });
       }
     },

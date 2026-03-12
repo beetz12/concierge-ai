@@ -167,6 +167,43 @@ server.registerTool(
   },
 );
 
+server.registerTool(
+  "send_sms",
+  {
+    title: "Send SMS",
+    description:
+      "Send a text message (SMS/MMS) to a phone number via Twilio. Returns a message SID for delivery tracking.",
+    inputSchema: inputSchemas.sendSms,
+  },
+  async (input) => {
+    const result = await client.sendSms(input);
+    if (!result.success) {
+      return asToolResult(`SMS failed: ${result.error || "unknown error"}`);
+    }
+    return asToolResult(
+      `SMS sent to ${input.to}. messageSid=${result.messageSid}, status=${result.messageStatus}`,
+      result as Record<string, unknown>,
+    );
+  },
+);
+
+server.registerTool(
+  "check_sms_status",
+  {
+    title: "Check SMS Status",
+    description:
+      "Check delivery status of a sent SMS by its Twilio message SID.",
+    inputSchema: inputSchemas.checkSmsStatus,
+  },
+  async (input) => {
+    const result = await client.checkSmsStatus(input);
+    return asToolResult(
+      `Message ${input.messageSid}: status=${result.status}, to=${result.to}`,
+      result as Record<string, unknown>,
+    );
+  },
+);
+
 const main = async () => {
   const transport = new StdioServerTransport();
   await server.connect(transport);

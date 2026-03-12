@@ -153,6 +153,28 @@ Important rules:
 - Penalize low identity confidence, trade mismatch, thin review volume, and serious complaint patterns
 - Persist provider-intel evidence so the web app can render strengths, risks, and confidence instead of only raw scores
 
+## Lessons Learned
+
+### ⚠️ Twilio Auth Token Expiration (2026-03-12)
+
+**Issue**: SMS sending failed with cryptic `"Authenticate"` error from Twilio. The `TWILIO_AUTH_TOKEN` in `.env` had been rotated/expired on the Twilio dashboard but not updated locally.
+
+**Symptoms:**
+- `send_sms` MCP tool returns `{ error: "SmsSendFailed", message: "Authenticate" }`
+- Backend logs: `ERROR: Failed to send raw SMS ... error: "Authenticate"`
+- Direct API test: `curl -u "$SID:$TOKEN" https://api.twilio.com/2010-04-01/Accounts/$SID.json` returns 401
+
+**Fix:**
+1. Open [Twilio Console](https://console.twilio.com/) → Account Info section
+2. Click "Show" on Auth Token to reveal current value
+3. Update **both** `apps/api/.env` and `apps/api/.env.prod`
+4. Restart the API server (`pnpm dev`)
+
+**Prevention:**
+- When any Twilio API call returns `"Authenticate"`, check token freshness first — don't debug code
+- Verify credentials directly: `curl -s -u "AC...:TOKEN" https://api.twilio.com/2010-04-01/Accounts/AC....json`
+- The Account SID never changes, only the Auth Token rotates
+
 ## Environment Variables
 
 **Backend (`apps/api/.env`):**

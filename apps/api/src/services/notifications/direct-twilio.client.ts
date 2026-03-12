@@ -301,6 +301,106 @@ export class DirectTwilioClient {
   }
 
   /**
+   * Send a raw SMS/MMS message to any phone number.
+   * Generic method decoupled from the provider-recommendation workflow.
+   */
+  async sendRawSms(input: {
+    to: string;
+    body: string;
+    mediaUrl?: string[];
+  }): Promise<{ success: boolean; messageSid?: string; messageStatus?: string; error?: string }> {
+    const config = this.getConfig();
+    const client = this.getClient();
+
+    if (!client || !config.isConfigured) {
+      this.logger.warn(
+        {
+          hasAccountSid: !!config.accountSid,
+          hasAuthToken: !!config.authToken,
+          hasFromNumber: !!config.fromNumber,
+        },
+        "Twilio not configured, cannot send raw SMS"
+      );
+      return { success: false, error: "Twilio not configured" };
+    }
+
+    this.logger.info({ to: input.to, bodyLength: input.body.length, hasMedia: !!input.mediaUrl?.length }, "Sending raw SMS via Twilio");
+
+    try {
+      const message = await client.messages.create({
+        to: input.to,
+        body: input.body,
+        from: config.fromNumber,
+        ...(input.mediaUrl?.length ? { mediaUrl: input.mediaUrl } : {}),
+      });
+
+      this.logger.info({ messageSid: message.sid, status: message.status, to: input.to }, "Raw SMS sent successfully");
+
+      return { success: true, messageSid: message.sid, messageStatus: message.status };
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : "Unknown error";
+      this.logger.error({ error: errorMessage, to: input.to }, "Failed to send raw SMS");
+      return { success: false, error: errorMessage };
+    }
+  }
+
+  /**
+   * Fetch the delivery status of a previously sent message by its SID.
+   */
+  async getMessageStatus(messageSid: string): Promise<{
+    success: boolean;
+    messageSid: string;
+    status: string;
+    to: string;
+    from: string;
+    dateSent: string | null;
+    errorCode: number | null;
+    errorMessage: string | null;
+  }> {
+    const client = this.getClient();
+
+    if (!client) {
+      return {
+        success: false,
+        messageSid,
+        status: "unknown",
+        to: "",
+        from: "",
+        dateSent: null,
+        errorCode: null,
+        errorMessage: "Twilio not configured",
+      };
+    }
+
+    try {
+      const msg = await client.messages(messageSid).fetch();
+      return {
+        success: true,
+        messageSid: msg.sid,
+        status: msg.status,
+        to: msg.to,
+        from: msg.from,
+        dateSent: msg.dateSent ? msg.dateSent.toISOString() : null,
+        errorCode: msg.errorCode ?? null,
+        errorMessage: msg.errorMessage ?? null,
+      };
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : "Unknown error";
+      this.logger.error({ error: errorMessage, messageSid }, "Failed to fetch message status");
+      return {
+        success: false,
+        messageSid,
+        status: "error",
+        to: "",
+        from: "",
+        dateSent: null,
+        errorCode: null,
+        errorMessage: errorMessage,
+      };
+    }
+  }
+
+  /**
    * Format the SMS message with top 3 provider recommendations
    * Creates an urgent, detailed message that encourages immediate action
    */
