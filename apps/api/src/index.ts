@@ -413,8 +413,10 @@ await server.register(vapiWebhookRoutes, { prefix: "/api/v1/vapi" });
 // Register Notification routes
 await server.register(notificationRoutes, { prefix: "/api/v1/notifications" });
 
-// Register Twilio Webhook routes
-await server.register(twilioWebhookRoutes, { prefix: "/api/v1/twilio" });
+// Register Twilio Webhook routes (requires Supabase)
+if (!isDemoMode()) {
+  await server.register(twilioWebhookRoutes, { prefix: "/api/v1/twilio" });
+}
 
 // Register Booking routes
 await server.register(bookingRoutes, { prefix: "/api/v1/bookings" });
@@ -431,10 +433,15 @@ await server.register(voiceToolRoutes, { prefix: "/api/v1/voice-tools" });
 // Register public voice-call orchestration routes
 await server.register(voiceCallRoutes, { prefix: "/api/v1/voice" });
 
-// Start server with port fallback
+// Start server with port conflict handling
 const start = async () => {
   const basePort = parseInt(process.env.PORT || "8000", 10);
-  const maxRetries = 10;
+  const isProduction = process.env.NODE_ENV === "production";
+
+  // In production, use port fallback to stay available.
+  // In development, kill the old process to avoid orphaned servers
+  // that silently diverge from the MCP client's expected port.
+  const maxRetries = isProduction ? 10 : 1;
 
   for (let attempt = 0; attempt < maxRetries; attempt++) {
     const port = basePort + attempt;
@@ -448,8 +455,42 @@ const start = async () => {
     } catch (err: unknown) {
       const error = err as NodeJS.ErrnoException;
       if (error.code === "EADDRINUSE") {
-        console.log(`⚠️  Port ${port} is in use, trying ${port + 1}...`);
-        continue;
+        if (!isProduction) {
+          // In dev, try to kill the old process and reclaim the port
+          console.log(`⚠️  Port ${port} is in use. Attempting to reclaim...`);
+          try {
+            const { execFileSync } = await import("child_process");
+            const lsofOutput = execFileSync("lsof", ["-ti", `:${port}`], { encoding: "utf-8" }).trim();
+            if (lsofOutput) {
+              const pids = lsofOutput.split("\n").map((p) => p.trim()).filter(Boolean);
+              for (const pid of pids) {
+                // Don't kill ourselves
+                if (pid !== String(process.pid)) {
+                  console.log(`   Killing old process ${pid} on port ${port}...`);
+                  execFileSync("kill", [pid]);
+                }
+              }
+              // Wait for port to free up
+              await new Promise((resolve) => setTimeout(resolve, 1000));
+              // Retry the same port
+              try {
+                await server.listen({ port, host: "0.0.0.0" });
+                console.log(`🚀 API server running at http://localhost:${port} (reclaimed)`);
+                return;
+              } catch {
+                console.error(`❌ Port ${port} still in use after killing old process.`);
+                process.exit(1);
+              }
+            }
+          } catch {
+            console.error(`❌ Port ${port} is in use and could not be reclaimed.`);
+            console.error(`   Run: kill $(lsof -ti :${port}) && node dist/index.js`);
+            process.exit(1);
+          }
+        } else {
+          console.log(`⚠️  Port ${port} is in use, trying ${port + 1}...`);
+          continue;
+        }
       }
       server.log.error(err);
       process.exit(1);

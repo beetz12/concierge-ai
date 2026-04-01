@@ -112,8 +112,8 @@ export class LiveKitTelephonyService {
         displayName: input.displayName,
         participantMetadata: input.metadata,
         participantAttributes: input.participantAttributes,
-        krispEnabled: this.config.livekit.sipKrispEnabled,
-        waitUntilAnswered: false,
+        krispEnabled: false,
+        waitUntilAnswered: true,
       },
     );
 
@@ -144,8 +144,8 @@ export class LiveKitTelephonyService {
         displayName: input.displayName,
         participantMetadata: input.metadata,
         participantAttributes: input.participantAttributes,
-        krispEnabled: this.config.livekit.sipKrispEnabled,
-        waitUntilAnswered: false,
+        krispEnabled: false,
+        waitUntilAnswered: true,
       },
     );
 
