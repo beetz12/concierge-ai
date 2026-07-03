@@ -56,6 +56,12 @@ export interface RetellProvisioningConfig {
   agentName?: string;
   /** Voice used when the agent is auto-created. */
   voiceId?: string;
+  /**
+   * Optional E.164 destination for warm transfer hand-offs. When set, the
+   * auto-created LLM gets a `transfer_call` general tool in `warm_transfer`
+   * mode pointing at this number.
+   */
+  transferNumber?: string;
 }
 
 export interface RetellProvisionResult {
@@ -81,6 +87,46 @@ export class RetellProvisioner {
 
   private get agentName(): string {
     return this.config.agentName ?? DEFAULT_RETELL_AGENT_NAME;
+  }
+
+  /**
+   * Agent tools for the auto-created LLM (shapes per the Retell
+   * create-retell-llm docs). `press_digit` is always present and backs the
+   * backend's `supportsDtmf` capability; `transfer_call` (warm_transfer
+   * mode, backing `supportsWarmTransfer`) is only attached when a transfer
+   * destination is configured.
+   */
+  private buildGeneralTools(): Array<Record<string, unknown>> {
+    const tools: Array<Record<string, unknown>> = [
+      {
+        name: "end_call",
+        type: "end_call",
+        description: "End the call with the user.",
+      },
+      {
+        name: "press_digit",
+        type: "press_digit",
+        description:
+          "Press a keypad digit to navigate an automated phone menu (IVR).",
+      },
+    ];
+    if (this.config.transferNumber) {
+      tools.push({
+        name: "transfer_call",
+        type: "transfer_call",
+        description:
+          "Warm-transfer the call to the configured human contact when a hand-off is needed.",
+        transfer_destination: {
+          type: "predefined",
+          number: this.config.transferNumber,
+        },
+        transfer_option: {
+          type: "warm_transfer",
+          show_transferee_as_caller: false,
+        },
+      });
+    }
+    return tools;
   }
 
   /**
@@ -129,13 +175,7 @@ export class RetellProvisioner {
           const llm = retellLlmSchema.parse(
             await this.client.requestOk("POST", "/create-retell-llm", {
               general_prompt: OUTBOUND_AGENT_PROMPT,
-              general_tools: [
-                {
-                  name: "end_call",
-                  type: "end_call",
-                  description: "End the call with the user.",
-                },
-              ],
+              general_tools: this.buildGeneralTools(),
               default_dynamic_variables: {
                 business_name: "the business",
                 objective: "a brief inquiry",

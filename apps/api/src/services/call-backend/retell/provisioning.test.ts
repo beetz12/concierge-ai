@@ -71,6 +71,13 @@ test("ensureProvisioned creates the LLM + agent once and caches the result", asy
   const llmBody = llmCreate.body as Record<string, unknown>;
   assert.match(String(llmBody["general_prompt"]), /\{\{objective\}\}/);
   assert.match(String(llmBody["general_prompt"]), /\{\{must_ask\}\}/);
+  // press_digit (DTMF) is always provisioned; transfer_call only appears
+  // when a transferNumber is configured (not set in this test).
+  const tools = llmBody["general_tools"] as Array<Record<string, unknown>>;
+  assert.deepEqual(
+    tools.map((tool) => tool["type"]),
+    ["end_call", "press_digit"],
+  );
 
   const agentCreate = requests.find((request) =>
     request.url.includes("/create-agent"),
@@ -89,6 +96,44 @@ test("ensureProvisioned creates the LLM + agent once and caches the result", asy
   const second = await provisioner.ensureProvisioned();
   assert.equal(second.agentId, "agent_new");
   assert.equal(requests.length, requestCount);
+});
+
+test("ensureProvisioned attaches a warm transfer_call tool only when transferNumber is set", async () => {
+  const { provisioner, requests } = makeProvisioner(
+    [
+      { method: "GET", path: "/list-agents", json: [] },
+      { method: "POST", path: "/create-retell-llm", json: { llm_id: "llm_1" } },
+      {
+        method: "POST",
+        path: "/create-agent",
+        json: { agent_id: "agent_new", agent_name: DEFAULT_RETELL_AGENT_NAME },
+      },
+    ],
+    { transferNumber: "+18645550111" },
+  );
+  await provisioner.ensureProvisioned();
+
+  const llmCreate = requests.find((request) =>
+    request.url.includes("/create-retell-llm"),
+  );
+  assert.ok(llmCreate);
+  const tools = (llmCreate.body as Record<string, unknown>)[
+    "general_tools"
+  ] as Array<Record<string, unknown>>;
+  assert.deepEqual(
+    tools.map((tool) => tool["type"]),
+    ["end_call", "press_digit", "transfer_call"],
+  );
+  const transfer = tools.find((tool) => tool["type"] === "transfer_call");
+  assert.ok(transfer);
+  assert.deepEqual(transfer["transfer_destination"], {
+    type: "predefined",
+    number: "+18645550111",
+  });
+  assert.deepEqual(transfer["transfer_option"], {
+    type: "warm_transfer",
+    show_transferee_as_caller: false,
+  });
 });
 
 test("ensureProvisioned fails fast when the configured agent id is missing", async () => {

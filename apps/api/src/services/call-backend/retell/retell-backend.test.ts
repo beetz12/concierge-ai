@@ -380,13 +380,15 @@ test("cancelCall stops the ongoing call via /v2/stop-call", async () => {
   assert.match(requests[0]!.url, /\/v2\/stop-call\/call_1$/);
 });
 
-test("RetellCallBackend advertises fire-and-forget capabilities", () => {
+test("RetellCallBackend advertises agent-tool-level warm transfer and DTMF", () => {
   const { backend } = makeBackend([]);
   assert.equal(backend.id, "retell");
+  // No mid-call pause/supervision API; warm transfer and DTMF are backed by
+  // the provisioned transfer_call (warm_transfer) and press_digit tools.
   assert.deepEqual(backend.capabilities, {
     supportsPause: false,
     supportsSupervision: false,
-    supportsWarmTransfer: false,
-    supportsDtmf: false,
+    supportsWarmTransfer: true,
+    supportsDtmf: true,
   });
 });

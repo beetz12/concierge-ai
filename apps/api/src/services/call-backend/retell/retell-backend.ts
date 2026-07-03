@@ -60,14 +60,18 @@ export class RetellCallBackend implements CallBackend {
   readonly id: CallBackendId = "retell";
 
   /**
-   * Retell calls are fire-and-forget once dispatched: no pause/resume,
-   * no live supervisor audio, and no warm transfer through this adapter.
+   * Retell has no mid-call pause/resume or live-supervision REST API, so
+   * those stay false. Warm transfer and DTMF are supported at the Retell
+   * agent-tool level — a `transfer_call` general tool in `warm_transfer`
+   * mode (enabled when RETELL_TRANSFER_NUMBER is provisioned) and the
+   * `press_digit` tool — configured via provisioning rather than mid-call
+   * REST operations.
    */
   readonly capabilities: CallBackendCapabilities = {
     supportsPause: false,
     supportsSupervision: false,
-    supportsWarmTransfer: false,
-    supportsDtmf: false,
+    supportsWarmTransfer: true,
+    supportsDtmf: true,
   };
 
   private readonly client: RetellHttpClient;
@@ -329,6 +333,7 @@ export function createRetellCallBackendFromEnv(
     fromNumber,
     agentName: env.RETELL_AGENT_NAME?.trim() || undefined,
     voiceId: env.RETELL_VOICE_ID?.trim() || undefined,
+    transferNumber: env.RETELL_TRANSFER_NUMBER?.trim() || undefined,
   });
   const artifactStore = createArtifactStore({
     supabase: deps.supabase,

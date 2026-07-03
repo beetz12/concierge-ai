@@ -285,7 +285,7 @@ telephony provider can be swapped without touching call-dispatch logic.
 | `CALL_BACKEND` | Backend | Capabilities |
 |----------------|---------|--------------|
 | `livekit` (default) | `LiveKitCallBackend` | pause/resume, live supervision, warm transfer |
-| `retell` | `RetellCallBackend` | fire-and-forget dispatch (no pause/supervision/transfer) |
+| `retell` | `RetellCallBackend` | warm transfer + DTMF (agent-tool level); no pause / live supervision |
 
 **LiveKit adapter**: `apps/api/src/services/call-backend/livekit/livekit-call-backend.ts`
 wraps `ContractorCallService` (the LiveKit dispatch/status/artifact logic behind
@@ -311,9 +311,16 @@ Retell AI REST API using the request shapes proven by the `call-biz` CLI.
   idempotently reuses `RETELL_AGENT_ID`, or looks up / creates the LLM + agent
   by `RETELL_AGENT_NAME`; numbers are verified, never purchased. `doctor()`
   checks key, config, API, agent, and number.
+- **Capabilities** - warm transfer and DTMF are agent-tool-level features,
+  not mid-call REST operations: the auto-created LLM always gets a
+  `press_digit` tool (backs `supportsDtmf`), and gets a `transfer_call` tool
+  in `warm_transfer` mode (backs `supportsWarmTransfer`) when the optional
+  `RETELL_TRANSFER_NUMBER` is set. There is no mid-call pause/resume or live
+  supervisor dial-in (`supportsPause` / `supportsSupervision` are false).
 - **Env**: `RETELL_API_KEY` (required), `RETELL_FROM_NUMBER`, and the optional
   `RETELL_AGENT_ID` / `RETELL_LLM_ID` / `RETELL_AGENT_NAME` / `RETELL_VOICE_ID`
-  / `RETELL_ARTIFACTS_DIR` (see `apps/api/.env.example`).
+  / `RETELL_TRANSFER_NUMBER` / `RETELL_ARTIFACTS_DIR` (see
+  `apps/api/.env.example`).
 - **Tests**: `apps/api/src/services/call-backend/retell/*.test.ts` (node:test,
   mocked HTTP - no API key or network needed).
 
