@@ -203,10 +203,10 @@ export default async function voiceCallRoutes(fastify: FastifyInstance) {
       },
     },
     async (request, reply) => {
-      if (!callBackend.capabilities.supportsWarmTransfer) {
+      if (!callBackend.capabilities.supportsSupervision) {
         return reply.code(501).send({
-          error: "WarmTransferUnsupported",
-          message: `Warm transfer is not supported by the ${callBackend.id} call backend`,
+          error: "SupervisionUnsupported",
+          message: `Live supervisor dial-in is not supported by the ${callBackend.id} call backend`,
         });
       }
       try {
