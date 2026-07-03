@@ -7,11 +7,6 @@ export type Json =
   | Json[]
 
 export type Database = {
-  // Allows to automatically instantiate createClient with right options
-  // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
-  __InternalSupabase: {
-    PostgrestVersion: "13.0.5"
-  }
   public: {
     Tables: {
       interaction_logs: {
@@ -20,6 +15,7 @@ export type Database = {
           created_at: string
           detail: string
           id: string
+          org_id: string
           request_id: string
           status: Database["public"]["Enums"]["log_status"]
           step_name: string
@@ -31,6 +27,7 @@ export type Database = {
           created_at?: string
           detail: string
           id?: string
+          org_id?: string
           request_id: string
           status: Database["public"]["Enums"]["log_status"]
           step_name: string
@@ -42,6 +39,7 @@ export type Database = {
           created_at?: string
           detail?: string
           id?: string
+          org_id?: string
           request_id?: string
           status?: Database["public"]["Enums"]["log_status"]
           step_name?: string
@@ -50,6 +48,13 @@ export type Database = {
         }
         Relationships: [
           {
+            foreignKeyName: "interaction_logs_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "interaction_logs_request_id_fkey"
             columns: ["request_id"]
             isOneToOne: false
@@ -57,6 +62,62 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      organization_members: {
+        Row: {
+          created_at: string
+          id: string
+          org_id: string
+          role: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          org_id: string
+          role: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          org_id?: string
+          role?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "organization_members_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      organizations: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          id: string
+          name: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          name: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          name?: string
+          updated_at?: string
+        }
+        Relationships: []
       }
       providers: {
         Row: {
@@ -84,6 +145,7 @@ export type Database = {
           is_open_now: boolean | null
           last_call_at: string | null
           name: string
+          org_id: string
           phone: string | null
           place_id: string | null
           provider_intel: Json | null
@@ -118,6 +180,7 @@ export type Database = {
           is_open_now?: boolean | null
           last_call_at?: string | null
           name: string
+          org_id?: string
           phone?: string | null
           place_id?: string | null
           provider_intel?: Json | null
@@ -152,6 +215,7 @@ export type Database = {
           is_open_now?: boolean | null
           last_call_at?: string | null
           name?: string
+          org_id?: string
           phone?: string | null
           place_id?: string | null
           provider_intel?: Json | null
@@ -162,6 +226,13 @@ export type Database = {
           website?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "providers_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "providers_request_id_fkey"
             columns: ["request_id"]
@@ -182,6 +253,7 @@ export type Database = {
           location: string | null
           notification_method: string | null
           notification_sent_at: string | null
+          org_id: string
           preferred_contact: string | null
           recommendations: Json | null
           selected_provider_id: string | null
@@ -204,6 +276,7 @@ export type Database = {
           location?: string | null
           notification_method?: string | null
           notification_sent_at?: string | null
+          org_id?: string
           preferred_contact?: string | null
           recommendations?: Json | null
           selected_provider_id?: string | null
@@ -226,6 +299,7 @@ export type Database = {
           location?: string | null
           notification_method?: string | null
           notification_sent_at?: string | null
+          org_id?: string
           preferred_contact?: string | null
           recommendations?: Json | null
           selected_provider_id?: string | null
@@ -240,6 +314,13 @@ export type Database = {
         }
         Relationships: [
           {
+            foreignKeyName: "service_requests_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "service_requests_selected_provider_id_fkey"
             columns: ["selected_provider_id"]
             isOneToOne: false
@@ -251,6 +332,129 @@ export type Database = {
             columns: ["user_id"]
             isOneToOne: false
             referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      subscriptions: {
+        Row: {
+          created_at: string
+          id: string
+          org_id: string
+          plan: string
+          status: string
+          stripe_customer_id: string | null
+          stripe_subscription_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          org_id: string
+          plan?: string
+          status?: string
+          stripe_customer_id?: string | null
+          stripe_subscription_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          org_id?: string
+          plan?: string
+          status?: string
+          stripe_customer_id?: string | null
+          stripe_subscription_id?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "subscriptions_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: true
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      tenant_settings: {
+        Row: {
+          callback_number: string | null
+          caller_display_name: string | null
+          created_at: string
+          default_voicemail_policy: string
+          disclosure_config: Json
+          from_number: string | null
+          org_id: string
+          outbound_kill_switch: boolean
+          updated_at: string
+        }
+        Insert: {
+          callback_number?: string | null
+          caller_display_name?: string | null
+          created_at?: string
+          default_voicemail_policy?: string
+          disclosure_config?: Json
+          from_number?: string | null
+          org_id: string
+          outbound_kill_switch?: boolean
+          updated_at?: string
+        }
+        Update: {
+          callback_number?: string | null
+          caller_display_name?: string | null
+          created_at?: string
+          default_voicemail_policy?: string
+          disclosure_config?: Json
+          from_number?: string | null
+          org_id?: string
+          outbound_kill_switch?: boolean
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tenant_settings_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: true
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      usage_events: {
+        Row: {
+          call_id: string | null
+          created_at: string
+          id: string
+          occurred_at: string
+          org_id: string
+          quantity: number
+          type: string
+        }
+        Insert: {
+          call_id?: string | null
+          created_at?: string
+          id?: string
+          occurred_at?: string
+          org_id: string
+          quantity: number
+          type: string
+        }
+        Update: {
+          call_id?: string | null
+          created_at?: string
+          id?: string
+          occurred_at?: string
+          org_id?: string
+          quantity?: number
+          type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "usage_events_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
             referencedColumns: ["id"]
           },
         ]
@@ -276,12 +480,136 @@ export type Database = {
         }
         Relationships: []
       }
+      voice_call_events: {
+        Row: {
+          agent_role: string | null
+          created_at: string
+          event_type: string
+          id: string
+          org_id: string
+          payload: Json
+          provider_id: string
+          service_request_id: string
+          session_id: string
+        }
+        Insert: {
+          agent_role?: string | null
+          created_at?: string
+          event_type: string
+          id?: string
+          org_id?: string
+          payload?: Json
+          provider_id: string
+          service_request_id: string
+          session_id: string
+        }
+        Update: {
+          agent_role?: string | null
+          created_at?: string
+          event_type?: string
+          id?: string
+          org_id?: string
+          payload?: Json
+          provider_id?: string
+          service_request_id?: string
+          session_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "voice_call_events_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "voice_call_events_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "voice_call_sessions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      voice_call_sessions: {
+        Row: {
+          active_agent: string
+          closed_at: string | null
+          id: string
+          metadata: Json
+          org_id: string
+          outcome: Json | null
+          provider_id: string
+          runtime_provider: string
+          service_request_id: string
+          started_at: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          active_agent: string
+          closed_at?: string | null
+          id: string
+          metadata?: Json
+          org_id?: string
+          outcome?: Json | null
+          provider_id: string
+          runtime_provider: string
+          service_request_id: string
+          started_at?: string
+          status: string
+          updated_at?: string
+        }
+        Update: {
+          active_agent?: string
+          closed_at?: string | null
+          id?: string
+          metadata?: Json
+          org_id?: string
+          outcome?: Json | null
+          provider_id?: string
+          runtime_provider?: string
+          service_request_id?: string
+          started_at?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "voice_call_sessions_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      create_organization: {
+        Args: { org_name: string }
+        Returns: {
+          created_at: string
+          created_by: string | null
+          id: string
+          name: string
+          updated_at: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "organizations"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      has_org_role: {
+        Args: { allowed_roles: string[]; target_org_id: string }
+        Returns: boolean
+      }
+      is_org_member: { Args: { target_org_id: string }; Returns: boolean }
     }
     Enums: {
       log_status: "success" | "warning" | "error" | "info"
@@ -396,6 +724,101 @@ export type Database = {
         }
         Relationships: []
       }
+      iceberg_namespaces: {
+        Row: {
+          bucket_name: string
+          catalog_id: string
+          created_at: string
+          id: string
+          metadata: Json
+          name: string
+          updated_at: string
+        }
+        Insert: {
+          bucket_name: string
+          catalog_id: string
+          created_at?: string
+          id?: string
+          metadata?: Json
+          name: string
+          updated_at?: string
+        }
+        Update: {
+          bucket_name?: string
+          catalog_id?: string
+          created_at?: string
+          id?: string
+          metadata?: Json
+          name?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "iceberg_namespaces_catalog_id_fkey"
+            columns: ["catalog_id"]
+            isOneToOne: false
+            referencedRelation: "buckets_analytics"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      iceberg_tables: {
+        Row: {
+          bucket_name: string
+          catalog_id: string
+          created_at: string
+          id: string
+          location: string
+          name: string
+          namespace_id: string
+          remote_table_id: string | null
+          shard_id: string | null
+          shard_key: string | null
+          updated_at: string
+        }
+        Insert: {
+          bucket_name: string
+          catalog_id: string
+          created_at?: string
+          id?: string
+          location: string
+          name: string
+          namespace_id: string
+          remote_table_id?: string | null
+          shard_id?: string | null
+          shard_key?: string | null
+          updated_at?: string
+        }
+        Update: {
+          bucket_name?: string
+          catalog_id?: string
+          created_at?: string
+          id?: string
+          location?: string
+          name?: string
+          namespace_id?: string
+          remote_table_id?: string | null
+          shard_id?: string | null
+          shard_key?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "iceberg_tables_catalog_id_fkey"
+            columns: ["catalog_id"]
+            isOneToOne: false
+            referencedRelation: "buckets_analytics"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "iceberg_tables_namespace_id_fkey"
+            columns: ["namespace_id"]
+            isOneToOne: false
+            referencedRelation: "iceberg_namespaces"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       migrations: {
         Row: {
           executed_at: string | null
@@ -423,7 +846,6 @@ export type Database = {
           created_at: string | null
           id: string
           last_accessed_at: string | null
-          level: number | null
           metadata: Json | null
           name: string | null
           owner: string | null
@@ -438,7 +860,6 @@ export type Database = {
           created_at?: string | null
           id?: string
           last_accessed_at?: string | null
-          level?: number | null
           metadata?: Json | null
           name?: string | null
           owner?: string | null
@@ -453,7 +874,6 @@ export type Database = {
           created_at?: string | null
           id?: string
           last_accessed_at?: string | null
-          level?: number | null
           metadata?: Json | null
           name?: string | null
           owner?: string | null
@@ -466,38 +886,6 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "objects_bucketId_fkey"
-            columns: ["bucket_id"]
-            isOneToOne: false
-            referencedRelation: "buckets"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      prefixes: {
-        Row: {
-          bucket_id: string
-          created_at: string | null
-          level: number
-          name: string
-          updated_at: string | null
-        }
-        Insert: {
-          bucket_id: string
-          created_at?: string | null
-          level?: number
-          name: string
-          updated_at?: string | null
-        }
-        Update: {
-          bucket_id?: string
-          created_at?: string | null
-          level?: number
-          name?: string
-          updated_at?: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "prefixes_bucketId_fkey"
             columns: ["bucket_id"]
             isOneToOne: false
             referencedRelation: "buckets"
@@ -652,28 +1040,17 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      add_prefixes: {
-        Args: { _bucket_id: string; _name: string }
-        Returns: undefined
-      }
       can_insert_object: {
         Args: { bucketid: string; metadata: Json; name: string; owner: string }
         Returns: undefined
       }
-      delete_leaf_prefixes: {
-        Args: { bucket_ids: string[]; names: string[] }
-        Returns: undefined
-      }
-      delete_prefix: {
-        Args: { _bucket_id: string; _name: string }
-        Returns: boolean
-      }
       extension: { Args: { name: string }; Returns: string }
       filename: { Args: { name: string }; Returns: string }
       foldername: { Args: { name: string }; Returns: string[] }
-      get_level: { Args: { name: string }; Returns: number }
-      get_prefix: { Args: { name: string }; Returns: string }
-      get_prefixes: { Args: { name: string }; Returns: string[] }
+      get_common_prefix: {
+        Args: { p_delimiter: string; p_key: string; p_prefix: string }
+        Returns: string
+      }
       get_size_by_bucket: {
         Args: never
         Returns: {
@@ -698,23 +1075,22 @@ export type Database = {
       }
       list_objects_with_delimiter: {
         Args: {
-          bucket_id: string
+          _bucket_id: string
           delimiter_param: string
           max_keys?: number
           next_token?: string
           prefix_param: string
+          sort_order?: string
           start_after?: string
         }
         Returns: {
+          created_at: string
           id: string
+          last_accessed_at: string
           metadata: Json
           name: string
           updated_at: string
         }[]
-      }
-      lock_top_prefixes: {
-        Args: { bucket_ids: string[]; names: string[] }
-        Returns: undefined
       }
       operation: { Args: never; Returns: string }
       search: {
@@ -737,40 +1113,21 @@ export type Database = {
           updated_at: string
         }[]
       }
-      search_legacy_v1: {
+      search_by_timestamp: {
         Args: {
-          bucketname: string
-          levels?: number
-          limits?: number
-          offsets?: number
-          prefix: string
-          search?: string
-          sortcolumn?: string
-          sortorder?: string
+          p_bucket_id: string
+          p_level: number
+          p_limit: number
+          p_prefix: string
+          p_sort_column: string
+          p_sort_column_after: string
+          p_sort_order: string
+          p_start_after: string
         }
         Returns: {
           created_at: string
           id: string
-          last_accessed_at: string
-          metadata: Json
-          name: string
-          updated_at: string
-        }[]
-      }
-      search_v1_optimised: {
-        Args: {
-          bucketname: string
-          levels?: number
-          limits?: number
-          offsets?: number
-          prefix: string
-          search?: string
-          sortcolumn?: string
-          sortorder?: string
-        }
-        Returns: {
-          created_at: string
-          id: string
+          key: string
           last_accessed_at: string
           metadata: Json
           name: string
@@ -949,3 +1306,4 @@ export const Constants = {
     },
   },
 } as const
+

@@ -18,6 +18,7 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuth, useAuthActions } from "@/lib/providers/AuthProvider";
+import { OrgSwitcher } from "@/components/OrgSwitcher";
 
 import {
   Sidebar,
@@ -109,6 +110,7 @@ export function AppSidebar() {
             </button>
           )}
         </div>
+        {isAuthenticated && (state === "expanded" || isMobile) && <OrgSwitcher />}
       </SidebarHeader>
 
       {/* Toggle arrow - desktop only, always at right edge */}

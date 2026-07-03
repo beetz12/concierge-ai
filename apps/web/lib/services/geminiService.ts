@@ -1,8 +1,28 @@
 import { Provider, InteractionLog } from "../types";
 import type { GeneratedPrompt } from "./providerCallingService";
+import { createClient } from "../supabase/client";
 
 // API base URL - uses Next.js rewrite to proxy to backend
 const API_BASE = "/api/v1/gemini";
+
+/**
+ * Attach the Supabase access token: the backend now rejects unauthenticated
+ * /api/v1/* requests (401) outside demo mode.
+ */
+const getAuthHeaders = async (): Promise<Record<string, string>> => {
+  if (process.env.NEXT_PUBLIC_DEMO_MODE === "true") return {};
+  try {
+    const supabase = createClient();
+    const {
+      data: { session },
+    } = await supabase.auth.getSession();
+    return session?.access_token
+      ? { Authorization: `Bearer ${session.access_token}` }
+      : {};
+  } catch {
+    return {};
+  }
+};
 
 /**
  * Task analysis response from Gemini
@@ -79,6 +99,7 @@ const apiRequest = async <T>(
     method: "POST",
     headers: {
       "Content-Type": "application/json",
+      ...(await getAuthHeaders()),
     },
     body: JSON.stringify(body),
   });
@@ -227,7 +248,7 @@ export const generateIntakeQuestions = async (data: {
 }): Promise<IntakeQuestionsResponse> => {
   const response = await fetch('/api/v1/intake/generate-questions', {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: { 'Content-Type': 'application/json', ...(await getAuthHeaders()) },
     body: JSON.stringify(data),
   });
 
