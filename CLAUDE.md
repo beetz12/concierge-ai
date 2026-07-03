@@ -270,7 +270,8 @@ telephony provider can be swapped without touching call-dispatch logic.
 
 - `CallPlan` - provider-agnostic call description (business name, E.164 number,
   objective, context, `mustAsk[]`, caller identity, callback number, voicemail
-  policy, pre-authorizations).
+  policy, pre-authorizations, plus guard fields: `tenantId`, `userApproved`,
+  `allowRedial`).
 - `CallStatus` / `CallArtifacts` - normalized status and outputs (recording ref,
   transcript, structured outcome JSON).
 - `CallBackend` - `dispatchCall` / `getStatus` / `getArtifacts` / `cancelCall`
@@ -284,12 +285,37 @@ telephony provider can be swapped without touching call-dispatch logic.
 | `CALL_BACKEND` | Backend | Capabilities |
 |----------------|---------|--------------|
 | `livekit` (default) | `LiveKitCallBackend` | pause/resume, live supervision, warm transfer |
+| `retell` | `RetellCallBackend` | fire-and-forget dispatch (no pause/supervision/transfer) |
 
 **LiveKit adapter**: `apps/api/src/services/call-backend/livekit/livekit-call-backend.ts`
 wraps `ContractorCallService` (the LiveKit dispatch/status/artifact logic behind
 the `/api/v1/voice` routes). The voice-calls routes read
 `callBackend.capabilities` to gate the pause/resume, supervisor-token, and
 warm-transfer endpoints.
+
+**Retell adapter**: `apps/api/src/services/call-backend/retell/` wraps the
+Retell AI REST API using the request shapes proven by the `call-biz` CLI.
+
+- **Dispatch guards** (`guards.ts`) - every dispatch requires
+  `plan.userApproved` (a human saw the call plan and said go), exactly one
+  E.164 US number (batch dialing refused by design), and passes a 24h
+  same-number redial guard scoped per `tenantId` (override only with
+  `plan.allowRedial` for a pre-approved retry). Guard refusals throw
+  `CallGuardError` with a machine-readable `code`.
+- **Durable artifacts** (`artifacts.ts`) - Retell recording URLs expire, so
+  `getArtifacts` immediately copies `recording.wav`, `transcript.txt`, and a
+  slim `call.json` into the private Supabase storage bucket `call-artifacts`
+  (local-dir fallback under `DEMO_MODE` / no Supabase; see
+  `RETELL_ARTIFACTS_DIR`).
+- **Provisioning** (`provisioning.ts`) - `RetellProvisioner.ensureProvisioned()`
+  idempotently reuses `RETELL_AGENT_ID`, or looks up / creates the LLM + agent
+  by `RETELL_AGENT_NAME`; numbers are verified, never purchased. `doctor()`
+  checks key, config, API, agent, and number.
+- **Env**: `RETELL_API_KEY` (required), `RETELL_FROM_NUMBER`, and the optional
+  `RETELL_AGENT_ID` / `RETELL_LLM_ID` / `RETELL_AGENT_NAME` / `RETELL_VOICE_ID`
+  / `RETELL_ARTIFACTS_DIR` (see `apps/api/.env.example`).
+- **Tests**: `apps/api/src/services/call-backend/retell/*.test.ts` (node:test,
+  mocked HTTP - no API key or network needed).
 
 > **Migration note**: the legacy VAPI/Kestra provider-calling pipeline under
 > `apps/api/src/services/vapi/` still backs the Research-and-Book flow
