@@ -5,7 +5,15 @@ import {
   LiveKitCallBackend,
   resolveCallBackendId,
 } from "../services/call-backend/index.js";
+import type { CallPlan } from "../services/call-backend/types.js";
+import {
+  ComplianceDenyError,
+  CompliantCallDispatcher,
+  formatDisclosureBlock,
+} from "../services/compliance/dispatch.js";
+import type { ComplianceTaskType } from "../services/compliance/types.js";
 import { DirectTwilioClient } from "../services/notifications/direct-twilio.client.js";
+import { isDemoMode } from "../config/demo.js";
 
 const e164PhoneRegex = /^\+1\d{10}$/;
 const e164PhoneMessage = "Phone must be E.164 format (+1XXXXXXXXXX)";
@@ -37,6 +45,46 @@ const contractorCallSchema = z.object({
   dealBreakers: z.array(z.string().min(1)).optional(),
   intakeAnswers: z.array(intakeAnswerSchema).optional(),
   taskDescription: z.string().optional(),
+  // A human reviewed this plan (preview step) and approved dispatch. The
+  // existing UI's explicit dispatch-after-preview click is that approval, so
+  // omitting the field means approved; slice 8's two-gate UX sends it
+  // explicitly. Sending `false` is a hard compliance deny.
+  userApproved: z.boolean().optional().default(true),
+});
+
+/** R-27 static taxonomy lookup for the contractor-call modes. */
+const taskTypeForMode = (
+  mode: z.infer<typeof contractorCallSchema>["mode"],
+): ComplianceTaskType => {
+  switch (mode) {
+    case "booking":
+      return "appointment_booking";
+    case "direct_task":
+      // Buyer-side errand call (negotiate/complain/inquire on the tenant's
+      // behalf) — non-solicitation per R-27.
+      return "general_inquiry";
+    case "qualification":
+    default:
+      return "availability_inquiry";
+  }
+};
+
+/** Provider-agnostic view of the contractor-call input for policy evaluation. */
+const buildCallPlan = (
+  body: z.infer<typeof contractorCallSchema>,
+): CallPlan => ({
+  businessName: body.contractorName,
+  phoneNumber: body.contractorPhone,
+  objective: body.taskDescription || `${body.serviceNeeded} in ${body.location}`,
+  context: [body.problemDescription, body.userCriteria, body.additionalNotes]
+    .filter(Boolean)
+    .join("\n"),
+  mustAsk: body.mustAskQuestions ?? [],
+  callerIdentity: body.clientName || "a client",
+  callbackNumber: body.clientPhone,
+  voicemailPolicy: "hang_up",
+  preAuthorizations: [],
+  userApproved: body.userApproved,
 });
 
 const supervisorBrowserSchema = z.object({
@@ -82,6 +130,12 @@ export default async function voiceCallRoutes(fastify: FastifyInstance) {
   // adapter capabilities used to gate optional endpoints below.
   resolveCallBackendId();
   const callBackend = new LiveKitCallBackend(contractorCallService);
+  // Compliance gate (slice 6): every dispatch is policy-evaluated BEFORE any
+  // backend call, with authorization + audit rows written via service role.
+  const complianceDispatcher = new CompliantCallDispatcher({
+    supabase: fastify.supabase,
+    backend: callBackend,
+  });
 
   fastify.post(
     "/preview-call",
@@ -119,9 +173,56 @@ export default async function voiceCallRoutes(fastify: FastifyInstance) {
     async (request, reply) => {
       try {
         const body = normalizeIntakeAnswers(contractorCallSchema.parse(request.body));
-        const result = await contractorCallService.dispatchCall(body);
+
+        // Demo mode has no database and simulates calls; the compliance gate
+        // only governs real dispatches.
+        if (isDemoMode()) {
+          return await contractorCallService.dispatchCall(body);
+        }
+
+        if (!request.auth?.orgId) {
+          return reply.code(403).send({
+            error: "OrganizationRequired",
+            message: "Dispatching calls requires an organization context",
+          });
+        }
+
+        // Policy-evaluate before dispatch: throws ComplianceDenyError (and
+        // writes the deny audit row) when any policy check fails.
+        const authorization = await complianceDispatcher.authorize({
+          plan: buildCallPlan(body),
+          orgId: request.auth.orgId,
+          userId: request.auth.userId,
+          taskType: taskTypeForMode(body.mode),
+          channel: "voice",
+        });
+
+        // Merge the engine's ordered disclosure lines into the prompt
+        // variables the voice agent renders (R-12).
+        const disclosureNotes = formatDisclosureBlock(
+          authorization.decision.disclosureLines,
+        );
+        const result = await contractorCallService.dispatchCall({
+          ...body,
+          additionalNotes: [body.additionalNotes, disclosureNotes]
+            .filter(Boolean)
+            .join("\n\n"),
+        });
+
+        await complianceDispatcher.recordDispatchedCall(
+          authorization.auditId,
+          result.sessionId,
+        );
         return result;
       } catch (error) {
+        if (error instanceof ComplianceDenyError) {
+          return reply.code(403).send({
+            error: "ComplianceDenied",
+            reasons: error.reasons,
+            policyVersion: error.decision.policyVersion,
+            message: error.message,
+          });
+        }
         reply.code(400).send({
           error: "DispatchFailed",
           message: error instanceof Error ? error.message : "Failed to dispatch contractor call",

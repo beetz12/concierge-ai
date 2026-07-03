@@ -9,6 +9,94 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
+      call_authorizations: {
+        Row: {
+          approved_at: string
+          call_plan_hash: string
+          channel: string
+          created_at: string
+          id: string
+          org_id: string
+          user_id: string
+        }
+        Insert: {
+          approved_at?: string
+          call_plan_hash: string
+          channel?: string
+          created_at?: string
+          id?: string
+          org_id: string
+          user_id: string
+        }
+        Update: {
+          approved_at?: string
+          call_plan_hash?: string
+          channel?: string
+          created_at?: string
+          id?: string
+          org_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "call_authorizations_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      dispatch_audit_log: {
+        Row: {
+          call_id: string | null
+          channel: string
+          created_at: string
+          decision: string
+          evaluated_at: string
+          id: string
+          org_id: string
+          policy_version: string
+          reasons: string[]
+          target_number: string | null
+          task_type: string | null
+        }
+        Insert: {
+          call_id?: string | null
+          channel?: string
+          created_at?: string
+          decision: string
+          evaluated_at?: string
+          id?: string
+          org_id: string
+          policy_version: string
+          reasons?: string[]
+          target_number?: string | null
+          task_type?: string | null
+        }
+        Update: {
+          call_id?: string | null
+          channel?: string
+          created_at?: string
+          decision?: string
+          evaluated_at?: string
+          id?: string
+          org_id?: string
+          policy_version?: string
+          reasons?: string[]
+          target_number?: string | null
+          task_type?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "dispatch_audit_log_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       interaction_logs: {
         Row: {
           call_id: string | null
@@ -372,6 +460,47 @@ export type Database = {
             foreignKeyName: "subscriptions_org_id_fkey"
             columns: ["org_id"]
             isOneToOne: true
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      suppression_entries: {
+        Row: {
+          added_at: string
+          created_at: string
+          expires_at: string | null
+          id: string
+          org_id: string | null
+          phone_number: string
+          reason: string
+          source_call_id: string | null
+        }
+        Insert: {
+          added_at?: string
+          created_at?: string
+          expires_at?: string | null
+          id?: string
+          org_id?: string | null
+          phone_number: string
+          reason?: string
+          source_call_id?: string | null
+        }
+        Update: {
+          added_at?: string
+          created_at?: string
+          expires_at?: string | null
+          id?: string
+          org_id?: string | null
+          phone_number?: string
+          reason?: string
+          source_call_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "suppression_entries_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
             referencedRelation: "organizations"
             referencedColumns: ["id"]
           },
