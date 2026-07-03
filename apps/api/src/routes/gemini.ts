@@ -68,6 +68,8 @@ const analyzeDirectTaskSchema = z.object({
   taskDescription: z.string().min(1, "Task description is required"),
   contactName: z.string().min(1, "Contact name is required"),
   contactPhone: z.string().optional(),
+  clientName: z.string().optional(),
+  grantedPreAuthorizations: z.array(z.string()).optional(),
 });
 
 const intakeAnswerSchema = z.object({
@@ -448,6 +450,17 @@ export default async function geminiRoutes(fastify: FastifyInstance) {
               type: "string",
               description: "Phone number of the contact (optional)",
             },
+            clientName: {
+              type: "string",
+              description:
+                "Tenant customer the agent calls on behalf of (templates the AI-disclosure opener)",
+            },
+            grantedPreAuthorizations: {
+              type: "array",
+              items: { type: "string" },
+              description:
+                "Playbook pre-authorization keys explicitly granted for this dispatch",
+            },
           },
         },
         response: {
@@ -477,6 +490,19 @@ export default async function geminiRoutes(fastify: FastifyInstance) {
                   systemPrompt: { type: "string" },
                   firstMessage: { type: "string" },
                   closingScript: { type: "string" },
+                  disclosureLine: { type: "string" },
+                  preAuthorizations: {
+                    type: "array",
+                    items: {
+                      type: "object",
+                      properties: {
+                        key: { type: "string" },
+                        description: { type: "string" },
+                        requiresExplicitGrant: { type: "boolean" },
+                        granted: { type: "boolean" },
+                      },
+                    },
+                  },
                 },
               },
             },
