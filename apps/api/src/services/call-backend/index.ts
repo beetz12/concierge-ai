@@ -1,10 +1,12 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { ContractorCallService } from "../voice/contractor-call.service.js";
 import { LiveKitCallBackend } from "./livekit/livekit-call-backend.js";
+import { createVapiCallBackendFromEnv } from "./vapi/vapi-call-backend.js";
 import type { CallBackend, CallBackendId } from "./types.js";
 
 export * from "./types.js";
 export { LiveKitCallBackend } from "./livekit/livekit-call-backend.js";
+export { VapiCallBackend } from "./vapi/vapi-call-backend.js";
 
 const DEFAULT_CALL_BACKEND: CallBackendId = "livekit";
 
@@ -15,7 +17,10 @@ export interface CallBackendDependencies {
   supabase: SupabaseClient;
 }
 
-type CallBackendFactory = (deps: CallBackendDependencies) => CallBackend;
+type CallBackendFactory = (
+  deps: CallBackendDependencies,
+  env: NodeJS.ProcessEnv,
+) => CallBackend;
 
 /**
  * Registry of available call backends, keyed by {@link CallBackendId}.
@@ -26,6 +31,7 @@ const registry: Record<CallBackendId, CallBackendFactory> = {
     new LiveKitCallBackend(
       new ContractorCallService({ supabase: deps.supabase }),
     ),
+  vapi: (_deps, env) => createVapiCallBackendFromEnv(env),
 };
 
 /**
@@ -61,5 +67,5 @@ export function getCallBackend(
   env: NodeJS.ProcessEnv = process.env,
 ): CallBackend {
   const id = resolveCallBackendId(env);
-  return registry[id](deps);
+  return registry[id](deps, env);
 }
