@@ -10,6 +10,7 @@ export type TaskType =
   | "schedule_appointment"
   | "cancel_service"
   | "make_inquiry"
+  | "deliver_message"
   | "general_task";
 
 export interface TaskAnalysis {

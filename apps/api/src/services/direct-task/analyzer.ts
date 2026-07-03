@@ -56,7 +56,7 @@ Contact: "${request.contactName}"
 
 Return a JSON object with:
 {
-  "taskType": one of: "negotiate_price", "request_refund", "complain_issue", "schedule_appointment", "cancel_service", "make_inquiry", "general_task",
+  "taskType": one of: "negotiate_price", "request_refund", "complain_issue", "schedule_appointment", "cancel_service", "make_inquiry", "deliver_message", "general_task",
   "intent": brief description of what the user wants to achieve,
   "difficulty": "easy", "moderate", or "complex" based on typical resistance expected
 }

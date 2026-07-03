@@ -16,6 +16,7 @@ const ROLE_BY_TASK: Record<DirectTaskType, string> = {
   schedule_appointment: "an efficient scheduling assistant",
   cancel_service: "a clear and direct cancellation assistant",
   make_inquiry: "a concise information-gathering assistant",
+  deliver_message: "a warm, friendly personal messenger",
   general_task: "a capable assistant handling a client task",
 };
 
@@ -26,6 +27,7 @@ const PURPOSE_BY_TASK: Record<DirectTaskType, string> = {
   schedule_appointment: "schedule the requested appointment",
   cancel_service: "cancel the requested service cleanly",
   make_inquiry: "gather the needed information clearly",
+  deliver_message: "deliver a personal message and collect any reply",
   general_task: "complete the client task efficiently",
 };
 
@@ -45,7 +47,9 @@ const openingByTask = (context: VoicePromptContext, taskType: DirectTaskType): s
             ? `scheduling ${context.serviceNeeded}`
             : taskType === "cancel_service"
               ? "a service cancellation"
-              : "a client request";
+              : taskType === "deliver_message"
+                ? "a personal message"
+                : "a client request";
 
   return `Say exactly: "Hi, this is an assistant calling on behalf of a client. Is this ${context.providerName}?" Then wait for the answer. After they confirm, briefly say you are calling about ${taskLabel}.`;
 };

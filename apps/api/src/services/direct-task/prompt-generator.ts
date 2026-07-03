@@ -31,6 +31,8 @@ export function generatePromptFromAnalysis(
       "clear and direct representative handling a cancellation",
     make_inquiry:
       "thorough information gatherer collecting all relevant details",
+    deliver_message:
+      "warm, friendly personal messenger delivering a message from your client",
     general_task: "capable assistant completing the requested task",
   };
 
@@ -145,6 +147,7 @@ Thank them genuinely when they help.`;
     schedule_appointment: `Hi there! This is an AI assistant calling on behalf of my client. They'd like to schedule an appointment. Do you have a moment?`,
     cancel_service: `Hi there! This is an AI assistant calling on behalf of my client. They need to cancel their service. Do you have a moment?`,
     make_inquiry: `Hi there! This is an AI assistant calling on behalf of my client. I have a few questions I'd like to ask. Do you have a moment?`,
+    deliver_message: `Hi ${request.contactName}! My name is Jarvis, I'm calling on behalf of David. He wanted me to pass along a message. Do you have just a moment?`,
     general_task: `Hi there! This is an AI assistant calling on behalf of my client regarding ${request.contactName}. Do you have just a moment?`,
   };
 
@@ -161,6 +164,8 @@ Thank them genuinely when they help.`;
       "Thank you for processing this cancellation. Can you confirm the effective date and any final steps? [confirm]. Have a wonderful day!",
     make_inquiry:
       "That's very helpful, thank you! Just to summarize what I've learned: [summarize]. Have a wonderful day!",
+    deliver_message:
+      "Thank you for listening! I'll let David know. Have a wonderful day!",
     general_task:
       "Thank you so much for your help with this! Have a wonderful day!",
   };
