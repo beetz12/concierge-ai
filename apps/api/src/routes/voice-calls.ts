@@ -55,6 +55,11 @@ const smsStatusParamsSchema = z.object({
   messageSid: z.string().regex(/^SM[a-f0-9]{32}$/, "Invalid Twilio message SID"),
 });
 
+const conversationQuerySchema = z.object({
+  phone: z.string().regex(e164PhoneRegex, e164PhoneMessage),
+  limit: z.coerce.number().min(1).max(100).optional().default(20),
+});
+
 const normalizeIntakeAnswers = (
   body: z.infer<typeof contractorCallSchema>,
 ): z.infer<typeof contractorCallSchema> => ({
@@ -328,6 +333,45 @@ export default async function voiceCallRoutes(fastify: FastifyInstance) {
       } catch (error) {
         reply.code(400).send({
           error: "StatusCheckFailed",
+          message: error instanceof Error ? error.message : "Invalid request",
+        });
+      }
+    },
+  );
+
+  fastify.get(
+    "/sms/conversation",
+    {
+      schema: {
+        tags: ["voice"],
+        summary: "List SMS conversation with a phone number (sent and received messages)",
+      },
+    },
+    async (request, reply) => {
+      try {
+        const query = conversationQuerySchema.parse(request.query);
+        const twilioClient = new DirectTwilioClient(fastify.log);
+        if (!twilioClient.isAvailable()) {
+          return reply.code(503).send({
+            error: "TwilioNotConfigured",
+            message: "Twilio credentials are not configured",
+          });
+        }
+        const result = await twilioClient.listMessages(query.phone, query.limit);
+        if (!result.success) {
+          return reply.code(502).send({
+            error: "ConversationFetchFailed",
+            message: result.error || "Failed to fetch conversation",
+          });
+        }
+        return {
+          success: true,
+          messages: result.messages,
+          count: result.messages.length,
+        };
+      } catch (error) {
+        reply.code(400).send({
+          error: "ConversationFetchFailed",
           message: error instanceof Error ? error.message : "Invalid request",
         });
       }
