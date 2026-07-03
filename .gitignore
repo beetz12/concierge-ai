@@ -49,6 +49,7 @@ supabase/.branches
 
 # claude code
 .claude
+.omc
 
 # prod_flows
 
