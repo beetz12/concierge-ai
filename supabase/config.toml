@@ -4,21 +4,27 @@
 # Project ID (set by `supabase link` or manually)
 project_id = "dsxuwpluafxyjwrhepsw"
 
+# Ports moved off the 54321-54324 defaults: other local Supabase stacks
+# (nexai-jarvis, pframe-monorepo) already bind those on this machine.
 [api]
-port = 54321
+port = 56321
 schemas = ["public", "storage"]
 extra_search_path = ["public"]
 max_rows = 1000
 
 [db]
-port = 54322
+port = 56322
+shadow_port = 56320
 major_version = 15
 
 [studio]
-port = 54323
+port = 56323
 
 [inbucket]
-port = 54324
+port = 56324
+
+[analytics]
+enabled = false
 
 [storage]
 file_size_limit = "50MiB"
