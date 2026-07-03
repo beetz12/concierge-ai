@@ -10,7 +10,7 @@
  * environment variable (see {@link getCallBackend}), defaulting to LiveKit.
  */
 
-export type CallBackendId = "livekit";
+export type CallBackendId = "livekit" | "retell";
 
 /**
  * How the agent should behave when a call reaches voicemail or an
@@ -52,6 +52,22 @@ export interface CallPlan {
   voicemailPolicy: VoicemailPolicy;
   /** Facts/actions the agent is pre-cleared to disclose or perform. */
   preAuthorizations: CallPreAuthorization[];
+  /**
+   * Tenant identifier used for per-tenant dispatch guardrails (e.g. the
+   * 24h same-number redial guard). When omitted, guards apply account-wide.
+   */
+  tenantId?: string;
+  /**
+   * Asserts that a human reviewed THIS call plan (number, objective,
+   * questions) and explicitly approved the dispatch. Backends with dispatch
+   * guards (e.g. Retell) refuse to dial without it.
+   */
+  userApproved?: boolean;
+  /**
+   * Overrides the 24h same-number redial guard for a retry that was
+   * explicitly pre-approved by the user.
+   */
+  allowRedial?: boolean;
 }
 
 /**
