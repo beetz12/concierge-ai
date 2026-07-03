@@ -1,6 +1,10 @@
 import { FastifyInstance } from "fastify";
 import { z } from "zod";
 import { ContractorCallService } from "../services/voice/contractor-call.service.js";
+import {
+  LiveKitCallBackend,
+  resolveCallBackendId,
+} from "../services/call-backend/index.js";
 import { DirectTwilioClient } from "../services/notifications/direct-twilio.client.js";
 
 const e164PhoneRegex = /^\+1\d{10}$/;
@@ -74,6 +78,10 @@ export default async function voiceCallRoutes(fastify: FastifyInstance) {
   const contractorCallService = new ContractorCallService({
     supabase: fastify.supabase,
   });
+  // Validates CALL_BACKEND at startup (defaults to livekit) and exposes the
+  // adapter capabilities used to gate optional endpoints below.
+  resolveCallBackendId();
+  const callBackend = new LiveKitCallBackend(contractorCallService);
 
   fastify.post(
     "/preview-call",
@@ -156,6 +164,12 @@ export default async function voiceCallRoutes(fastify: FastifyInstance) {
       },
     },
     async (request, reply) => {
+      if (!callBackend.capabilities.supportsSupervision) {
+        return reply.code(501).send({
+          error: "SupervisionUnsupported",
+          message: `Live supervision is not supported by the ${callBackend.id} call backend`,
+        });
+      }
       try {
         const params = sessionParamsSchema.parse(request.params);
         const body = supervisorBrowserSchema.parse(request.body ?? {});
@@ -189,6 +203,12 @@ export default async function voiceCallRoutes(fastify: FastifyInstance) {
       },
     },
     async (request, reply) => {
+      if (!callBackend.capabilities.supportsWarmTransfer) {
+        return reply.code(501).send({
+          error: "WarmTransferUnsupported",
+          message: `Warm transfer is not supported by the ${callBackend.id} call backend`,
+        });
+      }
       try {
         const params = sessionParamsSchema.parse(request.params);
         const body = supervisorCallSchema.parse(request.body);
@@ -222,6 +242,12 @@ export default async function voiceCallRoutes(fastify: FastifyInstance) {
       },
     },
     async (request, reply) => {
+      if (!callBackend.capabilities.supportsPause) {
+        return reply.code(501).send({
+          error: "PauseUnsupported",
+          message: `Pause is not supported by the ${callBackend.id} call backend`,
+        });
+      }
       try {
         const params = sessionParamsSchema.parse(request.params);
         const result = await contractorCallService.controlActiveCall({
@@ -251,6 +277,12 @@ export default async function voiceCallRoutes(fastify: FastifyInstance) {
       },
     },
     async (request, reply) => {
+      if (!callBackend.capabilities.supportsPause) {
+        return reply.code(501).send({
+          error: "ResumeUnsupported",
+          message: `Resume is not supported by the ${callBackend.id} call backend`,
+        });
+      }
       try {
         const params = sessionParamsSchema.parse(request.params);
         const result = await contractorCallService.controlActiveCall({
