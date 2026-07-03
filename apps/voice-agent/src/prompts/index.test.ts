@@ -13,8 +13,8 @@ test("qualification template uses an outbound business-identity opener", () => {
   const template = buildVoicePromptTemplate(qualificationContext);
 
   assert.equal(template.variant, "outbound_qualification");
-  assert.match(template.openingPrompt, /calling on behalf of a client/i);
-  assert.match(template.openingPrompt, /Is this Acme Landscaping\?/i);
+  assert.match(template.openingPrompt, /calling on behalf of a homeowner/i);
+  assert.match(template.openingPrompt, /Am I speaking with Acme Landscaping\?/i);
   assert.doesNotMatch(template.openingPrompt, /thanks for calling/i);
 });
 
@@ -24,16 +24,16 @@ test("qualification template uses the client name in the opener when available",
     clientName: "David",
   });
 
-  assert.match(template.openingPrompt, /David's AI assistant calling on behalf of David/i);
-  assert.match(template.openingPrompt, /Is this Acme Landscaping\?/i);
+  assert.match(template.openingPrompt, /on behalf of David/i);
+  assert.match(template.openingPrompt, /Am I speaking with Acme Landscaping\?/i);
 });
 
 test("qualification template enforces sequential fact collection and edge-case handling", () => {
   const template = buildVoicePromptTemplate(qualificationContext);
 
-  assert.match(template.systemInstructions, /First confirm that you reached the correct company/i);
-  assert.match(template.systemInstructions, /Then ask for current pricing or rate structure/i);
-  assert.match(template.systemInstructions, /Then ask for the earliest availability/i);
+  assert.match(template.systemInstructions, /talking to the right business/i);
+  assert.match(template.systemInstructions, /rough idea of cost/i);
+  assert.match(template.systemInstructions, /their availability/i);
   assert.match(template.systemInstructions, /do not leave a message/i);
   assert.match(template.systemInstructions, /wrong business or wrong number/i);
 });
