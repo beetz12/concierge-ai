@@ -7,6 +7,7 @@ import {
   CalendarClock,
   Mail,
   Phone,
+  PhoneOutgoing,
   Shield,
 } from "lucide-react";
 import {
@@ -53,6 +54,12 @@ export default async function CaseDetailPage({
     return (payload?.promises ?? []).filter((p) => p.who && p.what);
   };
 
+  /** Dispatch call id carried by call events (slice 8 attach-to-case). */
+  const callIdOf = (event: CaseEventRow): string | null => {
+    const payload = event.payload as { call_id?: unknown } | null;
+    return typeof payload?.call_id === "string" ? payload.call_id : null;
+  };
+
   return (
     <div className="p-4 md:p-6 space-y-6">
       <Link
@@ -97,6 +104,13 @@ export default async function CaseDetailPage({
             <p className="text-xs text-slate-500">
               {STAGE_LABELS[caseRow.escalation_stage] ?? "Unknown"} approach
             </p>
+            <Link
+              href={`/dispatch?caseId=${caseRow.id}`}
+              data-testid="case-dispatch-link"
+              className="inline-flex items-center gap-2 px-4 py-2 bg-primary-600 hover:bg-primary-500 text-white text-sm font-bold rounded-xl transition-colors"
+            >
+              <PhoneOutgoing className="w-4 h-4" /> Dispatch a call
+            </Link>
           </div>
         </div>
 
@@ -179,6 +193,15 @@ export default async function CaseDetailPage({
                   <span className="text-xs text-slate-500">
                     {new Date(event.occurred_at).toLocaleString()}
                   </span>
+                  {callIdOf(event) && (
+                    <Link
+                      href={`/dispatch/${callIdOf(event)}`}
+                      data-testid="timeline-call-link"
+                      className="text-xs text-primary-400 underline underline-offset-2"
+                    >
+                      View call
+                    </Link>
+                  )}
                 </div>
                 <p className="text-sm text-slate-200">{event.summary}</p>
                 {promisesOf(event).length > 0 && (
