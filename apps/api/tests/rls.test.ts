@@ -19,6 +19,11 @@ import { resolveLocalSupabaseKeys } from "./helpers/local-supabase.js";
 const { url: SUPABASE_URL, anonKey: ANON_KEY, serviceKey: SERVICE_KEY } =
   resolveLocalSupabaseKeys();
 
+// Skip the live-DB suite when no local Supabase service key is available
+// (e.g. CI, where `supabase start` is not run). Without this guard the
+// top-level createClient(...) throws "supabaseKey is required" at import time.
+const SKIP = !SERVICE_KEY;
+
 const clientOptions = {
   auth: { persistSession: false, autoRefreshToken: false },
 } as const;
@@ -30,7 +35,9 @@ interface TenantFixture {
   orgId: string;
 }
 
-const admin = createClient(SUPABASE_URL, SERVICE_KEY, clientOptions);
+const admin = SKIP
+  ? (undefined as unknown as SupabaseClient)
+  : createClient(SUPABASE_URL, SERVICE_KEY, clientOptions);
 
 async function createTenant(label: string): Promise<TenantFixture> {
   const email = `rls-${label}-${randomUUID()}@example.com`;
@@ -62,7 +69,7 @@ async function createTenant(label: string): Promise<TenantFixture> {
   return { client, userId, email, orgId: org.id };
 }
 
-describe("tenant RLS (local Supabase stack)", () => {
+describe("tenant RLS (local Supabase stack)", { skip: SKIP && "rls.test.ts (skipped: no local Supabase)" }, () => {
   let tenantA: TenantFixture;
   let tenantB: TenantFixture;
   let requestAId: string;

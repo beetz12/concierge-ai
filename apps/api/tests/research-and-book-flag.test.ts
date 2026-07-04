@@ -3,6 +3,11 @@ import assert from "node:assert/strict";
 import Fastify, { FastifyInstance } from "fastify";
 import providerRoutes from "../src/routes/providers.js";
 
+// Snapshot at module load: sibling test files mutate process.env.GEMINI_API_KEY,
+// so read it once here to keep the skip decision deterministic (skip in CI, where
+// the key is absent from the start).
+const SKIP_GEMINI = !process.env.GEMINI_API_KEY && "no GEMINI_API_KEY";
+
 /**
  * FIX 1: the legacy Research-and-Book calling routes are disabled by default.
  * With ENABLE_RESEARCH_AND_BOOK unset (and DEMO_MODE off), the three real-dialing
@@ -40,7 +45,9 @@ async function buildApp(): Promise<FastifyInstance> {
   return app;
 }
 
-describe("Research-and-Book disabled by default (FIX 1)", () => {
+describe("Research-and-Book disabled by default (FIX 1)", {
+  skip: SKIP_GEMINI,
+}, () => {
   const saved: Record<string, string | undefined> = {};
   const ENV_KEYS = [
     "ENABLE_RESEARCH_AND_BOOK",

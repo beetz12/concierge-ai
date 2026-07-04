@@ -25,11 +25,18 @@ import { resolveLocalSupabaseKeys } from "./helpers/local-supabase.js";
 const { url: SUPABASE_URL, anonKey: ANON_KEY, serviceKey: SERVICE_KEY } =
   resolveLocalSupabaseKeys();
 
+// Skip the live-DB suite when no local Supabase service key is available
+// (e.g. CI, where `supabase start` is not run). Without this guard the
+// top-level createClient(...) throws "supabaseKey is required" at import time.
+const SKIP = !SERVICE_KEY;
+
 const clientOptions = {
   auth: { persistSession: false, autoRefreshToken: false },
 } as const;
 
-const admin = createClient(SUPABASE_URL, SERVICE_KEY, clientOptions);
+const admin = SKIP
+  ? (undefined as unknown as SupabaseClient)
+  : createClient(SUPABASE_URL, SERVICE_KEY, clientOptions);
 
 // Fixed UTC instants (July 2026 = US daylight time).
 const NOON_EASTERN = new Date("2026-07-03T16:00:00.000Z"); // 12:00 p.m. EDT
@@ -49,7 +56,7 @@ const makePlan = (phoneNumber: string, overrides: Partial<CallPlan> = {}): CallP
   ...overrides,
 });
 
-describe("compliance-gated dispatch (local Supabase stack)", () => {
+describe("compliance-gated dispatch (local Supabase stack)", { skip: SKIP && "compliance-dispatch.test.ts (skipped: no local Supabase)" }, () => {
   let userId: string;
   let orgId: string;
   let currentNow = NOON_EASTERN;

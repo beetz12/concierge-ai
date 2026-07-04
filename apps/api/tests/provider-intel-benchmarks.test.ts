@@ -8,10 +8,17 @@ import {
 } from "./fixtures/provider-intel-benchmark-scenarios.js";
 import { runProviderIntelBenchmark } from "../scripts/provider-intel-benchmark.js";
 
+// Snapshot at module load: sibling test files mutate process.env.GEMINI_API_KEY,
+// so read it once here to keep the skip decision deterministic (skip in CI, where
+// the key is absent from the start).
+const SKIP_GEMINI = !process.env.GEMINI_API_KEY && "no GEMINI_API_KEY";
+
 for (const scenario of providerIntelBenchmarkScenarios.filter(
   (item) => item.expectedTopProviders.length > 0,
 )) {
-  test(`provider-intel benchmark snapshot: ${scenario.id}`, async () => {
+  test(`provider-intel benchmark snapshot: ${scenario.id}`, {
+    skip: SKIP_GEMINI,
+  }, async () => {
     const outDir = await mkdtemp(join(tmpdir(), "provider-intel-benchmark-"));
     const outputPath = join(outDir, `${scenario.id}.json`);
     await runProviderIntelBenchmark({

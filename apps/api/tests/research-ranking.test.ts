@@ -3,6 +3,11 @@ import test from "node:test";
 import { ResearchService } from "../src/services/research/research.service.js";
 import type { ResearchResult } from "../src/services/research/types.js";
 
+// Snapshot at module load: sibling test files mutate process.env.GEMINI_API_KEY,
+// so read it once here to keep the skip decision deterministic (skip in CI, where
+// the key is absent from the start).
+const SKIP_GEMINI = !process.env.GEMINI_API_KEY && "no GEMINI_API_KEY";
+
 const logger = {
   info() {},
   debug() {},
@@ -10,7 +15,9 @@ const logger = {
   error() {},
 };
 
-test("research ranking prefers corroborated multi-platform landscaper over thinner single-platform profile", () => {
+test("research ranking prefers corroborated multi-platform landscaper over thinner single-platform profile", {
+  skip: SKIP_GEMINI,
+}, () => {
   const service = new ResearchService(logger);
 
   const result: ResearchResult = {
