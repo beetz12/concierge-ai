@@ -14,7 +14,7 @@ export default function MarketingLayout({
   children: React.ReactNode;
 }) {
   return (
-    <div className="min-h-svh overflow-y-auto bg-abyss text-slate-100">
+    <div className="h-svh overflow-y-auto bg-abyss text-slate-100">
       <MarketingNav />
       <main>{children}</main>
       <MarketingFooter />
