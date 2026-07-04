@@ -2,26 +2,26 @@
 # This file is used when running Supabase locally with `supabase start`
 
 # Project ID (set by `supabase link` or manually)
-project_id = "dsxuwpluafxyjwrhepsw"
+project_id = "concierge-s7-cases"
 
 # Ports moved off the 54321-54324 defaults: other local Supabase stacks
 # (nexai-jarvis, pframe-monorepo) already bind those on this machine.
 [api]
-port = 56321
+port = 56341
 schemas = ["public", "storage"]
 extra_search_path = ["public"]
 max_rows = 1000
 
 [db]
-port = 56322
-shadow_port = 56320
+port = 56342
+shadow_port = 56340
 major_version = 15
 
 [studio]
-port = 56323
+port = 56343
 
 [inbucket]
-port = 56324
+port = 56344
 
 [analytics]
 enabled = false
