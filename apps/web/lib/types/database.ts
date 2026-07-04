@@ -9,6 +9,122 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
+      case_events: {
+        Row: {
+          case_id: string
+          created_at: string
+          id: string
+          kind: string
+          occurred_at: string
+          org_id: string
+          payload: Json
+          summary: string
+        }
+        Insert: {
+          case_id: string
+          created_at?: string
+          id?: string
+          kind: string
+          occurred_at?: string
+          org_id: string
+          payload?: Json
+          summary: string
+        }
+        Update: {
+          case_id?: string
+          created_at?: string
+          id?: string
+          kind?: string
+          occurred_at?: string
+          org_id?: string
+          payload?: Json
+          summary?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "case_events_case_id_fkey"
+            columns: ["case_id"]
+            isOneToOne: false
+            referencedRelation: "cases"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "case_events_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      cases: {
+        Row: {
+          amount_at_stake: number | null
+          counterparty_company: string | null
+          counterparty_email: string | null
+          counterparty_name: string | null
+          counterparty_phone: string | null
+          created_at: string
+          created_by: string | null
+          dispute_type: string
+          escalation_stage: number
+          id: string
+          leverage_notes: string | null
+          next_action_at: string | null
+          org_id: string
+          resolution: string | null
+          status: string
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          amount_at_stake?: number | null
+          counterparty_company?: string | null
+          counterparty_email?: string | null
+          counterparty_name?: string | null
+          counterparty_phone?: string | null
+          created_at?: string
+          created_by?: string | null
+          dispute_type?: string
+          escalation_stage?: number
+          id?: string
+          leverage_notes?: string | null
+          next_action_at?: string | null
+          org_id: string
+          resolution?: string | null
+          status?: string
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          amount_at_stake?: number | null
+          counterparty_company?: string | null
+          counterparty_email?: string | null
+          counterparty_name?: string | null
+          counterparty_phone?: string | null
+          created_at?: string
+          created_by?: string | null
+          dispute_type?: string
+          escalation_stage?: number
+          id?: string
+          leverage_notes?: string | null
+          next_action_at?: string | null
+          org_id?: string
+          resolution?: string | null
+          status?: string
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cases_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       interaction_logs: {
         Row: {
           call_id: string | null
