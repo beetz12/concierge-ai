@@ -286,6 +286,7 @@ telephony provider can be swapped without touching call-dispatch logic.
 |----------------|---------|--------------|
 | `livekit` (default) | `LiveKitCallBackend` | pause/resume, live supervision, warm transfer |
 | `retell` | `RetellCallBackend` | warm transfer + DTMF (agent-tool level); no pause / live supervision |
+| `vapi` | `VapiCallBackend` | none wired; wraps the VAPI REST API |
 | `mock` | `MockCallBackend` | none - deterministic in-memory backend for tests/demos (instant transitions, canned artifacts; outcome scripted by the dialed number's last digit) |
 
 **LiveKit adapter**: `apps/api/src/services/call-backend/livekit/livekit-call-backend.ts`
@@ -324,6 +325,14 @@ Retell AI REST API using the request shapes proven by the `call-biz` CLI.
   `apps/api/.env.example`).
 - **Tests**: `apps/api/src/services/call-backend/retell/*.test.ts` (node:test,
   mocked HTTP - no API key or network needed).
+
+**VAPI adapter**: `apps/api/src/services/call-backend/vapi/vapi-call-backend.ts`
+talks directly to the VAPI REST API (`https://api.vapi.ai`) to dispatch,
+poll, and cancel calls - it does not modify or import from
+`apps/api/src/services/vapi/**`, so the legacy Research-and-Book pipeline is
+unaffected. Dispatch is fire-and-forget (returns the VAPI call id immediately;
+callers poll `getStatus`/`getArtifacts`). Requires `VAPI_API_KEY` and
+`VAPI_PHONE_NUMBER_ID`; only supports US E.164 destination numbers.
 
 > **Migration note**: the legacy VAPI/Kestra provider-calling pipeline under
 > `apps/api/src/services/vapi/` still backs the Research-and-Book flow

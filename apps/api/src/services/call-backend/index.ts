@@ -5,6 +5,7 @@ import {
   createRetellCallBackendFromEnv,
   RetellCallBackend,
 } from "./retell/retell-backend.js";
+import { createVapiCallBackendFromEnv } from "./vapi/vapi-call-backend.js";
 import { MockCallBackend } from "./mock/mock-call-backend.js";
 import type { CallBackend, CallBackendId } from "./types.js";
 
@@ -12,6 +13,7 @@ export * from "./types.js";
 export { LiveKitCallBackend } from "./livekit/livekit-call-backend.js";
 export { RetellCallBackend } from "./retell/retell-backend.js";
 export { RetellProvisioner } from "./retell/provisioning.js";
+export { VapiCallBackend } from "./vapi/vapi-call-backend.js";
 export { MockCallBackend } from "./mock/mock-call-backend.js";
 
 const DEFAULT_CALL_BACKEND: CallBackendId = "livekit";
@@ -39,6 +41,7 @@ const registry: Record<CallBackendId, CallBackendFactory> = {
     ),
   retell: (deps, env): RetellCallBackend =>
     createRetellCallBackendFromEnv(deps, env),
+  vapi: (_deps, env) => createVapiCallBackendFromEnv(env),
   // Deterministic in-memory backend for tests/demos; a single instance so
   // dispatch, status, and artifacts share state across route handlers.
   mock: (() => {
