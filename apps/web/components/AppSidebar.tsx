@@ -15,6 +15,7 @@ import {
   Home,
   LogOut,
   User,
+  Scale,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuth, useAuthActions } from "@/lib/providers/AuthProvider";
@@ -39,6 +40,7 @@ const navItems = [
   { href: "/dashboard", icon: LayoutDashboard, label: "Dashboard" },
   { href: "/new", icon: PlusCircle, label: "New Request" },
   { href: "/history", icon: History, label: "History" },
+  { href: "/cases", icon: Scale, label: "Cases" },
   { href: "/about", icon: Info, label: "About" },
 ];
 
