@@ -16,6 +16,7 @@ import supabasePlugin from "./plugins/supabase.js";
 import authPlugin from "./plugins/auth.js";
 import authMiddleware from "./middleware/auth.js";
 import billingRoutes from "./routes/billing.js";
+import casesRoutes from "./routes/cases.js";
 import userRoutes from "./routes/users.js";
 import geminiRoutes from "./routes/gemini.js";
 import workflowRoutes from "./routes/workflows.js";
@@ -292,6 +293,11 @@ await server.register(swagger, {
       { name: "voice-tools", description: "Internal tool routes for the LiveKit voice-agent service" },
       { name: "voice", description: "Public contractor call preview, dispatch, and status routes" },
       { name: "billing", description: "Stripe checkout and subscription lifecycle webhook" },
+      {
+        name: "cases",
+        description:
+          "Dispute / follow-up case management: CRUD, timeline, escalation stages, next actions",
+      },
     ],
   },
 });
@@ -398,6 +404,7 @@ server.get(
         voiceTools: "/api/v1/voice-tools",
         voice: "/api/v1/voice",
         billing: "/api/v1/billing",
+        cases: "/api/v1/cases",
         docs: "/docs",
       },
     };
@@ -444,6 +451,9 @@ await server.register(voiceCallRoutes, { prefix: "/api/v1/voice" });
 
 // Register Billing routes (Stripe checkout + lifecycle webhook)
 await server.register(billingRoutes, { prefix: "/api/v1/billing" });
+
+// Register Case management routes (disputes / follow-ups)
+await server.register(casesRoutes, { prefix: "/api/v1/cases" });
 
 // Start server with port conflict handling
 const start = async () => {
