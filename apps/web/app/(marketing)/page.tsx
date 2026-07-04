@@ -65,6 +65,23 @@ function Hero() {
         </div>
       </div>
 
+      {/* Product hero video: muted autoplay, loops, captions burned in. */}
+      <div className="relative mx-auto mt-12 w-full max-w-4xl">
+        <video
+          className="w-full rounded-2xl border border-surface-highlight shadow-2xl"
+          autoPlay
+          muted
+          loop
+          playsInline
+          preload="metadata"
+          poster="/hero/concierge-hero-poster.jpg"
+          aria-label="AI Concierge demo: describe a call, approve the plan, and the AI dials the contractor live and returns the outcome."
+        >
+          <source src="/hero/concierge-hero.webm" type="video/webm" />
+          <source src="/hero/concierge-hero.mp4" type="video/mp4" />
+        </video>
+      </div>
+
       <ProductProof />
     </section>
   );
