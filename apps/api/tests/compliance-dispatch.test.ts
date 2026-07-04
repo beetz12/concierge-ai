@@ -22,7 +22,7 @@ import { POLICY_VERSION } from "../src/services/compliance/policy-engine.js";
  */
 
 const SUPABASE_URL =
-  process.env.RLS_TEST_SUPABASE_URL ?? "http://127.0.0.1:56321";
+  process.env.RLS_TEST_SUPABASE_URL ?? "http://127.0.0.1:56341";
 const ANON_KEY =
   process.env.RLS_TEST_SUPABASE_ANON_KEY ??
   "REDACTED_LOCAL_SUPABASE_ANON";
