@@ -5,6 +5,7 @@ if (process.env.NODE_ENV !== "production") {
   await import("dotenv/config");
 }
 
+import { randomUUID } from "node:crypto";
 import Fastify from "fastify";
 import cors from "@fastify/cors";
 import helmet from "@fastify/helmet";
@@ -14,6 +15,12 @@ import swagger from "@fastify/swagger";
 import swaggerUi from "@fastify/swagger-ui";
 import supabasePlugin from "./plugins/supabase.js";
 import authPlugin from "./plugins/auth.js";
+import errorHandlerPlugin from "./plugins/error-handler.js";
+import authMiddleware from "./middleware/auth.js";
+import { initObservability } from "./config/observability.js";
+import billingRoutes from "./routes/billing.js";
+import casesRoutes from "./routes/cases.js";
+import dispatchRoutes from "./routes/dispatch.js";
 import userRoutes from "./routes/users.js";
 import geminiRoutes from "./routes/gemini.js";
 import workflowRoutes from "./routes/workflows.js";
@@ -24,6 +31,7 @@ import twilioWebhookRoutes from "./routes/twilio-webhook.js";
 import bookingRoutes from "./routes/bookings.js";
 import intakeRoutes from "./routes/intake.js";
 import demoRoutes from "./routes/demo.js";
+import demoCallRoutes from "./routes/demo-call.js";
 import voiceToolRoutes from "./routes/voice-tools.js";
 import voiceCallRoutes from "./routes/voice-calls.js";
 import {
@@ -34,6 +42,7 @@ import {
   addToBlacklist,
 } from "./config/ip-blacklist.js";
 import { isDemoMode } from "./config/demo.js";
+import { assertNotDemoInProduction } from "./config/production-guard.js";
 import { getCallRuntimeConfig } from "./config/call-runtime.js";
 
 // =============================================================================
@@ -123,6 +132,10 @@ if (isDemoMode()) {
   console.log("");
 }
 
+// Refuse to boot in production with DEMO_MODE enabled: demo mode bypasses auth,
+// skips the database, and simulates calls — it must never run in production.
+assertNotDemoInProduction();
+
 if (criticalMissing && !isDemoMode()) {
   console.error("ERROR: Critical environment variables are missing!");
   console.error("The application may not function correctly.");
@@ -135,16 +148,58 @@ if (criticalMissing && !isDemoMode()) {
 
 // =============================================================================
 
+// Structured logging with request IDs.
+// - Every request gets a stable id (honoring an inbound `x-request-id` from an
+//   upstream proxy, else a fresh UUID) that is attached to every log line via
+//   `reqId` and echoed back to the client in the `x-request-id` header.
+// - JSON logs in production (machine-parseable for aggregation); pretty logs in
+//   development. Known secret-bearing headers are redacted so tokens never land
+//   in logs.
+const isProductionEnv = process.env.NODE_ENV === "production";
 const server = Fastify({
-  logger: {
-    transport: {
-      target: "pino-pretty",
-      options: {
-        translateTime: "HH:MM:ss Z",
-        ignore: "pid,hostname",
-      },
-    },
+  genReqId: (req) => {
+    const incoming = req.headers["x-request-id"];
+    if (typeof incoming === "string" && incoming.length > 0 && incoming.length <= 200) {
+      return incoming;
+    }
+    return randomUUID();
   },
+  requestIdHeader: "x-request-id",
+  requestIdLogLabel: "reqId",
+  logger: {
+    level: process.env.LOG_LEVEL || "info",
+    redact: {
+      paths: [
+        "req.headers.authorization",
+        "req.headers.cookie",
+        'req.headers["x-vapi-secret"]',
+        'req.headers["x-vapi-signature"]',
+        'req.headers["x-twilio-signature"]',
+        'req.headers["stripe-signature"]',
+        'req.headers["x-org-id"]',
+      ],
+      remove: false,
+    },
+    ...(isProductionEnv
+      ? {}
+      : {
+          transport: {
+            target: "pino-pretty",
+            options: {
+              translateTime: "HH:MM:ss Z",
+              ignore: "pid,hostname",
+            },
+          },
+        }),
+  },
+});
+
+// Echo the request id back to the caller so a client can quote it when
+// reporting an issue (the global error handler also includes it in the body).
+server.addHook("onSend", async (request, reply) => {
+  if (!reply.getHeader("x-request-id")) {
+    reply.header("x-request-id", request.id);
+  }
 });
 
 let isShuttingDown = false;
@@ -193,6 +248,14 @@ console.log(`IP Blacklist: ${getBlacklistSize()} IPs blocked`);
 const corsOrigins = process.env.CORS_ORIGIN
   ? process.env.CORS_ORIGIN.split(",").map((origin) => origin.trim())
   : ["http://localhost:3000", "http://localhost:3001", "http://localhost:3002"];
+
+// Initialize optional error monitoring (Sentry) before anything can throw.
+// No-op unless SENTRY_DSN is set and @sentry/node is installed.
+await initObservability(server.log);
+
+// Global error + not-found handlers: consistent JSON envelope with the
+// request id, domain-error mapping, and 5xx reporting to Sentry.
+await server.register(errorHandlerPlugin);
 
 await server.register(cors, {
   origin: corsOrigins.length === 1 ? corsOrigins[0] : corsOrigins,
@@ -289,6 +352,12 @@ await server.register(swagger, {
       { name: "intake", description: "Professional intake question generation" },
       { name: "voice-tools", description: "Internal tool routes for the LiveKit voice-agent service" },
       { name: "voice", description: "Public contractor call preview, dispatch, and status routes" },
+      { name: "billing", description: "Stripe checkout and subscription lifecycle webhook" },
+      {
+        name: "cases",
+        description:
+          "Dispute / follow-up case management: CRUD, timeline, escalation stages, next actions",
+      },
     ],
   },
 });
@@ -306,6 +375,11 @@ await server.register(supabasePlugin);
 
 // Register Auth plugin (must be after Supabase)
 await server.register(authPlugin);
+
+// Register tenant auth middleware: enforces Supabase JWTs + org membership on
+// all /api/v1/* routes except health/docs/webhooks, injecting request.auth =
+// { userId, orgId }. Must be registered before the routes it guards.
+await server.register(authMiddleware);
 
 // Health check endpoint with lenient rate limit
 // Monitoring systems (K8s, load balancers) need reliable access
@@ -387,8 +461,11 @@ server.get(
         bookings: "/api/v1/bookings",
         intake: "/api/v1/intake",
         demo: "/api/v1/demo",
+        demoCall: "/api/v1/demo-call",
         voiceTools: "/api/v1/voice-tools",
         voice: "/api/v1/voice",
+        billing: "/api/v1/billing",
+        cases: "/api/v1/cases",
         docs: "/docs",
       },
     };
@@ -413,8 +490,10 @@ await server.register(vapiWebhookRoutes, { prefix: "/api/v1/vapi" });
 // Register Notification routes
 await server.register(notificationRoutes, { prefix: "/api/v1/notifications" });
 
-// Register Twilio Webhook routes
-await server.register(twilioWebhookRoutes, { prefix: "/api/v1/twilio" });
+// Register Twilio Webhook routes (requires Supabase)
+if (!isDemoMode()) {
+  await server.register(twilioWebhookRoutes, { prefix: "/api/v1/twilio" });
+}
 
 // Register Booking routes
 await server.register(bookingRoutes, { prefix: "/api/v1/bookings" });
@@ -425,16 +504,33 @@ await server.register(intakeRoutes, { prefix: "/api/v1/intake" });
 // Register Demo routes
 await server.register(demoRoutes, { prefix: "/api/v1/demo" });
 
+// Register public marketing demo-call route (feature-flagged, unauthenticated)
+await server.register(demoCallRoutes, { prefix: "/api/v1/demo-call" });
+
 // Register internal voice-agent tool routes
 await server.register(voiceToolRoutes, { prefix: "/api/v1/voice-tools" });
 
 // Register public voice-call orchestration routes
 await server.register(voiceCallRoutes, { prefix: "/api/v1/voice" });
 
-// Start server with port fallback
+// Register Billing routes (Stripe checkout + lifecycle webhook)
+await server.register(billingRoutes, { prefix: "/api/v1/billing" });
+
+// Register Case management routes (disputes / follow-ups)
+await server.register(casesRoutes, { prefix: "/api/v1/cases" });
+
+// Register Dispatch flow routes (two-gate call dispatch UX)
+await server.register(dispatchRoutes, { prefix: "/api/v1/dispatch" });
+
+// Start server with port conflict handling
 const start = async () => {
   const basePort = parseInt(process.env.PORT || "8000", 10);
-  const maxRetries = 10;
+  const isProduction = process.env.NODE_ENV === "production";
+
+  // In production, use port fallback to stay available.
+  // In development, kill the old process to avoid orphaned servers
+  // that silently diverge from the MCP client's expected port.
+  const maxRetries = isProduction ? 10 : 1;
 
   for (let attempt = 0; attempt < maxRetries; attempt++) {
     const port = basePort + attempt;
@@ -448,8 +544,42 @@ const start = async () => {
     } catch (err: unknown) {
       const error = err as NodeJS.ErrnoException;
       if (error.code === "EADDRINUSE") {
-        console.log(`⚠️  Port ${port} is in use, trying ${port + 1}...`);
-        continue;
+        if (!isProduction) {
+          // In dev, try to kill the old process and reclaim the port
+          console.log(`⚠️  Port ${port} is in use. Attempting to reclaim...`);
+          try {
+            const { execFileSync } = await import("child_process");
+            const lsofOutput = execFileSync("lsof", ["-ti", `:${port}`], { encoding: "utf-8" }).trim();
+            if (lsofOutput) {
+              const pids = lsofOutput.split("\n").map((p) => p.trim()).filter(Boolean);
+              for (const pid of pids) {
+                // Don't kill ourselves
+                if (pid !== String(process.pid)) {
+                  console.log(`   Killing old process ${pid} on port ${port}...`);
+                  execFileSync("kill", [pid]);
+                }
+              }
+              // Wait for port to free up
+              await new Promise((resolve) => setTimeout(resolve, 1000));
+              // Retry the same port
+              try {
+                await server.listen({ port, host: "0.0.0.0" });
+                console.log(`🚀 API server running at http://localhost:${port} (reclaimed)`);
+                return;
+              } catch {
+                console.error(`❌ Port ${port} still in use after killing old process.`);
+                process.exit(1);
+              }
+            }
+          } catch {
+            console.error(`❌ Port ${port} is in use and could not be reclaimed.`);
+            console.error(`   Run: kill $(lsof -ti :${port}) && node dist/index.js`);
+            process.exit(1);
+          }
+        } else {
+          console.log(`⚠️  Port ${port} is in use, trying ${port + 1}...`);
+          continue;
+        }
       }
       server.log.error(err);
       process.exit(1);

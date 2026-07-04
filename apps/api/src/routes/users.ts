@@ -28,9 +28,6 @@ const UserIdSchema = z.object({
   id: z.string().uuid("Must be a valid UUID"),
 });
 
-type CreateUserInput = z.infer<typeof CreateUserSchema>;
-type UpdateUserInput = z.infer<typeof UpdateUserSchema>;
-
 const userRoutes: FastifyPluginAsync = async (fastify) => {
   /**
    * GET /api/v1/users
@@ -199,7 +196,7 @@ const userRoutes: FastifyPluginAsync = async (fastify) => {
       try {
         const { data, error } = await request.supabase
           .from("users")
-          .insert([userData as any])
+          .insert([userData as Record<string, unknown>])
           .select()
           .single();
 
@@ -296,7 +293,7 @@ const userRoutes: FastifyPluginAsync = async (fastify) => {
           .update({
             ...updateData,
             updated_at: new Date().toISOString(),
-          } as any)
+          } as Record<string, unknown>)
           .eq("id", id)
           .select()
           .single();

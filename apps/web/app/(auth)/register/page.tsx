@@ -2,7 +2,6 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import { motion } from "motion/react";
 import { Sparkles, Mail, Lock, User, Loader2, ArrowRight, CheckCircle } from "lucide-react";
 import { useAuthActions } from "@/lib/providers/AuthProvider";
@@ -11,7 +10,6 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 
 export default function RegisterPage() {
-  const router = useRouter();
   const { signUp } = useAuthActions();
   const { isLoading: authLoading, isReady } = useRedirectIfAuthenticated();
 
@@ -57,7 +55,7 @@ export default function RegisterPage() {
 
       // Show success message (email verification required)
       setSuccess(true);
-    } catch (err) {
+    } catch {
       setError("An unexpected error occurred. Please try again.");
     } finally {
       setIsLoading(false);

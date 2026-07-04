@@ -1,0 +1,87 @@
+import type { SupabaseClient } from "@supabase/supabase-js";
+import { ContractorCallService } from "../voice/contractor-call.service.js";
+import { LiveKitCallBackend } from "./livekit/livekit-call-backend.js";
+import {
+  createRetellCallBackendFromEnv,
+  RetellCallBackend,
+} from "./retell/retell-backend.js";
+import { createVapiCallBackendFromEnv } from "./vapi/vapi-call-backend.js";
+import { MockCallBackend } from "./mock/mock-call-backend.js";
+import type { CallBackend, CallBackendId } from "./types.js";
+
+export * from "./types.js";
+export { LiveKitCallBackend } from "./livekit/livekit-call-backend.js";
+export { RetellCallBackend } from "./retell/retell-backend.js";
+export { RetellProvisioner } from "./retell/provisioning.js";
+export { VapiCallBackend } from "./vapi/vapi-call-backend.js";
+export { MockCallBackend } from "./mock/mock-call-backend.js";
+
+const DEFAULT_CALL_BACKEND: CallBackendId = "livekit";
+
+/**
+ * Dependencies a backend factory needs to construct its concrete backend.
+ */
+export interface CallBackendDependencies {
+  supabase: SupabaseClient;
+}
+
+type CallBackendFactory = (
+  deps: CallBackendDependencies,
+  env: NodeJS.ProcessEnv,
+) => CallBackend;
+
+/**
+ * Registry of available call backends, keyed by {@link CallBackendId}.
+ * Add new providers here to make them selectable via `CALL_BACKEND`.
+ */
+const registry: Record<CallBackendId, CallBackendFactory> = {
+  livekit: (deps) =>
+    new LiveKitCallBackend(
+      new ContractorCallService({ supabase: deps.supabase }),
+    ),
+  retell: (deps, env): RetellCallBackend =>
+    createRetellCallBackendFromEnv(deps, env),
+  vapi: (_deps, env) => createVapiCallBackendFromEnv(env),
+  // Deterministic in-memory backend for tests/demos; a single instance so
+  // dispatch, status, and artifacts share state across route handlers.
+  mock: (() => {
+    let instance: MockCallBackend | null = null;
+    return () => (instance ??= new MockCallBackend());
+  })(),
+};
+
+/**
+ * Resolve the configured {@link CallBackendId} from the `CALL_BACKEND`
+ * environment variable, defaulting to LiveKit.
+ *
+ * @throws if `CALL_BACKEND` is set to an unknown backend id.
+ */
+export function resolveCallBackendId(
+  env: NodeJS.ProcessEnv = process.env,
+): CallBackendId {
+  const raw = env.CALL_BACKEND?.trim();
+  if (!raw) {
+    return DEFAULT_CALL_BACKEND;
+  }
+
+  if (raw in registry) {
+    return raw as CallBackendId;
+  }
+
+  const available = Object.keys(registry).join(", ");
+  throw new Error(
+    `Unsupported CALL_BACKEND: ${raw}. Available backends: ${available}.`,
+  );
+}
+
+/**
+ * Build the call backend selected by the `CALL_BACKEND` environment variable
+ * (default: livekit).
+ */
+export function getCallBackend(
+  deps: CallBackendDependencies,
+  env: NodeJS.ProcessEnv = process.env,
+): CallBackend {
+  const id = resolveCallBackendId(env);
+  return registry[id](deps, env);
+}

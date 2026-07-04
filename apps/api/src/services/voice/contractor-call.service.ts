@@ -367,9 +367,16 @@ export class ContractorCallService {
     };
   }
 
-  async dispatchCall(input: ContractorCallInput): Promise<ContractorCallExecutionResult> {
+  async dispatchCall(
+    input: ContractorCallInput,
+    orgId?: string,
+  ): Promise<ContractorCallExecutionResult> {
     const { plan, preview } = await this.previewCall(input);
-    const persistedContext = await this.createPersistenceContext(input, plan);
+    const persistedContext = await this.createPersistenceContext(
+      input,
+      plan,
+      orgId,
+    );
     const payload = await this.requestVoiceAgent<ContractorCallDispatchResponse>(
       getVoiceAgentDispatchPath(input.mode),
       {
@@ -385,6 +392,7 @@ export class ContractorCallService {
 
     await this.recordInteractionLog({
       requestId: persistedContext.serviceRequestId,
+      orgId,
       detail: `Dispatched ${input.mode} call to ${input.contractorName} (${payload.sessionId}).`,
       transcript: {
         sessionId: payload.sessionId,
@@ -585,6 +593,7 @@ export class ContractorCallService {
   private async createPersistenceContext(
     input: ContractorCallInput,
     plan: ContractorCallPlan,
+    orgId?: string,
   ): Promise<{ serviceRequestId: string; providerId: string }> {
     if (isDemoMode()) {
       return {
@@ -593,6 +602,9 @@ export class ContractorCallService {
       };
     }
 
+    // Persist rows under the caller's org so tenant RLS applies. When no org is
+    // supplied the column DEFAULTs to the legacy org (transition-period bridge,
+    // see the tenancy backfill migration).
     const serviceRequestInsert = {
       type: input.mode === "direct_task" ? "DIRECT_TASK" : "RESEARCH_AND_BOOK",
       title: buildRequestTitle(input),
@@ -612,6 +624,7 @@ export class ContractorCallService {
         callMode: input.mode,
       },
       user_phone: input.clientPhone || null,
+      ...(orgId ? { org_id: orgId } : {}),
     };
 
     const serviceRequestResult = await this.supabase
@@ -636,6 +649,7 @@ export class ContractorCallService {
         source: "User Input",
         call_status: "queued",
         call_method: "livekit",
+        ...(orgId ? { org_id: orgId } : {}),
       })
       .select("id")
       .single();
@@ -654,6 +668,7 @@ export class ContractorCallService {
 
   private async recordInteractionLog(input: {
     requestId: string;
+    orgId?: string;
     detail: string;
     transcript: Record<string, unknown>;
   }) {
@@ -667,6 +682,7 @@ export class ContractorCallService {
       detail: input.detail,
       status: "info",
       transcript: input.transcript,
+      ...(input.orgId ? { org_id: input.orgId } : {}),
     });
   }
 

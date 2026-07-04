@@ -66,22 +66,6 @@ export function createUserNotificationAssistantConfig(request: UserNotificationR
     return lines.join('\n');
   }).join('\n\n');
 
-  // Build concise spoken summary for reading aloud
-  const spokenSummary = recommendations.map((r) => {
-    let summary = `Option ${r.rank}: ${r.providerName}`;
-    if (r.rating) {
-      summary += ` with ${r.rating.toFixed(1)} stars`;
-      if (r.reviewCount && r.reviewCount > 50) {
-        summary += ` from over ${Math.floor(r.reviewCount / 10) * 10} reviews`;
-      }
-    }
-    summary += `, available ${r.availability}`;
-    if (r.estimatedRate) {
-      summary += `, estimated ${r.estimatedRate}`;
-    }
-    return summary;
-  }).join('. ');
-
   // Get top provider details for emphasis
   const topProvider = recommendations[0];
   const topProviderHighlight = topProvider ?

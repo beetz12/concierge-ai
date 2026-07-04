@@ -6,12 +6,43 @@
  */
 
 import { VapiClient } from "@vapi-ai/server-sdk";
+import type { Vapi } from "@vapi-ai/server-sdk";
 import type { FastifyBaseLogger } from "fastify";
 import {
   createUserNotificationAssistantConfig,
   type UserNotificationRequest,
   type UserNotificationResult,
 } from "../vapi/user-notification-assistant-config.js";
+
+/** Narrow view of a VAPI Call needed for polling/outcome extraction. */
+interface CallLike {
+  id: string;
+  status?: string;
+  endedReason?: string;
+  analysis?: { structuredData?: Record<string, unknown> };
+  artifact?: { transcript?: unknown };
+  transcript?: unknown;
+}
+
+/** VAPI SDK responses are sometimes wrapped in `{ data: T }`; normalize defensively. */
+function extractCall(response: unknown): CallLike | null {
+  if (Array.isArray(response)) {
+    return (response[0] as CallLike | undefined) ?? null;
+  }
+  if (response && typeof response === "object") {
+    const record = response as Record<string, unknown>;
+    if (typeof record.id === "string") {
+      return record as unknown as CallLike;
+    }
+    if (record.data && typeof record.data === "object") {
+      const data = record.data as Record<string, unknown>;
+      if (typeof data.id === "string") {
+        return data as unknown as CallLike;
+      }
+    }
+  }
+  return null;
+}
 
 export class UserNotificationService {
   private vapi: VapiClient | null = null;
@@ -60,27 +91,22 @@ export class UserNotificationService {
           number: request.userPhone,
           name: request.userName || "Customer",
         },
-        assistant: assistantConfig as any,
+        assistant: assistantConfig as unknown as Vapi.CreateAssistantDto,
       });
 
       // Extract call ID from response
-      let callId: string;
-      if (Array.isArray(call)) {
-        callId = call[0]?.id;
-      } else if ((call as any).id) {
-        callId = (call as any).id;
-      } else if ((call as any).data?.id) {
-        callId = (call as any).data.id;
-      } else {
+      const createdCall = extractCall(call);
+      if (!createdCall) {
         throw new Error("Unexpected response format from VAPI calls.create");
       }
+      const callId = createdCall.id;
 
       this.logger.info({ callId }, "[UserNotificationService] Call created, polling for completion");
 
       // Poll for completion (max 3 minutes for user notification calls)
       const maxAttempts = 36; // 3 minutes at 5s intervals
       let attempts = 0;
-      let completedCall: any = null;
+      let completedCall: CallLike | null = null;
 
       while (attempts < maxAttempts) {
         await new Promise((resolve) => setTimeout(resolve, 5000));
@@ -89,14 +115,8 @@ export class UserNotificationService {
         try {
           const callData = await this.vapi.calls.get({ id: callId });
 
-          let currentCall: any;
-          if (Array.isArray(callData)) {
-            currentCall = callData[0];
-          } else if ((callData as any).id) {
-            currentCall = callData;
-          } else if ((callData as any).data?.id) {
-            currentCall = (callData as any).data;
-          } else {
+          const currentCall = extractCall(callData);
+          if (!currentCall) {
             continue;
           }
 
@@ -105,7 +125,7 @@ export class UserNotificationService {
             "[UserNotificationService] Poll status"
           );
 
-          if (!["queued", "ringing", "in-progress"].includes(currentCall.status)) {
+          if (!["queued", "ringing", "in-progress"].includes(currentCall.status ?? "")) {
             completedCall = currentCall;
             break;
           }
@@ -128,13 +148,15 @@ export class UserNotificationService {
       }
 
       // Extract results
-      const analysis = completedCall.analysis || {};
-      const structuredData = analysis.structuredData || {};
-      const transcript = completedCall.artifact?.transcript || completedCall.transcript || "";
+      const structuredData = completedCall.analysis?.structuredData ?? {};
+      const transcript = completedCall.artifact?.transcript ?? completedCall.transcript ?? "";
+      const selectedProvider = structuredData.selected_provider;
+      const selectedProviderNum =
+        typeof selectedProvider === "number" ? selectedProvider : undefined;
 
       // Determine call outcome
       let callOutcome: UserNotificationResult["callOutcome"] = "no_selection";
-      if (structuredData.selected_provider && structuredData.selected_provider >= 1 && structuredData.selected_provider <= 3) {
+      if (selectedProviderNum !== undefined && selectedProviderNum >= 1 && selectedProviderNum <= 3) {
         callOutcome = "selected";
       } else if (completedCall.endedReason === "voicemail") {
         callOutcome = "voicemail";
@@ -143,14 +165,14 @@ export class UserNotificationService {
       }
 
       this.logger.info(
-        { callId, callOutcome, selectedProvider: structuredData.selected_provider },
+        { callId, callOutcome, selectedProvider: selectedProviderNum },
         "[UserNotificationService] Call completed"
       );
 
       return {
         success: callOutcome === "selected",
         callId,
-        selectedProvider: structuredData.selected_provider || undefined,
+        selectedProvider: selectedProviderNum,
         callOutcome,
         transcript: typeof transcript === "string" ? transcript : JSON.stringify(transcript),
       };

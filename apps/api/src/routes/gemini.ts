@@ -7,8 +7,8 @@ import {
   type Provider,
   type InteractionLog,
 } from "../services/gemini.js";
-import { analyzeDirectTask, type AnalyzeDirectTaskRequest } from "../services/direct-task/index.js";
-import { analyzeResearchPrompt, type ResearchPromptRequest } from "../services/research/prompt-analyzer.js";
+import { analyzeDirectTask } from "../services/direct-task/index.js";
+import { analyzeResearchPrompt } from "../services/research/prompt-analyzer.js";
 
 // Zod schemas for request validation
 const searchProvidersSchema = z.object({
@@ -68,6 +68,8 @@ const analyzeDirectTaskSchema = z.object({
   taskDescription: z.string().min(1, "Task description is required"),
   contactName: z.string().min(1, "Contact name is required"),
   contactPhone: z.string().optional(),
+  clientName: z.string().optional(),
+  grantedPreAuthorizations: z.array(z.string()).optional(),
 });
 
 const intakeAnswerSchema = z.object({
@@ -218,7 +220,7 @@ export default async function geminiRoutes(fastify: FastifyInstance) {
           }
         );
         return result;
-      } catch (error: any) {
+      } catch (error: unknown) {
         if (error instanceof z.ZodError) {
           return reply.status(400).send({
             error: "Validation Error",
@@ -228,7 +230,7 @@ export default async function geminiRoutes(fastify: FastifyInstance) {
         fastify.log.error(error);
         return reply.status(500).send({
           error: "Internal Server Error",
-          message: error.message,
+          message: error instanceof Error ? error.message : String(error),
         });
       }
     },
@@ -300,7 +302,7 @@ export default async function geminiRoutes(fastify: FastifyInstance) {
           body.isDirect,
         );
         return result;
-      } catch (error: any) {
+      } catch (error: unknown) {
         if (error instanceof z.ZodError) {
           return reply.status(400).send({
             error: "Validation Error",
@@ -310,7 +312,7 @@ export default async function geminiRoutes(fastify: FastifyInstance) {
         fastify.log.error(error);
         return reply.status(500).send({
           error: "Internal Server Error",
-          message: error.message,
+          message: error instanceof Error ? error.message : String(error),
         });
       }
     },
@@ -406,7 +408,7 @@ export default async function geminiRoutes(fastify: FastifyInstance) {
           body.providers as Provider[],
         );
         return result;
-      } catch (error: any) {
+      } catch (error: unknown) {
         if (error instanceof z.ZodError) {
           return reply.status(400).send({
             error: "Validation Error",
@@ -416,7 +418,7 @@ export default async function geminiRoutes(fastify: FastifyInstance) {
         fastify.log.error(error);
         return reply.status(500).send({
           error: "Internal Server Error",
-          message: error.message,
+          message: error instanceof Error ? error.message : String(error),
         });
       }
     },
@@ -448,6 +450,17 @@ export default async function geminiRoutes(fastify: FastifyInstance) {
               type: "string",
               description: "Phone number of the contact (optional)",
             },
+            clientName: {
+              type: "string",
+              description:
+                "Tenant customer the agent calls on behalf of (templates the AI-disclosure opener)",
+            },
+            grantedPreAuthorizations: {
+              type: "array",
+              items: { type: "string" },
+              description:
+                "Playbook pre-authorization keys explicitly granted for this dispatch",
+            },
           },
         },
         response: {
@@ -477,6 +490,19 @@ export default async function geminiRoutes(fastify: FastifyInstance) {
                   systemPrompt: { type: "string" },
                   firstMessage: { type: "string" },
                   closingScript: { type: "string" },
+                  disclosureLine: { type: "string" },
+                  preAuthorizations: {
+                    type: "array",
+                    items: {
+                      type: "object",
+                      properties: {
+                        key: { type: "string" },
+                        description: { type: "string" },
+                        requiresExplicitGrant: { type: "boolean" },
+                        granted: { type: "boolean" },
+                      },
+                    },
+                  },
                 },
               },
             },
@@ -503,7 +529,7 @@ export default async function geminiRoutes(fastify: FastifyInstance) {
         const body = analyzeDirectTaskSchema.parse(request.body);
         const result = await analyzeDirectTask(body);
         return result;
-      } catch (error: any) {
+      } catch (error: unknown) {
         if (error instanceof z.ZodError) {
           return reply.status(400).send({
             error: "Validation Error",
@@ -513,7 +539,7 @@ export default async function geminiRoutes(fastify: FastifyInstance) {
         fastify.log.error(error);
         return reply.status(500).send({
           error: "Internal Server Error",
-          message: error.message,
+          message: error instanceof Error ? error.message : String(error),
         });
       }
     },
@@ -630,7 +656,7 @@ export default async function geminiRoutes(fastify: FastifyInstance) {
           intakeAnswers: body.intakeAnswers,
         });
         return result;
-      } catch (error: any) {
+      } catch (error: unknown) {
         if (error instanceof z.ZodError) {
           return reply.status(400).send({
             error: "Validation Error",
@@ -640,7 +666,7 @@ export default async function geminiRoutes(fastify: FastifyInstance) {
         fastify.log.error(error);
         return reply.status(500).send({
           error: "Internal Server Error",
-          message: error.message,
+          message: error instanceof Error ? error.message : String(error),
         });
       }
     },

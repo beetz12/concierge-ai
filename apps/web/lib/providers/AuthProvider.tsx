@@ -126,8 +126,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       app_metadata: {},
       aud: "authenticated",
       created_at: new Date().toISOString(),
-    } as any);
-    setSession({ access_token: "demo-token", user: {} } as any);
+    } as unknown as User);
+    setSession({ access_token: "demo-token", user: {} } as unknown as Session);
     setIsLoading(false);
   }, []);
 
@@ -175,7 +175,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     // Subscribe to auth state changes
     const {
       data: { subscription },
-    } = supabase.auth.onAuthStateChange((_event: any, newSession: any) => {
+    } = supabase.auth.onAuthStateChange((_event, newSession) => {
       if (!mounted) return;
       setSession(newSession);
       setUser(newSession?.user ?? null);

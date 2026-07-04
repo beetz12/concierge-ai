@@ -1,7 +1,8 @@
 import { type NextRequest, NextResponse } from "next/server";
 import { updateSession } from "./lib/supabase/middleware";
 
-const PROTECTED_ROUTES = ["/dashboard", "/new", "/direct", "/history", "/request"];
+// Anonymous access is deny-by-default (outside demo mode): only the auth
+// pages and the explicit public marketing/auth-flow routes skip the redirect.
 const AUTH_ROUTES = ["/login", "/register"];
 const PUBLIC_ROUTES = ["/", "/about", "/auth/callback", "/auth/verify-email"];
 
@@ -13,9 +14,6 @@ export async function proxy(request: NextRequest) {
   const response = await updateSession(request);
   const { pathname } = request.nextUrl;
 
-  const isProtectedRoute = PROTECTED_ROUTES.some(
-    (route) => pathname === route || pathname.startsWith(`${route}/`),
-  );
   const isAuthRoute = AUTH_ROUTES.some(
     (route) => pathname === route || pathname.startsWith(`${route}/`),
   );
@@ -29,7 +27,7 @@ export async function proxy(request: NextRequest) {
 
   const isAuthenticated = Boolean(supabaseAuthCookie?.value);
 
-  if (isProtectedRoute && !isAuthenticated) {
+  if (!isAuthenticated && !isAuthRoute && !isPublicRoute) {
     const loginUrl = new URL("/login", request.url);
     loginUrl.searchParams.set("redirectTo", pathname);
     return NextResponse.redirect(loginUrl);
@@ -39,6 +37,12 @@ export async function proxy(request: NextRequest) {
     const redirectTo = request.nextUrl.searchParams.get("redirectTo");
     const dashboardUrl = new URL(redirectTo || "/dashboard", request.url);
     return NextResponse.redirect(dashboardUrl);
+  }
+
+  // Signed-in visitors landing on the public marketing home go straight into
+  // the app; the landing page stays fully public for logged-out visitors.
+  if (pathname === "/" && isAuthenticated) {
+    return NextResponse.redirect(new URL("/dispatch", request.url));
   }
 
   if (isPublicRoute) {

@@ -5,9 +5,9 @@ import { AppProvider } from "@/lib/providers/AppProvider";
 import { Toaster } from "sonner";
 
 export const metadata: Metadata = {
-  title: "ConciergeAI - Your AI Receptionist",
+  title: "Concierge - AI that makes your calls",
   description:
-    "AI-powered assistant that researches local service providers and books appointments on your behalf",
+    "Concierge places real, recorded phone calls on your behalf to screen contractors, chase refunds, negotiate bills, and resolve disputes. You approve every call, then get the recording, transcript, and outcome.",
 };
 
 export default function RootLayout({

@@ -56,7 +56,7 @@ const authPlugin: FastifyPluginAsync = async (fastify) => {
   // Hook to extract user from Authorization header on every request
   fastify.addHook(
     "onRequest",
-    async (request: FastifyRequest, reply: FastifyReply) => {
+    async (request: FastifyRequest) => {
       if (isDemoMode()) {
         request.user = {
           id: "demo-user-000",

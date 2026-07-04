@@ -28,10 +28,7 @@ test("worker runtime defaults to OpenAI realtime", () => {
   assert.equal(config.openai.turnDetection.interrupt_response, false);
   assert.equal(config.openai.inputAudioNoiseReduction, undefined);
   assert.equal(config.voiceOptions.minInterruptionDuration, 900);
-  assert.equal(
-    config.gemini.model,
-    "gemini-2.5-flash-native-audio-preview-12-2025",
-  );
+  assert.equal(config.gemini.model, "gemini-3.1-flash-live-preview");
 });
 
 test("worker runtime accepts custom telephony noise thresholds", () => {
@@ -72,14 +69,14 @@ test("worker runtime rejects realtime providers without credentials", () => {
 test("qualification instructions enforce one-question turns and explicit finish", () => {
   const instructions = buildAgentInstructions(qualificationMetadata);
 
-  assert.match(instructions, /Ask only one question at a time/i);
-  assert.match(instructions, /Never say or imply 'thanks for calling'/i);
+  assert.match(instructions, /One question per turn/i);
+  assert.match(instructions, /Never say 'thanks for calling'/i);
   assert.match(instructions, /use finishCall/i);
 });
 
 test("opening prompt verifies the business identity before the service question", () => {
   const opening = buildOpeningPrompt(qualificationMetadata);
 
-  assert.match(opening, /calling on behalf of a client/i);
-  assert.match(opening, /Is this Acme Landscaping\?/i);
+  assert.match(opening, /calling on behalf of a homeowner/i);
+  assert.match(opening, /Am I speaking with Acme Landscaping\?/i);
 });

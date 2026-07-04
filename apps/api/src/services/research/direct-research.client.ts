@@ -29,6 +29,20 @@ interface FilterCriteria {
 }
 
 /**
+ * Maps grounding chunk shape as actually returned by the Gemini API.
+ * The @google/genai SDK's GroundingChunkMaps type doesn't declare
+ * placeAddress/phoneNumber/rating, but the live API includes them.
+ */
+interface GroundingMapsChunk {
+  maps?: {
+    title?: string;
+    placeAddress?: string;
+    phoneNumber?: string;
+    rating?: number;
+  };
+}
+
+/**
  * Helper to sanitize JSON strings from model output
  */
 const cleanJson = (text: string): string => {
@@ -544,7 +558,7 @@ export class DirectResearchClient {
         "Processing grounding chunks",
       );
 
-      groundingChunks.forEach((chunk: any, index: number) => {
+      (groundingChunks as GroundingMapsChunk[]).forEach((chunk, index: number) => {
         if (chunk.maps) {
           providers.push({
             id: `gemini-maps-${Date.now()}-${index}`,

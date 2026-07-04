@@ -1,86 +1,217 @@
 /**
- * Prompt Generator for Direct Tasks
- * Builds VAPI-ready prompts from task analysis and strategic guidance
+ * Prompt Generator for Direct Tasks.
+ *
+ * Composes a call-ready prompt from:
+ *   1. the selected scenario playbook (question batteries, tactics,
+ *      disqualifiers, success criteria - see services/playbooks/),
+ *   2. the universal core behavior floor (CORE_PLAYBOOK),
+ *   3. an AI-disclosure, legitimacy-led opener templated with the tenant's
+ *      customer name (never hardcoded),
+ *   4. the commitment whitelist, and
+ *   5. pre-authorizations - included ONLY when explicitly granted in the
+ *      request; everything else is echoed back as not granted so the
+ *      approval-gate UX can render the checklist.
+ *
+ * All output is ASCII-only: it lands verbatim in voice prompts.
  */
 
+import { CORE_PLAYBOOK, selectPlaybook, type Playbook } from "../playbooks/index.js";
 import type {
   AnalyzeDirectTaskRequest,
   TaskAnalysis,
   StrategicGuidance,
   GeneratedPrompt,
+  PreAuthorizationEcho,
   TaskType,
 } from "./types.js";
 
+const SECTION_RULE = "=".repeat(67);
+
+const GENERIC_CLIENT = "the customer";
+
+/** Category-only hooks for the opener - never the detailed multi-part ask. */
+const CATEGORY_HOOKS: Record<TaskType, string> = {
+  negotiate_price: "about their account and billing",
+  request_refund: "about a charge on their account",
+  complain_issue: "about an issue they've experienced",
+  schedule_appointment: "about scheduling an appointment",
+  cancel_service: "about their service",
+  make_inquiry: "with a couple of quick questions",
+  deliver_message: "to pass along a message",
+  general_task: "about a quick request",
+};
+
+const section = (title: string, body: string): string =>
+  `${SECTION_RULE}\n${title}\n${SECTION_RULE}\n${body}`;
+
+const possessive = (name: string): string =>
+  name.endsWith("s") ? `${name}'` : `${name}'s`;
+
 /**
- * Generates a complete VAPI-ready prompt from task analysis
+ * Build the AI-disclosure, legitimacy-led opener (compliance R-12 order):
+ * (1) identity - plain "I'm [customer]'s AI assistant"; (2) category-only
+ * hook; (3) recording aside; (4) permission ask - then stop.
+ */
+export function buildDisclosureLine(
+  clientName: string | undefined,
+  taskType: TaskType
+): string {
+  const who = clientName?.trim() ? clientName.trim() : GENERIC_CLIENT;
+  const hook = CATEGORY_HOOKS[taskType] ?? CATEGORY_HOOKS.general_task;
+  return `Hi there - I'm ${possessive(who)} AI assistant. They asked me to call ${hook}. Heads up, this call is recorded - got a quick minute?`;
+}
+
+const renderPlaybookSections = (playbook: Playbook): string => {
+  const parts: string[] = [];
+
+  if (playbook.questionBattery.length > 0) {
+    const batteries = playbook.questionBattery
+      .map((group) => {
+        const notes = group.notes ? ` (${group.notes})` : "";
+        const questions = group.questions
+          .map((q, i) => `  ${i + 1}. ${q}`)
+          .join("\n");
+        return `${group.name}${notes}:\n${questions}`;
+      })
+      .join("\n\n");
+    parts.push(
+      section(
+        `SCENARIO QUESTION BATTERIES (${playbook.title})`,
+        `Work these in order where they apply. Do not end the call until every applicable must-ask item is asked AND answered.\n\n${batteries}`
+      )
+    );
+  }
+
+  if (playbook.callSkeleton.length > 0) {
+    parts.push(
+      section(
+        "SCENARIO CALL SKELETON",
+        playbook.callSkeleton.map((s, i) => `${i + 1}. ${s}`).join("\n")
+      )
+    );
+  }
+
+  if (playbook.tactics.length > 0) {
+    const tactics = playbook.tactics
+      .map((t) => {
+        const when = t.when ? ` [when: ${t.when}]` : "";
+        return `- ${t.name}${when}: ${t.guidance}`;
+      })
+      .join("\n");
+    parts.push(section("SCENARIO TACTICS", tactics));
+  }
+
+  if (playbook.disqualifiers.length > 0) {
+    const rows = playbook.disqualifiers
+      .map((d) => {
+        const response = d.response ? ` Response: ${d.response}` : "";
+        return `- [${d.severity}] ${d.trigger}.${response}`;
+      })
+      .join("\n");
+    parts.push(
+      section(
+        "DISQUALIFIERS (flag immediately when detected)",
+        rows
+      )
+    );
+  }
+
+  if (playbook.antiPatterns.length > 0) {
+    parts.push(
+      section(
+        "SCENARIO ANTI-PATTERNS (do NOT)",
+        playbook.antiPatterns.map((a) => `- ${a}`).join("\n")
+      )
+    );
+  }
+
+  return parts.join("\n\n");
+};
+
+const renderCoreFloor = (): string => {
+  const rules = (title: string, items: string[]): string =>
+    `${title}:\n${items.map((r) => `- ${r}`).join("\n")}`;
+
+  return section(
+    "UNIVERSAL BEHAVIOR FLOOR (applies to every call)",
+    [
+      rules("Opener discipline", CORE_PLAYBOOK.openerDiscipline),
+      rules("Gatekeeper handling", CORE_PLAYBOOK.gatekeeperHandling),
+      rules("IVR navigation", CORE_PLAYBOOK.ivrRules),
+      rules("Hold and transfer patience", CORE_PLAYBOOK.holdPatience),
+      rules("Speech discipline", CORE_PLAYBOOK.speechDiscipline),
+      rules("Identity lock", CORE_PLAYBOOK.identityLock),
+      rules("Verification walls", CORE_PLAYBOOK.verificationWalls),
+      rules("Documentation and read-backs", CORE_PLAYBOOK.readBacks),
+      rules("Voicemail", CORE_PLAYBOOK.voicemailRules),
+      rules("Closing enforcement", CORE_PLAYBOOK.closingEnforcement),
+      rules("Privacy", CORE_PLAYBOOK.privacyRules),
+      rules("Outcome reporting", CORE_PLAYBOOK.outcomeTaxonomy),
+    ].join("\n\n")
+  );
+};
+
+/**
+ * Generates a complete call-ready prompt from task analysis, the selected
+ * playbook, and the core behavior floor.
  */
 export function generatePromptFromAnalysis(
   request: AnalyzeDirectTaskRequest,
   analysis: TaskAnalysis,
   guidance: StrategicGuidance
 ): GeneratedPrompt {
-  const taskTypePrompts: Record<TaskType, string> = {
-    negotiate_price: "persuasive negotiator focused on getting the best deal",
-    request_refund:
-      "persistent but polite advocate requesting a refund",
-    complain_issue:
-      "firm but professional representative addressing a complaint",
-    schedule_appointment:
-      "efficient scheduler focused on finding the SPECIFIC earliest available date and time",
-    cancel_service:
-      "clear and direct representative handling a cancellation",
-    make_inquiry:
-      "thorough information gatherer collecting all relevant details",
-    general_task: "capable assistant completing the requested task",
-  };
+  const clientName = request.clientName?.trim() || undefined;
+  const clientLabel = clientName ?? GENERIC_CLIENT;
+  const clientPossessive = possessive(clientLabel);
 
-  const roleDescription =
-    taskTypePrompts[analysis.taskType] || taskTypePrompts.general_task;
+  const playbook = selectPlaybook(analysis.taskType, request.taskDescription);
 
-  const systemPrompt = `You are a warm, confident AI Assistant making a real phone call to ${request.contactName} on behalf of your client.
+  const persona =
+    CORE_PLAYBOOK.personaByTask[analysis.taskType] ??
+    CORE_PLAYBOOK.personaByTask.general_task ??
+    "a capable assistant completing the requested task";
 
-═══════════════════════════════════════════════════════════════════
-YOUR ROLE
-═══════════════════════════════════════════════════════════════════
-You are a ${roleDescription}.
+  const disclosureLine = buildDisclosureLine(clientName, analysis.taskType);
 
-═══════════════════════════════════════════════════════════════════
-YOUR MISSION
-═══════════════════════════════════════════════════════════════════
-${analysis.intent}
+  // Pre-authorizations: include in the prompt ONLY when explicitly granted.
+  const grantedKeys = new Set(request.grantedPreAuthorizations ?? []);
+  const preAuthEchoes: PreAuthorizationEcho[] = (
+    playbook?.preAuthorizations ?? []
+  ).map((auth) => ({
+    key: auth.key,
+    description: auth.description,
+    requiresExplicitGrant: auth.requiresExplicitGrant,
+    granted: grantedKeys.has(auth.key) || !auth.requiresExplicitGrant,
+  }));
+  const grantedAuths = (playbook?.preAuthorizations ?? []).filter(
+    (auth) => grantedKeys.has(auth.key) || !auth.requiresExplicitGrant
+  );
 
-Task details: ${request.taskDescription}
+  const preAuthSection =
+    grantedAuths.length > 0
+      ? section(
+          "PRE-AUTHORIZATIONS (explicitly granted for this call ONLY)",
+          grantedAuths
+            .map((auth) => {
+              const phrasing = auth.whenGrantedSay
+                ? ` Approved phrasing: ${auth.whenGrantedSay}`
+                : "";
+              return `- ${auth.key}: ${auth.description}${phrasing}`;
+            })
+            .join("\n")
+        )
+      : section(
+          "PRE-AUTHORIZATIONS",
+          "NONE granted for this call. Do not state cancellation intent, chargebacks, regulator complaints, card holds, or any other consequence or commitment beyond the mission above. If a next step is needed: \"I'll need to check with " +
+            clientLabel +
+            " and get back to you on that.\""
+        );
 
-═══════════════════════════════════════════════════════════════════
-KEY GOALS
-═══════════════════════════════════════════════════════════════════
-${guidance.keyGoals.map((g, i) => `${i + 1}. ${g}`).join("\n")}
-
-═══════════════════════════════════════════════════════════════════
-TALKING POINTS (use these specific phrases)
-═══════════════════════════════════════════════════════════════════
-${guidance.talkingPoints.map((t, i) => `${i + 1}. "${t}"`).join("\n")}
-
-═══════════════════════════════════════════════════════════════════
-HANDLING OBJECTIONS
-═══════════════════════════════════════════════════════════════════
-${Object.entries(guidance.objectionHandlers)
-  .map(
-    ([obj, resp]) =>
-      `If they say: "${obj}"\nRespond with: "${resp}"\n`
-  )
-  .join("\n")}
-
-═══════════════════════════════════════════════════════════════════
-SUCCESS CRITERIA
-═══════════════════════════════════════════════════════════════════
-${guidance.successCriteria.map((c, i) => `${i + 1}. ${c}`).join("\n")}
-${
+  const scheduleSection =
     analysis.taskType === "schedule_appointment"
-      ? `
-CRITICAL FOR SCHEDULING: SPECIFIC DATE AND TIME REQUIRED
-═══════════════════════════════════════════════════════════════════
-When the provider gives availability information:
+      ? section(
+          "CRITICAL FOR SCHEDULING: SPECIFIC DATE AND TIME REQUIRED",
+          `When the provider gives availability information:
 
 If they say VAGUE timeframes like:
 - "Two weeks out"
@@ -91,62 +222,81 @@ If they say VAGUE timeframes like:
 - "Early next week"
 
 You MUST ask follow-up questions to get SPECIFIC details:
-1. "Which specific day would that be?" → Get the exact date (e.g., "Tuesday, January 15th")
-2. "And what's the earliest time available on that day?" → Get the exact time (e.g., "2:00 PM")
+1. "Which specific day would that be?" -> Get the exact date (e.g., "Tuesday, January 15th")
+2. "And what's the earliest time available on that day?" -> Get the exact time (e.g., "2:00 PM")
 
-DO NOT accept vague timeframes. The client needs an exact date and time to make a booking decision.
+DO NOT accept vague timeframes. ${clientLabel} needs an exact date and time to make a booking decision.
 
 EXAMPLE:
 Provider: "We could probably get to you in about two weeks."
 You: "That sounds great! Which specific day two weeks from now would work best? And what's the earliest time you'd have available?"
 Provider: "Hmm, probably like mid-January."
-You: "Perfect! Can we pin down the exact date? What would be your first available slot in mid-January?"
-`
-      : ""
-  }
-═══════════════════════════════════════════════════════════════════
-SPEECH RULES
-═══════════════════════════════════════════════════════════════════
-- Be confident and assertive, but always polite
-- NEVER start sentences with: "Okay", "So", "Well", "Alright", "Um"
-- Keep responses clear and direct
-- Listen carefully and adapt to their responses
-- If asked who you are, say you're an AI assistant calling on behalf of your client
+You: "Perfect! Can we pin down the exact date? What would be your first available slot in mid-January?"`
+        )
+      : "";
 
-═══════════════════════════════════════════════════════════════════
-CONVERSATION FLOW
-═══════════════════════════════════════════════════════════════════
-1. GREETING: Introduce yourself as calling on behalf of your client
-2. STATE PURPOSE: Clearly explain why you're calling
-3. PURSUE GOALS: Work through your key goals systematically
-4. HANDLE RESPONSES: Use your objection handlers when needed
-5. CONFIRM SUCCESS: Get specific commitments (numbers, dates, confirmations)
-6. CLOSE: Thank them and summarize the outcome
+  const successCriteria = [
+    ...guidance.successCriteria,
+    ...(playbook?.successCriteria ?? []),
+  ];
 
-═══════════════════════════════════════════════════════════════════
-ENDING THE CALL
-═══════════════════════════════════════════════════════════════════
-You have an endCall function available. You MUST use it to hang up.
-After your closing statement, immediately invoke endCall.
-DO NOT wait for them to hang up - YOU end the call.
-
-═══════════════════════════════════════════════════════════════════
-TONE
-═══════════════════════════════════════════════════════════════════
-Be confident, clear, and professional. You're advocating for your client.
+  const sections = [
+    `You are ${clientPossessive} AI assistant making a real phone call to ${request.contactName} on their behalf. You disclose that you are an AI - never claim to be human.`,
+    section("YOUR ROLE", `You are ${persona}.`),
+    section(
+      "YOUR MISSION",
+      `${analysis.intent}\n\nTask details: ${request.taskDescription}`
+    ),
+    section(
+      "OPENING (say this first, one breath, then STOP and wait)",
+      `"${disclosureLine}"\n\nOrder matters: identity and plain AI disclosure first, a category-only hook (never the detailed multi-part ask), the recording aside, then the permission ask. Specifics come only after they agree AND you are on with the right person.`
+    ),
+    section(
+      "KEY GOALS",
+      guidance.keyGoals.map((g, i) => `${i + 1}. ${g}`).join("\n")
+    ),
+    section(
+      "TALKING POINTS (use these specific phrases)",
+      guidance.talkingPoints.map((t, i) => `${i + 1}. "${t}"`).join("\n")
+    ),
+    section(
+      "HANDLING OBJECTIONS",
+      Object.entries(guidance.objectionHandlers)
+        .map(([obj, resp]) => `If they say: "${obj}"\nRespond with: "${resp}"\n`)
+        .join("\n")
+    ),
+    section(
+      "SUCCESS CRITERIA",
+      successCriteria.map((c, i) => `${i + 1}. ${c}`).join("\n")
+    ),
+    scheduleSection,
+    playbook ? renderPlaybookSections(playbook) : "",
+    section(
+      "COMMITMENT WHITELIST (anti-hallucination - the number-one failure mode)",
+      CORE_PLAYBOOK.commitmentWhitelist.map((r) => `- ${r}`).join("\n")
+    ),
+    preAuthSection,
+    renderCoreFloor(),
+    section(
+      "ENDING THE CALL",
+      `You have an endCall function available. You MUST use it to hang up.
+After your closing statement, pause about 3 seconds for the callee to add anything, then invoke endCall.
+DO NOT wait for them to hang up - YOU end the call. Never hang up mid-sentence.`
+    ),
+    section(
+      "TONE",
+      `Be confident, clear, and professional. You are advocating for ${clientLabel}.
 Stay calm even if the conversation gets difficult.
-Thank them genuinely when they help.`;
+Thank them genuinely when they help.`
+    ),
+  ].filter(Boolean);
 
-  // Generate appropriate first message based on task type
-  const firstMessageTemplates: Record<TaskType, string> = {
-    negotiate_price: `Hi there! This is an AI assistant calling on behalf of my client regarding their account with ${request.contactName}. Do you have just a moment to discuss their bill?`,
-    request_refund: `Hi there! This is an AI assistant calling on behalf of my client. I need to discuss a charge on their account that needs to be corrected. Do you have a moment?`,
-    complain_issue: `Hi there! This is an AI assistant calling on behalf of my client. I need to address an issue they've experienced. Do you have a moment?`,
-    schedule_appointment: `Hi there! This is an AI assistant calling on behalf of my client. They'd like to schedule an appointment. Do you have a moment?`,
-    cancel_service: `Hi there! This is an AI assistant calling on behalf of my client. They need to cancel their service. Do you have a moment?`,
-    make_inquiry: `Hi there! This is an AI assistant calling on behalf of my client. I have a few questions I'd like to ask. Do you have a moment?`,
-    general_task: `Hi there! This is an AI assistant calling on behalf of my client regarding ${request.contactName}. Do you have just a moment?`,
-  };
+  const systemPrompt = sections
+    .join("\n\n")
+    .replaceAll("[customer]", clientLabel)
+    .replaceAll("[Customer]", clientLabel === GENERIC_CLIENT ? "The customer" : clientLabel)
+    .replaceAll("[customer's city]", `${clientPossessive} city`)
+    .replaceAll("[customer's state]", `${clientPossessive} state`);
 
   const closingTemplates: Record<TaskType, string> = {
     negotiate_price:
@@ -161,17 +311,17 @@ Thank them genuinely when they help.`;
       "Thank you for processing this cancellation. Can you confirm the effective date and any final steps? [confirm]. Have a wonderful day!",
     make_inquiry:
       "That's very helpful, thank you! Just to summarize what I've learned: [summarize]. Have a wonderful day!",
+    deliver_message: `Thank you for listening! I'll let ${clientLabel} know. Have a wonderful day!`,
     general_task:
       "Thank you so much for your help with this! Have a wonderful day!",
   };
 
   return {
     systemPrompt,
-    firstMessage:
-      firstMessageTemplates[analysis.taskType] ||
-      firstMessageTemplates.general_task,
+    firstMessage: disclosureLine,
     closingScript:
-      closingTemplates[analysis.taskType] ||
-      closingTemplates.general_task,
+      closingTemplates[analysis.taskType] || closingTemplates.general_task,
+    disclosureLine,
+    preAuthorizations: preAuthEchoes,
   };
 }

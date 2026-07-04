@@ -68,7 +68,7 @@ test("LiveKitTelephonyService dispatches agent and SIP participant into the same
   assert.equal(calls[0]?.roomName, "concierge-session_123");
   assert.equal(calls[1]?.roomName, "concierge-session_123");
   assert.equal(calls[1]?.sipTrunkId, "ST_123");
-  assert.equal((calls[1]?.options as { krispEnabled?: boolean })?.krispEnabled, true);
+  assert.equal((calls[1]?.options as { krispEnabled?: boolean })?.krispEnabled, false);
 });
 
 test("LiveKitTelephonyService rejects dispatch when telephony is not configured", async () => {

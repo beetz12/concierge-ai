@@ -401,6 +401,69 @@ export class DirectTwilioClient {
   }
 
   /**
+   * List SMS messages exchanged with a specific phone number.
+   * Fetches both inbound and outbound messages, deduplicates, and sorts by date.
+   */
+  async listMessages(phone: string, limit = 20): Promise<{
+    success: boolean;
+    messages: Array<{
+      id: string;
+      from: string;
+      to: string;
+      body: string;
+      dateSent: string | null;
+      direction: "inbound" | "outbound";
+      status: string;
+    }>;
+    error?: string;
+  }> {
+    const config = this.getConfig();
+    const client = this.getClient();
+
+    if (!client || !config.isConfigured) {
+      return { success: false, messages: [], error: "Twilio not configured" };
+    }
+
+    this.logger.info({ phone, limit }, "Listing SMS conversation");
+
+    try {
+      const [inbound, outbound] = await Promise.all([
+        client.messages.list({ to: config.fromNumber, from: phone, limit }),
+        client.messages.list({ from: config.fromNumber, to: phone, limit }),
+      ]);
+
+      const seen = new Set<string>();
+      const allMessages = [...inbound, ...outbound].filter((msg) => {
+        if (seen.has(msg.sid)) return false;
+        seen.add(msg.sid);
+        return true;
+      });
+
+      allMessages.sort(
+        (a, b) => (b.dateSent?.getTime() ?? 0) - (a.dateSent?.getTime() ?? 0)
+      );
+
+      const messages = allMessages.map((msg) => ({
+        id: msg.sid,
+        from: msg.from,
+        to: msg.to,
+        body: msg.body,
+        dateSent: msg.dateSent?.toISOString() ?? null,
+        direction: (msg.to === config.fromNumber ? "inbound" : "outbound") as "inbound" | "outbound",
+        status: msg.status,
+      }));
+
+      this.logger.info({ phone, messageCount: messages.length }, "SMS conversation listed");
+
+      return { success: true, messages };
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : "Unknown error";
+      this.logger.error({ error: errorMessage, phone }, "Failed to list SMS conversation");
+      return { success: false, messages: [], error: errorMessage };
+    }
+  }
+
+  /**
    * Format the SMS message with top 3 provider recommendations
    * Creates an urgent, detailed message that encourages immediate action
    */

@@ -9,7 +9,6 @@ import crypto from "crypto";
 import { createClient } from "@supabase/supabase-js";
 import {
   ProviderCallingService,
-  ConcurrentCallService,
   KestraClient,
 } from "../services/vapi/index.js";
 import { RuntimeRouterService } from "../services/calls/runtime-router.service.js";
@@ -21,6 +20,10 @@ import { triggerUserNotification } from "../services/notifications/index.js";
 import { DirectTwilioClient } from "../services/notifications/direct-twilio.client.js";
 import { createSimulatedCallService, type SimulatedCallRequest } from "../services/simulation/index.js";
 import { isDemoMode } from "../config/demo.js";
+import {
+  isResearchAndBookEnabled,
+  RESEARCH_AND_BOOK_DISABLED_ERROR,
+} from "../config/research-and-book.js";
 import { simulateCall as geminiSimulateCall } from "../services/gemini.js";
 
 // Schema for Gemini-generated custom prompts
@@ -162,7 +165,6 @@ export default async function providerRoutes(fastify: FastifyInstance) {
   // Create service instances with fastify logger
   const vapiCallingService = new ProviderCallingService(fastify.log);
   const runtimeRouter = new RuntimeRouterService(fastify.log, vapiCallingService);
-  const concurrentCallService = new ConcurrentCallService(fastify.log);
   const recommendationService = new RecommendationService();
   const kestraClient = new KestraClient(fastify.log);
 
@@ -285,6 +287,13 @@ export default async function providerRoutes(fastify: FastifyInstance) {
               },
             },
           },
+          403: {
+            type: "object",
+            properties: {
+              error: { type: "string" },
+              message: { type: "string" },
+            },
+          },
           400: {
             type: "object",
             properties: {
@@ -320,7 +329,7 @@ export default async function providerRoutes(fastify: FastifyInstance) {
               callMethod: "simulated",
               duration: 1 + Math.random() * 3,
               endedReason: "demo-simulation",
-              transcript: log.transcript?.map((l: any) => `${l.speaker}: ${l.text}`).join("\n") || log.detail,
+              transcript: log.transcript?.map((l) => `${l.speaker}: ${l.text}`).join("\n") || log.detail,
               analysis: {
                 summary: log.detail,
                 structuredData: {
@@ -337,6 +346,12 @@ export default async function providerRoutes(fastify: FastifyInstance) {
               request: { criteria: validated.userCriteria, urgency: validated.urgency },
             },
           });
+        }
+
+        // Research-and-Book places REAL calls with compliance + org context
+        // bypassed; it is disabled by default for v1 (see FIX 1).
+        if (!isResearchAndBookEnabled()) {
+          return reply.code(403).send(RESEARCH_AND_BOOK_DISABLED_ERROR);
         }
 
         // Initiate the call
@@ -568,6 +583,13 @@ export default async function providerRoutes(fastify: FastifyInstance) {
               },
             },
           },
+          403: {
+            type: "object",
+            properties: {
+              error: { type: "string" },
+              message: { type: "string" },
+            },
+          },
           400: {
             type: "object",
             properties: {
@@ -590,6 +612,12 @@ export default async function providerRoutes(fastify: FastifyInstance) {
       try {
         // Validate request body with Zod
         const validated = batchCallSchema.parse(request.body);
+
+        // Research-and-Book places REAL calls with compliance + org context
+        // bypassed; it is disabled by default for v1 (see FIX 1).
+        if (!isResearchAndBookEnabled()) {
+          return reply.code(403).send(RESEARCH_AND_BOOK_DISABLED_ERROR);
+        }
 
         // Transform validated data to CallRequest[] format
         const requests = validated.providers.map((provider) => ({
@@ -756,6 +784,13 @@ export default async function providerRoutes(fastify: FastifyInstance) {
               },
             },
           },
+          403: {
+            type: "object",
+            properties: {
+              error: { type: "string" },
+              message: { type: "string" },
+            },
+          },
           400: {
             type: "object",
             properties: {
@@ -801,6 +836,12 @@ export default async function providerRoutes(fastify: FastifyInstance) {
               mode: "demo",
             },
           });
+        }
+
+        // Research-and-Book places REAL calls with compliance + org context
+        // bypassed; it is disabled by default for v1 (see FIX 1).
+        if (!isResearchAndBookEnabled()) {
+          return reply.code(403).send(RESEARCH_AND_BOOK_DISABLED_ERROR);
         }
 
         // Load test phone configuration from backend environment
@@ -964,7 +1005,12 @@ export default async function providerRoutes(fastify: FastifyInstance) {
             }
 
             // Wait for real calls to complete
-            const batchResult = await realCallsPromise as { success: boolean; resultsInDatabase?: boolean; stats?: { completed?: number } };
+            const batchResult = await realCallsPromise as {
+              success: boolean;
+              resultsInDatabase?: boolean;
+              stats?: { completed?: number };
+              errors?: Array<{ error?: string }>;
+            };
 
             fastify.log.info(
               {
@@ -987,9 +1033,9 @@ export default async function providerRoutes(fastify: FastifyInstance) {
               // Determine actual status based on results (real calls only - simulated are always successful)
               const totalRealProviders = validated.providers.length;
               const totalAllProviders = validated.providers.length + simulatedRequests.length;
-              const errorCount = (batchResult as any).errors?.length || 0;
-              const successCount = ((batchResult as any).stats?.completed || 0) + simulatedResults.length;
-              const allFailed = totalRealProviders > 0 && (errorCount === totalRealProviders || (batchResult as any).stats?.completed === 0);
+              const errorCount = batchResult.errors?.length || 0;
+              const successCount = (batchResult.stats?.completed || 0) + simulatedResults.length;
+              const allFailed = totalRealProviders > 0 && (errorCount === totalRealProviders || batchResult.stats?.completed === 0);
               const partialSuccess = errorCount > 0 && errorCount < totalRealProviders;
 
               // Log actual status to interaction_logs
@@ -998,7 +1044,7 @@ export default async function providerRoutes(fastify: FastifyInstance) {
                 request_id: validated.serviceRequestId,
                 step_name: allFailed ? "Batch Calls Failed" : "Batch Calls Completed",
                 detail: allFailed
-                  ? `All ${totalRealProviders} real provider calls failed. ${(batchResult as any).errors?.[0]?.error || "VAPI API error"}`
+                  ? `All ${totalRealProviders} real provider calls failed. ${batchResult.errors?.[0]?.error || "VAPI API error"}`
                   : partialSuccess
                   ? `${successCount}/${totalAllProviders} calls succeeded${simulatedNote}. ${errorCount} real calls failed.`
                   : `All ${totalAllProviders} provider calls completed successfully${simulatedNote}.`,
@@ -1011,12 +1057,12 @@ export default async function providerRoutes(fastify: FastifyInstance) {
                   .from("service_requests")
                   .update({
                     status: "FAILED",
-                    final_outcome: `All provider calls failed: ${(batchResult as any).errors?.[0]?.error || "VAPI API error"}`,
+                    final_outcome: `All provider calls failed: ${batchResult.errors?.[0]?.error || "VAPI API error"}`,
                   })
                   .eq("id", validated.serviceRequestId);
 
                 fastify.log.error(
-                  { executionId, errorCount, errors: (batchResult as any).errors },
+                  { executionId, errorCount, errors: batchResult.errors },
                   "All provider calls failed - marked service request as FAILED"
                 );
                 return; // Exit background processing early
@@ -1095,6 +1141,11 @@ export default async function providerRoutes(fastify: FastifyInstance) {
                     .single();
 
                   const callResults = completedProviders.map(p => {
+                    // call_result is untyped JSONB from the DB whose shape is a
+                    // loose superset of both CallResult and StructuredCallData;
+                    // narrowing it here breaks the downstream structuredData
+                    // contract (see analysis.structuredData below).
+                    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- dynamic DB JSONB feeding StructuredCallData
                     const callResultData = p.call_result as any;
                     return {
                       // Provider metadata for scoring
@@ -1492,7 +1543,7 @@ export default async function providerRoutes(fastify: FastifyInstance) {
     async (request, reply) => {
       try {
         // Extract and validate required fields with fallback for backwards compatibility
-        const body = request.body as { providerId?: string; serviceRequestId?: string; callResult?: any };
+        const body = request.body as { providerId?: string; serviceRequestId?: string; callResult?: Partial<CallResult> };
 
         if (!body.providerId || !body.serviceRequestId || !body.callResult) {
           return reply.status(400).send({
@@ -2010,6 +2061,13 @@ export default async function providerRoutes(fastify: FastifyInstance) {
               },
             },
           },
+          403: {
+            type: "object",
+            properties: {
+              error: { type: "string" },
+              message: { type: "string" },
+            },
+          },
           400: {
             type: "object",
             properties: {
@@ -2032,6 +2090,12 @@ export default async function providerRoutes(fastify: FastifyInstance) {
       try {
         // Validate request body with Zod
         const validated = bookingSchema.parse(request.body);
+
+        // Research-and-Book places REAL calls with compliance + org context
+        // bypassed; it is disabled by default for v1 (see FIX 1).
+        if (!isResearchAndBookEnabled()) {
+          return reply.code(403).send(RESEARCH_AND_BOOK_DISABLED_ERROR);
+        }
 
         // Load test phone configuration from backend environment (same as research phase)
         const adminTestPhonesRaw = process.env.ADMIN_TEST_NUMBER;
@@ -2252,7 +2316,7 @@ export default async function providerRoutes(fastify: FastifyInstance) {
                 const confirmResult = await twilioClient.sendConfirmation({
                   userPhone: serviceRequest.user_phone,
                   userName:
-                    (serviceRequest.direct_contact_info as any)?.user_name ||
+                    (serviceRequest.direct_contact_info as { user_name?: string } | null)?.user_name ||
                     validated.clientName ||
                     "Customer",
                   providerName: validated.providerName,

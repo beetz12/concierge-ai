@@ -5,6 +5,7 @@ export type DirectTaskType =
   | "schedule_appointment"
   | "cancel_service"
   | "make_inquiry"
+  | "deliver_message"
   | "general_task";
 
 export type VoicePromptKind = "qualification" | "booking" | "direct_task";
@@ -18,6 +19,7 @@ export type VoicePromptVariant =
   | "direct_task_schedule_appointment"
   | "direct_task_cancel_service"
   | "direct_task_make_inquiry"
+  | "direct_task_deliver_message"
   | "direct_task_general_task";
 
 export interface VoicePromptContext {

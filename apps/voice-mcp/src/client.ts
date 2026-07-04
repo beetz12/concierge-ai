@@ -39,16 +39,6 @@ const supervisorCallSchema = sessionIdSchema.extend({
 
 const sessionControlSchema = sessionIdSchema;
 
-const sendSmsSchema = z.object({
-  to: z.string().regex(/^\+1\d{10}$/),
-  body: z.string().min(1).max(1600),
-  mediaUrl: z.array(z.string().url()).max(10).optional(),
-});
-
-const checkSmsStatusSchema = z.object({
-  messageSid: z.string().min(1),
-});
-
 const artifactResultSchema = z.object({
   disposition: z.string().nullable().optional(),
   summary: z.string().nullable().optional(),
@@ -66,8 +56,6 @@ export type GetCallStatusInput = z.infer<typeof sessionIdSchema>;
 export type BrowserMonitorInput = z.infer<typeof browserMonitorSchema>;
 export type SupervisorCallInput = z.infer<typeof supervisorCallSchema>;
 export type SessionControlInput = z.infer<typeof sessionControlSchema>;
-export type SendSmsInput = z.infer<typeof sendSmsSchema>;
-export type CheckSmsStatusInput = z.infer<typeof checkSmsStatusSchema>;
 
 export const inputSchemas = {
   previewCall: previewCallSchema,
@@ -78,8 +66,6 @@ export const inputSchemas = {
   joinSupervisorCall: supervisorCallSchema,
   pauseCall: sessionControlSchema,
   resumeCall: sessionControlSchema,
-  sendSms: sendSmsSchema,
-  checkSmsStatus: checkSmsStatusSchema,
 } as const;
 
 export interface VoiceApiClientOptions {
@@ -87,7 +73,7 @@ export interface VoiceApiClientOptions {
   fetchImpl?: typeof fetch;
 }
 
-const DEFAULT_BASE_URL = "http://127.0.0.1:8000/api/v1/voice";
+const DEFAULT_BASE_URL = "http://127.0.0.1:9000/api/v1/voice";
 
 export class VoiceApiClient {
   private readonly baseUrl: string;
@@ -188,30 +174,6 @@ export class VoiceApiClient {
     });
   }
 
-  sendSms(input: SendSmsInput) {
-    return this.request<{
-      success: boolean;
-      messageSid?: string;
-      messageStatus?: string;
-      error?: string;
-    }>("/sms/send", {
-      method: "POST",
-      body: JSON.stringify(input),
-    });
-  }
-
-  checkSmsStatus({ messageSid }: CheckSmsStatusInput) {
-    return this.request<{
-      success: boolean;
-      messageSid: string;
-      status: string;
-      to: string;
-      from: string;
-      dateSent: string | null;
-      errorCode: number | null;
-      errorMessage: string | null;
-    }>(`/sms/${messageSid}/status`);
-  }
 }
 
 export const summarizeStatus = (status: {

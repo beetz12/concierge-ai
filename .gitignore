@@ -49,6 +49,7 @@ supabase/.branches
 
 # claude code
 .claude
+.omc
 
 # prod_flows
 
@@ -56,3 +57,10 @@ temp.txt
 
 personal
 apps/voice-agent/recordings
+
+# Retell call artifacts (DEMO_MODE local fallback)
+.call-artifacts/
+
+# Playwright artifacts
+test-results/
+playwright-report/

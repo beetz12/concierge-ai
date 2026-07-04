@@ -3,6 +3,7 @@ import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js"
 import type { CallToolResult } from "@modelcontextprotocol/sdk/types.js";
 import { z } from "zod";
 import { VoiceApiClient, inputSchemas, summarizeStatus } from "./client.js";
+import { BackendManager } from "./backend-manager.js";
 
 const server = new McpServer(
   { name: "concierge-voice-mcp", version: "0.1.0" },
@@ -10,6 +11,7 @@ const server = new McpServer(
 );
 
 const client = new VoiceApiClient();
+const backendManager = new BackendManager();
 
 const asToolResult = (
   text: string,
@@ -28,6 +30,7 @@ server.registerTool(
     inputSchema: inputSchemas.previewCall,
   },
   async (input) => {
+    await backendManager.ensureBackend();
     const result = await client.previewCall(input);
     return asToolResult(
       `Preview ready for ${input.contractorName}. Opener: ${
@@ -50,6 +53,7 @@ server.registerTool(
     inputSchema: inputSchemas.dispatchCall,
   },
   async (input) => {
+    await backendManager.ensureBackend();
     const result = await client.dispatchCall(input);
     const sessionId =
       typeof result === "object" && result && "sessionId" in result ? String(result.sessionId) : "unknown";
@@ -71,6 +75,7 @@ server.registerTool(
     inputSchema: inputSchemas.getCallStatus,
   },
   async (input) => {
+    await backendManager.ensureBackend();
     const result = await client.getCallStatus(input);
     return asToolResult(
       `Call ${input.sessionId}: ${summarizeStatus(result)}`,
@@ -88,6 +93,7 @@ server.registerTool(
     inputSchema: inputSchemas.getCallArtifacts,
   },
   async (input) => {
+    await backendManager.ensureBackend();
     const result = await client.getCallArtifacts(input);
     return asToolResult(
       `Artifacts for ${input.sessionId}: transcriptPath=${result.result.transcriptPath || "none"}, recordingPath=${result.result.recordingPath || "none"}`,
@@ -105,6 +111,7 @@ server.registerTool(
     inputSchema: inputSchemas.createBrowserMonitor,
   },
   async (input) => {
+    await backendManager.ensureBackend();
     const result = await client.createBrowserMonitor(input);
     return asToolResult(
       `Browser monitor created for ${input.sessionId}. participantIdentity=${
@@ -126,6 +133,7 @@ server.registerTool(
     inputSchema: inputSchemas.joinSupervisorCall,
   },
   async (input) => {
+    await backendManager.ensureBackend();
     const result = await client.joinSupervisorCall(input);
     return asToolResult(
       `Supervisor call joined for ${input.sessionId} at ${input.phoneNumber}.`,
@@ -143,6 +151,7 @@ server.registerTool(
     inputSchema: inputSchemas.pauseCall,
   },
   async (input) => {
+    await backendManager.ensureBackend();
     const result = await client.pauseCall(input);
     return asToolResult(
       `Paused agent for ${input.sessionId}.`,
@@ -159,6 +168,7 @@ server.registerTool(
     inputSchema: inputSchemas.resumeCall,
   },
   async (input) => {
+    await backendManager.ensureBackend();
     const result = await client.resumeCall(input);
     return asToolResult(
       `Resumed agent for ${input.sessionId}.`,
@@ -167,42 +177,12 @@ server.registerTool(
   },
 );
 
-server.registerTool(
-  "send_sms",
-  {
-    title: "Send SMS",
-    description:
-      "Send a text message (SMS/MMS) to a phone number via Twilio. Returns a message SID for delivery tracking.",
-    inputSchema: inputSchemas.sendSms,
-  },
-  async (input) => {
-    const result = await client.sendSms(input);
-    if (!result.success) {
-      return asToolResult(`SMS failed: ${result.error || "unknown error"}`);
-    }
-    return asToolResult(
-      `SMS sent to ${input.to}. messageSid=${result.messageSid}, status=${result.messageStatus}`,
-      result as Record<string, unknown>,
-    );
-  },
-);
-
-server.registerTool(
-  "check_sms_status",
-  {
-    title: "Check SMS Status",
-    description:
-      "Check delivery status of a sent SMS by its Twilio message SID.",
-    inputSchema: inputSchemas.checkSmsStatus,
-  },
-  async (input) => {
-    const result = await client.checkSmsStatus(input);
-    return asToolResult(
-      `Message ${input.messageSid}: status=${result.status}, to=${result.to}`,
-      result as Record<string, unknown>,
-    );
-  },
-);
+const cleanup = () => {
+  backendManager.shutdown();
+  process.exit(0);
+};
+process.on("SIGTERM", cleanup);
+process.on("SIGINT", cleanup);
 
 const main = async () => {
   const transport = new StdioServerTransport();

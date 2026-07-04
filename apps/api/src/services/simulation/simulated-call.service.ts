@@ -16,7 +16,7 @@
 
 import { GoogleGenAI } from "@google/genai";
 import { v4 as uuidv4 } from "uuid";
-import type { CallRequest, CallResult, StructuredCallData } from "../vapi/types.js";
+import type { CallRequest, CallResult } from "../vapi/types.js";
 import type { FastifyBaseLogger } from "fastify";
 
 // Initialize Gemini AI client
@@ -124,7 +124,7 @@ export class SimulatedCallService {
       const result: CallResult = {
         status: "completed",
         callId,
-        callMethod: "simulated" as any, // Extended type for simulated calls
+        callMethod: "simulated",
         duration: simulation.duration_minutes || Math.round(duration * 10) / 10,
         endedReason: "assistant-ended-call",
         transcript: this.formatTranscript(simulation.transcript),
@@ -172,9 +172,10 @@ export class SimulatedCallService {
       );
 
       return result;
-    } catch (error: any) {
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : String(error);
       this.logger?.error(
-        { error: error.message, providerId: request.providerId },
+        { error: errorMessage, providerId: request.providerId },
         "[SimulatedCallService] Simulation failed"
       );
 
@@ -182,9 +183,9 @@ export class SimulatedCallService {
       return {
         status: "error",
         callId,
-        callMethod: "simulated" as any,
+        callMethod: "simulated",
         duration: 0,
-        endedReason: error.message,
+        endedReason: errorMessage,
         transcript: "",
         analysis: {
           summary: "Simulation failed",
@@ -198,7 +199,7 @@ export class SimulatedCallService {
             recommended: false,
             disqualified: true,
             disqualification_reason: "Simulation error",
-            notes: error.message,
+            notes: errorMessage,
           },
           successEvaluation: "false",
         },
@@ -213,7 +214,7 @@ export class SimulatedCallService {
           urgency: request.urgency,
         },
         cost: 0,
-        error: error.message,
+        error: errorMessage,
       };
     }
   }
@@ -242,7 +243,7 @@ export class SimulatedCallService {
     return {
       status: "voicemail",
       callId,
-      callMethod: "simulated" as any,
+      callMethod: "simulated",
       duration: 0.3, // ~20 seconds for voicemail greeting
       endedReason: "voicemail",
       transcript: `[Voicemail greeting]: ${greeting}\n\n[Call ended - voicemail detected]`,
@@ -292,7 +293,7 @@ export class SimulatedCallService {
     return {
       status: "no_answer",
       callId,
-      callMethod: "simulated" as any,
+      callMethod: "simulated",
       duration: 0.5, // ~30 seconds of ringing
       endedReason: "no-answer",
       transcript: "[Phone rang with no answer - call ended after timeout]",

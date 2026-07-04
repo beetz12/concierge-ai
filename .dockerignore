@@ -1,0 +1,26 @@
+# Keep the Docker build context small and free of local/secret artifacts.
+**/node_modules
+**/dist
+**/.next
+**/.turbo
+**/coverage
+**/test-results
+**/playwright-report
+
+# Local env / secrets - NEVER copy real credentials into an image.
+**/.env
+**/.env.*
+!**/.env.example
+
+# VCS / editor / OS noise
+.git
+.gitignore
+**/.DS_Store
+**/*.log
+
+# Supabase local stack state
+supabase/.temp
+supabase/.branches
+
+# Call artifacts written by the Retell/local fallback
+**/.call-artifacts

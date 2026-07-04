@@ -261,59 +261,81 @@ Demo mode allows the app to run with only a Gemini API key — no Supabase, no V
 - **Address Services**: Google Places API for autocomplete and geocoding
 - **Workflow**: Kestra for orchestration (optional, with direct API fallback)
 
-## VAPI Assistant Configuration
+## CallBackend
 
-The VAPI calling system uses a single source of truth pattern to maintain DRY principles:
+Outbound voice calls run through a pluggable **CallBackend** abstraction so the
+telephony provider can be swapped without touching call-dispatch logic.
 
-**Source of Truth**: `apps/api/src/services/vapi/assistant-config.ts`
+**Interface**: `apps/api/src/services/call-backend/types.ts`
 
-- Contains the canonical assistant configuration
-- Defines conversation flow, prompts, and analysis schema
-- Used by both direct VAPI API calls and Kestra orchestration
-- Supports two voice modes: Traditional (Gemini + ElevenLabs) and Realtime (OpenAI GPT-4o)
+- `CallPlan` - provider-agnostic call description (business name, E.164 number,
+  objective, context, `mustAsk[]`, caller identity, callback number, voicemail
+  policy, pre-authorizations, plus guard fields: `tenantId`, `userApproved`,
+  `allowRedial`).
+- `CallStatus` / `CallArtifacts` - normalized status and outputs (recording ref,
+  transcript, structured outcome JSON).
+- `CallBackend` - `dispatchCall` / `getStatus` / `getArtifacts` / `cancelCall`
+  plus a `capabilities` object (`supportsPause`, `supportsSupervision`,
+  `supportsWarmTransfer`, `supportsDtmf`) used to gate optional routes.
 
-**Voice Mode Architecture**:
+**Selecting a backend** - the concrete backend is chosen at runtime by the
+`CALL_BACKEND` environment variable (default: `livekit`) via the factory in
+`apps/api/src/services/call-backend/index.ts`.
 
-| Mode | Pipeline | Latency | Voice Quality |
-|------|----------|---------|---------------|
-| **Traditional** | Deepgram STT → Gemini → ElevenLabs TTS | 800-1200ms | Robotic |
-| **Realtime** | OpenAI GPT-4o native audio-to-audio | 300-700ms | Natural, emotionally intelligent |
+| `CALL_BACKEND` | Backend | Capabilities |
+|----------------|---------|--------------|
+| `livekit` (default) | `LiveKitCallBackend` | pause/resume, live supervision, warm transfer |
+| `retell` | `RetellCallBackend` | warm transfer + DTMF (agent-tool level); no pause / live supervision |
+| `vapi` | `VapiCallBackend` | none wired; wraps the VAPI REST API |
+| `mock` | `MockCallBackend` | none - deterministic in-memory backend for tests/demos (instant transitions, canned artifacts; outcome scripted by the dialed number's last digit) |
 
-Toggle with `VAPI_USE_REALTIME=true`. No infrastructure changes needed - just config.
+**LiveKit adapter**: `apps/api/src/services/call-backend/livekit/livekit-call-backend.ts`
+wraps `ContractorCallService` (the LiveKit dispatch/status/artifact logic behind
+the `/api/v1/voice` routes). The voice-calls routes read
+`callBackend.capabilities` to gate the pause/resume, supervisor-token, and
+warm-transfer endpoints.
 
-**Hybrid Webhook Mode**: `apps/api/src/services/vapi/direct-vapi.client.ts`
+**Retell adapter**: `apps/api/src/services/call-backend/retell/` wraps the
+Retell AI REST API using the request shapes proven by the `call-biz` CLI.
 
-DirectVapiClient supports a hybrid approach for optimal performance:
+- **Dispatch guards** (`guards.ts`) - every dispatch requires
+  `plan.userApproved` (a human saw the call plan and said go), exactly one
+  E.164 US number (batch dialing refused by design), and passes a 24h
+  same-number redial guard scoped per `tenantId` (override only with
+  `plan.allowRedial` for a pre-approved retry). Guard refusals throw
+  `CallGuardError` with a machine-readable `code`.
+- **Durable artifacts** (`artifacts.ts`) - Retell recording URLs expire, so
+  `getArtifacts` immediately copies `recording.wav`, `transcript.txt`, and a
+  slim `call.json` into the private Supabase storage bucket `call-artifacts`
+  (local-dir fallback under `DEMO_MODE` / no Supabase; see
+  `RETELL_ARTIFACTS_DIR`).
+- **Provisioning** (`provisioning.ts`) - `RetellProvisioner.ensureProvisioned()`
+  idempotently reuses `RETELL_AGENT_ID`, or looks up / creates the LLM + agent
+  by `RETELL_AGENT_NAME`; numbers are verified, never purchased. `doctor()`
+  checks key, config, API, agent, and number.
+- **Capabilities** - warm transfer and DTMF are agent-tool-level features,
+  not mid-call REST operations: the auto-created LLM always gets a
+  `press_digit` tool (backs `supportsDtmf`), and gets a `transfer_call` tool
+  in `warm_transfer` mode (backs `supportsWarmTransfer`) when the optional
+  `RETELL_TRANSFER_NUMBER` is set. There is no mid-call pause/resume or live
+  supervisor dial-in (`supportsPause` / `supportsSupervision` are false).
+- **Env**: `RETELL_API_KEY` (required), `RETELL_FROM_NUMBER`, and the optional
+  `RETELL_AGENT_ID` / `RETELL_LLM_ID` / `RETELL_AGENT_NAME` / `RETELL_VOICE_ID`
+  / `RETELL_TRANSFER_NUMBER` / `RETELL_ARTIFACTS_DIR` (see
+  `apps/api/.env.example`).
+- **Tests**: `apps/api/src/services/call-backend/retell/*.test.ts` (node:test,
+  mocked HTTP - no API key or network needed).
 
-| Mode | When Active | Behavior |
-|------|-------------|----------|
-| **Hybrid (Webhook)** | `VAPI_WEBHOOK_URL` set | Uses webhooks as primary, polls backend cache every 2s |
-| **Polling-only** | `VAPI_WEBHOOK_URL` not set | Uses direct VAPI API polling every 5s (original behavior) |
+**VAPI adapter**: `apps/api/src/services/call-backend/vapi/vapi-call-backend.ts`
+talks directly to the VAPI REST API (`https://api.vapi.ai`) to dispatch,
+poll, and cancel calls - it does not modify or import from
+`apps/api/src/services/vapi/**`, so the legacy Research-and-Book pipeline is
+unaffected. Dispatch is fire-and-forget (returns the VAPI call id immediately;
+callers poll `getStatus`/`getArtifacts`). Requires `VAPI_API_KEY` and
+`VAPI_PHONE_NUMBER_ID`; only supports US E.164 destination numbers.
 
-Benefits of hybrid mode:
-- 31x fewer VAPI API calls when webhook works
-- <500ms latency vs 2.5s average with polling
-- Automatic database persistence via webhook infrastructure
-- Graceful fallback to polling if webhook unavailable
-
-**Kestra Scripts**: `kestra/scripts/call-provider.js`
-
-- Imports configuration from compiled TypeScript: `apps/api/dist/services/vapi/assistant-config.js`
-- No configuration duplication
-- Ensures identical behavior across all execution paths
-
-**Build Requirement**: Run `pnpm build` before using Kestra scripts
-
-- The Kestra scripts require the TypeScript to be compiled
-- Build compiles `apps/api/src` to `apps/api/dist`
-- Without build, the script will fail with import error
-
-**Key Features**:
-
-- **Concurrent Calling**: Call up to 5 providers simultaneously via `VAPI_MAX_CONCURRENT_CALLS`
-- **Disqualification Detection**: Politely exits calls when provider cannot meet requirements
-- **Conditional Closing**: Uses callback script ("I'll call you back to schedule") only if ALL criteria met
-- **Earliest Availability**: Captures specific date/time when provider can start work
-- **Structured Data**: Returns typed results including `disqualified`, `disqualification_reason`, `earliest_availability`
-- **Single Person Tracking**: Ensures all requirements met by ONE person, not different technicians
-- **Top 3 Recommendations**: After calls complete, AI analyzes results and recommends top 3 providers with scores and reasoning
+> **Migration note**: the legacy VAPI/Kestra provider-calling pipeline under
+> `apps/api/src/services/vapi/` still backs the Research-and-Book flow
+> (`/api/v1/providers`, `/api/v1/bookings`, `/api/v1/notifications`, the VAPI
+> webhook, and the `runtime-router`). Migrating those paths onto CallBackend and
+> retiring `services/vapi` is a follow-up slice; do not delete it piecemeal.

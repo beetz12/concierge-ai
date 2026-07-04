@@ -9,7 +9,7 @@ import { buildVoicePromptTemplate } from "./prompts/index.js";
 const DEFAULT_STT_MODEL = "assemblyai/universal-streaming:en";
 const DEFAULT_LLM_MODEL = "openai/gpt-4.1-mini";
 const DEFAULT_TTS_MODEL = "cartesia/sonic-2:9626c31c-bec5-4cca-baa8-f8ba9e84c8bc";
-const DEFAULT_GEMINI_MODEL = "gemini-2.5-flash-native-audio-preview-12-2025";
+const DEFAULT_GEMINI_MODEL = "gemini-3.1-flash-live-preview";
 
 export type WorkerModelProvider =
   | "openai-realtime"
@@ -185,7 +185,10 @@ export const createAgentSession = (
         llm: new google.beta.realtime.RealtimeModel({
           model: config.gemini.model,
           voice: config.gemini.voice,
-          temperature: 0.7,
+          temperature: 0.8,
+          enableAffectiveDialog: true,
+          proactivity: true,
+          apiVersion: "v1alpha",
         }),
       });
     case "pipeline":

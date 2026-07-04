@@ -23,6 +23,7 @@ import type {
   StructuredCallData,
 } from "../services/vapi/types.js";
 import { CallResultService } from "../services/vapi/call-result.service.js";
+import { verifyVapiSignature } from "../services/webhooks/signature.js";
 
 // Zod schemas for VAPI webhook payloads
 // Based on VAPI.ai webhook event structure
@@ -174,7 +175,39 @@ export default async function vapiWebhookRoutes(fastify: FastifyInstance) {
               details: { type: "array" },
             },
           },
+          403: {
+            type: "object",
+            properties: {
+              success: { type: "boolean" },
+              error: { type: "string" },
+            },
+          },
         },
+      },
+      // Verify the shared-secret header BEFORE processing. Fail-closed when
+      // VAPI_WEBHOOK_SECRET is set; fail-open (with warning) otherwise.
+      preValidation: async (request, reply) => {
+        const headerValue =
+          (request.headers["x-vapi-secret"] as string | undefined) ??
+          (request.headers["x-vapi-signature"] as string | undefined);
+        const result = verifyVapiSignature(
+          headerValue,
+          process.env.VAPI_WEBHOOK_SECRET,
+        );
+        if (!result.ok) {
+          request.log.warn(
+            { reason: result.reason },
+            "[VapiWebhook] Rejected: signature verification failed",
+          );
+          return reply
+            .code(403)
+            .send({ success: false, error: "Invalid webhook signature" });
+        }
+        if (!result.enforced) {
+          request.log.warn(
+            "[VapiWebhook] VAPI_WEBHOOK_SECRET not set - signature NOT verified (dev only)",
+          );
+        }
       },
     },
     async (request, reply) => {

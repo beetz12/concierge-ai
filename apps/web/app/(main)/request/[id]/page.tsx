@@ -32,11 +32,53 @@ import {
   RequestStatus,
   RequestType,
   Provider,
+  Tables,
   safeRequestStatus,
 } from "@/lib/types";
 import { createClient } from "@/lib/supabase/client";
-import { scheduleBooking } from "@/lib/services/bookingService";
 import { DEMO_MODE } from "@/lib/config/demo";
+
+// Provider rows may carry columns not present in the generated Database types
+// (e.g. legacy/aspirational fields read defensively at runtime).
+type ProviderRow = Tables<"providers"> & Record<string, unknown>;
+type InteractionLogRow = Tables<"interaction_logs"> & Record<string, unknown>;
+
+const mapProviderRow = (p: ProviderRow): Provider => ({
+  id: p.id,
+  name: p.name,
+  phone: p.phone || "",
+  rating: p.rating || 0,
+  address: p.address || "",
+  source: p.source || "User Input",
+  // Call tracking (convert null to undefined, validate JSONB types)
+  callStatus: p.call_status || undefined,
+  callResult:
+    p.call_result && typeof p.call_result === "object" && !Array.isArray(p.call_result)
+      ? (p.call_result as Provider["callResult"])
+      : undefined,
+  callTranscript: p.call_transcript || undefined,
+  callSummary: p.call_summary || undefined,
+  callDurationMinutes: p.call_duration_minutes || undefined,
+  calledAt: p.called_at || undefined,
+  // Research data (convert null to undefined, handle JSONB variations)
+  reviewCount: p.review_count || undefined,
+  distance: p.distance || undefined,
+  distanceText: p.distance_text || undefined,
+  hoursOfOperation: Array.isArray(p.hours_of_operation)
+    ? (p.hours_of_operation as string[])
+    : Array.isArray((p.hours_of_operation as { weekdayText?: unknown } | null)?.weekdayText)
+      ? ((p.hours_of_operation as { weekdayText?: string[] }).weekdayText as string[])
+      : undefined,
+  isOpenNow: p.is_open_now || undefined,
+  googleMapsUri: p.google_maps_uri || undefined,
+  website: p.website || undefined,
+  placeId: p.place_id || undefined,
+  // Booking confirmation
+  booking_confirmed: p.booking_confirmed || undefined,
+  booking_date: p.booking_date || undefined,
+  booking_time: p.booking_time || undefined,
+  confirmation_number: p.confirmation_number || undefined,
+});
 
 const LogItem: React.FC<{ log: InteractionLog; index: number }> = ({ log }) => {
   const iconMap = {
@@ -125,7 +167,7 @@ export default function RequestDetails() {
     earliestAvailability: string;
   } | null>(null);
   const [showModal, setShowModal] = useState(false);
-  const [bookingLoading, setBookingLoading] = useState(false);
+  const [bookingLoading] = useState(false);
   const [recommendations, setRecommendations] = useState<RecommendationSet | null>(null);
   const [recommendationsLoading, setRecommendationsLoading] = useState(false);
   const [recommendationsChecked, setRecommendationsChecked] = useState(false);
@@ -351,7 +393,7 @@ export default function RequestDetails() {
 
   // LEGACY: checkAndGenerateRecommendations kept for backward compatibility
   // Now just delegates to fetchRecommendationsFromDb
-  const checkAndGenerateRecommendations = useCallback(async (_retryCount = 0) => {
+  const checkAndGenerateRecommendations = useCallback(async () => {
     await fetchRecommendationsFromDb();
   }, [fetchRecommendationsFromDb]);
 
@@ -425,42 +467,8 @@ export default function RequestDetails() {
           location: data.location || undefined,
           status: safeRequestStatus(data.status),
           createdAt: data.created_at,
-          providersFound: providers.map((p: any) => ({
-            id: p.id,
-            name: p.name,
-            phone: p.phone || "",
-            rating: p.rating || 0,
-            address: p.address || "",
-            source: p.source || "User Input",
-            // Call tracking (convert null to undefined, validate JSONB types)
-            callStatus: p.call_status || undefined,
-            callResult: (p.call_result && typeof p.call_result === "object" && !Array.isArray(p.call_result))
-              ? (p.call_result as Provider['callResult'])
-              : undefined,
-            callTranscript: p.call_transcript || undefined,
-            callSummary: p.call_summary || undefined,
-            callDurationMinutes: p.call_duration_minutes || undefined,
-            calledAt: p.called_at || undefined,
-            // Research data (convert null to undefined, handle JSONB variations)
-            reviewCount: p.review_count || undefined,
-            distance: p.distance || undefined,
-            distanceText: p.distance_text || undefined,
-            hoursOfOperation: Array.isArray(p.hours_of_operation)
-              ? p.hours_of_operation as string[]
-              : Array.isArray((p.hours_of_operation as any)?.weekdayText)
-                ? (p.hours_of_operation as any).weekdayText
-                : undefined,
-            isOpenNow: p.is_open_now || undefined,
-            googleMapsUri: p.google_maps_uri || undefined,
-            website: p.website || undefined,
-            placeId: p.place_id || undefined,
-            // Booking confirmation
-            booking_confirmed: p.booking_confirmed || undefined,
-            booking_date: p.booking_date || undefined,
-            booking_time: p.booking_time || undefined,
-            confirmation_number: p.confirmation_number || undefined,
-          })),
-          interactions: logs.map((log: any) => ({
+          providersFound: (providers as ProviderRow[]).map(mapProviderRow),
+          interactions: (logs as InteractionLogRow[]).map((log) => ({
             id: log.id,
             timestamp: log.timestamp,
             stepName: log.step_name,
@@ -469,8 +477,8 @@ export default function RequestDetails() {
             transcript: Array.isArray(log.transcript)
               ? (log.transcript as { speaker: string; text: string }[])
               : undefined,
-            providerName: (log as any).provider_name || undefined,
-            providerId: (log as any).provider_id || undefined,
+            providerName: (log.provider_name as string | undefined) || undefined,
+            providerId: (log.provider_id as string | undefined) || undefined,
           })),
           finalOutcome: data.final_outcome || undefined,
           directContactInfo: (data.direct_contact_info &&
@@ -480,13 +488,17 @@ export default function RequestDetails() {
             "phone" in data.direct_contact_info)
             ? {
                 // Support both 'name' (direct task) and 'user_name' (research & book) field names
-                name: String((data.direct_contact_info as any).name || (data.direct_contact_info as any).user_name || ""),
-                phone: String((data.direct_contact_info as any).phone || ""),
+                name: String(
+                  (data.direct_contact_info as Record<string, unknown>).name ||
+                    (data.direct_contact_info as Record<string, unknown>).user_name ||
+                    ""
+                ),
+                phone: String((data.direct_contact_info as Record<string, unknown>).phone || ""),
               }
             : undefined,
-          userPhone: (data as any).user_phone || undefined,
-          preferredContact: (data as any).preferred_contact as "phone" | "text" | undefined,
-          notificationSentAt: (data as any).notification_sent_at || undefined,
+          userPhone: (data as Record<string, unknown>).user_phone as string | undefined,
+          preferredContact: (data as Record<string, unknown>).preferred_contact as "phone" | "text" | undefined,
+          notificationSentAt: (data as Record<string, unknown>).notification_sent_at as string | undefined,
         };
         setDbRequest(converted);
         // Also add to context so it persists during this session
@@ -512,10 +524,11 @@ export default function RequestDetails() {
           table: "service_requests",
           filter: `id=eq.${id}`,
         },
-        (payload: any) => {
+        (payload: { eventType: string; new: Record<string, unknown> | null }) => {
           console.log("Real-time update:", payload);
           if (payload.eventType === "UPDATE" && payload.new) {
-            const newStatus = payload.new.status as string;
+            const payloadNew = payload.new;
+            const newStatus = payloadNew.status as string;
             const prevStatus = requestRef.current?.status;
 
             console.log(`[Subscription] Status change: ${prevStatus} → ${newStatus}`);
@@ -528,7 +541,7 @@ export default function RequestDetails() {
               !recommendations
             ) {
               // Check if recommendations are included in the real-time payload
-              const payloadRecs = (payload.new as Record<string, unknown>).recommendations as {
+              const payloadRecs = payloadNew.recommendations as {
                 recommendations: Array<{
                   providerId?: string;
                   providerName: string;
@@ -578,40 +591,44 @@ export default function RequestDetails() {
               const existingClientAddress = prev?.clientAddress || localRequest?.clientAddress || dbRequest?.clientAddress;
 
               // Extract directContactInfo from payload if available (supports both 'name' and 'user_name' fields)
-              const payloadContactInfo = payload.new.direct_contact_info;
+              const payloadContactInfo = payloadNew.direct_contact_info;
               const newDirectContactInfo = (payloadContactInfo &&
                 typeof payloadContactInfo === "object" &&
                 !Array.isArray(payloadContactInfo) &&
                 ("name" in payloadContactInfo || "user_name" in payloadContactInfo) &&
                 "phone" in payloadContactInfo)
                 ? {
-                    name: String((payloadContactInfo as any).name || (payloadContactInfo as any).user_name || ""),
-                    phone: String((payloadContactInfo as any).phone || ""),
+                    name: String(
+                      (payloadContactInfo as Record<string, unknown>).name ||
+                        (payloadContactInfo as Record<string, unknown>).user_name ||
+                        ""
+                    ),
+                    phone: String((payloadContactInfo as Record<string, unknown>).phone || ""),
                   }
                 : existingDirectContactInfo; // Preserve existing if not in payload
 
               const converted: ServiceRequest = {
-                id: payload.new.id,
-                type: payload.new.type as RequestType,
-                title: payload.new.title,
-                description: payload.new.description,
-                criteria: payload.new.criteria,
-                location: payload.new.location || undefined,
-                clientAddress: payload.new.client_address || existingClientAddress,
-                status: safeRequestStatus(payload.new.status),
-                createdAt: payload.new.created_at,
+                id: payloadNew.id as string,
+                type: payloadNew.type as RequestType,
+                title: payloadNew.title as string,
+                description: payloadNew.description as string,
+                criteria: payloadNew.criteria as string,
+                location: (payloadNew.location as string | undefined) || undefined,
+                clientAddress: (payloadNew.client_address as string | undefined) || existingClientAddress,
+                status: safeRequestStatus(payloadNew.status as string),
+                createdAt: payloadNew.created_at as string,
                 providersFound: existingProviders,
                 interactions: existingInteractions,
-                finalOutcome: payload.new.final_outcome || undefined,
+                finalOutcome: (payloadNew.final_outcome as string | undefined) || undefined,
                 directContactInfo: newDirectContactInfo,
-                userPhone: payload.new.user_phone || undefined,
-                preferredContact: payload.new.preferred_contact as "phone" | "text" | undefined,
-                notificationSentAt: payload.new.notification_sent_at || undefined,
+                userPhone: (payloadNew.user_phone as string | undefined) || undefined,
+                preferredContact: payloadNew.preferred_contact as "phone" | "text" | undefined,
+                notificationSentAt: (payloadNew.notification_sent_at as string | undefined) || undefined,
               };
 
               // Sync notificationSent if backend sent notification
-              if (payload.new.notification_sent_at && !notificationSent) {
-                console.log("[Realtime] Notification sent detected:", payload.new.notification_sent_at);
+              if (payloadNew.notification_sent_at && !notificationSent) {
+                console.log("[Realtime] Notification sent detected:", payloadNew.notification_sent_at);
                 setNotificationSent(true);
               }
 
@@ -631,11 +648,11 @@ export default function RequestDetails() {
           table: "providers",
           filter: `request_id=eq.${id}`,
         },
-        async (payload: any) => {
+        async (payload: { eventType: string; new: Record<string, unknown> | null }) => {
           console.log("Provider change received:", payload);
 
           // Cast payload.new to a record type for type safety
-          const newData = payload.new as Record<string, unknown> | null;
+          const newData = payload.new;
 
           // Handle INSERT events (new providers added)
           if (payload.eventType === "INSERT" && newData) {
@@ -652,41 +669,7 @@ export default function RequestDetails() {
                 if (!prev) return prev;
                 return {
                   ...prev,
-                  providersFound: providers.map((p: any) => ({
-                    id: p.id,
-                    name: p.name,
-                    phone: p.phone || "",
-                    rating: p.rating || 0,
-                    address: p.address || "",
-                    source: p.source || "User Input",
-                    // Call tracking (convert null to undefined, validate JSONB types)
-                    callStatus: p.call_status || undefined,
-                    callResult: (p.call_result && typeof p.call_result === "object" && !Array.isArray(p.call_result))
-                      ? (p.call_result as Provider['callResult'])
-                      : undefined,
-                    callTranscript: p.call_transcript || undefined,
-                    callSummary: p.call_summary || undefined,
-                    callDurationMinutes: p.call_duration_minutes || undefined,
-                    calledAt: p.called_at || undefined,
-                    // Research data (convert null to undefined, handle JSONB variations)
-                    reviewCount: p.review_count || undefined,
-                    distance: p.distance || undefined,
-                    distanceText: p.distance_text || undefined,
-                    hoursOfOperation: Array.isArray(p.hours_of_operation)
-                      ? p.hours_of_operation as string[]
-                      : Array.isArray((p.hours_of_operation as any)?.weekdayText)
-                        ? (p.hours_of_operation as any).weekdayText
-                        : undefined,
-                    isOpenNow: p.is_open_now || undefined,
-                    googleMapsUri: p.google_maps_uri || undefined,
-                    website: p.website || undefined,
-                    placeId: p.place_id || undefined,
-                    // Booking confirmation
-                    booking_confirmed: p.booking_confirmed || undefined,
-                    booking_date: p.booking_date || undefined,
-                    booking_time: p.booking_time || undefined,
-                    confirmation_number: p.confirmation_number || undefined,
-                  })),
+                  providersFound: (providers as ProviderRow[]).map(mapProviderRow),
                 };
               });
             }
@@ -724,41 +707,7 @@ export default function RequestDetails() {
                   if (!prev) return prev;
                   return {
                     ...prev,
-                    providersFound: providers.map((p: any) => ({
-                      id: p.id,
-                      name: p.name,
-                      phone: p.phone || "",
-                      rating: p.rating || 0,
-                      address: p.address || "",
-                      source: p.source || "User Input",
-                      // Call tracking fields - essential for call logs tab
-                      callStatus: p.call_status || undefined,
-                      callResult: (p.call_result && typeof p.call_result === "object" && !Array.isArray(p.call_result))
-                        ? (p.call_result as Provider['callResult'])
-                        : undefined,
-                      callTranscript: p.call_transcript || undefined,
-                      callSummary: p.call_summary || undefined,
-                      callDurationMinutes: p.call_duration_minutes || undefined,
-                      calledAt: p.called_at || undefined,
-                      // Research data
-                      reviewCount: p.review_count || undefined,
-                      distance: p.distance || undefined,
-                      distanceText: p.distance_text || undefined,
-                      hoursOfOperation: Array.isArray(p.hours_of_operation)
-                        ? p.hours_of_operation as string[]
-                        : Array.isArray((p.hours_of_operation as any)?.weekdayText)
-                          ? (p.hours_of_operation as any).weekdayText
-                          : undefined,
-                      isOpenNow: p.is_open_now || undefined,
-                      googleMapsUri: p.google_maps_uri || undefined,
-                      website: p.website || undefined,
-                      placeId: p.place_id || undefined,
-                      // Booking confirmation
-                      booking_confirmed: p.booking_confirmed || undefined,
-                      booking_date: p.booking_date || undefined,
-                      booking_time: p.booking_time || undefined,
-                      confirmation_number: p.confirmation_number || undefined,
-                    })),
+                    providersFound: (providers as ProviderRow[]).map(mapProviderRow),
                   };
                 });
               }
@@ -777,7 +726,7 @@ export default function RequestDetails() {
           table: "interaction_logs",
           filter: `request_id=eq.${id}`,
         },
-        (payload: any) => {
+        (payload: { new: Record<string, unknown> | null }) => {
           console.log("Interaction log added:", payload);
           // Refetch all data when new interaction log is added
           if (payload.new) {
@@ -806,15 +755,15 @@ export default function RequestDetails() {
                 // Combine DB logs with any existing local logs (from real-time updates)
                 // and deduplicate by log ID
                 const existingLogs = realtimeRequest?.interactions || localRequest?.interactions || [];
-                const allLogs = [...existingLogs, ...logs.map((log: any) => ({
+                const allLogs = [...existingLogs, ...(logs as InteractionLogRow[]).map((log) => ({
                   id: log.id,
                   timestamp: log.timestamp,
                   stepName: log.step_name,
                   detail: log.detail,
                   status: log.status as "success" | "warning" | "error" | "info",
                   transcript: log.transcript as { speaker: string; text: string }[] | undefined,
-                  providerName: (log as any).provider_name || undefined,
-                  providerId: (log as any).provider_id || undefined,
+                  providerName: (log.provider_name as string | undefined) || undefined,
+                  providerId: (log.provider_id as string | undefined) || undefined,
                 }))];
 
                 // Deduplicate by ID, preferring newer entries (later in the array)
@@ -831,41 +780,7 @@ export default function RequestDetails() {
                   location: data.location || undefined,
                   status: data.status as RequestStatus,
                   createdAt: data.created_at,
-                  providersFound: providers.map((p: any) => ({
-                    id: p.id,
-                    name: p.name,
-                    phone: p.phone || "",
-                    rating: p.rating || 0,
-                    address: p.address || "",
-                    source: p.source || "User Input",
-                    // Call tracking (convert null to undefined, validate JSONB types)
-                    callStatus: p.call_status || undefined,
-                    callResult: (p.call_result && typeof p.call_result === "object" && !Array.isArray(p.call_result))
-                      ? (p.call_result as Provider['callResult'])
-                      : undefined,
-                    callTranscript: p.call_transcript || undefined,
-                    callSummary: p.call_summary || undefined,
-                    callDurationMinutes: p.call_duration_minutes || undefined,
-                    calledAt: p.called_at || undefined,
-                    // Research data (convert null to undefined, handle JSONB variations)
-                    reviewCount: p.review_count || undefined,
-                    distance: p.distance || undefined,
-                    distanceText: p.distance_text || undefined,
-                    hoursOfOperation: Array.isArray(p.hours_of_operation)
-                      ? p.hours_of_operation as string[]
-                      : Array.isArray((p.hours_of_operation as any)?.weekdayText)
-                        ? (p.hours_of_operation as any).weekdayText
-                        : undefined,
-                    isOpenNow: p.is_open_now || undefined,
-                    googleMapsUri: p.google_maps_uri || undefined,
-                    website: p.website || undefined,
-                    placeId: p.place_id || undefined,
-                    // Booking confirmation
-                    booking_confirmed: p.booking_confirmed || undefined,
-                    booking_date: p.booking_date || undefined,
-                    booking_time: p.booking_time || undefined,
-                    confirmation_number: p.confirmation_number || undefined,
-                  })),
+                  providersFound: (providers as ProviderRow[]).map(mapProviderRow),
                   interactions: deduplicatedLogs,
                   finalOutcome: data.final_outcome || undefined,
                   directContactInfo: (data.direct_contact_info &&
@@ -875,8 +790,12 @@ export default function RequestDetails() {
                     "phone" in data.direct_contact_info)
                     ? {
                         // Support both 'name' (direct task) and 'user_name' (research & book) field names
-                        name: String((data.direct_contact_info as any).name || (data.direct_contact_info as any).user_name || ""),
-                        phone: String((data.direct_contact_info as any).phone || ""),
+                        name: String(
+                          (data.direct_contact_info as Record<string, unknown>).name ||
+                            (data.direct_contact_info as Record<string, unknown>).user_name ||
+                            ""
+                        ),
+                        phone: String((data.direct_contact_info as Record<string, unknown>).phone || ""),
                       }
                     : undefined,
                 };
@@ -892,6 +811,11 @@ export default function RequestDetails() {
     return () => {
       supabase.removeChannel(channel);
     };
+    // localRequest/dbRequest/notificationSent/realtimeRequest are intentionally excluded below:
+    // they are read fresh from closures inside the postgres_changes handlers at event-fire time.
+    // Adding them here would tear down and recreate the Supabase realtime channel on every data
+    // change, causing reconnect churn and risking missed events during the resubscribe window.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id, addRequest, checkAndGenerateRecommendations, recommendations]);
 
   useEffect(() => {
@@ -915,7 +839,7 @@ export default function RequestDetails() {
       );
       checkAndGenerateRecommendations();
     }
-  }, [request?.status, recommendationsChecked, recommendationsLoading, checkAndGenerateRecommendations]);
+  }, [request, recommendationsChecked, recommendationsLoading, checkAndGenerateRecommendations]);
 
   // Fallback: Single delayed check for recommendations if initial check found nothing
   // This handles race conditions where backend is still processing when page loads
@@ -985,7 +909,7 @@ export default function RequestDetails() {
     };
 
     generateDemoRecommendations();
-  }, [request?.status, recommendations, recommendationsLoading]);
+  }, [request, recommendations, recommendationsLoading]);
 
   // Handler for provider selection
   const handleProviderSelect = (provider: RecommendationProvider) => {

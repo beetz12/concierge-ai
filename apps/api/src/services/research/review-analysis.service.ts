@@ -233,7 +233,7 @@ Return concise structured JSON with:
 - seriousComplaints: only if evidence clearly implies high-risk complaints
 - recentTrend
 
-If evidence is thin, keep arrays small and use recentTrend=\"unknown\" or \"stable\".
+If evidence is thin, keep arrays small and use recentTrend="unknown" or "stable".
 `;
 
     try {

@@ -150,7 +150,7 @@ export class KestraResearchClient {
       const finalState = await this.pollExecution(execution.id);
 
       // Parse results
-      return this.parseExecutionResult(finalState, request);
+      return this.parseExecutionResult(finalState);
     } catch (error) {
       this.logger.error(
         { error: serializeError(error), service: request.service },
@@ -301,7 +301,6 @@ export class KestraResearchClient {
    */
   private parseExecutionResult(
     state: KestraExecutionStatus,
-    request: ResearchRequest,
   ): ResearchResult {
     // Kestra outputs are in state.outputs.json (from flow output)
     const rawOutput = state.outputs?.json;

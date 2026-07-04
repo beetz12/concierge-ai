@@ -259,7 +259,7 @@ const LiveStatus: React.FC<LiveStatusProps> = ({
 
         {/* Search steps */}
         <div className="space-y-2.5">
-          {searchSteps.map((step, index) => {
+          {searchSteps.map((step) => {
             const StepIcon = step.icon;
             return (
               <div

@@ -429,10 +429,20 @@ export class DirectVapiClient {
     // Extract messages array from artifact or call
     const messages = call.artifact?.messages || [];
     const formattedMessages = Array.isArray(messages)
-      ? messages.map((msg: any) => ({
-          role: msg.role || "unknown",
-          message: msg.message || msg.content || "",
-          time: msg.time || msg.secondsFromStart,
+      ? (messages as Array<Record<string, unknown>>).map((msg) => ({
+          role: typeof msg.role === "string" ? msg.role : "unknown",
+          message:
+            typeof msg.message === "string"
+              ? msg.message
+              : typeof msg.content === "string"
+                ? msg.content
+                : "",
+          time:
+            typeof msg.time === "number"
+              ? msg.time
+              : typeof msg.secondsFromStart === "number"
+                ? msg.secondsFromStart
+                : undefined,
         }))
       : [];
 

@@ -8,16 +8,18 @@ import {
   PlusCircle,
   History,
   Info,
-  Settings,
   Sparkles,
   ChevronLeft,
   X,
   Home,
   LogOut,
   User,
+  Scale,
+  PhoneOutgoing,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuth, useAuthActions } from "@/lib/providers/AuthProvider";
+import { OrgSwitcher } from "@/components/OrgSwitcher";
 
 import {
   Sidebar,
@@ -38,6 +40,8 @@ const navItems = [
   { href: "/dashboard", icon: LayoutDashboard, label: "Dashboard" },
   { href: "/new", icon: PlusCircle, label: "New Request" },
   { href: "/history", icon: History, label: "History" },
+  { href: "/dispatch", icon: PhoneOutgoing, label: "Dispatch" },
+  { href: "/cases", icon: Scale, label: "Cases" },
   { href: "/about", icon: Info, label: "About" },
 ];
 
@@ -45,7 +49,7 @@ export function AppSidebar() {
   const pathname = usePathname();
   const router = useRouter();
   const { state, toggleSidebar, isMobile, setOpenMobile } = useSidebar();
-  const { user, isAuthenticated, isLoading } = useAuth();
+  const { user, isAuthenticated } = useAuth();
   const { signOut } = useAuthActions();
 
   const isActive = (href: string) => {
@@ -109,6 +113,7 @@ export function AppSidebar() {
             </button>
           )}
         </div>
+        {isAuthenticated && (state === "expanded" || isMobile) && <OrgSwitcher />}
       </SidebarHeader>
 
       {/* Toggle arrow - desktop only, always at right edge */}

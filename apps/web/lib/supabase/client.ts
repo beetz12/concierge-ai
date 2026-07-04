@@ -1,4 +1,5 @@
 import { createBrowserClient } from "@supabase/ssr";
+import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database } from "../types/database";
 
 /**
@@ -36,7 +37,7 @@ export function createClient() {
           on: () => ({ subscribe: () => ({}) }),
         }),
         removeChannel: () => {},
-      } as any;
+      } as unknown as SupabaseClient<Database>;
     }
     throw new Error(
       "Missing Supabase environment variables. Please check your .env.local file.",

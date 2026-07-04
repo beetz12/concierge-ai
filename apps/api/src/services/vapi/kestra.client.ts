@@ -803,7 +803,7 @@ export class KestraClient {
    * Trigger the recommend_providers flow to analyze call results and recommend top 3
    */
   async triggerRecommendProvidersFlow(request: {
-    callResults: any[];
+    callResults: Record<string, unknown>[];
     originalCriteria: string;
     serviceRequestId: string;
     scoringWeights?: {
@@ -816,6 +816,10 @@ export class KestraClient {
   }): Promise<{
     success: boolean;
     executionId?: string;
+    // Shape matches RecommendationService.generateRecommendations output;
+    // typing it here would couple this Kestra client to the recommendations
+    // module, so it is kept as a dynamic flow result.
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- dynamic Kestra flow output typed at the consumer
     recommendations?: any;
     error?: string;
   }> {

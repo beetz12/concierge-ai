@@ -9,6 +9,11 @@ import { FastifyInstance } from "fastify";
 import { z } from "zod";
 import { createClient as createSupabaseClient } from "@supabase/supabase-js";
 import twilio from "twilio";
+import {
+  reconstructPublicUrl,
+  verifyTwilioSignature,
+} from "../services/webhooks/signature.js";
+import { isResearchAndBookEnabled } from "../config/research-and-book.js";
 
 // Twilio webhook payload schema
 const twilioWebhookSchema = z.object({
@@ -55,6 +60,39 @@ export default async function twilioWebhookRoutes(fastify: FastifyInstance) {
         tags: ["twilio"],
         summary: "Twilio inbound SMS webhook",
         description: "Handles user responses to provider recommendation SMS messages",
+      },
+      // Verify the X-Twilio-Signature BEFORE the handler runs. Fail-closed
+      // when TWILIO_AUTH_TOKEN is set; fail-open (with a warning) otherwise so
+      // local dev without credentials still works.
+      preValidation: async (request, reply) => {
+        const publicUrl = reconstructPublicUrl(
+          request.headers as Record<string, unknown>,
+          request.url,
+          process.env.PUBLIC_BASE_URL,
+        );
+        const result = verifyTwilioSignature({
+          signature: request.headers["x-twilio-signature"] as
+            | string
+            | undefined,
+          url: publicUrl,
+          params: (request.body ?? {}) as Record<string, unknown>,
+          authToken: process.env.TWILIO_AUTH_TOKEN,
+        });
+        if (!result.ok) {
+          request.log.warn(
+            { reason: result.reason, url: publicUrl },
+            "[TwilioWebhook] Rejected: signature verification failed",
+          );
+          return reply
+            .code(403)
+            .type("text/xml")
+            .send("<Response></Response>");
+        }
+        if (!result.enforced) {
+          request.log.warn(
+            "[TwilioWebhook] TWILIO_AUTH_TOKEN not set - signature NOT verified (dev only)",
+          );
+        }
       },
     },
     async (request, reply) => {
@@ -122,7 +160,11 @@ export default async function twilioWebhookRoutes(fastify: FastifyInstance) {
             );
 
             // Extract provider info from the join
-            const provider = completedRequest.providers as any;
+            const provider = completedRequest.providers as {
+              name?: string;
+              booking_date?: string;
+              booking_time?: string;
+            } | null;
             const providerName = provider?.name || "your selected provider";
             const bookingDate = provider?.booking_date || "";
             const bookingTime = provider?.booking_time || "";
@@ -336,126 +378,139 @@ export default async function twilioWebhookRoutes(fastify: FastifyInstance) {
 
         // Auto-trigger booking call to provider
         try {
-          // Use BACKEND_URL env var for production, fallback to localhost for development
-          const backendUrl = process.env.BACKEND_URL || 'http://localhost:8000';
-
-          // Check for ADMIN_TEST_NUMBER to substitute test phone
-          const adminTestPhonesRaw = process.env.ADMIN_TEST_NUMBER;
-          const adminTestPhones = adminTestPhonesRaw
-            ? adminTestPhonesRaw.split(",").map((p) => p.trim()).filter(Boolean)
-            : [];
-          const isAdminTestMode = adminTestPhones.length > 0;
-
-          // Determine phone to call - use test phone if in test mode
-          let phoneToCall = selectedProvider.phone;
-          if (isAdminTestMode && adminTestPhones[0]) {
-            phoneToCall = adminTestPhones[0];
+          // Research-and-Book places REAL calls with compliance + org context
+          // bypassed; it is disabled by default for v1 (see FIX 1). Skip the
+          // auto-book trigger and log when the flow is off.
+          if (!isResearchAndBookEnabled()) {
             fastify.log.info(
               {
-                originalPhone: selectedProvider.phone,
-                testPhone: phoneToCall,
+                serviceRequestId: serviceRequest.id,
                 providerName: selectedProvider.name,
               },
-              "[TwilioWebhook] Admin test mode: substituting provider phone with test phone"
+              "[TwilioWebhook] Research-and-Book disabled; skipping auto-book trigger"
             );
-          }
+          } else {
+            // Use BACKEND_URL env var for production, fallback to localhost for development
+            const backendUrl = process.env.BACKEND_URL || 'http://localhost:8000';
 
-          // Get full request details for booking (no providers join needed - we have selectedProvider from recommendations)
-          const { data: fullRequest, error: fullRequestError } = await supabase
-            .from('service_requests')
-            .select('*')
-            .eq('id', serviceRequest.id)
-            .single();
+            // Check for ADMIN_TEST_NUMBER to substitute test phone
+            const adminTestPhonesRaw = process.env.ADMIN_TEST_NUMBER;
+            const adminTestPhones = adminTestPhonesRaw
+              ? adminTestPhonesRaw.split(",").map((p) => p.trim()).filter(Boolean)
+              : [];
+            const isAdminTestMode = adminTestPhones.length > 0;
 
-          if (fullRequestError) {
-            fastify.log.error(
-              { error: fullRequestError, serviceRequestId: serviceRequest.id },
-              "[TwilioWebhook] Failed to fetch full request for booking"
-            );
-          }
+            // Determine phone to call - use test phone if in test mode
+            let phoneToCall = selectedProvider.phone;
+            if (isAdminTestMode && adminTestPhones[0]) {
+              phoneToCall = adminTestPhones[0];
+              fastify.log.info(
+                {
+                  originalPhone: selectedProvider.phone,
+                  testPhone: phoneToCall,
+                  providerName: selectedProvider.name,
+                },
+                "[TwilioWebhook] Admin test mode: substituting provider phone with test phone"
+              );
+            }
 
-          if (fullRequest && selectedProvider) {
-            // Build booking payload
-            const bookingPayload = {
-              serviceRequestId: fullRequest.id,
-              providerId: selectedProvider.id,
-              providerPhone: phoneToCall, // Use test phone or real phone
-              providerName: selectedProvider.name,
-              serviceNeeded: fullRequest.title || fullRequest.description || 'service',
-              clientName: (fullRequest.direct_contact_info as any)?.user_name || 'Customer',
-              clientPhone: fullRequest.user_phone,
-              location: fullRequest.location || '',
-              preferredDateTime: selectedProvider.earliest_availability || '',
-              additionalNotes: '',
-            };
+            // Get full request details for booking (no providers join needed - we have selectedProvider from recommendations)
+            const { data: fullRequest, error: fullRequestError } = await supabase
+              .from('service_requests')
+              .select('*')
+              .eq('id', serviceRequest.id)
+              .single();
 
-            // Log the booking trigger attempt with full payload
-            fastify.log.info(
-              {
-                backendUrl,
-                endpoint: '/api/v1/providers/book',
-                payload: bookingPayload,
-                isAdminTestMode,
-              },
-              "[TwilioWebhook] Triggering booking call to provider"
-            );
+            if (fullRequestError) {
+              fastify.log.error(
+                { error: fullRequestError, serviceRequestId: serviceRequest.id },
+                "[TwilioWebhook] Failed to fetch full request for booking"
+              );
+            }
 
-            // Make the booking request (fire-and-forget but with proper logging)
-            fetch(`${backendUrl}/api/v1/providers/book`, {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify(bookingPayload),
-            }).then(async (res) => {
-              if (!res.ok) {
-                const errorBody = await res.text().catch(() => 'Unable to read response body');
+            if (fullRequest && selectedProvider) {
+              // Build booking payload
+              const bookingPayload = {
+                serviceRequestId: fullRequest.id,
+                providerId: selectedProvider.id,
+                providerPhone: phoneToCall, // Use test phone or real phone
+                providerName: selectedProvider.name,
+                serviceNeeded: fullRequest.title || fullRequest.description || 'service',
+                clientName: (fullRequest.direct_contact_info as { user_name?: string } | null)?.user_name || 'Customer',
+                clientPhone: fullRequest.user_phone,
+                location: fullRequest.location || '',
+                preferredDateTime: selectedProvider.earliest_availability || '',
+                additionalNotes: '',
+              };
+
+              // Log the booking trigger attempt with full payload
+              fastify.log.info(
+                {
+                  backendUrl,
+                  endpoint: '/api/v1/providers/book',
+                  payload: bookingPayload,
+                  isAdminTestMode,
+                },
+                "[TwilioWebhook] Triggering booking call to provider"
+              );
+
+              // Make the booking request (fire-and-forget but with proper logging)
+              fetch(`${backendUrl}/api/v1/providers/book`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(bookingPayload),
+              }).then(async (res) => {
+                if (!res.ok) {
+                  const errorBody = await res.text().catch(() => 'Unable to read response body');
+                  fastify.log.error(
+                    {
+                      status: res.status,
+                      statusText: res.statusText,
+                      errorBody,
+                      serviceRequestId: fullRequest.id,
+                    },
+                    "[TwilioWebhook] Booking trigger failed"
+                  );
+                } else {
+                  const successBody = await res.json().catch(() => ({}));
+                  fastify.log.info(
+                    {
+                      status: res.status,
+                      response: successBody,
+                      serviceRequestId: fullRequest.id,
+                      providerName: selectedProvider.name,
+                    },
+                    "[TwilioWebhook] Booking triggered successfully"
+                  );
+                }
+              }).catch((err) => {
                 fastify.log.error(
                   {
-                    status: res.status,
-                    statusText: res.statusText,
-                    errorBody,
+                    error: err.message || err,
                     serviceRequestId: fullRequest.id,
+                    backendUrl,
                   },
-                  "[TwilioWebhook] Booking trigger failed"
+                  "[TwilioWebhook] Booking trigger network error"
                 );
-              } else {
-                const successBody = await res.json().catch(() => ({}));
-                fastify.log.info(
-                  {
-                    status: res.status,
-                    response: successBody,
-                    serviceRequestId: fullRequest.id,
-                    providerName: selectedProvider.name,
-                  },
-                  "[TwilioWebhook] Booking triggered successfully"
-                );
-              }
-            }).catch((err) => {
-              fastify.log.error(
-                {
-                  error: err.message || err,
-                  serviceRequestId: fullRequest.id,
-                  backendUrl,
-                },
-                "[TwilioWebhook] Booking trigger network error"
-              );
-            });
+              });
 
-            // Log the booking trigger to database
-            await supabase.from('interaction_logs').insert({
-              request_id: serviceRequest.id,
-              step_name: 'Booking Auto-Triggered',
-              detail: `Booking automatically triggered for ${selectedProvider.name} via SMS selection (phone: ${phoneToCall})`,
-              status: 'info',
-            });
-          } else {
-            fastify.log.warn(
-              {
-                hasFullRequest: !!fullRequest,
-                hasSelectedProvider: !!selectedProvider,
-                serviceRequestId: serviceRequest.id,
-              },
-              "[TwilioWebhook] Missing data for booking trigger"
-            );
+              // Log the booking trigger to database
+              await supabase.from('interaction_logs').insert({
+                request_id: serviceRequest.id,
+                step_name: 'Booking Auto-Triggered',
+                detail: `Booking automatically triggered for ${selectedProvider.name} via SMS selection (phone: ${phoneToCall})`,
+                status: 'info',
+              });
+            } else {
+              fastify.log.warn(
+                {
+                  hasFullRequest: !!fullRequest,
+                  hasSelectedProvider: !!selectedProvider,
+                  serviceRequestId: serviceRequest.id,
+                },
+                "[TwilioWebhook] Missing data for booking trigger"
+              );
+            }
           }
         } catch (bookingError) {
           fastify.log.error(
