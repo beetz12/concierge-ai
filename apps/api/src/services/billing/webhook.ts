@@ -88,16 +88,22 @@ export async function handleStripeWebhookEvent(
         return { handled: false, reason: "checkout session has no org_id metadata" };
       }
 
-      const { error } = await db.from("subscriptions").upsert(
-        {
-          org_id: orgId,
-          stripe_customer_id: asId(object.customer),
-          stripe_subscription_id: asId(object.subscription),
-          plan: asPlan(object.metadata?.plan) ?? "starter",
-          status: "active",
-        },
-        { onConflict: "org_id" },
-      );
+      // Seed the subscription ids/plan. Prefer the event's real subscription
+      // status when Stripe provides one; otherwise leave status unset and let
+      // the subsequent customer.subscription.created/updated event set it,
+      // rather than forcing "active" before Stripe has confirmed the state.
+      const values: Record<string, unknown> = {
+        org_id: orgId,
+        stripe_customer_id: asId(object.customer),
+        stripe_subscription_id: asId(object.subscription),
+        plan: asPlan(object.metadata?.plan) ?? "starter",
+      };
+      const status = asStatus(object.status);
+      if (status) values.status = status;
+
+      const { error } = await db
+        .from("subscriptions")
+        .upsert(values, { onConflict: "org_id" });
       if (error) {
         throw new Error(`billing webhook: upsert failed: ${error.message}`);
       }

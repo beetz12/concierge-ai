@@ -150,6 +150,30 @@ describe("auth middleware", () => {
     await app.close();
   });
 
+  test("returns 400 OrgRequired for a multi-org user with no claim or x-org-id", async () => {
+    const app = await buildApp({ resolveOrgIds: async () => [ORG_A, ORG_B] });
+    const response = await app.inject({
+      method: "GET",
+      url: "/api/v1/whoami",
+      headers: { authorization: "Bearer valid-token" },
+    });
+    assert.equal(response.statusCode, 400);
+    assert.equal(response.json().error, "OrgRequired");
+    await app.close();
+  });
+
+  test("single-membership user is unaffected (no org header needed)", async () => {
+    const app = await buildApp({ resolveOrgIds: async () => [ORG_A] });
+    const response = await app.inject({
+      method: "GET",
+      url: "/api/v1/whoami",
+      headers: { authorization: "Bearer valid-token" },
+    });
+    assert.equal(response.statusCode, 200);
+    assert.equal(response.json().auth.orgId, ORG_A);
+    await app.close();
+  });
+
   test("leaves webhook routes reachable without a token", async () => {
     const app = await buildApp();
     for (const url of ["/api/v1/vapi/webhook", "/api/v1/billing/webhook"]) {

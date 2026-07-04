@@ -172,6 +172,16 @@ const authMiddleware: FastifyPluginAsync<AuthMiddlewareOptions> = async (
             .send(forbidden("Not a member of the requested organization"));
         }
         orgId = requestedOrg;
+      } else if (memberships.length > 1) {
+        // Ambiguous: the user belongs to multiple orgs but neither an org_id
+        // claim nor an x-org-id header selected one. Refuse rather than
+        // silently picking the first membership.
+        return reply.code(400).send({
+          statusCode: 400,
+          error: "OrgRequired",
+          message:
+            "Specify an organization (x-org-id) — user belongs to multiple.",
+        });
       } else {
         orgId = memberships[0] ?? null;
       }

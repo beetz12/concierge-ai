@@ -210,7 +210,7 @@ function mockSubscriptionDb(capture: DbCapture): SubscriptionDbClient {
 }
 
 describe("handleStripeWebhookEvent", () => {
-  test("checkout.session.completed upserts an active subscription", async () => {
+  test("checkout.session.completed seeds ids without forcing a status", async () => {
     const capture: DbCapture = { upserts: [], updates: [] };
 
     const result = await handleStripeWebhookEvent(mockSubscriptionDb(capture), {
@@ -229,13 +229,33 @@ describe("handleStripeWebhookEvent", () => {
     assert.equal(capture.upserts.length, 1);
     assert.equal(capture.upserts[0]?.table, "subscriptions");
     assert.equal(capture.upserts[0]?.onConflict, "org_id");
+    // No status in the event => status is left for subscription.created/updated.
     assert.deepEqual(capture.upserts[0]?.values, {
       org_id: ORG_ID,
       stripe_customer_id: "cus_1",
       stripe_subscription_id: "sub_1",
       plan: "pro",
-      status: "active",
     });
+  });
+
+  test("checkout.session.completed mirrors the event's real subscription status", async () => {
+    const capture: DbCapture = { upserts: [], updates: [] };
+
+    const result = await handleStripeWebhookEvent(mockSubscriptionDb(capture), {
+      type: "checkout.session.completed",
+      data: {
+        object: {
+          id: "cs_1",
+          customer: "cus_1",
+          subscription: "sub_1",
+          status: "trialing",
+          metadata: { org_id: ORG_ID, plan: "pro" },
+        },
+      },
+    });
+
+    assert.deepEqual(result, { handled: true, action: "upsert", orgId: ORG_ID });
+    assert.equal(capture.upserts[0]?.values.status, "trialing");
   });
 
   test("customer.subscription.updated mirrors the Stripe status", async () => {
