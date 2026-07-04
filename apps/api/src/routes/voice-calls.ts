@@ -1,10 +1,7 @@
 import { FastifyInstance } from "fastify";
 import { z } from "zod";
 import { ContractorCallService } from "../services/voice/contractor-call.service.js";
-import {
-  LiveKitCallBackend,
-  resolveCallBackendId,
-} from "../services/call-backend/index.js";
+import { getCallBackend } from "../services/call-backend/index.js";
 import type { CallPlan } from "../services/call-backend/types.js";
 import {
   ComplianceDenyError,
@@ -12,6 +9,7 @@ import {
   formatDisclosureBlock,
 } from "../services/compliance/dispatch.js";
 import type { ComplianceTaskType } from "../services/compliance/types.js";
+import { isRedialBlocked } from "../services/dispatch/registry.js";
 import { DirectTwilioClient } from "../services/notifications/direct-twilio.client.js";
 import { isDemoMode } from "../config/demo.js";
 
@@ -126,10 +124,11 @@ export default async function voiceCallRoutes(fastify: FastifyInstance) {
   const contractorCallService = new ContractorCallService({
     supabase: fastify.supabase,
   });
-  // Validates CALL_BACKEND at startup (defaults to livekit) and exposes the
-  // adapter capabilities used to gate optional endpoints below.
-  resolveCallBackendId();
-  const callBackend = new LiveKitCallBackend(contractorCallService);
+  // Resolve the CALL_BACKEND-selected adapter (validates the id at startup and
+  // exposes the capabilities used to gate optional endpoints below). Non-livekit
+  // backends (retell/vapi/mock) do not support LiveKit supervision/pause, so
+  // those endpoints return 501 and never touch the LiveKit service.
+  const callBackend = getCallBackend({ supabase: fastify.supabase });
   // Compliance gate (slice 6): every dispatch is policy-evaluated BEFORE any
   // backend call, with authorization + audit rows written via service role.
   const complianceDispatcher = new CompliantCallDispatcher({
@@ -187,27 +186,41 @@ export default async function voiceCallRoutes(fastify: FastifyInstance) {
           });
         }
 
+        // 24h same-number redial guard (mirrors the dispatch route): a voice
+        // retry to a number this org already dialed inside the window is denied
+        // by the compliance engine before any backend call.
+        const redialBlocked = isRedialBlocked(
+          request.auth.orgId,
+          body.contractorPhone,
+        );
+
         // Policy-evaluate before dispatch: throws ComplianceDenyError (and
         // writes the deny audit row) when any policy check fails.
-        const authorization = await complianceDispatcher.authorize({
-          plan: buildCallPlan(body),
-          orgId: request.auth.orgId,
-          userId: request.auth.userId,
-          taskType: taskTypeForMode(body.mode),
-          channel: "voice",
-        });
+        const authorization = await complianceDispatcher.authorize(
+          {
+            plan: buildCallPlan(body),
+            orgId: request.auth.orgId,
+            userId: request.auth.userId,
+            taskType: taskTypeForMode(body.mode),
+            channel: "voice",
+          },
+          { redialBlocked },
+        );
 
         // Merge the engine's ordered disclosure lines into the prompt
         // variables the voice agent renders (R-12).
         const disclosureNotes = formatDisclosureBlock(
           authorization.decision.disclosureLines,
         );
-        const result = await contractorCallService.dispatchCall({
-          ...body,
-          additionalNotes: [body.additionalNotes, disclosureNotes]
-            .filter(Boolean)
-            .join("\n\n"),
-        });
+        const result = await contractorCallService.dispatchCall(
+          {
+            ...body,
+            additionalNotes: [body.additionalNotes, disclosureNotes]
+              .filter(Boolean)
+              .join("\n\n"),
+          },
+          request.auth.orgId,
+        );
 
         await complianceDispatcher.recordDispatchedCall(
           authorization.auditId,

@@ -105,11 +105,17 @@ export class CompliantCallDispatcher {
    *
    * @throws ComplianceDenyError after writing the deny audit row.
    */
-  async authorize(request: CompliantDispatchRequest): Promise<DispatchAuthorization> {
+  async authorize(
+    request: CompliantDispatchRequest,
+    options?: { redialBlocked?: boolean },
+  ): Promise<DispatchAuthorization> {
     const now = this.deps.now?.() ?? new Date();
     const channel = request.channel ?? "voice";
     const context = await this.resolveContext(request, channel, now);
-    const decision = evaluate(context);
+    const decision = evaluate({
+      ...context,
+      redialBlocked: options?.redialBlocked ?? false,
+    });
 
     if (!decision.allow) {
       await this.insertAuditRow(request, channel, decision, now, null);
