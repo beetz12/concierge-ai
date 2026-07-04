@@ -286,6 +286,7 @@ telephony provider can be swapped without touching call-dispatch logic.
 |----------------|---------|--------------|
 | `livekit` (default) | `LiveKitCallBackend` | pause/resume, live supervision, warm transfer |
 | `retell` | `RetellCallBackend` | warm transfer + DTMF (agent-tool level); no pause / live supervision |
+| `mock` | `MockCallBackend` | none - deterministic in-memory backend for tests/demos (instant transitions, canned artifacts; outcome scripted by the dialed number's last digit) |
 
 **LiveKit adapter**: `apps/api/src/services/call-backend/livekit/livekit-call-backend.ts`
 wraps `ContractorCallService` (the LiveKit dispatch/status/artifact logic behind
