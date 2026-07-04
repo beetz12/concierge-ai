@@ -5,6 +5,7 @@ if (process.env.NODE_ENV !== "production") {
   await import("dotenv/config");
 }
 
+import { randomUUID } from "node:crypto";
 import Fastify from "fastify";
 import cors from "@fastify/cors";
 import helmet from "@fastify/helmet";
@@ -14,7 +15,9 @@ import swagger from "@fastify/swagger";
 import swaggerUi from "@fastify/swagger-ui";
 import supabasePlugin from "./plugins/supabase.js";
 import authPlugin from "./plugins/auth.js";
+import errorHandlerPlugin from "./plugins/error-handler.js";
 import authMiddleware from "./middleware/auth.js";
+import { initObservability } from "./config/observability.js";
 import billingRoutes from "./routes/billing.js";
 import casesRoutes from "./routes/cases.js";
 import dispatchRoutes from "./routes/dispatch.js";
@@ -139,16 +142,58 @@ if (criticalMissing && !isDemoMode()) {
 
 // =============================================================================
 
+// Structured logging with request IDs.
+// - Every request gets a stable id (honoring an inbound `x-request-id` from an
+//   upstream proxy, else a fresh UUID) that is attached to every log line via
+//   `reqId` and echoed back to the client in the `x-request-id` header.
+// - JSON logs in production (machine-parseable for aggregation); pretty logs in
+//   development. Known secret-bearing headers are redacted so tokens never land
+//   in logs.
+const isProductionEnv = process.env.NODE_ENV === "production";
 const server = Fastify({
-  logger: {
-    transport: {
-      target: "pino-pretty",
-      options: {
-        translateTime: "HH:MM:ss Z",
-        ignore: "pid,hostname",
-      },
-    },
+  genReqId: (req) => {
+    const incoming = req.headers["x-request-id"];
+    if (typeof incoming === "string" && incoming.length > 0 && incoming.length <= 200) {
+      return incoming;
+    }
+    return randomUUID();
   },
+  requestIdHeader: "x-request-id",
+  requestIdLogLabel: "reqId",
+  logger: {
+    level: process.env.LOG_LEVEL || "info",
+    redact: {
+      paths: [
+        "req.headers.authorization",
+        "req.headers.cookie",
+        'req.headers["x-vapi-secret"]',
+        'req.headers["x-vapi-signature"]',
+        'req.headers["x-twilio-signature"]',
+        'req.headers["stripe-signature"]',
+        'req.headers["x-org-id"]',
+      ],
+      remove: false,
+    },
+    ...(isProductionEnv
+      ? {}
+      : {
+          transport: {
+            target: "pino-pretty",
+            options: {
+              translateTime: "HH:MM:ss Z",
+              ignore: "pid,hostname",
+            },
+          },
+        }),
+  },
+});
+
+// Echo the request id back to the caller so a client can quote it when
+// reporting an issue (the global error handler also includes it in the body).
+server.addHook("onSend", async (request, reply) => {
+  if (!reply.getHeader("x-request-id")) {
+    reply.header("x-request-id", request.id);
+  }
 });
 
 let isShuttingDown = false;
@@ -197,6 +242,14 @@ console.log(`IP Blacklist: ${getBlacklistSize()} IPs blocked`);
 const corsOrigins = process.env.CORS_ORIGIN
   ? process.env.CORS_ORIGIN.split(",").map((origin) => origin.trim())
   : ["http://localhost:3000", "http://localhost:3001", "http://localhost:3002"];
+
+// Initialize optional error monitoring (Sentry) before anything can throw.
+// No-op unless SENTRY_DSN is set and @sentry/node is installed.
+await initObservability(server.log);
+
+// Global error + not-found handlers: consistent JSON envelope with the
+// request id, domain-error mapping, and 5xx reporting to Sentry.
+await server.register(errorHandlerPlugin);
 
 await server.register(cors, {
   origin: corsOrigins.length === 1 ? corsOrigins[0] : corsOrigins,

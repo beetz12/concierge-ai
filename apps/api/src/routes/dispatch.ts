@@ -40,6 +40,10 @@ import {
 } from "../services/cases/index.js";
 import { getDemoCasesDb } from "../services/cases/demo-store.js";
 import { DirectTwilioClient } from "../services/notifications/direct-twilio.client.js";
+import {
+  createDispatchRateLimiterFromEnv,
+  type RateLimiter,
+} from "../services/rate-limit/token-bucket.js";
 import { isDemoMode } from "../config/demo.js";
 
 /**
@@ -202,7 +206,15 @@ const demoEvaluate = (input: DemoEvaluateInput): PolicyDecision => {
 const callerIdentityOf = (clientName?: string): string =>
   clientName?.trim() || "a client";
 
-const dispatchRoutes: FastifyPluginAsync = async (fastify) => {
+export interface DispatchRoutesOptions {
+  /** Injectable per-org limiter; defaults to an env-configured token bucket. */
+  rateLimiter?: RateLimiter;
+}
+
+const dispatchRoutes: FastifyPluginAsync<DispatchRoutesOptions> = async (
+  fastify,
+  options,
+) => {
   const backend: CallBackend = getCallBackend({ supabase: fastify.supabase });
   const dispatcher = new CompliantCallDispatcher({
     supabase: fastify.supabase,
@@ -213,6 +225,44 @@ const dispatchRoutes: FastifyPluginAsync = async (fastify) => {
       ? getDemoCasesDb()
       : (fastify.supabase as unknown as CasesDbClient);
 
+  // Per-org rate limiting for the cost-bearing dispatch surface. This is
+  // ABOVE the global IP limiter: it throttles each tenant independently so one
+  // org cannot exhaust another's budget, and it keys on the authenticated org
+  // id rather than the source IP.
+  const rateLimiter = options.rateLimiter ?? createDispatchRateLimiterFromEnv();
+
+  /**
+   * Enforce the per-org limit. Returns the org id when the request may
+   * proceed, or null after sending a 429 (or 403 when no org context).
+   */
+  const enforceOrgRateLimit = (
+    request: FastifyRequest,
+    reply: FastifyReply,
+  ): string | null => {
+    const orgId = requireOrg(request, reply);
+    if (!orgId) return null;
+    const result = rateLimiter.consume(orgId);
+    reply.header("x-ratelimit-limit", String(result.limit));
+    reply.header("x-ratelimit-remaining", String(result.remaining));
+    if (!result.allowed) {
+      reply.header("retry-after", String(result.retryAfterSeconds));
+      request.log.warn(
+        { orgId, url: request.url, retryAfter: result.retryAfterSeconds },
+        "Per-org dispatch rate limit exceeded",
+      );
+      reply.code(429).send({
+        statusCode: 429,
+        error: "Too Many Requests",
+        message:
+          "Per-organization dispatch rate limit exceeded. Retry after " +
+          `${result.retryAfterSeconds}s.`,
+        retryAfterSeconds: result.retryAfterSeconds,
+      });
+      return null;
+    }
+    return orgId;
+  };
+
   fastify.post(
     "/plan",
     {
@@ -222,7 +272,7 @@ const dispatchRoutes: FastifyPluginAsync = async (fastify) => {
       },
     },
     async (request, reply) => {
-      const orgId = requireOrg(request, reply);
+      const orgId = enforceOrgRateLimit(request, reply);
       if (!orgId) return;
 
       const parsed = planBodySchema.safeParse(request.body ?? {});
@@ -264,7 +314,7 @@ const dispatchRoutes: FastifyPluginAsync = async (fastify) => {
       },
     },
     async (request, reply) => {
-      const orgId = requireOrg(request, reply);
+      const orgId = enforceOrgRateLimit(request, reply);
       if (!orgId) return;
 
       const parsed = preflightBodySchema.safeParse(request.body ?? {});
@@ -338,7 +388,7 @@ const dispatchRoutes: FastifyPluginAsync = async (fastify) => {
       },
     },
     async (request, reply) => {
-      const orgId = requireOrg(request, reply);
+      const orgId = enforceOrgRateLimit(request, reply);
       if (!orgId) return;
 
       const parsed = dispatchBodySchema.safeParse(request.body ?? {});

@@ -9,6 +9,10 @@ import { FastifyInstance } from "fastify";
 import { z } from "zod";
 import { createClient as createSupabaseClient } from "@supabase/supabase-js";
 import twilio from "twilio";
+import {
+  reconstructPublicUrl,
+  verifyTwilioSignature,
+} from "../services/webhooks/signature.js";
 
 // Twilio webhook payload schema
 const twilioWebhookSchema = z.object({
@@ -55,6 +59,39 @@ export default async function twilioWebhookRoutes(fastify: FastifyInstance) {
         tags: ["twilio"],
         summary: "Twilio inbound SMS webhook",
         description: "Handles user responses to provider recommendation SMS messages",
+      },
+      // Verify the X-Twilio-Signature BEFORE the handler runs. Fail-closed
+      // when TWILIO_AUTH_TOKEN is set; fail-open (with a warning) otherwise so
+      // local dev without credentials still works.
+      preValidation: async (request, reply) => {
+        const publicUrl = reconstructPublicUrl(
+          request.headers as Record<string, unknown>,
+          request.url,
+          process.env.PUBLIC_BASE_URL,
+        );
+        const result = verifyTwilioSignature({
+          signature: request.headers["x-twilio-signature"] as
+            | string
+            | undefined,
+          url: publicUrl,
+          params: (request.body ?? {}) as Record<string, unknown>,
+          authToken: process.env.TWILIO_AUTH_TOKEN,
+        });
+        if (!result.ok) {
+          request.log.warn(
+            { reason: result.reason, url: publicUrl },
+            "[TwilioWebhook] Rejected: signature verification failed",
+          );
+          return reply
+            .code(403)
+            .type("text/xml")
+            .send("<Response></Response>");
+        }
+        if (!result.enforced) {
+          request.log.warn(
+            "[TwilioWebhook] TWILIO_AUTH_TOKEN not set - signature NOT verified (dev only)",
+          );
+        }
       },
     },
     async (request, reply) => {
