@@ -218,4 +218,30 @@ Additional non-blocking notes:
 
 ---
 
+## Post-review security hardening (2026-07-04)
+
+After the slice-9 integration, an independent two-reviewer pass (security + correctness)
+found defects that a green build did not surface, because no test exercised the ungated
+legacy path or non-LiveKit capability gating. All were first-hand confirmed and fixed on
+this branch; the full gate was re-run green (api 330/330, +21 new tests; lint 0; e2e 6/6;
+`supabase db reset` clean).
+
+| # | Sev | Finding | Fix |
+|---|---|---|---|
+| 1 | CRITICAL | Legacy Research-and-Book routes (`providers.ts` /call, /batch-call-async, /book) placed real calls with the compliance engine + org auth fully bypassed (also via the JWT-exempt Twilio webhook). | Disabled for v1 behind default-off `ENABLE_RESEARCH_AND_BOOK`; all call-placing handlers + the Twilio auto-book return/skip when off. Owner decision. |
+| 2 | HIGH | `voice-calls.ts` capability gate was dead (hardcoded LiveKit), so pause/supervisor misbehaved on retell/vapi/mock; and the 24h redial guard was not enforced on `/voice/call-contractor`. | Gate now uses `getCallBackend()`; redial guard computed + passed to `authorize()`. |
+| 3 | HIGH | `contractor-call.service.ts` wrote `service_requests`/`providers` with no `org_id`, pooling PII into the Legacy org. | `orgId` threaded from the authenticated caller and set on the inserts. |
+| 4 | MED | Dispatch status/artifacts skipped the org check when no in-memory record existed; `recordUsage` was dead (no metering); demo dispatch defaulted to LiveKit and crashed the GEMINI-only demo. | Org check now requires the record; `recordUsage` wired non-fatally on success; demo selects the mock backend (`.env.demo` sets `CALL_BACKEND=mock`). |
+| 5 | MED | No production guard on DEMO_MODE; webhooks fail-open when a secret is unset. | Boot refuses `NODE_ENV=production` + `DEMO_MODE=true`; webhook verification fails closed in production. |
+| 6 | MED | Multi-org users silently pinned to first membership without `x-org-id`. | Ambiguous multi-org requests now rejected with 400 `OrgRequired`. |
+| 7 | LOW | `checkout.session.completed` forced `status:"active"`. | Uses the event's real subscription status. |
+
+Commits: `7c46e29`, `7694ac2`, `ce2a6f2`, `c3d6cf7`, `c4f7d0a`, `0a82ecd`.
+
+**Updated verdict: the code-level Critical/High/Medium findings are closed and re-verified.**
+The remaining launch gate is unchanged and non-code: the three P0 telecom-attorney questions
+below must be signed off before dialing real numbers at scale.
+
+---
+
 SCORE: 96/100
