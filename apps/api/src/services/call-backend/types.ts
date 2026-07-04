@@ -10,7 +10,7 @@
  * environment variable (see {@link getCallBackend}), defaulting to LiveKit.
  */
 
-export type CallBackendId = "livekit" | "retell";
+export type CallBackendId = "livekit" | "retell" | "mock";
 
 /**
  * How the agent should behave when a call reaches voicemail or an
