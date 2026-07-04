@@ -9,6 +9,7 @@ import {
   hashCallPlan,
 } from "../src/services/compliance/dispatch.js";
 import { POLICY_VERSION } from "../src/services/compliance/policy-engine.js";
+import { resolveLocalSupabaseKeys } from "./helpers/local-supabase.js";
 
 /**
  * Compliance dispatch integration tests.
@@ -21,14 +22,8 @@ import { POLICY_VERSION } from "../src/services/compliance/policy-engine.js";
  * into the dispatched plan.
  */
 
-const SUPABASE_URL =
-  process.env.RLS_TEST_SUPABASE_URL ?? "http://127.0.0.1:56341";
-const ANON_KEY =
-  process.env.RLS_TEST_SUPABASE_ANON_KEY ??
-  "REDACTED_LOCAL_SUPABASE_ANON";
-const SERVICE_KEY =
-  process.env.RLS_TEST_SUPABASE_SERVICE_KEY ??
-  "REDACTED_LOCAL_SUPABASE_SECRET";
+const { url: SUPABASE_URL, anonKey: ANON_KEY, serviceKey: SERVICE_KEY } =
+  resolveLocalSupabaseKeys();
 
 const clientOptions = {
   auth: { persistSession: false, autoRefreshToken: false },

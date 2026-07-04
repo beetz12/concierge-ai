@@ -2,6 +2,7 @@ import { test, before, after, describe } from "node:test";
 import assert from "node:assert/strict";
 import { randomUUID } from "node:crypto";
 import { createClient, SupabaseClient } from "@supabase/supabase-js";
+import { resolveLocalSupabaseKeys } from "./helpers/local-supabase.js";
 
 /**
  * Tenant RLS integration tests.
@@ -10,18 +11,13 @@ import { createClient, SupabaseClient } from "@supabase/supabase-js";
  * supabase/config.toml). They create two orgs with one user each and assert
  * that cross-tenant reads return zero rows and cross-tenant writes fail.
  *
- * The default keys below are the Supabase CLI's shared local-dev defaults —
- * they are not secrets. Override via env for a non-default local setup.
+ * Keys are resolved from `RLS_TEST_SUPABASE_*` env vars, falling back to
+ * `supabase status` for the running local stack. No key literals are stored in
+ * source (local-dev keys, but kept out of the repo for hygiene).
  */
 
-const SUPABASE_URL =
-  process.env.RLS_TEST_SUPABASE_URL ?? "http://127.0.0.1:56341";
-const ANON_KEY =
-  process.env.RLS_TEST_SUPABASE_ANON_KEY ??
-  "REDACTED_LOCAL_SUPABASE_ANON";
-const SERVICE_KEY =
-  process.env.RLS_TEST_SUPABASE_SERVICE_KEY ??
-  "REDACTED_LOCAL_SUPABASE_SECRET";
+const { url: SUPABASE_URL, anonKey: ANON_KEY, serviceKey: SERVICE_KEY } =
+  resolveLocalSupabaseKeys();
 
 const clientOptions = {
   auth: { persistSession: false, autoRefreshToken: false },
