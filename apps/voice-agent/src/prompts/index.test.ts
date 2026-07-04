@@ -28,6 +28,17 @@ test("qualification template uses the client name in the opener when available",
   assert.match(template.openingPrompt, /Am I speaking with Acme Landscaping\?/i);
 });
 
+test("voice style rules disclose AI identity instead of impersonating a human", () => {
+  const template = buildVoicePromptTemplate(qualificationContext);
+
+  assert.match(template.systemInstructions, /client's AI assistant/i);
+  assert.match(template.systemInstructions, /never claim to be human/i);
+  assert.doesNotMatch(
+    template.systemInstructions,
+    /you are a real person making a phone call/i,
+  );
+});
+
 test("qualification template enforces sequential fact collection and edge-case handling", () => {
   const template = buildVoicePromptTemplate(qualificationContext);
 

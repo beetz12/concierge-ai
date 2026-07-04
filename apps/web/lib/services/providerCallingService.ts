@@ -21,6 +21,15 @@ export interface GeneratedPrompt {
   systemPrompt: string;
   firstMessage: string;
   closingScript: string;
+  /** AI-disclosure opener line rendered at the approval gate. */
+  disclosureLine?: string;
+  /** Playbook pre-authorizations with granted status, for the approval gate. */
+  preAuthorizations?: Array<{
+    key: string;
+    description: string;
+    requiresExplicitGrant: boolean;
+    granted: boolean;
+  }>;
 }
 
 /**
