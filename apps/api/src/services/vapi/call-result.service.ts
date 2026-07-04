@@ -70,7 +70,7 @@ export class CallResultService {
       // Create interaction log if serviceRequestId is provided AND is a valid UUID
       // Direct Tasks use non-UUID IDs (task-xxx) which are localStorage-only
       if (request.serviceRequestId && isValidUuid(request.serviceRequestId)) {
-        await this.createInteractionLog(request.serviceRequestId, result, request);
+        await this.createInteractionLog(request.serviceRequestId, result);
       } else if (request.serviceRequestId) {
         this.logger.info(
           { serviceRequestId: request.serviceRequestId },
@@ -181,7 +181,6 @@ export class CallResultService {
   private async createInteractionLog(
     serviceRequestId: string,
     result: CallResult,
-    request: CallRequest,
   ): Promise<void> {
     if (!this.supabase) return;
 

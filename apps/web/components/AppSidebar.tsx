@@ -8,7 +8,6 @@ import {
   PlusCircle,
   History,
   Info,
-  Settings,
   Sparkles,
   ChevronLeft,
   X,
@@ -50,7 +49,7 @@ export function AppSidebar() {
   const pathname = usePathname();
   const router = useRouter();
   const { state, toggleSidebar, isMobile, setOpenMobile } = useSidebar();
-  const { user, isAuthenticated, isLoading } = useAuth();
+  const { user, isAuthenticated } = useAuth();
   const { signOut } = useAuthActions();
 
   const isActive = (href: string) => {

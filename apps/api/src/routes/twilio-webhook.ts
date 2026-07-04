@@ -159,7 +159,11 @@ export default async function twilioWebhookRoutes(fastify: FastifyInstance) {
             );
 
             // Extract provider info from the join
-            const provider = completedRequest.providers as any;
+            const provider = completedRequest.providers as {
+              name?: string;
+              booking_date?: string;
+              booking_time?: string;
+            } | null;
             const providerName = provider?.name || "your selected provider";
             const bookingDate = provider?.booking_date || "";
             const bookingTime = provider?.booking_time || "";
@@ -419,7 +423,7 @@ export default async function twilioWebhookRoutes(fastify: FastifyInstance) {
               providerPhone: phoneToCall, // Use test phone or real phone
               providerName: selectedProvider.name,
               serviceNeeded: fullRequest.title || fullRequest.description || 'service',
-              clientName: (fullRequest.direct_contact_info as any)?.user_name || 'Customer',
+              clientName: (fullRequest.direct_contact_info as { user_name?: string } | null)?.user_name || 'Customer',
               clientPhone: fullRequest.user_phone,
               location: fullRequest.location || '',
               preferredDateTime: selectedProvider.earliest_availability || '',

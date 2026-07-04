@@ -6,7 +6,7 @@ import {
 } from "./token-bucket.js";
 
 test("allows requests up to capacity then rejects", () => {
-  let now = 0;
+  const now = 0;
   const limiter = new InMemoryTokenBucketRateLimiter({
     capacity: 3,
     refillPerSecond: 1,
@@ -27,7 +27,7 @@ test("allows requests up to capacity then rejects", () => {
 });
 
 test("buckets are isolated per key", () => {
-  let now = 0;
+  const now = 0;
   const limiter = new InMemoryTokenBucketRateLimiter({
     capacity: 1,
     refillPerSecond: 1,

@@ -123,7 +123,7 @@ export async function addProvider(data: ProviderInsert) {
   if (DEMO_MODE) return addProviderDemo(data);
   const supabase = await createClient();
 
-  const orgId = data.org_id ?? (await getOrgIdForRequest(data.request_id));
+  const orgId = data.org_id ?? (await getOrgIdForRequest(data.request_id)) ?? undefined;
 
   const { data: provider, error } = await supabase
     .from("providers")

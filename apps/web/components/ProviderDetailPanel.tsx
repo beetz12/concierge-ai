@@ -168,12 +168,16 @@ export function ProviderDetailPanel({
 
               {(() => {
                   // Safely extract hours array from JSONB (could be array, object, or object with weekdayText)
-                  const hours = Array.isArray(provider.hoursOfOperation)
-                    ? provider.hoursOfOperation
-                    : Array.isArray((provider.hoursOfOperation as any)?.weekdayText)
-                      ? (provider.hoursOfOperation as any).weekdayText
-                      : provider.hoursOfOperation && typeof provider.hoursOfOperation === "object"
-                        ? Object.values(provider.hoursOfOperation)
+                  const hoursValue = provider.hoursOfOperation as unknown;
+                  const weekdayText = (
+                    hoursValue as { weekdayText?: unknown } | undefined
+                  )?.weekdayText;
+                  const hours: unknown[] = Array.isArray(hoursValue)
+                    ? hoursValue
+                    : Array.isArray(weekdayText)
+                      ? weekdayText
+                      : hoursValue && typeof hoursValue === "object"
+                        ? Object.values(hoursValue)
                         : [];
                   return hours.length > 0 ? (
                     <div className="flex items-start gap-3">

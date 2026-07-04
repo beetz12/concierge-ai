@@ -7,10 +7,6 @@ import { FastifyInstance } from "fastify";
 import { z } from "zod";
 import { ResearchService } from "../services/research/index.js";
 import { serializeError } from "../utils/error.js";
-import type {
-  ResearchResult,
-  SystemStatus,
-} from "../services/research/types.js";
 
 // Zod schemas for request validation
 const researchSchema = z.object({

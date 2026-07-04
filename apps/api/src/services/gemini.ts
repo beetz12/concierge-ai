@@ -173,7 +173,7 @@ export const searchProviders = async (
           // Use shared enrichment service for phone/hours data
           // Cast to shared Provider type (compatible fields)
           const enrichService = getEnrichmentService();
-          const enrichmentResult = await enrichService.enrich(providers as any, {
+          const enrichmentResult = await enrichService.enrich(providers, {
             coordinates: latLng,
             maxToEnrich: requirePhone ? Math.max(maxResults, 5) : maxResults,
             requirePhone,
@@ -182,7 +182,7 @@ export const searchProviders = async (
 
           // Get enriched providers and limit to maxResults
           // Keep hoursOfOperation as array for proper JSONB storage
-          let topProviders: Provider[] = enrichmentResult.providers.slice(0, maxResults).map(p => ({
+          const topProviders: Provider[] = enrichmentResult.providers.slice(0, maxResults).map(p => ({
             ...p,
             source: p.source as Provider["source"],
             // Preserve array format - database stores as JSONB array
@@ -231,10 +231,19 @@ Do not include any markdown formatting.`;
 
     const groundingChunks =
       response.candidates?.[0]?.groundingMetadata?.groundingChunks;
-    let providers: Provider[] = [];
+    const providers: Provider[] = [];
 
     if (groundingChunks) {
-      groundingChunks.forEach((chunk: any, index: number) => {
+      interface GroundingMapsChunk {
+        maps?: {
+          title?: string;
+          placeAddress?: string;
+          phoneNumber?: string;
+          rating?: number;
+        };
+      }
+
+      (groundingChunks as GroundingMapsChunk[]).forEach((chunk, index: number) => {
         if (chunk.maps) {
           providers.push({
             id: `prov-${Date.now()}-${index}`,
@@ -293,14 +302,15 @@ Do not include any markdown formatting.`;
         status: uniqueProviders.length > 0 ? "success" : "warning",
       },
     };
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("searchProviders error:", error);
+    const errorMessage = error instanceof Error ? error.message : String(error);
     return {
       providers: [],
       logs: {
         timestamp: new Date().toISOString(),
         stepName: "Market Research",
-        detail: `Failed to find providers: ${error.message}`,
+        detail: `Failed to find providers: ${errorMessage}`,
         status: "error",
       },
     };
@@ -366,7 +376,7 @@ export const simulateCall = async (
             ? "error"
             : "warning",
     };
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("simulateCall error:", error);
     return {
       timestamp: new Date().toISOString(),
@@ -419,7 +429,7 @@ export const selectBestProvider = async (
       selectedId: data.selectedProviderId,
       reasoning: data.reasoning,
     };
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("selectBestProvider error:", error);
     return { selectedId: null, reasoning: "AI Analysis failed." };
   }

@@ -36,7 +36,8 @@ const supabasePlugin: FastifyPluginAsync = async (fastify) => {
         delete: () => ({ eq: () => ({ data: null, error: null }) }),
         upsert: () => ({ data: null, error: null }),
       }),
-    } as any;
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any -- demo-mode stub only implements a subset of SupabaseClient's surface; a real cast target would require reimplementing the entire generic client shape
+    } as any as SupabaseClient;
     fastify.decorate("supabase", mockSupabase);
     fastify.decorateRequest("supabase", { getter: () => mockSupabase });
     return;

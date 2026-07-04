@@ -105,7 +105,7 @@ const apiRequest = async <T>(
   });
 
   if (!response.ok) {
-    const error = await response
+    const error: { message?: string } = await response
       .json()
       .catch(() => ({ message: "Request failed" }));
     throw new Error(error.message || `API error: ${response.status}`);
@@ -128,13 +128,14 @@ export const searchProviders = async (
       logs: InteractionLog;
     }>("/search-providers", { query, location });
     return result;
-  } catch (error: any) {
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
     return {
       providers: [],
       logs: {
         timestamp: new Date().toISOString(),
         stepName: "Market Research",
-        detail: `Failed to find providers: ${error.message}`,
+        detail: `Failed to find providers: ${message}`,
         status: "error",
       },
     };
@@ -157,7 +158,7 @@ export const simulateCall = async (
       isDirect,
     });
     return result;
-  } catch (error: any) {
+  } catch {
     return {
       timestamp: new Date().toISOString(),
       stepName: `Calling ${providerName}`,
@@ -186,7 +187,7 @@ export const selectBestProvider = async (
       providers,
     });
     return result;
-  } catch (error: any) {
+  } catch {
     return { selectedId: null, reasoning: "AI Analysis failed." };
   }
 };
@@ -210,7 +211,7 @@ export const analyzeDirectTask = async (
       },
     );
     return result;
-  } catch (error: any) {
+  } catch (error) {
     console.error("[analyzeDirectTask] Failed to analyze task:", error);
     // Return null to allow fallback to default prompts
     return null;
@@ -230,7 +231,7 @@ export const analyzeResearchPrompt = async (
       { ...request },
     );
     return result;
-  } catch (error: any) {
+  } catch (error) {
     console.error("[analyzeResearchPrompt] Failed to analyze research prompt:", error);
     // Return null to allow fallback to default prompts
     return null;

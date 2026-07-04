@@ -90,7 +90,7 @@ test("dispatchCall sends the call-biz dispatch payload shape", async () => {
     request.url.includes("/v2/create-phone-call"),
   );
   assert.ok(dispatch);
-  const body = dispatch.body as Record<string, any>;
+  const body = dispatch.body as Record<string, unknown>;
   assert.equal(body.from_number, "+18645550100");
   assert.equal(body.to_number, "+18645550123");
   assert.equal(body.override_agent_id, "agent_123");

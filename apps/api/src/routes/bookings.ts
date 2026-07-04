@@ -6,7 +6,10 @@
 import { FastifyInstance } from "fastify";
 import { z } from "zod";
 import { KestraClient } from "../services/vapi/kestra.client.js";
-import { createClient as createSupabaseClient } from "@supabase/supabase-js";
+import {
+  createClient as createSupabaseClient,
+  SupabaseClient,
+} from "@supabase/supabase-js";
 import { DirectTwilioClient } from "../services/notifications/direct-twilio.client.js";
 import { BookingCallService } from "../services/calls/booking-call.service.js";
 
@@ -46,7 +49,7 @@ const scheduleBookingSchema = z.object({
  */
 async function handleSimulatedBooking(
   validated: z.infer<typeof scheduleBookingSchema>,
-  supabase: any,
+  supabase: SupabaseClient,
   fastify: FastifyInstance
 ) {
   fastify.log.info(
@@ -116,7 +119,7 @@ async function handleSimulatedBooking(
         const confirmResult = await twilioClient.sendConfirmation({
           userPhone: request.user_phone,
           userName:
-            (request.direct_contact_info as any)?.user_name ||
+            (request.direct_contact_info as { user_name?: string } | null)?.user_name ||
             request.client_name ||
             validated.customerName,
           providerName: validated.providerName,
@@ -158,7 +161,7 @@ async function handleSimulatedBooking(
 async function handleRealBookingCall(
   validated: z.infer<typeof scheduleBookingSchema>,
   phoneToCall: string,
-  supabase: any,
+  supabase: SupabaseClient,
   fastify: FastifyInstance
 ) {
   const callMode = phoneToCall !== validated.providerPhone ? "test" : "production";
@@ -319,7 +322,7 @@ async function handleRealBookingCall(
           const confirmResult = await twilioClient.sendConfirmation({
             userPhone: request.user_phone,
             userName:
-              (request.direct_contact_info as any)?.user_name ||
+              (request.direct_contact_info as { user_name?: string } | null)?.user_name ||
               request.client_name ||
               validated.customerName,
             providerName: validated.providerName,
@@ -615,7 +618,7 @@ export default async function bookingRoutes(fastify: FastifyInstance) {
                   const confirmResult = await twilioClient.sendConfirmation({
                     userPhone: request.user_phone,
                     userName:
-                      (request.direct_contact_info as any)?.user_name ||
+                      (request.direct_contact_info as { user_name?: string } | null)?.user_name ||
                       request.client_name ||
                       validated.customerName,
                     providerName: validated.providerName,
@@ -1204,7 +1207,7 @@ export default async function bookingRoutes(fastify: FastifyInstance) {
                 const confirmResult = await twilioClient.sendConfirmation({
                   userPhone: request.user_phone,
                   userName:
-                    (request.direct_contact_info as any)?.user_name ||
+                    (request.direct_contact_info as { user_name?: string } | null)?.user_name ||
                     request.client_name ||
                     bookingResult.appointment?.customer,
                   providerName: bookingResult.provider?.name || "Provider",

@@ -71,6 +71,7 @@ test("playbook and core content is ASCII-only (lands verbatim in prompts)", () =
       `non-ASCII content in playbook ${playbook.id}`
     );
   }
+  // eslint-disable-next-line no-control-regex -- \x00-\x7F is the intentional ASCII range check, not a stray control char
   assert.doesNotMatch(JSON.stringify(CORE_PLAYBOOK), /[^\x00-\x7F]/);
 });
 

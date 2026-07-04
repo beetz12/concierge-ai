@@ -303,12 +303,10 @@ export function mapRetellCallStatus(callStatus: string): CallStatusState {
 
 /** Drop the bulky transcript variants before persisting call.json (call-biz). */
 function slimCallObject(call: RetellCall): Record<string, unknown> {
-  const {
-    transcript_object: _transcriptObject,
-    transcript_with_tool_calls: _transcriptWithToolCalls,
-    scrubbed_transcript_with_tool_calls: _scrubbedTranscript,
-    ...slim
-  } = call as Record<string, unknown>;
+  const slim: Record<string, unknown> = { ...call };
+  delete slim.transcript_object;
+  delete slim.transcript_with_tool_calls;
+  delete slim.scrubbed_transcript_with_tool_calls;
   return slim;
 }
 

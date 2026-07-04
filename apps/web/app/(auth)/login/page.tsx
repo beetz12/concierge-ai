@@ -38,7 +38,7 @@ export default function LoginPage() {
         new URLSearchParams(window.location.search).get("redirectTo") ||
         "/dashboard";
       router.push(redirectTo);
-    } catch (err) {
+    } catch {
       setError("An unexpected error occurred. Please try again.");
     } finally {
       setIsLoading(false);

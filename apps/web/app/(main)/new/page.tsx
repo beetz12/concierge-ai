@@ -3,7 +3,12 @@
 import React, { useState } from "react";
 import { useRouter } from "next/navigation";
 import { useAppContext } from "@/lib/providers/AppProvider";
-import { RequestStatus, RequestType, ServiceRequest } from "@/lib/types";
+import {
+  InteractionLog,
+  RequestStatus,
+  RequestType,
+  ServiceRequest,
+} from "@/lib/types";
 import {
   Search,
   MapPin,
@@ -40,7 +45,6 @@ import {
 import { ProfessionalIntake } from "@repo/ui/professional-intake";
 import { searchProviders as searchProvidersWorkflow } from "@/lib/services/workflowService";
 import {
-  callResponseToInteractionLog,
   normalizePhoneNumber,
   isValidE164Phone,
 } from "@/lib/services/providerCallingService";
@@ -92,7 +96,7 @@ export default function NewRequest() {
   const [intakeAnswers, setIntakeAnswers] = useState<
     Array<{ questionId: string; question: string; answer: string }>
   >([]);
-  const [intakeCompleted, setIntakeCompleted] = useState(false);
+  const [, setIntakeCompleted] = useState(false);
 
   // Phone validation for user's contact number
   const userPhoneValidation = usePhoneValidation();
@@ -227,15 +231,25 @@ export default function NewRequest() {
         );
 
         // Map database records to local format, using database UUIDs as IDs
-        providers = dbProviders.map((dbp: Record<string, unknown>, idx: number) => ({
-          id: dbp.id, // This is the database UUID - critical for VAPI call persistence
-          name: dbp.name,
-          phone: dbp.phone || undefined,
-          rating: dbp.rating || undefined,
-          address: dbp.address || undefined,
-          reason: workflowResult.providers[idx]?.reason || "",
-          placeId: dbp.place_id || undefined, // Keep original Place ID for reference
-        }));
+        providers = dbProviders.map((dbpUnknown, idx: number) => {
+          const dbp = dbpUnknown as {
+            id: string;
+            name: string;
+            phone?: string | null;
+            rating?: number | null;
+            address?: string | null;
+            place_id?: string | null;
+          };
+          return {
+            id: dbp.id, // This is the database UUID - critical for VAPI call persistence
+            name: dbp.name,
+            phone: dbp.phone || undefined,
+            rating: dbp.rating || undefined,
+            address: dbp.address || undefined,
+            reason: workflowResult.providers[idx]?.reason || "",
+            placeId: dbp.place_id || undefined, // Keep original Place ID for reference
+          };
+        });
       } catch (dbErr) {
         console.error(
           "[Concierge] Failed to persist providers to database:",
@@ -254,12 +268,12 @@ export default function NewRequest() {
         return;
       }
 
-      const searchLog = {
+      const searchLog: InteractionLog = {
         timestamp: new Date().toISOString(),
         stepName: "Market Research",
         detail: `Found ${providers.length} providers in your area. ${workflowResult.reasoning || ""}`,
         status: workflowResult.status === "success" ? "success" : "error",
-      } as any;
+      };
 
       updateRequest(reqId, {
         providersFound: providers,

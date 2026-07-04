@@ -40,7 +40,19 @@ export interface TextSearchResponse {
 
 export interface Provider {
   placeId: string;
-  [key: string]: any;
+  [key: string]: unknown;
+}
+
+/** Raw place shape returned by the Places API (New) `searchText`/`get` endpoints. */
+interface RawPlace {
+  id: string;
+  displayName?: { text?: string };
+  formattedAddress?: string;
+  rating?: number;
+  userRatingCount?: number;
+  location?: { latitude?: number; longitude?: number };
+  businessStatus?: string;
+  googleMapsUri?: string;
 }
 
 export interface EnrichedProvider extends Provider {
@@ -83,7 +95,7 @@ export class GooglePlacesService {
     try {
       const url = `${this.baseUrl}/places:searchText`;
 
-      const requestBody: any = {
+      const requestBody: Record<string, unknown> = {
         textQuery: query,
         maxResultCount: 20,
       };
@@ -128,12 +140,12 @@ export class GooglePlacesService {
       if (response.data.places && response.data.places.length > 0) {
         const sample = response.data.places.slice(0, 3);
         console.log("DEBUG Places API raw response (first 3):", JSON.stringify(sample, null, 2));
-        const ratingsFound = response.data.places.filter((p: any) => p.rating !== undefined).length;
+        const ratingsFound = response.data.places.filter((p: RawPlace) => p.rating !== undefined).length;
         console.log(`DEBUG Ratings found: ${ratingsFound}/${response.data.places.length} places have ratings`);
       }
 
       const places: PlaceSearchResult[] = (response.data.places || []).map(
-        (place: any) => ({
+        (place: RawPlace) => ({
           placeId: place.id,
           name: place.displayName?.text || "",
           formattedAddress: place.formattedAddress || "",

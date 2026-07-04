@@ -4,7 +4,7 @@
  */
 
 import { createClient as createServerClient } from "./server";
-import type { Database, Tables } from "../types/database";
+import type { Database } from "../types/database";
 
 /**
  * Service Requests Queries

@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { createClient } from "../supabase/client";
+import type { RealtimePostgresChangesPayload } from "@supabase/supabase-js";
 import type { Tables } from "../types/database";
 
 export type ServiceRequestWithRelations = Tables<"service_requests"> & {
@@ -46,7 +47,7 @@ export function useServiceRequests(userId?: string) {
 
         // Transform the data to ensure arrays for relations
         const transformedData: ServiceRequestWithRelations[] = (data || []).map(
-          (item: any) => ({
+          (item: ServiceRequestWithRelations) => ({
             ...item,
             providers: Array.isArray(item.providers)
               ? item.providers
@@ -80,7 +81,7 @@ export function useServiceRequests(userId?: string) {
           schema: "public",
           table: "service_requests",
         },
-        (payload: any) => {
+        (payload: RealtimePostgresChangesPayload<ServiceRequestWithRelations>) => {
           if (payload.eventType === "INSERT") {
             setRequests((prev) => [
               payload.new as ServiceRequestWithRelations,

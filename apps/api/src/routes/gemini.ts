@@ -7,8 +7,8 @@ import {
   type Provider,
   type InteractionLog,
 } from "../services/gemini.js";
-import { analyzeDirectTask, type AnalyzeDirectTaskRequest } from "../services/direct-task/index.js";
-import { analyzeResearchPrompt, type ResearchPromptRequest } from "../services/research/prompt-analyzer.js";
+import { analyzeDirectTask } from "../services/direct-task/index.js";
+import { analyzeResearchPrompt } from "../services/research/prompt-analyzer.js";
 
 // Zod schemas for request validation
 const searchProvidersSchema = z.object({
@@ -220,7 +220,7 @@ export default async function geminiRoutes(fastify: FastifyInstance) {
           }
         );
         return result;
-      } catch (error: any) {
+      } catch (error: unknown) {
         if (error instanceof z.ZodError) {
           return reply.status(400).send({
             error: "Validation Error",
@@ -230,7 +230,7 @@ export default async function geminiRoutes(fastify: FastifyInstance) {
         fastify.log.error(error);
         return reply.status(500).send({
           error: "Internal Server Error",
-          message: error.message,
+          message: error instanceof Error ? error.message : String(error),
         });
       }
     },
@@ -302,7 +302,7 @@ export default async function geminiRoutes(fastify: FastifyInstance) {
           body.isDirect,
         );
         return result;
-      } catch (error: any) {
+      } catch (error: unknown) {
         if (error instanceof z.ZodError) {
           return reply.status(400).send({
             error: "Validation Error",
@@ -312,7 +312,7 @@ export default async function geminiRoutes(fastify: FastifyInstance) {
         fastify.log.error(error);
         return reply.status(500).send({
           error: "Internal Server Error",
-          message: error.message,
+          message: error instanceof Error ? error.message : String(error),
         });
       }
     },
@@ -408,7 +408,7 @@ export default async function geminiRoutes(fastify: FastifyInstance) {
           body.providers as Provider[],
         );
         return result;
-      } catch (error: any) {
+      } catch (error: unknown) {
         if (error instanceof z.ZodError) {
           return reply.status(400).send({
             error: "Validation Error",
@@ -418,7 +418,7 @@ export default async function geminiRoutes(fastify: FastifyInstance) {
         fastify.log.error(error);
         return reply.status(500).send({
           error: "Internal Server Error",
-          message: error.message,
+          message: error instanceof Error ? error.message : String(error),
         });
       }
     },
@@ -529,7 +529,7 @@ export default async function geminiRoutes(fastify: FastifyInstance) {
         const body = analyzeDirectTaskSchema.parse(request.body);
         const result = await analyzeDirectTask(body);
         return result;
-      } catch (error: any) {
+      } catch (error: unknown) {
         if (error instanceof z.ZodError) {
           return reply.status(400).send({
             error: "Validation Error",
@@ -539,7 +539,7 @@ export default async function geminiRoutes(fastify: FastifyInstance) {
         fastify.log.error(error);
         return reply.status(500).send({
           error: "Internal Server Error",
-          message: error.message,
+          message: error instanceof Error ? error.message : String(error),
         });
       }
     },
@@ -656,7 +656,7 @@ export default async function geminiRoutes(fastify: FastifyInstance) {
           intakeAnswers: body.intakeAnswers,
         });
         return result;
-      } catch (error: any) {
+      } catch (error: unknown) {
         if (error instanceof z.ZodError) {
           return reply.status(400).send({
             error: "Validation Error",
@@ -666,7 +666,7 @@ export default async function geminiRoutes(fastify: FastifyInstance) {
         fastify.log.error(error);
         return reply.status(500).send({
           error: "Internal Server Error",
-          message: error.message,
+          message: error instanceof Error ? error.message : String(error),
         });
       }
     },

@@ -184,5 +184,6 @@ test("generated prompts are ASCII-only", () => {
     prompt.closingScript ?? "",
     prompt.disclosureLine ?? "",
   ].join("\n");
+  // eslint-disable-next-line no-control-regex -- \x00-\x7F is the intentional ASCII range check, not a stray control char
   assert.doesNotMatch(everything, /[^\x00-\x7F]/);
 });

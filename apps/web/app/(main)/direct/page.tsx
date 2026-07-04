@@ -26,7 +26,6 @@ import { simulateCall, analyzeDirectTask } from "@/lib/services/geminiService";
 import {
   callProviderLive,
   callResponseToInteractionLog,
-  normalizePhoneNumber,
   isValidE164Phone,
 } from "@/lib/services/providerCallingService";
 import {
@@ -111,8 +110,7 @@ export default function DirectTask() {
       runDirectTask(
         newRequest.id,
         formData,
-        phoneValidation.normalized,
-        newRequest
+        phoneValidation.normalized
       );
     } catch (error) {
       console.error("Failed to create request:", error);
@@ -123,8 +121,7 @@ export default function DirectTask() {
   const runDirectTask = async (
     reqId: string,
     data: typeof formData,
-    phone: string,
-    request: ServiceRequest
+    phone: string
   ) => {
     try {
       let log: InteractionLog;

@@ -6,10 +6,10 @@
 import { DirectResearchClient } from './direct-research.client.js';
 
 const logger = {
-  info: (obj: any, msg?: string) => console.log('[INFO]', msg || '', obj),
-  debug: (obj: any, msg?: string) => console.log('[DEBUG]', msg || '', obj),
-  error: (obj: any, msg?: string) => console.error('[ERROR]', msg || '', obj),
-  warn: (obj: any, msg?: string) => console.warn('[WARN]', msg || '', obj),
+  info: (obj: Record<string, unknown>, msg?: string) => console.log('[INFO]', msg || '', obj),
+  debug: (obj: Record<string, unknown>, msg?: string) => console.log('[DEBUG]', msg || '', obj),
+  error: (obj: Record<string, unknown>, msg?: string) => console.error('[ERROR]', msg || '', obj),
+  warn: (obj: Record<string, unknown>, msg?: string) => console.warn('[WARN]', msg || '', obj),
 };
 
 async function testResearch() {

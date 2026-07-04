@@ -9,6 +9,37 @@ interface Logger {
   warn: (obj: Record<string, unknown>, msg?: string) => void;
 }
 
+/**
+ * Minimal shape of a VAPI call object as returned (polymorphically) by
+ * calls.create / calls.get. The SDK response can be the object, an array, or
+ * a { data } envelope; we normalize to this before reading fields.
+ */
+interface VapiCallLike {
+  id: string;
+  status?: string;
+  analysis?: { structuredData?: Record<string, unknown> };
+  artifact?: { transcript?: unknown };
+  data?: VapiCallLike;
+  // Index signature so the object satisfies the loose Record<string, unknown>
+  // passthrough consumed downstream, while the named fields above give the
+  // internal normalization real types.
+  [key: string]: unknown;
+}
+
+/**
+ * Normalize the polymorphic VAPI calls.create / calls.get response (object |
+ * array | { data } envelope) to a single call object, or null when the shape
+ * has no usable id.
+ */
+function normalizeVapiCall(response: unknown): VapiCallLike | null {
+  const candidate = Array.isArray(response) ? response[0] : response;
+  if (!candidate || typeof candidate !== "object") return null;
+  const obj = candidate as VapiCallLike;
+  if (typeof obj.id === "string") return obj;
+  if (obj.data && typeof obj.data.id === "string") return obj.data;
+  return null;
+}
+
 export interface BookingCallRequest {
   providerName: string;
   providerPhone: string;
@@ -29,8 +60,14 @@ export interface CompletedBookingCallResult {
   kind: "completed";
   callId: string;
   bookingConfirmed: boolean;
+  // Dynamic passthrough of the VAPI analysis payload; consumers in
+  // routes/bookings.ts and routes/providers.ts read arbitrary fields off it as
+  // strings, so a stricter type would ripple untyped-narrowing across the
+  // whole booking flow. Kept loose deliberately.
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- dynamic VAPI analysis passthrough
   structuredData: Record<string, any>;
   transcript: string;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- dynamic VAPI call object passthrough
   completedCall: Record<string, any>;
 }
 
@@ -121,37 +158,29 @@ export class BookingCallService {
         name: request.providerName,
       },
       assistant: bookingConfig,
-    } as any);
+    } as unknown as Parameters<typeof vapi.calls.create>[0]);
 
-    let call: any;
-    if (Array.isArray(callResponse)) {
-      call = callResponse[0];
-    } else if ((callResponse as any).id) {
-      call = callResponse;
-    } else if ((callResponse as any).data?.id) {
-      call = (callResponse as any).data;
-    } else {
+    const call = normalizeVapiCall(callResponse);
+    if (!call) {
       throw new Error("Unexpected response format from VAPI calls.create");
     }
 
     const maxAttempts = 60;
     let attempts = 0;
-    let completedCall: any = null;
+    let completedCall: VapiCallLike | null = null;
 
     while (attempts < maxAttempts) {
       const callData = await vapi.calls.get({ id: call.id });
-      let currentCall: any;
-      if (Array.isArray(callData)) {
-        currentCall = callData[0];
-      } else if ((callData as any).id) {
-        currentCall = callData;
-      } else if ((callData as any).data?.id) {
-        currentCall = (callData as any).data;
-      } else {
+      const currentCall = normalizeVapiCall(callData);
+      if (!currentCall) {
         throw new Error("Unexpected response format from VAPI calls.get");
       }
 
-      if (!["queued", "ringing", "in-progress"].includes(currentCall.status)) {
+      if (
+        !["queued", "ringing", "in-progress"].includes(
+          currentCall.status ?? "",
+        )
+      ) {
         completedCall = currentCall;
         break;
       }
@@ -174,7 +203,7 @@ export class BookingCallService {
       runtimeProvider: "vapi",
       kind: "completed",
       callId: completedCall.id,
-      bookingConfirmed: structuredData.booking_confirmed || false,
+      bookingConfirmed: Boolean(structuredData.booking_confirmed),
       structuredData,
       transcript: transcriptStr,
       completedCall,

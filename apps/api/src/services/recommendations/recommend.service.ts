@@ -23,10 +23,8 @@ import type {
   RecommendationRequest,
   RecommendationResponse,
   ProviderRecommendation,
-  ScoringWeights,
   CallResultWithMetadata,
 } from "./types.js";
-import { DEFAULT_SCORING_WEIGHTS } from "./types.js";
 import type { StructuredCallData, ScreeningAnswer } from "../vapi/types.js";
 
 /**
@@ -54,7 +52,6 @@ export class RecommendationService {
    */
   async generateRecommendations(
     request: RecommendationRequest,
-    _weights: ScoringWeights = DEFAULT_SCORING_WEIGHTS
   ): Promise<RecommendationResponse> {
     // Filter out disqualified, unavailable, and failed calls
     const qualifiedResults = this.filterQualifiedProviders(request.callResults);

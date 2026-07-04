@@ -24,7 +24,7 @@ const getAiClient = () => {
 /**
  * Helper to clean and parse JSON from Gemini responses
  */
-const parseJsonResponse = (text: string): any => {
+const parseJsonResponse = <T = unknown>(text: string): T => {
   try {
     // Remove markdown code blocks if present
     const cleaned = text
@@ -128,10 +128,11 @@ ONLY return valid JSON, no markdown.`;
       strategicGuidance,
       generatedPrompt,
     };
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("analyzeDirectTask error:", error);
+    const errorMessage = error instanceof Error ? error.message : String(error);
     throw new Error(
-      `Failed to analyze direct task: ${error.message || error}`
+      `Failed to analyze direct task: ${errorMessage}`
     );
   }
 }
