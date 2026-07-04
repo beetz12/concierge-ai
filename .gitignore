@@ -60,3 +60,7 @@ apps/voice-agent/recordings
 
 # Retell call artifacts (DEMO_MODE local fallback)
 .call-artifacts/
+
+# Playwright artifacts
+test-results/
+playwright-report/
