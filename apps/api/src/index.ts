@@ -17,6 +17,7 @@ import authPlugin from "./plugins/auth.js";
 import authMiddleware from "./middleware/auth.js";
 import billingRoutes from "./routes/billing.js";
 import casesRoutes from "./routes/cases.js";
+import dispatchRoutes from "./routes/dispatch.js";
 import userRoutes from "./routes/users.js";
 import geminiRoutes from "./routes/gemini.js";
 import workflowRoutes from "./routes/workflows.js";
@@ -454,6 +455,9 @@ await server.register(billingRoutes, { prefix: "/api/v1/billing" });
 
 // Register Case management routes (disputes / follow-ups)
 await server.register(casesRoutes, { prefix: "/api/v1/cases" });
+
+// Register Dispatch flow routes (two-gate call dispatch UX)
+await server.register(dispatchRoutes, { prefix: "/api/v1/dispatch" });
 
 // Start server with port conflict handling
 const start = async () => {

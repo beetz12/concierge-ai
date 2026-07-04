@@ -21,6 +21,8 @@ import {
   transitionStage,
   updateCase,
 } from "../services/cases/index.js";
+import { getDemoCasesDb } from "../services/cases/demo-store.js";
+import { isDemoMode } from "../config/demo.js";
 
 /**
  * Case management routes (SaaS slice 7).
@@ -177,8 +179,11 @@ const parseParams = (
 const casesRoutes: FastifyPluginAsync = async (fastify) => {
   // CasesDbClient is a narrow structural view of the Supabase client; the
   // cast avoids TS2589 (excessively deep instantiation) when matching the
-  // full SupabaseClient generic against it.
-  const db = fastify.supabase as unknown as CasesDbClient;
+  // full SupabaseClient generic against it. DEMO_MODE has no database, so
+  // it uses the process-wide in-memory store shared with /api/v1/dispatch.
+  const db = isDemoMode()
+    ? getDemoCasesDb()
+    : (fastify.supabase as unknown as CasesDbClient);
 
   fastify.post(
     "/",

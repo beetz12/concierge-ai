@@ -75,6 +75,29 @@ export class CompliantCallDispatcher {
   constructor(private readonly deps: CompliantCallDispatcherDeps) {}
 
   /**
+   * Evaluate WITHOUT recording or dispatching (slice 8 preflight, Gate 1).
+   *
+   * Resolves the same fully-populated context as {@link authorize} (kill
+   * switch, suppression, callee-local time) and runs the pure engine, but
+   * writes nothing and never throws on deny - the decision is the result.
+   * Callers preview "would this dispatch be allowed?" so they typically set
+   * `plan.userApproved: true` on the request; approval itself is still
+   * enforced at dispatch time.
+   */
+  async preflight(
+    request: CompliantDispatchRequest,
+    options?: { redialBlocked?: boolean },
+  ): Promise<PolicyDecision> {
+    const now = this.deps.now?.() ?? new Date();
+    const channel = request.channel ?? "voice";
+    const context = await this.resolveContext(request, channel, now);
+    return evaluate({
+      ...context,
+      redialBlocked: options?.redialBlocked ?? false,
+    });
+  }
+
+  /**
    * Evaluate + record, without dispatching. Callers that dispatch through a
    * path other than a CallBackend (e.g. the LiveKit contractor-call service)
    * use this, then dispatch the returned disclosure-merged plan themselves
