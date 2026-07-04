@@ -31,6 +31,7 @@ import twilioWebhookRoutes from "./routes/twilio-webhook.js";
 import bookingRoutes from "./routes/bookings.js";
 import intakeRoutes from "./routes/intake.js";
 import demoRoutes from "./routes/demo.js";
+import demoCallRoutes from "./routes/demo-call.js";
 import voiceToolRoutes from "./routes/voice-tools.js";
 import voiceCallRoutes from "./routes/voice-calls.js";
 import {
@@ -460,6 +461,7 @@ server.get(
         bookings: "/api/v1/bookings",
         intake: "/api/v1/intake",
         demo: "/api/v1/demo",
+        demoCall: "/api/v1/demo-call",
         voiceTools: "/api/v1/voice-tools",
         voice: "/api/v1/voice",
         billing: "/api/v1/billing",
@@ -501,6 +503,9 @@ await server.register(intakeRoutes, { prefix: "/api/v1/intake" });
 
 // Register Demo routes
 await server.register(demoRoutes, { prefix: "/api/v1/demo" });
+
+// Register public marketing demo-call route (feature-flagged, unauthenticated)
+await server.register(demoCallRoutes, { prefix: "/api/v1/demo-call" });
 
 // Register internal voice-agent tool routes
 await server.register(voiceToolRoutes, { prefix: "/api/v1/voice-tools" });

@@ -57,6 +57,10 @@ const EXEMPT_PREFIXES = [
   "/api/v1/twilio",
   "/api/v1/voice-tools",
   "/api/v1/billing/webhook",
+  // Public marketing demo-call endpoint: feature-flagged, consent-gated, and
+  // rate-limited by IP+number. Anonymous landing-page visitors must reach it
+  // without a user JWT (its own safety posture replaces the tenant gate).
+  "/api/v1/demo-call",
 ];
 
 /** Demo identity used by the DEMO_MODE bypass below. */

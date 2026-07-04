@@ -39,6 +39,12 @@ export async function proxy(request: NextRequest) {
     return NextResponse.redirect(dashboardUrl);
   }
 
+  // Signed-in visitors landing on the public marketing home go straight into
+  // the app; the landing page stays fully public for logged-out visitors.
+  if (pathname === "/" && isAuthenticated) {
+    return NextResponse.redirect(new URL("/dispatch", request.url));
+  }
+
   if (isPublicRoute) {
     return response;
   }
