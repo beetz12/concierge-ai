@@ -17,8 +17,26 @@ test("safeEqual matches equal strings and rejects different ones", () => {
 });
 
 test("verifyVapiSignature fails open when no secret configured", () => {
-  const result = verifyVapiSignature(undefined, undefined);
+  const result = verifyVapiSignature(undefined, undefined, false);
   assert.deepEqual(result, { ok: true, enforced: false });
+});
+
+test("verifyVapiSignature fails closed in production when no secret configured", () => {
+  const result = verifyVapiSignature("anything", undefined, true);
+  assert.equal(result.ok, false);
+});
+
+test("verifyVapiHmac fails closed in production when no secret configured", () => {
+  const result = verifyVapiHmac("body", "sig", undefined, true);
+  assert.equal(result.ok, false);
+});
+
+test("verifyTwilioSignature fails closed in production when no auth token", () => {
+  const result = verifyTwilioSignature(
+    { signature: "sig", url: "https://x/y", params: {}, authToken: undefined },
+    true,
+  );
+  assert.equal(result.ok, false);
 });
 
 test("verifyVapiSignature accepts matching secret", () => {
@@ -55,19 +73,22 @@ test("verifyVapiHmac rejects a tampered body", () => {
 });
 
 test("verifyVapiHmac fails open with no secret", () => {
-  assert.deepEqual(verifyVapiHmac("x", undefined, undefined), {
+  assert.deepEqual(verifyVapiHmac("x", undefined, undefined, false), {
     ok: true,
     enforced: false,
   });
 });
 
 test("verifyTwilioSignature fails open when no auth token", () => {
-  const result = verifyTwilioSignature({
-    signature: undefined,
-    url: "https://x/y",
-    params: {},
-    authToken: undefined,
-  });
+  const result = verifyTwilioSignature(
+    {
+      signature: undefined,
+      url: "https://x/y",
+      params: {},
+      authToken: undefined,
+    },
+    false,
+  );
   assert.deepEqual(result, { ok: true, enforced: false });
 });
 

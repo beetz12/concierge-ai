@@ -41,6 +41,7 @@ import {
   addToBlacklist,
 } from "./config/ip-blacklist.js";
 import { isDemoMode } from "./config/demo.js";
+import { assertNotDemoInProduction } from "./config/production-guard.js";
 import { getCallRuntimeConfig } from "./config/call-runtime.js";
 
 // =============================================================================
@@ -129,6 +130,10 @@ if (isDemoMode()) {
   console.log("========================================");
   console.log("");
 }
+
+// Refuse to boot in production with DEMO_MODE enabled: demo mode bypasses auth,
+// skips the database, and simulates calls — it must never run in production.
+assertNotDemoInProduction();
 
 if (criticalMissing && !isDemoMode()) {
   console.error("ERROR: Critical environment variables are missing!");

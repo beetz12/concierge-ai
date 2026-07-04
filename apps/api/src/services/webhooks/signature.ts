@@ -11,9 +11,12 @@
  *   `VAPI_WEBHOOK_SECRET`.
  *
  * Posture: fail-CLOSED when the secret is configured (reject bad/missing
- * signatures), and fail-OPEN with a warning when it is not (so local dev and
- * demos keep working). Production readiness therefore requires setting the
- * secrets -- documented in docs/deployment.md and .env.example.
+ * signatures). When the secret is UNSET, behavior depends on environment: in
+ * production a missing secret fails CLOSED (reject unsigned) so an
+ * unauthenticated webhook can never be trusted, while in dev/test it fails OPEN
+ * with a warning so local dev and demos keep working. Production readiness
+ * therefore requires setting the secrets -- documented in docs/deployment.md
+ * and .env.example.
  */
 import { createHmac, timingSafeEqual } from "node:crypto";
 // twilio is a CommonJS module; `validateRequest` is a property of the default
@@ -25,6 +28,10 @@ const { validateRequest } = twilio;
 export type WebhookVerifyResult =
   | { ok: true; enforced: boolean }
   | { ok: false; reason: string };
+
+/** True when running under NODE_ENV=production (fail-closed on missing secrets). */
+const isProductionEnv = (env: NodeJS.ProcessEnv = process.env): boolean =>
+  env.NODE_ENV === "production";
 
 /** Constant-time string comparison that tolerates length differences. */
 export function safeEqual(a: string, b: string): boolean {
@@ -48,8 +55,12 @@ export function safeEqual(a: string, b: string): boolean {
 export function verifyVapiSignature(
   headerValue: string | undefined,
   secret: string | undefined,
+  isProduction: boolean = isProductionEnv(),
 ): WebhookVerifyResult {
   if (!secret) {
+    if (isProduction) {
+      return { ok: false, reason: "VAPI webhook secret is not configured" };
+    }
     return { ok: true, enforced: false };
   }
   if (!headerValue) {
@@ -70,8 +81,12 @@ export function verifyVapiHmac(
   rawBody: string,
   signatureHeader: string | undefined,
   signingSecret: string | undefined,
+  isProduction: boolean = isProductionEnv(),
 ): WebhookVerifyResult {
   if (!signingSecret) {
+    if (isProduction) {
+      return { ok: false, reason: "VAPI signing secret is not configured" };
+    }
     return { ok: true, enforced: false };
   }
   if (!signatureHeader) {
@@ -103,8 +118,12 @@ export interface TwilioVerifyInput {
  */
 export function verifyTwilioSignature(
   input: TwilioVerifyInput,
+  isProduction: boolean = isProductionEnv(),
 ): WebhookVerifyResult {
   if (!input.authToken) {
+    if (isProduction) {
+      return { ok: false, reason: "Twilio auth token is not configured" };
+    }
     return { ok: true, enforced: false };
   }
   if (!input.signature) {

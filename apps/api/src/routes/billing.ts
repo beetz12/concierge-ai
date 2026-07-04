@@ -122,6 +122,9 @@ const billingRoutes: FastifyPluginAsync = async (fastify) => {
           return reply.code(400).send({ error: "Invalid signature" });
         }
       } else {
+        // TODO(s9): fail CLOSED in production when STRIPE_WEBHOOK_SECRET is
+        // unset (mirror the signature.ts webhook posture). Kept fail-open here
+        // for now — outside this change's scope (plan named signature.ts only).
         // Dev/test only: without a webhook secret the payload is trusted as-is.
         try {
           event = JSON.parse(rawBody.toString("utf8")) as StripeLifecycleEvent;
