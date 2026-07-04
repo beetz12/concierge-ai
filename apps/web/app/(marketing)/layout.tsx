@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { MarketingNav } from "@/components/marketing/MarketingNav";
 
 /**
  * Public marketing layout — full-bleed, no authenticated app shell.
@@ -18,60 +19,6 @@ export default function MarketingLayout({
       <main>{children}</main>
       <MarketingFooter />
     </div>
-  );
-}
-
-function MarketingNav() {
-  return (
-    <header className="sticky top-0 z-50 border-b border-surface-highlight/60 bg-abyss/80 backdrop-blur-md">
-      <nav
-        className="mx-auto flex max-w-6xl items-center justify-between gap-4 px-5 py-3.5 sm:px-8"
-        aria-label="Primary"
-      >
-        <Link
-          href="/"
-          className="flex items-center gap-2.5 font-semibold tracking-tight"
-        >
-          <span
-            aria-hidden
-            className="grid h-6 w-6 place-items-center rounded-md bg-gradient-to-br from-primary-400 to-primary-600 text-sm font-bold text-primary-950"
-          >
-            ◑
-          </span>
-          <span className="text-[17px]">Concierge</span>
-        </Link>
-
-        <div className="hidden items-center gap-7 text-sm text-slate-400 md:flex">
-          <a href="#product" className="transition-colors hover:text-slate-100">
-            Product
-          </a>
-          <a href="#pricing" className="transition-colors hover:text-slate-100">
-            Pricing
-          </a>
-          <a
-            href="#how-it-works"
-            className="transition-colors hover:text-slate-100"
-          >
-            How it works
-          </a>
-        </div>
-
-        <div className="flex items-center gap-2.5 text-sm">
-          <Link
-            href="/login"
-            className="hidden rounded-lg px-3 py-2 text-slate-300 transition-colors hover:text-slate-100 sm:inline-block"
-          >
-            Sign in
-          </Link>
-          <Link
-            href="/register"
-            className="rounded-lg bg-primary-500 px-4 py-2 font-semibold text-primary-950 transition-colors hover:bg-primary-400"
-          >
-            Start free
-          </Link>
-        </div>
-      </nav>
-    </header>
   );
 }
 
@@ -113,7 +60,7 @@ function MarketingFooter() {
           </Link>
         </div>
 
-        <p className="text-xs text-slate-600">
+        <p className="text-xs text-slate-400">
           &copy; {new Date().getFullYear()} Concierge. All calls recorded &amp;
           disclosed.
         </p>
