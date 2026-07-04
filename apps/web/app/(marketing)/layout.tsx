@@ -34,7 +34,7 @@ function MarketingFooter() {
             ◑
           </span>
           <span className="text-sm font-medium">Concierge</span>
-          <span className="text-sm text-slate-500">
+          <span className="text-sm text-slate-400">
             AI that makes your calls
           </span>
         </div>

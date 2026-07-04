@@ -258,7 +258,7 @@ function FinalCta() {
               Sign in
             </a>
           </div>
-          <p className="mt-6 text-xs text-slate-500">
+          <p className="mt-6 text-xs text-slate-400">
             Every call recorded &amp; disclosed · You approve every call ·
             TCPA-aware
           </p>

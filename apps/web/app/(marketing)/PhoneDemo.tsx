@@ -153,7 +153,7 @@ function DemoForm() {
           onChange={(e) => setPhone(e.target.value)}
           disabled={busy || done}
           aria-label="Your phone number"
-          className="flex-1 rounded-xl border border-surface-highlight bg-surface px-4 py-3.5 text-base tabular-nums text-slate-100 outline-none transition-colors placeholder:text-slate-500 focus:border-primary-500 focus:ring-2 focus:ring-primary-500/30 disabled:opacity-60"
+          className="flex-1 rounded-xl border border-surface-highlight bg-surface px-4 py-3.5 text-base tabular-nums text-slate-100 outline-none transition-colors placeholder:text-slate-400 focus:border-primary-500 focus:ring-2 focus:ring-primary-500/30 disabled:opacity-60"
         />
         <button
           type="submit"
@@ -179,7 +179,7 @@ function DemoForm() {
       </label>
 
       <p
-        className="mt-2.5 flex items-center gap-1.5 text-xs text-slate-500"
+        className="mt-2.5 flex items-center gap-1.5 text-xs text-slate-400"
         aria-live="polite"
       >
         {submit.status === "dispatched" ? (
@@ -192,7 +192,7 @@ function DemoForm() {
           <span className="text-rose-300">{submit.message}</span>
         ) : (
           <>
-            <ShieldCheck className="h-3.5 w-3.5 text-slate-500" aria-hidden />
+            <ShieldCheck className="h-3.5 w-3.5 text-slate-400" aria-hidden />
             <span>Free demo call · recorded &amp; disclosed · TCPA-aware</span>
           </>
         )}
