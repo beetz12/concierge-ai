@@ -69,9 +69,7 @@ function Hero() {
       <div className="relative mx-auto mt-12 w-full max-w-4xl">
         <video
           className="w-full rounded-2xl border border-surface-highlight shadow-2xl"
-          autoPlay
-          muted
-          loop
+          controls
           playsInline
           preload="metadata"
           poster="/hero/concierge-hero-poster.jpg"
