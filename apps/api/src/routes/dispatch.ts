@@ -44,6 +44,7 @@ import {
   createDispatchRateLimiterFromEnv,
   type RateLimiter,
 } from "../services/rate-limit/token-bucket.js";
+import { recordUsage } from "../services/billing/usage.js";
 import { isDemoMode } from "../config/demo.js";
 
 /**
@@ -209,16 +210,25 @@ const callerIdentityOf = (clientName?: string): string =>
 export interface DispatchRoutesOptions {
   /** Injectable per-org limiter; defaults to an env-configured token bucket. */
   rateLimiter?: RateLimiter;
+  /** Injectable clock for the compliance dispatcher; defaults to wall clock. */
+  now?: () => Date;
 }
 
 const dispatchRoutes: FastifyPluginAsync<DispatchRoutesOptions> = async (
   fastify,
   options,
 ) => {
-  const backend: CallBackend = getCallBackend({ supabase: fastify.supabase });
+  // DEMO_MODE has no telephony provider configured (GEMINI-only), so force the
+  // in-memory mock backend; otherwise the default (livekit) would crash on the
+  // missing LiveKit config at construction.
+  const backend: CallBackend = getCallBackend(
+    { supabase: fastify.supabase },
+    isDemoMode() ? { ...process.env, CALL_BACKEND: "mock" } : process.env,
+  );
   const dispatcher = new CompliantCallDispatcher({
     supabase: fastify.supabase,
     backend,
+    now: options.now,
   });
   const casesDb = (): CasesDbClient =>
     isDemoMode()
@@ -230,6 +240,31 @@ const dispatchRoutes: FastifyPluginAsync<DispatchRoutesOptions> = async (
   // org cannot exhaust another's budget, and it keys on the authenticated org
   // id rather than the source IP.
   const rateLimiter = options.rateLimiter ?? createDispatchRateLimiterFromEnv();
+
+  /**
+   * Append a usage-ledger row for a successful dispatch. Metering must never
+   * break the caller's response, so failures (and demo mode, which has no DB)
+   * are swallowed with a warning.
+   */
+  const meterDispatch = async (
+    request: FastifyRequest,
+    input: { orgId: string; type: "call_count" | "sms_count"; callId: string },
+  ): Promise<void> => {
+    if (isDemoMode()) return;
+    try {
+      await recordUsage(fastify.supabase as never, {
+        orgId: input.orgId,
+        type: input.type,
+        quantity: 1,
+        callId: input.callId,
+      });
+    } catch (error) {
+      request.log.warn(
+        { error, orgId: input.orgId, type: input.type },
+        "Failed to record dispatch usage (non-fatal)",
+      );
+    }
+  };
 
   /**
    * Enforce the per-org limit. Returns the org id when the request may
@@ -446,6 +481,11 @@ const dispatchRoutes: FastifyPluginAsync<DispatchRoutesOptions> = async (
             message: smsResult.error || "Failed to send SMS",
           });
         }
+        await meterDispatch(request, {
+          orgId,
+          type: "sms_count",
+          callId: smsResult.messageSid ?? "",
+        });
         return reply.send({
           channel: "sms",
           messageId: smsResult.messageSid,
@@ -540,6 +580,12 @@ const dispatchRoutes: FastifyPluginAsync<DispatchRoutesOptions> = async (
         setAttachedEvent(callId, body.caseId, event.id);
       }
 
+      await meterDispatch(request, {
+        orgId,
+        type: "call_count",
+        callId,
+      });
+
       return reply.send({
         callId,
         state: "queued",
@@ -570,7 +616,7 @@ const dispatchRoutes: FastifyPluginAsync<DispatchRoutesOptions> = async (
       const { callId } = params.data;
 
       const record = getDispatch(callId);
-      if (record && record.orgId !== orgId) {
+      if (!record || record.orgId !== orgId) {
         return notFound(reply, `Call not found: ${callId}`);
       }
 
@@ -617,7 +663,7 @@ const dispatchRoutes: FastifyPluginAsync<DispatchRoutesOptions> = async (
       const { callId } = params.data;
 
       const record = getDispatch(callId);
-      if (record && record.orgId !== orgId) {
+      if (!record || record.orgId !== orgId) {
         return notFound(reply, `Call not found: ${callId}`);
       }
 
