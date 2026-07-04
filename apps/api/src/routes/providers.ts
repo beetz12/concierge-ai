@@ -20,6 +20,10 @@ import { triggerUserNotification } from "../services/notifications/index.js";
 import { DirectTwilioClient } from "../services/notifications/direct-twilio.client.js";
 import { createSimulatedCallService, type SimulatedCallRequest } from "../services/simulation/index.js";
 import { isDemoMode } from "../config/demo.js";
+import {
+  isResearchAndBookEnabled,
+  RESEARCH_AND_BOOK_DISABLED_ERROR,
+} from "../config/research-and-book.js";
 import { simulateCall as geminiSimulateCall } from "../services/gemini.js";
 
 // Schema for Gemini-generated custom prompts
@@ -283,6 +287,13 @@ export default async function providerRoutes(fastify: FastifyInstance) {
               },
             },
           },
+          403: {
+            type: "object",
+            properties: {
+              error: { type: "string" },
+              message: { type: "string" },
+            },
+          },
           400: {
             type: "object",
             properties: {
@@ -335,6 +346,12 @@ export default async function providerRoutes(fastify: FastifyInstance) {
               request: { criteria: validated.userCriteria, urgency: validated.urgency },
             },
           });
+        }
+
+        // Research-and-Book places REAL calls with compliance + org context
+        // bypassed; it is disabled by default for v1 (see FIX 1).
+        if (!isResearchAndBookEnabled()) {
+          return reply.code(403).send(RESEARCH_AND_BOOK_DISABLED_ERROR);
         }
 
         // Initiate the call
@@ -566,6 +583,13 @@ export default async function providerRoutes(fastify: FastifyInstance) {
               },
             },
           },
+          403: {
+            type: "object",
+            properties: {
+              error: { type: "string" },
+              message: { type: "string" },
+            },
+          },
           400: {
             type: "object",
             properties: {
@@ -588,6 +612,12 @@ export default async function providerRoutes(fastify: FastifyInstance) {
       try {
         // Validate request body with Zod
         const validated = batchCallSchema.parse(request.body);
+
+        // Research-and-Book places REAL calls with compliance + org context
+        // bypassed; it is disabled by default for v1 (see FIX 1).
+        if (!isResearchAndBookEnabled()) {
+          return reply.code(403).send(RESEARCH_AND_BOOK_DISABLED_ERROR);
+        }
 
         // Transform validated data to CallRequest[] format
         const requests = validated.providers.map((provider) => ({
@@ -754,6 +784,13 @@ export default async function providerRoutes(fastify: FastifyInstance) {
               },
             },
           },
+          403: {
+            type: "object",
+            properties: {
+              error: { type: "string" },
+              message: { type: "string" },
+            },
+          },
           400: {
             type: "object",
             properties: {
@@ -799,6 +836,12 @@ export default async function providerRoutes(fastify: FastifyInstance) {
               mode: "demo",
             },
           });
+        }
+
+        // Research-and-Book places REAL calls with compliance + org context
+        // bypassed; it is disabled by default for v1 (see FIX 1).
+        if (!isResearchAndBookEnabled()) {
+          return reply.code(403).send(RESEARCH_AND_BOOK_DISABLED_ERROR);
         }
 
         // Load test phone configuration from backend environment
@@ -2018,6 +2061,13 @@ export default async function providerRoutes(fastify: FastifyInstance) {
               },
             },
           },
+          403: {
+            type: "object",
+            properties: {
+              error: { type: "string" },
+              message: { type: "string" },
+            },
+          },
           400: {
             type: "object",
             properties: {
@@ -2040,6 +2090,12 @@ export default async function providerRoutes(fastify: FastifyInstance) {
       try {
         // Validate request body with Zod
         const validated = bookingSchema.parse(request.body);
+
+        // Research-and-Book places REAL calls with compliance + org context
+        // bypassed; it is disabled by default for v1 (see FIX 1).
+        if (!isResearchAndBookEnabled()) {
+          return reply.code(403).send(RESEARCH_AND_BOOK_DISABLED_ERROR);
+        }
 
         // Load test phone configuration from backend environment (same as research phase)
         const adminTestPhonesRaw = process.env.ADMIN_TEST_NUMBER;

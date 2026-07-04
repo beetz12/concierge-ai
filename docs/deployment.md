@@ -91,6 +91,7 @@ by concern.
 | `LOG_LEVEL` | Optional | `info` | `fatal`..`trace`. Every log line carries a `reqId`. |
 | `PUBLIC_BASE_URL` | Recommended | derived | Public URL of the API; used to verify webhook signatures behind a proxy. |
 | `API_URL` / `APP_URL` | Optional | localhost | Used in generated links. |
+| `ENABLE_RESEARCH_AND_BOOK` | Optional | `false` | Feature flag for the legacy Research-and-Book calling flow. When not exactly `"true"`, `POST /providers/call`, `/providers/batch-call`, `/providers/batch-call-async`, `/providers/book`, and the Twilio SMS auto-book trigger return 403 / skip without dialing. Disabled for v1. |
 
 ### 3.2 Supabase (database + auth)
 
@@ -132,7 +133,9 @@ schema changes.
 `RETELL_TRANSFER_NUMBER`, `RETELL_ARTIFACTS_DIR`, `RETELL_API_BASE_URL`).
 
 **VAPI** (`CALL_BACKEND=vapi`, and the legacy Research-and-Book pipeline):
-`VAPI_API_KEY`, `VAPI_PHONE_NUMBER_ID`.
+`VAPI_API_KEY`, `VAPI_PHONE_NUMBER_ID`. The Research-and-Book routes that use
+this pipeline are gated behind `ENABLE_RESEARCH_AND_BOOK` (default off — see
+3.1); leave it unset for v1.
 
 ### 3.5 Webhooks (signature verification)
 
