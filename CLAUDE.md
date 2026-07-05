@@ -339,3 +339,46 @@ callers poll `getStatus`/`getArtifacts`). Requires `VAPI_API_KEY` and
 > (`/api/v1/providers`, `/api/v1/bookings`, `/api/v1/notifications`, the VAPI
 > webhook, and the `runtime-router`). Migrating those paths onto CallBackend and
 > retiring `services/vapi` is a follow-up slice; do not delete it piecemeal.
+
+## Membership API
+
+Per-organization membership backend (`/api/v1/members`, auth required — routes
+are NOT exempt from the tenant auth middleware; all data is scoped by
+`request.auth.orgId`). Implementation: `apps/api/src/routes/members.ts` +
+`apps/api/src/services/membership/` (MembershipStore seam with Supabase and
+in-memory/DEMO_MODE implementations) +
+`apps/api/src/services/call-backend/retell/number-purchase.ts`.
+
+**Endpoints**
+
+| Route | Purpose |
+|-------|---------|
+| `GET /api/v1/members/me` | Org, subscription `{ status, plan }`, dedicated number, call settings |
+| `POST /api/v1/members/onboarding/number` `{ areaCode? }` | Provision the org's dedicated outbound number. Requires subscription status `active`/`trialing` (or DEMO_MODE), else `402 { reason: 'subscription_required' }`. Idempotent: returns the existing row with `alreadyProvisioned: true`. |
+| `GET /api/v1/members/settings` / `PUT /api/v1/members/settings` | Per-org call defaults: `callerIdentity`, `voicemailPolicy` (`leave_message`/`hang_up`/`retry_later`), `transferNumber` (validated US E.164) |
+| `GET /api/v1/members/calls?limit&cursor` | Org call history from the dispatch registry (`{ callId, businessName, status, disposition, summary, createdAt, hasArtifacts }`). Artifacts stay behind `GET /api/v1/dispatch/:callId/artifacts`. |
+
+**Number purchase gate (`RETELL_NUMBER_PURCHASE_ENABLED`, default `false`)** —
+buying a number costs REAL MONEY. While the gate is off (always, in tests and
+local dev), onboarding provisions a deterministic *simulated* number
+(`+1<areaCode|555>555XXXX`, status `simulated`, no HTTP call). Only when the
+env var is exactly `"true"` does the service `POST /create-phone-number` on
+Retell (nickname = org id, agent from `RETELL_AGENT_ID` or the idempotent
+provisioner) and persist status `active`. Retell errors surface as typed
+`NumberPurchaseError` → `502` (never partial rows). Tests use the injected
+`fetchImpl` mock — never a real key.
+
+**Dispatch integration** — `CallPlan.fromNumber` (optional) carries the org's
+dedicated number: `routes/dispatch.ts` sets it when the org has an `active` or
+`simulated` number, and the Retell backend uses it as `from_number` (falling
+back to `RETELL_FROM_NUMBER`); other backends ignore it. `org_call_settings`
+also fill `callerIdentity`/`voicemailPolicy` into dispatch plans that do not
+specify them (`transferNumber` has no CallPlan slot; warm transfer stays a
+provisioning-level concern).
+
+**Data** — migration `supabase/migrations/20260705010000_membership.sql`
+creates `org_phone_numbers` (one number per org, `org_id` UNIQUE) and
+`org_call_settings` (RLS: members SELECT their org; writes via service role).
+Durable subscription status intentionally stays in the existing
+`subscriptions` table (tenancy_core migration) maintained by the Stripe
+webhook — no duplicate columns on `organizations`.
