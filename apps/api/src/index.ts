@@ -21,6 +21,7 @@ import { initObservability } from "./config/observability.js";
 import billingRoutes from "./routes/billing.js";
 import casesRoutes from "./routes/cases.js";
 import dispatchRoutes from "./routes/dispatch.js";
+import membersRoutes from "./routes/members.js";
 import userRoutes from "./routes/users.js";
 import geminiRoutes from "./routes/gemini.js";
 import workflowRoutes from "./routes/workflows.js";
@@ -359,6 +360,11 @@ await server.register(swagger, {
         description:
           "Dispute / follow-up case management: CRUD, timeline, escalation stages, next actions",
       },
+      {
+        name: "members",
+        description:
+          "Membership: dedicated outbound number onboarding, call settings, call history, subscription status",
+      },
     ],
   },
 });
@@ -468,6 +474,7 @@ server.get(
         voice: "/api/v1/voice",
         billing: "/api/v1/billing",
         cases: "/api/v1/cases",
+        members: "/api/v1/members",
         docs: "/docs",
       },
     };
@@ -527,6 +534,9 @@ await server.register(casesRoutes, { prefix: "/api/v1/cases" });
 
 // Register Dispatch flow routes (two-gate call dispatch UX)
 await server.register(dispatchRoutes, { prefix: "/api/v1/dispatch" });
+
+// Register Membership routes (dedicated number, call settings, call history)
+await server.register(membersRoutes, { prefix: "/api/v1/members" });
 
 // Start server with port conflict handling
 const start = async () => {

@@ -46,6 +46,20 @@ export function getDispatch(callId: string): DispatchRecord | null {
   return records.get(callId) ?? null;
 }
 
+/**
+ * All dispatches for an org, most recent first (stable callId tiebreak).
+ * Backs the member call-history view (GET /api/v1/members/calls).
+ */
+export function listDispatches(orgId: string): DispatchRecord[] {
+  return [...records.values()]
+    .filter((record) => record.orgId === orgId)
+    .sort(
+      (a, b) =>
+        Date.parse(b.dispatchedAt) - Date.parse(a.dispatchedAt) ||
+        b.callId.localeCompare(a.callId),
+    );
+}
+
 export function setAttachedEvent(
   callId: string,
   caseId: string,

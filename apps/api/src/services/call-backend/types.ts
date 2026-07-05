@@ -50,6 +50,11 @@ export interface CallPlan {
   callbackNumber?: string;
   /** Behavior when the call lands in voicemail. */
   voicemailPolicy: VoicemailPolicy;
+  /**
+   * Optional outbound caller id (E.164) to present, e.g. the org's dedicated
+   * number. Backends without per-call caller-id support ignore it.
+   */
+  fromNumber?: string;
   /** Facts/actions the agent is pre-cleared to disclose or perform. */
   preAuthorizations: CallPreAuthorization[];
   /**

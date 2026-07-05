@@ -103,7 +103,9 @@ export class RetellCallBackend implements CallBackend {
       warn: this.warn,
     });
 
-    const fromNumber = this.fromNumber;
+    // Per-plan caller id (e.g. the org's dedicated number) wins over the
+    // account-wide configured from-number.
+    const fromNumber = plan.fromNumber ?? this.fromNumber;
     if (!fromNumber) {
       throw new Error(
         "Retell backend has no outbound number configured. Set RETELL_FROM_NUMBER.",
