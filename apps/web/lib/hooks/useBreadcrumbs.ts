@@ -18,6 +18,10 @@ const routeLabels: Record<string, string> = {
   about: "About",
   request: "Request",
   settings: "Settings",
+  onboarding: "Onboarding",
+  calls: "Calls",
+  dispatch: "Dispatch",
+  cases: "Cases",
 };
 
 export function useBreadcrumbs(): BreadcrumbItem[] {

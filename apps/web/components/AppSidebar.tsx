@@ -16,6 +16,8 @@ import {
   User,
   Scale,
   PhoneOutgoing,
+  PhoneCall,
+  Settings,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuth, useAuthActions } from "@/lib/providers/AuthProvider";
@@ -41,7 +43,9 @@ const navItems = [
   { href: "/new", icon: PlusCircle, label: "New Request" },
   { href: "/history", icon: History, label: "History" },
   { href: "/dispatch", icon: PhoneOutgoing, label: "Dispatch" },
+  { href: "/calls", icon: PhoneCall, label: "Calls" },
   { href: "/cases", icon: Scale, label: "Cases" },
+  { href: "/settings", icon: Settings, label: "Settings" },
   { href: "/about", icon: Info, label: "About" },
 ];
 

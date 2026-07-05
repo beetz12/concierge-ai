@@ -5,9 +5,9 @@ import Link from "next/link";
 import { Menu, X } from "lucide-react";
 
 const SECTION_LINKS = [
-  { href: "#product", label: "Product" },
-  { href: "#pricing", label: "Pricing" },
-  { href: "#how-it-works", label: "How it works" },
+  { href: "/#product", label: "Product" },
+  { href: "/pricing", label: "Pricing" },
+  { href: "/#how-it-works", label: "How it works" },
 ] as const;
 
 /**
@@ -49,13 +49,13 @@ export function MarketingNav() {
 
         <div className="hidden items-center gap-7 text-sm text-slate-400 md:flex">
           {SECTION_LINKS.map((link) => (
-            <a
+            <Link
               key={link.href}
               href={link.href}
               className="transition-colors hover:text-slate-100"
             >
               {link.label}
-            </a>
+            </Link>
           ))}
         </div>
 
@@ -97,13 +97,13 @@ export function MarketingNav() {
           <ul className="flex flex-col gap-1 text-sm">
             {SECTION_LINKS.map((link) => (
               <li key={link.href}>
-                <a
+                <Link
                   href={link.href}
                   onClick={() => setOpen(false)}
                   className="block rounded-lg px-3 py-2.5 text-slate-300 transition-colors hover:bg-surface hover:text-slate-100 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary-500"
                 >
                   {link.label}
-                </a>
+                </Link>
               </li>
             ))}
             <li>
