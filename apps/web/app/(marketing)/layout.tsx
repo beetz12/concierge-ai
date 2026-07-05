@@ -58,6 +58,18 @@ function MarketingFooter() {
           >
             Start free
           </Link>
+          <Link
+            href="/legal/privacy"
+            className="transition-colors hover:text-slate-200"
+          >
+            Privacy
+          </Link>
+          <Link
+            href="/legal/terms"
+            className="transition-colors hover:text-slate-200"
+          >
+            Terms
+          </Link>
         </div>
 
         <p className="text-xs text-slate-400">
