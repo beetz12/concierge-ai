@@ -32,6 +32,7 @@ import bookingRoutes from "./routes/bookings.js";
 import intakeRoutes from "./routes/intake.js";
 import demoRoutes from "./routes/demo.js";
 import demoCallRoutes from "./routes/demo-call.js";
+import demoFunnelRoutes from "./routes/demo-funnel.js";
 import voiceToolRoutes from "./routes/voice-tools.js";
 import voiceCallRoutes from "./routes/voice-calls.js";
 import {
@@ -462,6 +463,7 @@ server.get(
         intake: "/api/v1/intake",
         demo: "/api/v1/demo",
         demoCall: "/api/v1/demo-call",
+        demoFunnel: "/api/v1/demo-funnel",
         voiceTools: "/api/v1/voice-tools",
         voice: "/api/v1/voice",
         billing: "/api/v1/billing",
@@ -506,6 +508,10 @@ await server.register(demoRoutes, { prefix: "/api/v1/demo" });
 
 // Register public marketing demo-call route (feature-flagged, unauthenticated)
 await server.register(demoCallRoutes, { prefix: "/api/v1/demo-call" });
+
+// Register public landing-page demo funnel (scenario -> SMS OTP -> one demo
+// call per number for life; feature-flagged, unauthenticated)
+await server.register(demoFunnelRoutes, { prefix: "/api/v1/demo-funnel" });
 
 // Register internal voice-agent tool routes
 await server.register(voiceToolRoutes, { prefix: "/api/v1/voice-tools" });
