@@ -73,6 +73,25 @@ test("dispatchCall refuses a non-US number without touching the network", async 
   assert.equal(requests.length, 0);
 });
 
+test("dispatchCall prefers plan.fromNumber over the configured from-number", async () => {
+  const { backend, requests } = makeBackend([
+    NO_RECENT_CALLS,
+    {
+      method: "POST",
+      path: "/v2/create-phone-call",
+      json: { call_id: "call_9", call_status: "registered" },
+    },
+  ]);
+
+  await backend.dispatchCall(makePlan({ fromNumber: "+18645550777" }));
+
+  const dispatch = requests.find((request) =>
+    request.url.includes("/v2/create-phone-call"),
+  );
+  const body = dispatch?.body as Record<string, unknown>;
+  assert.equal(body.from_number, "+18645550777");
+});
+
 test("dispatchCall sends the call-biz dispatch payload shape", async () => {
   const { backend, requests } = makeBackend([
     NO_RECENT_CALLS,
