@@ -10,6 +10,7 @@ import {
 } from "lucide-react";
 import StatusBadge from "@/components/StatusBadge";
 import { PageHeader } from "@/components/PageHeader";
+import { OnboardingBanner } from "@/components/members/OnboardingBanner";
 import { RequestStatus } from "@/lib/types";
 import { useAppContext } from "@/lib/providers/AppProvider";
 
@@ -53,6 +54,8 @@ export default function Dashboard() {
         title="Welcome back"
         description="Here's what your AI concierge is working on."
       />
+
+      <OnboardingBanner />
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         <StatCard
