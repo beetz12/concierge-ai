@@ -61,6 +61,10 @@ const EXEMPT_PREFIXES = [
   // rate-limited by IP+number. Anonymous landing-page visitors must reach it
   // without a user JWT (its own safety posture replaces the tenant gate).
   "/api/v1/demo-call",
+  // Public landing-page demo funnel: feature-flagged, SMS-OTP-verified, and
+  // hard-limited to one demo call per number for life (DB unique constraint).
+  // Anonymous visitors must reach it without a user JWT.
+  "/api/v1/demo-funnel",
 ];
 
 /** Demo identity used by the DEMO_MODE bypass below. */
