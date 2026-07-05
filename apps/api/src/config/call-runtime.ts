@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { isDemoMode } from "./demo.js";
 
 const boolEnv = (defaultValue: boolean) =>
   z.preprocess(
@@ -128,7 +129,10 @@ function buildConfig(): CallRuntimeConfig {
     issues,
   );
 
-  if (issues.length > 0) {
+  // DEMO_MODE runs without any telephony provider (CALL_BACKEND=mock and
+  // simulated calls) — boot with `configured: false` instead of refusing to
+  // start. Outside demo mode a missing provider config is still fatal.
+  if (issues.length > 0 && !isDemoMode()) {
     throw new Error(
       `Missing required call runtime configuration: ${issues.join(", ")}. ` +
         `Selected provider: ${env.CALL_RUNTIME_PROVIDER}.`,

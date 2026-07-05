@@ -23,13 +23,22 @@ interface Logger {
 
 export class ProviderCallingService {
   private kestraClient: KestraClient;
-  private directVapiClient: DirectVapiClient;
   private callResultService: CallResultService;
+  // Lazy: DirectVapiClient's constructor throws when VAPI credentials are
+  // missing, and this service is constructed at route registration. Eager
+  // construction crashed API boot in environments that never place VAPI
+  // calls (DEMO_MODE / CALL_BACKEND=mock). Deferring to first use keeps the
+  // same failure behavior on real call paths without blocking boot.
+  private lazyDirectVapiClient: DirectVapiClient | null = null;
 
   constructor(private logger: Logger) {
     this.kestraClient = new KestraClient(logger);
-    this.directVapiClient = new DirectVapiClient(logger);
     this.callResultService = new CallResultService(logger);
+  }
+
+  private get directVapiClient(): DirectVapiClient {
+    this.lazyDirectVapiClient ??= new DirectVapiClient(this.logger);
+    return this.lazyDirectVapiClient;
   }
 
   /**
