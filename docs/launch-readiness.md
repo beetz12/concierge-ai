@@ -1,9 +1,10 @@
 # Launch-Readiness Compliance Audit
 
-Status: **audit skeleton + compliance analysis**. A later slice appends
-verified evidence (screenshots, dashboard states, config dumps) to each
-section; this document owns the compliance analysis. Grounded in the in-repo
-compliance corpus:
+Status: **compliance analysis + verified local walkthrough evidence**.
+Sections 1-5 own the compliance analysis; sections 7-10 record what was
+actually verified against a running local stack on 2026-07-05 (commands and
+trimmed responses inline), what is stubbed, and what still gates go-live.
+Grounded in the in-repo compliance corpus:
 
 - `docs/compliance/attorney-review.md` (risk register, Q1-Q14 deep dives)
 - `docs/compliance/regulatory-survey.md` (primary-source survey)
@@ -64,14 +65,17 @@ or DNC registration. The demo funnel satisfies 227(b) by construction:
 - *Consent scope is one call.* The demo consent covers exactly one AI call.
   Any reuse of the number (marketing SMS, follow-up call) is outside the
   consent scope and would need its own basis.
-- *Current implementation gap:* the demo route today
-  (`apps/api/src/routes/demo-call.ts`) enforces consent-checkbox + E.164 +
-  per-IP/per-number in-memory rate limits, but the SMS OTP step and the
-  `demo_calls` persistence (hashed OTP, timestamp/IP/disclosure-version,
-  lifetime limit) are delivered by a parallel slice. **Do not enable the
-  live demo flag in production until OTP + persistence are merged** - the
-  in-memory 24h number lock is not the lifetime limit and does not survive
-  restarts.
+- *Implementation status (updated 2026-07-05):* the OTP + persistence slice
+  has landed. The landing page now uses `/api/v1/demo-funnel/*`
+  (`apps/api/src/routes/demo-funnel.ts`): SMS OTP (hashed codes, 10-min
+  expiry, 5 attempts), durable DB-counted send limits, and the `demo_calls`
+  lifetime gate (UNIQUE(phone_e164), migration
+  `20260705000000_demo_funnel.sql`) with consent timestamp/IP/disclosure
+  version recorded. Verified end to end against a running local stack -
+  see section 7. The older `/api/v1/demo-call` route (consent checkbox +
+  in-memory limits only) still exists behind its own `DEMO_CALL_ENABLED`
+  flag but is no longer used by the landing page; keep that flag off in
+  production and prefer removing the route in a cleanup slice.
 
 ## 2. OTP SMS (Twilio)
 
@@ -203,43 +207,328 @@ the existing fail-closed defaults (attorney-review.md section 4).
 
 ## 6. Go-live checklist
 
-Section headers only - a later slice appends verified evidence and flips
-statuses. All items default to **[ ] not verified**.
+Statuses filled 2026-07-05. Legend: **[x] verified locally** (evidence in
+section 7 - this proves the code path works, NOT that production is
+configured), **[ ] open** (needs production credentials, external accounts,
+or counsel - cannot be verified from a local walkthrough).
 
 ### 6.1 Attorney review
-- [ ] Legal pages (`/legal/privacy`, `/legal/terms`) reviewed; placeholders
-      (`{$LEGAL_ENTITY_NAME}`, `{$LEGAL_CONTACT_EMAIL}`, governing law,
-      arbitration, CCPA/state notices, children) resolved; DRAFT banners
-      removed only on counsel sign-off.
-- [ ] Open legal questions Q1, Q5, Q12, Q14 answered in writing (launch
-      gate per attorney-review.md section 4).
+- [ ] OPEN - Legal pages (`/legal/privacy`, `/legal/terms`) reviewed;
+      placeholders (`{$LEGAL_ENTITY_NAME}`, `{$LEGAL_CONTACT_EMAIL}`,
+      governing law, arbitration, CCPA/state notices, children) resolved;
+      DRAFT banners removed only on counsel sign-off. (Local walkthrough
+      confirms both pages render with the DRAFT banner - section 7.5.)
+- [ ] OPEN - Open legal questions Q1, Q5, Q12, Q14 answered in writing
+      (launch gate per attorney-review.md section 4).
 
 ### 6.2 Stripe
-- [ ] Live-mode keys configured; test keys absent from prod env.
-- [ ] Live prices/products created and referenced by ID.
-- [ ] Webhook endpoint + signing secret verified in live mode.
+- [ ] OPEN - Live-mode keys configured; test keys absent from prod env.
+- [ ] OPEN - Live prices/products created and referenced by ID.
+- [ ] OPEN - Webhook endpoint + signing secret verified in live mode.
+- Note: the local walkthrough ran with no Stripe at all; DEMO_MODE reports
+  a synthetic `demo_active` subscription (section 7.4).
 
 ### 6.3 Twilio SMS
-- [ ] A2P 10DLC brand + OTP campaign (or toll-free verification) approved.
-- [ ] STOP/HELP behavior verified against the live sender.
+- [ ] OPEN - A2P 10DLC brand + OTP campaign (or toll-free verification)
+      approved.
+- [ ] OPEN - STOP/HELP behavior verified against the live sender.
+- Note: OTP SMS was SIMULATED locally (code surfaced in server logs, no
+  network) - section 7.3 step b.
 
 ### 6.4 Retell / telephony
-- [ ] `RETELL_NUMBER_PURCHASE_ENABLED` decision + account funding in place.
-- [ ] STIR/SHAKEN attestation level verified on provisioned numbers.
-- [ ] Recording + AI disclosure verified in the live call opener.
+- [ ] OPEN - `RETELL_NUMBER_PURCHASE_ENABLED` decision + account funding in
+      place. (Left unset locally: number onboarding returned a simulated
+      number, `status: "simulated"` - section 7.4.)
+- [ ] OPEN - STIR/SHAKEN attestation level verified on provisioned numbers.
+- [ ] OPEN - Recording + AI disclosure verified in the live call opener.
+      (The disclosure text is baked into every scenario script -
+      `apps/api/src/services/demo-funnel/scenarios.ts` - but no real call
+      has been placed to hear it.)
 
 ### 6.5 Production environment
-- [ ] All required env vars set (API + web); no dev fallbacks active.
-- [ ] `DEMO_MODE=false`; Supabase prod project + RLS verified.
-- [ ] `call-artifacts` bucket private in prod.
+- [ ] OPEN - All required env vars set (API + web); no dev fallbacks
+      active. Must include `OTP_HASH_SECRET` (the funnel fails closed
+      without it outside DEMO_MODE - verified in code review, not
+      production).
+- [ ] OPEN - `DEMO_MODE=false`; Supabase prod project + RLS verified;
+      migrations `20260705000000_demo_funnel.sql` and
+      `20260705010000_membership.sql` applied.
+- [ ] OPEN - `call-artifacts` bucket private in prod.
 
 ### 6.6 Enable flags
-- [ ] `DEMO_CALL_ENABLED` on only after OTP + `demo_calls` persistence are
-      live.
-- [ ] Member outbound dialing restricted per the interim posture until Q1
-      consent gate ships.
+- [x] VERIFIED LOCALLY - `DEMO_FUNNEL_ENABLED=true` gates the new funnel;
+      OTP + `demo_calls` persistence are implemented and the lifetime
+      limit held under test (section 7.3 step e). Production enablement
+      still requires Twilio (6.3) + `OTP_HASH_SECRET` (6.5).
+- [ ] OPEN - keep the legacy `DEMO_CALL_ENABLED` flag OFF in production;
+      the landing page no longer uses `/api/v1/demo-call` (route logged
+      `enabled: false` in the walkthrough boot).
+- [ ] OPEN - Member outbound dialing restricted per the interim posture
+      until Q1 consent gate ships.
 
 ### 6.7 Monitoring
-- [ ] Abuse/volume alerting live (section 5 table).
-- [ ] Number-reputation monitoring live (section 4).
-- [ ] Audit-log dashboards for deny reasons and policy version.
+- [ ] OPEN - Abuse/volume alerting live (section 5 table).
+- [ ] OPEN - Number-reputation monitoring live (section 4).
+- [ ] OPEN - Audit-log dashboards for deny reasons and policy version.
+
+---
+
+## 7. What was built and verified (2026-07-05 local walkthrough)
+
+Everything below was executed against a running local stack, safe by
+construction: `DEMO_MODE=true`, `CALL_BACKEND=mock`,
+`DEMO_FUNNEL_ENABLED=true`, `RETELL_NUMBER_PURCHASE_ENABLED` unset. No real
+SMS was sent, no real call was placed, no phone number was purchased, no
+remote database was written (in-memory stores). Branch
+`goal/launch-verification`, base commit `8704ca2`.
+
+Stack: API `pnpm --filter api dev` with the env above on **port 8010**
+(8000 was occupied by an unrelated local server), web `pnpm --filter web
+dev` on port 3000 with `NEXT_PUBLIC_DEMO_MODE=true` and
+`NEXT_PUBLIC_API_URL=http://localhost:8010` so the `/api/*` rewrite hit the
+walkthrough API.
+
+### 7.1 Quality gates
+
+All four ran green before the walkthrough and again after the fixes in 7.2
+(final run post-fix):
+
+| Gate | Result |
+| --- | --- |
+| `pnpm check-types` | pass (4 packages) |
+| `pnpm lint` | pass, `--max-warnings 0` |
+| `pnpm --filter api test` | 373 tests, 373 pass, 0 fail |
+| `pnpm build` | pass (api tsc + web next build) |
+
+### 7.2 Integration bugs found and fixed
+
+The stack would not boot with the documented demo env. Two fixes, both
+verified by the successful walkthrough below and by the gates re-run:
+
+1. `apps/api/src/config/call-runtime.ts` - boot threw
+   `Missing required call runtime configuration: LIVEKIT_URL, ...` even in
+   DEMO_MODE. Fixed: demo mode now boots with `configured: false` instead
+   of refusing to start; outside demo mode missing provider config is
+   still fatal.
+2. `apps/api/src/services/vapi/provider-calling.service.ts` - route
+   registration eagerly constructed `DirectVapiClient`, whose constructor
+   throws without `VAPI_API_KEY`/`VAPI_PHONE_NUMBER_ID`, crashing boot in
+   VAPI-less environments. Fixed: the client is now constructed lazily on
+   first use; real call paths fail exactly as before, boot does not.
+
+### 7.3 Demo funnel journey (HTTP against the running API)
+
+a. **Scenario catalog** - curated list plus the disabled "custom" upsell
+   tile; server-side call scripts are not exposed:
+
+```
+$ curl http://localhost:8010/api/v1/demo-funnel/scenarios          # HTTP 200
+{"scenarios":[{"id":"refund-request","label":"Ask for a refund",...,
+  "requiresMembership":false,"enabled":true}, ... 5 more enabled ...,
+ {"id":"custom","label":"Your own scenario",...,
+  "requiresMembership":true,"enabled":false}]}
+```
+
+b. **OTP send** (+15555550199; mock backend scripts the outcome by last
+   digit - 9 = completed). The SMS is simulated in DEMO_MODE; the code is
+   surfaced only in server logs:
+
+```
+$ curl -X POST .../otp/send -d '{"phoneNumber":"+15555550199"}'    # HTTP 200
+{"status":"sent","simulated":true}
+
+api.log: event: "demo_funnel_otp_simulated"  to: "+15555550199"  code: "316965"
+```
+
+c. **OTP verify** - wrong code decrements attempts; right code returns the
+   signed verification token (the ONLY carrier of the dial target):
+
+```
+$ curl -X POST .../otp/verify -d '{...,"code":"000000"}'           # HTTP 400
+{"statusCode":400,...,"status":"invalid","attemptsRemaining":4,
+ "message":"Incorrect code."}
+
+$ curl -X POST .../otp/verify -d '{...,"code":"316965"}'           # HTTP 200
+{"status":"verified","verificationToken":"eyJhbGciOiJIUzI1NiJ9..."}
+```
+
+d. **Dispatch + status polling** - 202 with a mock call id; first poll
+   in-progress, second poll terminal:
+
+```
+$ curl -X POST .../call -d '{"verificationToken":"...","scenarioId":"refund-request"}'
+                                                                    # HTTP 202
+{"status":"dispatched","callId":"mock-925df6db-6715-4374-ba65-b3c0ac3ae1ef"}
+
+$ curl ".../call/mock-925d.../status?token=..."                    # HTTP 200
+{"state":"in_progress","completed":false,"disposition":null,"summary":null}
+$ curl ".../call/mock-925d.../status?token=..."                    # HTTP 200
+{"state":"completed","completed":true,"disposition":"completed",
+ "summary":"Objective completed. Every must-ask question was answered."}
+```
+
+e. **Lifetime limit** - the same number gets an honest `already_used` with
+   NO new SMS, and a repeat dispatch (still-valid token) hits the
+   `demo_calls` UNIQUE(phone_e164) gate:
+
+```
+$ curl -X POST .../otp/send -d '{"phoneNumber":"+15555550199"}'    # HTTP 200
+{"status":"already_used"}
+
+$ curl -X POST .../call -d '{...same token, different scenario...}' # HTTP 409
+{"statusCode":409,"error":"Conflict","status":"already_used",
+ "message":"This number has already received its demo call."}
+```
+
+f. **Send rate limit** - a second number (+15555550287) allowed 3 sends in
+   the hour window, then 429 with retry-after:
+
+```
+sends 1-3:                                                          # HTTP 200
+{"status":"sent","simulated":true}
+send 4:                                             # HTTP 429, retry-after: 3600
+{"statusCode":429,"error":"Too Many Requests",
+ "message":"Too many verification codes sent to this number. Try later.",
+ "retryAfter":3600}
+```
+
+### 7.4 Membership journey (DEMO_MODE auth bypass, org demo-org-000)
+
+```
+$ curl http://localhost:8010/api/v1/members/me                     # HTTP 200
+{"org":{"id":"demo-org-000","name":"Demo Organization"},
+ "subscription":{"status":"demo_active","plan":"demo"},
+ "dedicatedNumber":null,
+ "settings":{"callerIdentity":null,"voicemailPolicy":"hang_up",...}}
+
+$ curl -X POST .../members/onboarding/number -d '{"areaCode":"864"}' # HTTP 200
+{"number":{"id":"76689677-...","phoneE164":"+18645554233",
+ "status":"simulated","areaCode":"864",...},
+ "simulated":true,"alreadyProvisioned":false}      <- NO real purchase
+
+$ curl -X PUT .../members/settings -d '{"callerIdentity":"...",
+    "voicemailPolicy":"leave_message","transferNumber":"+18645550100"}'
+                                                                    # HTTP 200
+$ curl .../members/settings                                        # HTTP 200
+  -> identical body: round-trip persisted
+
+$ curl ".../members/calls?limit=5"                                 # HTTP 200
+{"calls":[],"nextCursor":null}                     <- empty history, no dispatches yet
+
+$ curl .../members/me                                              # HTTP 200
+  -> now shows dedicatedNumber + the saved settings
+```
+
+### 7.5 Web pages (Next.js dev server, port 3000)
+
+| Page | Result |
+| --- | --- |
+| `GET /` | 200; SSR HTML contains the funnel shell ("Loading the demo..." initial state). The scenario tiles hydrate client-side from `/api/v1/demo-funnel/scenarios`; the rewrite proxy was verified separately: `GET http://localhost:3000/api/v1/demo-funnel/scenarios` returned the catalog. |
+| `GET /legal/privacy` | 200; contains "DRAFT - pending attorney review. Not yet in force." and version `draft-2026-07-04`. |
+| `GET /legal/terms` | 200; same DRAFT banner and version. |
+| `GET /onboarding` | 200; renders the member onboarding page ("dedicated number" copy present). |
+| `GET /dashboard` | 200; renders with the "Demo Mode" banner. |
+
+### 7.6 Playwright e2e
+
+The repo's Playwright infra (`playwright.config.ts`, headless Chromium,
+self-booting test servers on 8180/3180, no external credentials) runs
+locally, so a UI happy-path spec for the demo funnel was ADDED:
+`apps/web/e2e/demo-funnel.spec.ts`. It mocks the `/api/v1/demo-funnel/*`
+responses with `page.route` (same pattern as the other web-demo specs) and
+drives the real UI through scenario pick (including the locked members
+tile), phone entry, simulated-SMS notice, OTP entry, the calling pane, and
+the completed done-pane CTA, asserting the dispatch request body carries
+exactly `{ verificationToken, scenarioId }`.
+
+Result: full suite `pnpm test:e2e` = **9 passed** (3 web-demo specs
+including the new demo-funnel spec at 7.7s, plus all 6 @dispatch specs
+that drive the real API in DEMO_MODE with the mock backend).
+
+Limitation stated honestly: the e2e spec verifies the UI flow against
+mocked API responses; the API behavior itself is verified by the HTTP
+walkthrough above and by `apps/api/src/routes/demo-funnel.test.ts` (part
+of the 373-test API suite). No spec drives UI + real API end-to-end,
+because the OTP code only surfaces in API logs, which the browser test
+cannot read cleanly.
+
+## 8. What is stubbed or simulated
+
+Between local demo and production, these behaviors are NOT real:
+
+- **OTP SMS is simulated** in DEMO_MODE (and whenever Twilio is not
+  configured): the code is logged server-side, nothing is texted
+  (`apps/api/src/services/demo-funnel/sms.ts`). Production needs Twilio +
+  A2P/toll-free registration (6.3).
+- **Demo calls use the mock backend** locally (`CALL_BACKEND=mock`):
+  deterministic in-memory transitions, outcome scripted by the dialed
+  number's last digit, canned transcript/recording. Production dials via
+  the configured CallBackend (livekit/retell/vapi).
+- **Number purchase is simulated**: `RETELL_NUMBER_PURCHASE_ENABLED`
+  unset means onboarding provisions a deterministic fake number with
+  `status: "simulated"` and spends nothing.
+- **Stripe is absent locally**: DEMO_MODE reports a synthetic
+  `demo_active` subscription; production requires live keys, price IDs,
+  and the billing webhook (6.2).
+- **Persistence is in-memory** in DEMO_MODE (demo funnel store, membership
+  store, auth bypass as `demo-org-000`). Production uses Supabase with the
+  two new migrations applied.
+- **The legacy `/api/v1/demo-call` endpoint still exists** behind
+  `DEMO_CALL_ENABLED` (default off) but the landing page no longer calls
+  it; removal is a cleanup slice.
+
+## 9. Remaining go-live checklist (plain language)
+
+In rough order of lead time:
+
+1. **Attorney review** of `/legal/privacy` and `/legal/terms` (resolve
+   entity-name/contact placeholders, remove DRAFT banners on sign-off) and
+   written answers to open legal questions Q1, Q5, Q12, Q14
+   (docs/compliance/open-legal-questions.md). Q1/Q14 gate member outbound
+   dialing at scale.
+2. **Twilio A2P 10DLC brand + OTP campaign registration** (or toll-free
+   verification) for the OTP sender - carrier approval takes days-weeks;
+   start early. Then verify STOP/HELP handling live.
+3. **Stripe live mode**: live keys, live products/prices referenced by ID,
+   webhook + signing secret verified.
+4. **Retell number purchasing**: fund the account, set
+   `RETELL_NUMBER_PURCHASE_ENABLED=true` deliberately, verify STIR/SHAKEN
+   attestation and the recorded-line + AI disclosure on a real call.
+5. **Production environment variables** (API + web): everything in
+   `apps/api/.env.example` that applies, notably `OTP_HASH_SECRET`
+   (funnel fails closed without it), `DEMO_FUNNEL_ENABLED=true` (the
+   go-switch), `RETELL_NUMBER_PURCHASE_ENABLED`, `DEMO_MODE=false`, plus
+   Supabase prod with migrations `20260705000000_demo_funnel.sql` and
+   `20260705010000_membership.sql` applied and the `call-artifacts`
+   bucket private.
+6. **Abuse monitoring/alerting**: demo-call volume spikes, OTP
+   failure-rate anomalies, repeated denied dispatches per org, spam-label
+   detection on outbound numbers (sections 4 and 5).
+
+## 10. Known risks
+
+- **Walkthrough ran in DEMO_MODE with in-memory stores.** The Supabase
+  store implementations (`SupabaseDemoFunnelStore`, membership store) are
+  covered by unit tests with mocked clients but have NOT been exercised
+  against a real Postgres in this walkthrough; the UNIQUE-constraint
+  lifetime gate is enforced by the database in production and only by the
+  in-memory equivalent here.
+- **The OTP-code path to a real phone is untested end-to-end** (simulated
+  SMS locally). First production smoke test should be a real number owned
+  by the team.
+- **Boot-time config regressions are easy to reintroduce**: two eager
+  constructions crashed demo boot (7.2). There is no test that boots the
+  API with the bare demo env; consider a CI smoke job that starts the API
+  with `DEMO_MODE=true CALL_BACKEND=mock` and curls `/health`.
+- **Rate limits are per-number/per-IP only.** A botnet with many numbers
+  and IPs can still burn SMS spend once Twilio is real; the lifetime
+  demo-call limit caps call spend but OTP sends cost money before any
+  call. Alerting (9.6) is the mitigation until a global send budget
+  exists.
+- **`NEXT_PUBLIC_API_URL` must be set correctly per environment** - the
+  walkthrough needed it because the API ran on a non-default port; the
+  same knob misconfigured in production silently points the web rewrite at
+  the wrong backend.
+- **Legal pages are drafts.** Launching the funnel while `/legal/*` still
+  shows DRAFT banners undermines the consent/disclosure story the TCPA
+  posture relies on (sections 1 and 6.1).
