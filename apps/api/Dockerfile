@@ -35,8 +35,7 @@ COPY packages/eslint-config/package.json packages/eslint-config/package.json
 COPY packages/ui/package.json packages/ui/package.json
 # Frozen install against the committed lockfile. --ignore-scripts skips the
 # root `prepare` (husky git-hook) lifecycle, which is irrelevant in CI/Docker.
-RUN --mount=type=cache,id=pnpm,target=/pnpm/store \
-    pnpm install --frozen-lockfile --ignore-scripts
+RUN pnpm install --frozen-lockfile --ignore-scripts
 
 # ----------------------------------------------------------------------------
 # build: bring in sources and compile just the api (turbo builds its deps too).
@@ -58,8 +57,7 @@ COPY packages/ui/package.json packages/ui/package.json
 # --ignore-scripts: the prod install must not run the root `prepare` (husky)
 # lifecycle -- husky is a devDependency absent from a --prod tree, and git
 # hooks are irrelevant inside the image.
-RUN --mount=type=cache,id=pnpm,target=/pnpm/store \
-    pnpm install --frozen-lockfile --prod --ignore-scripts --filter api...
+RUN pnpm install --frozen-lockfile --prod --ignore-scripts --filter api...
 
 # ----------------------------------------------------------------------------
 # runtime: minimal image with production deps + compiled output.
