@@ -40,15 +40,21 @@ function MarketingFooter() {
         </div>
 
         <div className="flex flex-wrap items-center gap-x-6 gap-y-2 text-sm text-slate-400">
-          <a href="#product" className="transition-colors hover:text-slate-200">
+          <Link
+            href="/#product"
+            className="transition-colors hover:text-slate-200"
+          >
             Product
-          </a>
-          <a
-            href="#how-it-works"
+          </Link>
+          <Link
+            href="/#how-it-works"
             className="transition-colors hover:text-slate-200"
           >
             How it works
-          </a>
+          </Link>
+          <Link href="/pricing" className="transition-colors hover:text-slate-200">
+            Pricing
+          </Link>
           <Link href="/login" className="transition-colors hover:text-slate-200">
             Sign in
           </Link>
@@ -57,6 +63,18 @@ function MarketingFooter() {
             className="transition-colors hover:text-slate-200"
           >
             Start free
+          </Link>
+          <Link
+            href="/legal/privacy"
+            className="transition-colors hover:text-slate-200"
+          >
+            Privacy
+          </Link>
+          <Link
+            href="/legal/terms"
+            className="transition-colors hover:text-slate-200"
+          >
+            Terms
           </Link>
         </div>
 

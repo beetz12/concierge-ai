@@ -339,3 +339,84 @@ callers poll `getStatus`/`getArtifacts`). Requires `VAPI_API_KEY` and
 > (`/api/v1/providers`, `/api/v1/bookings`, `/api/v1/notifications`, the VAPI
 > webhook, and the `runtime-router`). Migrating those paths onto CallBackend and
 > retiring `services/vapi` is a follow-up slice; do not delete it piecemeal.
+
+## Demo Funnel
+
+Public landing-page demo funnel (`/api/v1/demo-funnel/*`, unauthenticated —
+exempted in `apps/api/src/middleware/auth.ts`): a visitor picks a curated
+scenario, proves ownership of their phone via SMS OTP, and receives **one AI
+demo call to that number — once per E.164 number, for life**.
+
+**Endpoints** (`apps/api/src/routes/demo-funnel.ts`, all zod-validated,
+feature-flagged by `DEMO_FUNNEL_ENABLED`; when off every endpoint returns
+`{ status: "unavailable" }`):
+
+| Endpoint | Purpose |
+|---|---|
+| `GET /scenarios` | Curated scenario catalog (includes the disabled `custom` upsell tile; server-side call scripts are never exposed) |
+| `POST /otp/send { phoneNumber }` | Normalizes to US E.164, short-circuits `already_used` numbers without SMS, enforces durable send limits, sends (or simulates) the 6-digit code |
+| `POST /otp/verify { phoneNumber, code }` | 400 + `attemptsRemaining` on wrong code (locks after 5), 410 on expiry, `{ verificationToken }` (15-min jose JWT) on success |
+| `POST /call { verificationToken, scenarioId }` | Dials ONLY the token's phone claim; atomic lifetime gate = `demo_calls` `UNIQUE(phone_e164)` INSERT before dispatch (conflict → 409 `already_used`) |
+| `GET /call/:callId/status?token=...` | Token must match the call's phone; proxies backend status |
+
+**Anti-abuse core (do not weaken):**
+- The dialed number comes exclusively from the server-signed verification
+  token; no request field can influence it.
+- One call per number for life via the DB unique constraint (never in-memory).
+- OTP: 6 digits, 10-min expiry, 5 verify attempts per code; durable
+  (DB-counted) send limits — per-number 3/hour + 5/day, per-IP 5/hour + 10/day.
+- Every call opens with the mandatory disclosure; `DISCLOSURE_VERSION` and
+  consent metadata are persisted on the `demo_calls` row.
+
+**Key files**: services in `apps/api/src/services/demo-funnel/`
+(`scenarios.ts`, `otp.ts`, `store.ts` — Supabase + in-memory stores, `sms.ts`),
+migration `supabase/migrations/20260705000000_demo_funnel.sql`, tests
+`apps/api/src/routes/demo-funnel.test.ts` (injected fakes, no network).
+
+**Env** (`apps/api/.env.example`): `DEMO_FUNNEL_ENABLED` (default false),
+`OTP_HASH_SECRET` (HMAC + JWT secret; funnel fails closed without it outside
+`DEMO_MODE`). In `DEMO_MODE` (or without Twilio env) OTP SMS is simulated:
+the code is logged at info level and the response carries `simulated: true`.
+
+## Membership API
+
+Per-organization membership backend (`/api/v1/members`, auth required — routes
+are NOT exempt from the tenant auth middleware; all data is scoped by
+`request.auth.orgId`). Implementation: `apps/api/src/routes/members.ts` +
+`apps/api/src/services/membership/` (MembershipStore seam with Supabase and
+in-memory/DEMO_MODE implementations) +
+`apps/api/src/services/call-backend/retell/number-purchase.ts`.
+
+**Endpoints**
+
+| Route | Purpose |
+|-------|---------|
+| `GET /api/v1/members/me` | Org, subscription `{ status, plan }`, dedicated number, call settings |
+| `POST /api/v1/members/onboarding/number` `{ areaCode? }` | Provision the org's dedicated outbound number. Requires subscription status `active`/`trialing` (or DEMO_MODE), else `402 { reason: 'subscription_required' }`. Idempotent: returns the existing row with `alreadyProvisioned: true`. |
+| `GET /api/v1/members/settings` / `PUT /api/v1/members/settings` | Per-org call defaults: `callerIdentity`, `voicemailPolicy` (`leave_message`/`hang_up`/`retry_later`), `transferNumber` (validated US E.164) |
+| `GET /api/v1/members/calls?limit&cursor` | Org call history from the dispatch registry (`{ callId, businessName, status, disposition, summary, createdAt, hasArtifacts }`). Artifacts stay behind `GET /api/v1/dispatch/:callId/artifacts`. |
+
+**Number purchase gate (`RETELL_NUMBER_PURCHASE_ENABLED`, default `false`)** —
+buying a number costs REAL MONEY. While the gate is off (always, in tests and
+local dev), onboarding provisions a deterministic *simulated* number
+(`+1<areaCode|555>555XXXX`, status `simulated`, no HTTP call). Only when the
+env var is exactly `"true"` does the service `POST /create-phone-number` on
+Retell (nickname = org id, agent from `RETELL_AGENT_ID` or the idempotent
+provisioner) and persist status `active`. Retell errors surface as typed
+`NumberPurchaseError` → `502` (never partial rows). Tests use the injected
+`fetchImpl` mock — never a real key.
+
+**Dispatch integration** — `CallPlan.fromNumber` (optional) carries the org's
+dedicated number: `routes/dispatch.ts` sets it when the org has an `active` or
+`simulated` number, and the Retell backend uses it as `from_number` (falling
+back to `RETELL_FROM_NUMBER`); other backends ignore it. `org_call_settings`
+also fill `callerIdentity`/`voicemailPolicy` into dispatch plans that do not
+specify them (`transferNumber` has no CallPlan slot; warm transfer stays a
+provisioning-level concern).
+
+**Data** — migration `supabase/migrations/20260705010000_membership.sql`
+creates `org_phone_numbers` (one number per org, `org_id` UNIQUE) and
+`org_call_settings` (RLS: members SELECT their org; writes via service role).
+Durable subscription status intentionally stays in the existing
+`subscriptions` table (tenancy_core migration) maintained by the Stripe
+webhook — no duplicate columns on `organizations`.

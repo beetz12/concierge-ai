@@ -4,7 +4,13 @@ import { updateSession } from "./lib/supabase/middleware";
 // Anonymous access is deny-by-default (outside demo mode): only the auth
 // pages and the explicit public marketing/auth-flow routes skip the redirect.
 const AUTH_ROUTES = ["/login", "/register"];
-const PUBLIC_ROUTES = ["/", "/about", "/auth/callback", "/auth/verify-email"];
+const PUBLIC_ROUTES = [
+  "/",
+  "/about",
+  "/pricing",
+  "/auth/callback",
+  "/auth/verify-email",
+];
 
 export async function proxy(request: NextRequest) {
   if (process.env.NEXT_PUBLIC_DEMO_MODE === "true") {

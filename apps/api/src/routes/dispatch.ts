@@ -31,6 +31,10 @@ import {
   recordDispatch,
   setAttachedEvent,
 } from "../services/dispatch/registry.js";
+import {
+  getMembershipStore,
+  type MembershipStore,
+} from "../services/membership/index.js";
 import type { TaskType } from "../services/direct-task/types.js";
 import {
   attachCall,
@@ -212,6 +216,10 @@ export interface DispatchRoutesOptions {
   rateLimiter?: RateLimiter;
   /** Injectable clock for the compliance dispatcher; defaults to wall clock. */
   now?: () => Date;
+  /** Injectable call backend (tests); defaults to the CALL_BACKEND factory. */
+  backend?: CallBackend;
+  /** Injectable membership store (tests); defaults per DEMO_MODE. */
+  membershipStore?: MembershipStore;
 }
 
 const dispatchRoutes: FastifyPluginAsync<DispatchRoutesOptions> = async (
@@ -221,10 +229,16 @@ const dispatchRoutes: FastifyPluginAsync<DispatchRoutesOptions> = async (
   // DEMO_MODE has no telephony provider configured (GEMINI-only), so force the
   // in-memory mock backend; otherwise the default (livekit) would crash on the
   // missing LiveKit config at construction.
-  const backend: CallBackend = getCallBackend(
-    { supabase: fastify.supabase },
-    isDemoMode() ? { ...process.env, CALL_BACKEND: "mock" } : process.env,
-  );
+  const backend: CallBackend =
+    options.backend ??
+    getCallBackend(
+      { supabase: fastify.supabase },
+      isDemoMode() ? { ...process.env, CALL_BACKEND: "mock" } : process.env,
+    );
+  // Membership store: org dedicated number (caller id) + call-setting
+  // defaults applied to plans that do not specify them.
+  const membership: MembershipStore =
+    options.membershipStore ?? getMembershipStore(fastify.supabase);
   const dispatcher = new CompliantCallDispatcher({
     supabase: fastify.supabase,
     backend,
@@ -503,6 +517,39 @@ const dispatchRoutes: FastifyPluginAsync<DispatchRoutesOptions> = async (
       const redialBlocked =
         body.allowRedial !== true && isRedialBlocked(orgId, body.phoneNumber);
       const plan = buildCallPlan(body, callerIdentity, orgId);
+
+      // Org membership defaults: the org's dedicated number becomes the
+      // outbound caller id, and org_call_settings fill callerIdentity /
+      // voicemailPolicy when the reviewed plan did not specify them.
+      // (org_call_settings.transfer_number has no CallPlan slot yet — warm
+      // transfer destinations are provisioned at the backend level.)
+      // Membership lookups must never block an approved dispatch.
+      try {
+        const [settings, orgNumber] = await Promise.all([
+          membership.getCallSettings(orgId),
+          membership.getOrgPhoneNumber(orgId),
+        ]);
+        if (settings?.callerIdentity && !body.clientName?.trim()) {
+          plan.callerIdentity = settings.callerIdentity;
+        }
+        const rawVoicemailPolicy = (
+          request.body as Record<string, unknown> | null
+        )?.voicemailPolicy;
+        if (rawVoicemailPolicy === undefined && settings) {
+          plan.voicemailPolicy = settings.voicemailPolicy;
+        }
+        if (
+          orgNumber &&
+          (orgNumber.status === "active" || orgNumber.status === "simulated")
+        ) {
+          plan.fromNumber = orgNumber.phoneE164;
+        }
+      } catch (error) {
+        request.log.warn(
+          { error, orgId },
+          "Failed to load org membership call defaults (non-fatal)",
+        );
+      }
 
       let callId: string;
       let decision: PolicyDecision;
