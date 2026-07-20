@@ -66,7 +66,7 @@ test("assertSingleUsE164 only accepts a single E.164 US number", () => {
 
 test("redial guard refuses a number already called within 24h", async () => {
   const { client } = makeClient([
-    { method: "POST", path: "/v2/list-calls", json: [priorCall()] },
+    { method: "POST", path: "/v3/list-calls", json: { items: [priorCall()] } },
   ]);
   await assert.rejects(
     assertRedialAllowed(client, makePlan(), { now: () => NOW }),
@@ -90,8 +90,8 @@ test("redial guard allows calls older than 24h", async () => {
   const { client } = makeClient([
     {
       method: "POST",
-      path: "/v2/list-calls",
-      json: [priorCall({ start_timestamp: NOW - 25 * HOUR_MS })],
+      path: "/v3/list-calls",
+      json: { items: [priorCall({ start_timestamp: NOW - 25 * HOUR_MS })] },
     },
   ]);
   await assertRedialAllowed(client, makePlan(), { now: () => NOW });
@@ -101,12 +101,14 @@ test("redial guard ignores calls that never rang", async () => {
   const { client } = makeClient([
     {
       method: "POST",
-      path: "/v2/list-calls",
-      json: [
-        priorCall({ call_id: "call_err", call_status: "error" }),
-        priorCall({ call_id: "call_nc", call_status: "not_connected" }),
-        priorCall({ call_id: "call_nostart", start_timestamp: null }),
-      ],
+      path: "/v3/list-calls",
+      json: {
+        items: [
+          priorCall({ call_id: "call_err", call_status: "error" }),
+          priorCall({ call_id: "call_nc", call_status: "not_connected" }),
+          priorCall({ call_id: "call_nostart", start_timestamp: null }),
+        ],
+      },
     },
   ]);
   await assertRedialAllowed(client, makePlan(), { now: () => NOW });
@@ -117,7 +119,7 @@ test("redial guard is scoped per tenant when tenantId is set", async () => {
     priorCall({ metadata: { tenant_id: "tenant-b" } }),
   ];
   const { client: clientA } = makeClient([
-    { method: "POST", path: "/v2/list-calls", json: otherTenant },
+    { method: "POST", path: "/v3/list-calls", json: { items: otherTenant } },
   ]);
   // Another tenant's recent call does not block this tenant.
   await assertRedialAllowed(clientA, makePlan({ tenantId: "tenant-a" }), {
@@ -126,7 +128,7 @@ test("redial guard is scoped per tenant when tenantId is set", async () => {
 
   const sameTenant = [priorCall({ metadata: { tenant_id: "tenant-a" } })];
   const { client: clientB } = makeClient([
-    { method: "POST", path: "/v2/list-calls", json: sameTenant },
+    { method: "POST", path: "/v3/list-calls", json: { items: sameTenant } },
   ]);
   await assert.rejects(
     assertRedialAllowed(clientB, makePlan({ tenantId: "tenant-a" }), {
@@ -142,7 +144,7 @@ test("redial guard proceeds with a warning when the lookup fails", async () => {
   const { client } = makeClient([
     {
       method: "POST",
-      path: "/v2/list-calls",
+      path: "/v3/list-calls",
       status: 500,
       json: { message: "internal" },
     },
