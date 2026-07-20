@@ -89,16 +89,24 @@ export async function assertRedialAllowed(
 
   let calls;
   try {
-    const { status, json } = await client.request("POST", "/v2/list-calls", {
-      filter_criteria: { to_number: [plan.phoneNumber] },
+    const { status, json } = await client.request("POST", "/v3/list-calls", {
+      filter_criteria: {
+        to_number: { type: "string", op: "eq", value: plan.phoneNumber },
+      },
       limit: 20,
       sort_order: "descending",
     });
-    if (status !== 200 || !Array.isArray(json)) {
+    // v3 list-calls returns an envelope { items, pagination_key, has_more };
+    // v2 returned a bare array. We only need the most recent page here.
+    const items =
+      json !== null && typeof json === "object"
+        ? (json as { items?: unknown }).items
+        : undefined;
+    if (status !== 200 || !Array.isArray(items)) {
       warn("redial-guard lookup failed; proceeding without it");
       return;
     }
-    calls = retellCallListSchema.parse(json);
+    calls = retellCallListSchema.parse(items);
   } catch {
     warn("redial-guard lookup failed; proceeding without it");
     return;

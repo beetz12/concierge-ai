@@ -16,8 +16,8 @@ const NOW = Date.UTC(2026, 5, 15, 12, 0, 0); // 2026-06-15
 
 const NO_RECENT_CALLS: MockRoute = {
   method: "POST",
-  path: "/v2/list-calls",
-  json: [],
+  path: "/v3/list-calls",
+  json: { items: [] },
 };
 
 interface SavedArtifacts {
@@ -202,7 +202,7 @@ test("dispatchCall is blocked by a recent redial and allowed with allowRedial", 
     },
   ];
   const routes: MockRoute[] = [
-    { method: "POST", path: "/v2/list-calls", json: recent },
+    { method: "POST", path: "/v3/list-calls", json: { items: recent } },
     {
       method: "POST",
       path: "/v2/create-phone-call",

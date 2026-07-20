@@ -4,7 +4,7 @@
  * Wraps the Retell AI REST API using the exact request shapes proven by the
  * `call-biz` CLI: `/v2/create-phone-call` dispatch with
  * `retell_llm_dynamic_variables`, `/v2/get-call` status, `/v2/stop-call`
- * cancel, and a `/v2/list-calls` powered 24h redial guard. Artifacts are
+ * cancel, and a `/v3/list-calls` powered 24h redial guard. Artifacts are
  * copied out of Retell immediately (recording URLs expire) into a durable
  * artifact store.
  */
